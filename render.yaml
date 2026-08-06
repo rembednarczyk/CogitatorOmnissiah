@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: cogitator-omnissiah
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NOTION_API_KEY
+        sync: false
+      - key: NOTION_DATABASE_ID
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
