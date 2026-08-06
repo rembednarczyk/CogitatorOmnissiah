@@ -179,12 +179,15 @@ export class BookSyncService {
       .map((a: string) => sanitizeNotionTag(a))
       .filter(Boolean);
     
-    const authorsChanged = newAuthors.length !== existingAuthors.length || 
-                           newAuthors.some(a => !existingAuthors.includes(a)) ||
-                           existingAuthors.some(a => !newAuthors.includes(a));
+    // Merge authors (union) — never drop authors added manually in Notion
+    const combinedAuthors = [...existingAuthors];
+    for (const a of newAuthors) {
+      if (!combinedAuthors.includes(a)) combinedAuthors.push(a);
+    }
+    const authorsChanged = combinedAuthors.length !== existingAuthors.length;
 
-    if (authorsChanged && newAuthors.length > 0) {
-      updates["Autor"] = { multi_select: newAuthors.slice(0, 100).map(name => ({ name })) };
+    if (authorsChanged && combinedAuthors.length > 0) {
+      updates["Autor"] = { multi_select: combinedAuthors.slice(0, 100).map(name => ({ name })) };
     }
     
     const newAwards = (book.awards || []).map(sanitizeNotionTag).filter(Boolean);

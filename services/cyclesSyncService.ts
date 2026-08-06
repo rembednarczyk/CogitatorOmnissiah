@@ -2,9 +2,8 @@ import pLimit from "p-limit";
 import { NotionAdapter } from "../notion.adapter";
 import { WikiAdapter } from "../wiki.adapter";
 import { WikiParser } from "../wiki.parser";
-import { calculateSimilarity } from "../utils";
 import { NotionBook, SyncEvent } from "../src/types";
-import { normalizeData } from "./dataNormalizer";
+import { isWikiAuthorMatch } from "./dataNormalizer";
 
 export class CyclesSyncService {
   constructor(private notion: NotionAdapter, private wiki: WikiAdapter) {}
@@ -34,14 +33,7 @@ export class CyclesSyncService {
       const errors: any[] = [];
       const limit = pLimit(3);
       
-      const isAuthorMatch = (wikiAuthor: string, notionAuthor: string) => {
-        if (!wikiAuthor || !notionAuthor) return true;
-        const normWiki = normalizeData(wikiAuthor, 'author').toLowerCase().trim();
-        const normNotion = normalizeData(notionAuthor, 'author').toLowerCase().trim();
-        
-        if (normWiki.includes(normNotion) || normNotion.includes(normWiki)) return true;
-        return calculateSimilarity(normWiki, normNotion) > 0.6;
-      };
+      const isAuthorMatch = isWikiAuthorMatch;
 
       const checkCycleInWikitext = (wikitext: string): boolean => {
         if (!wikitext) return false;

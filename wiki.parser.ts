@@ -18,10 +18,11 @@ export class WikiParser {
     let seria = "";
 
     // 1. Pobierz wartości ogólne z {{Książka}} (jako fallback)
-    const wydawcaMatch = wikitext.match(/\|\s*wydawca\s*=\s*([^\n|]+)/i);
+    // Wartość może zawierać linki z pipe ([[Cel|Etykieta]]) — dopasowuj całe [[...]]
+    const wydawcaMatch = wikitext.match(/\|\s*wydawca\s*=\s*((?:\[\[[^\]]*\]\]|[^\n|])+)/i);
     if (wydawcaMatch) wydawca = this.cleanWikitext(wydawcaMatch[1]);
 
-    const seriaMatch = wikitext.match(/\|\s*seria\s*=\s*([^\n|]+)/i);
+    const seriaMatch = wikitext.match(/\|\s*seria\s*=\s*((?:\[\[[^\]]*\]\]|[^\n|])+)/i);
     if (seriaMatch) seria = this.cleanWikitext(seriaMatch[1]);
 
     // 2. Pobierz wartości z {{tabela wydania}} (infowydanie) - priorytet dla najwyższego N z danymi
@@ -37,8 +38,9 @@ export class WikiParser {
     infos.sort((a, b) => b.n - a.n);
 
     for (const info of infos) {
-      const infoWydawcaMatch = info.content.match(/wydawca\s*=\s*([^|]+)/i);
-      const infoSeriaMatch = info.content.match(/seria\s*=\s*([^|]+)/i);
+      // Kotwica (?:^|\|) — nie dopasowuj wewnątrz innych parametrów (np. "współwydawca")
+      const infoWydawcaMatch = info.content.match(/(?:^|\|)\s*wydawca\s*=\s*((?:\[\[[^\]]*\]\]|[^\n|])+)/i);
+      const infoSeriaMatch = info.content.match(/(?:^|\|)\s*seria\s*=\s*((?:\[\[[^\]]*\]\]|[^\n|])+)/i);
 
       const foundWydawca = infoWydawcaMatch ? this.cleanWikitext(infoWydawcaMatch[1]) : "";
       const foundSeria = infoSeriaMatch ? this.cleanWikitext(infoSeriaMatch[1]) : "";

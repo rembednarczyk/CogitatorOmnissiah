@@ -116,6 +116,72 @@ describe('BookSyncService', () => {
 
       expect(updates).toEqual({});
     });
+
+    it('merges authors instead of replacing manually added ones', () => {
+      const existing: NotionBook = {
+        id: '1',
+        plTitle: 'Diuna',
+        origTitle: 'Dune',
+        author: 'Frank Herbert, Brian Herbert',
+        year: '1965',
+        awards: ['Nagroda Hugo'],
+        zrodlo: [],
+        currentWydawnictwo: '',
+        currentSeria: '',
+        currentCzesccyklu: false,
+        lp: '1',
+        plTitleRichText: [],
+        origTitleRichText: []
+      };
+      const newBook: Book = {
+        polishTitle: 'Diuna',
+        originalTitle: 'Dune',
+        author: 'Frank Herbert',
+        year: '1965',
+        award: 'Nagroda Hugo',
+        awards: ['Nagroda Hugo'],
+        polishTitleLink: null
+      };
+
+      const updates = service.compareBooks(existing, newBook);
+
+      // Wiki has fewer authors than Notion — nothing to add, nothing removed
+      expect(updates).not.toHaveProperty('Autor');
+    });
+
+    it('adds new wiki authors while keeping existing ones', () => {
+      const existing: NotionBook = {
+        id: '1',
+        plTitle: 'Diuna',
+        origTitle: 'Dune',
+        author: 'Frank Herbert',
+        year: '1965',
+        awards: ['Nagroda Hugo'],
+        zrodlo: [],
+        currentWydawnictwo: '',
+        currentSeria: '',
+        currentCzesccyklu: false,
+        lp: '1',
+        plTitleRichText: [],
+        origTitleRichText: []
+      };
+      const newBook: Book = {
+        polishTitle: 'Diuna',
+        originalTitle: 'Dune',
+        author: 'Frank Herbert, Kevin J. Anderson',
+        year: '1965',
+        award: 'Nagroda Hugo',
+        awards: ['Nagroda Hugo'],
+        polishTitleLink: null
+      };
+
+      const updates = service.compareBooks(existing, newBook);
+
+      expect(updates).toHaveProperty('Autor');
+      const names = updates['Autor'].multi_select.map((o: any) => o.name);
+      expect(names).toContain('Frank Herbert');
+      expect(names).toContain('Kevin J. Anderson');
+    });
   });
 
   describe('runBookSync', () => {

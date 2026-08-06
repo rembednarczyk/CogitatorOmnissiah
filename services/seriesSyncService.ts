@@ -3,7 +3,7 @@ import { NotionAdapter } from "../notion.adapter";
 import { WikiAdapter } from "../wiki.adapter";
 import { WikiParser } from "../wiki.parser";
 import { NotionBook, SyncEvent } from "../src/types";
-import { normalizeData } from "./dataNormalizer";
+import { normalizeData, isWikiAuthorMatch } from "./dataNormalizer";
 import { DiffEngine } from "./diffEngine";
 
 export class SeriesSyncService {
@@ -42,6 +42,10 @@ export class SeriesSyncService {
         try {
           const wikitext = wikiContents[titleToSearch.toLowerCase()];
           if (!wikitext) return;
+
+          // Zweryfikuj autora — strona o tym samym tytule może dotyczyć innego dzieła
+          const wikiAuthor = WikiParser.extractAuthor(wikitext);
+          if (!isWikiAuthorMatch(wikiAuthor, book.author || "")) return;
 
           const extracted = WikiParser.extractPublisherAndSeries(wikitext);
           let seria = extracted.seria;
