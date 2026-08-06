@@ -2,7 +2,8 @@ export async function withRetry<T>(
   fn: () => Promise<T>,
   retries = 3,
   delayMs = 1000,
-  backoffFactor = 2
+  backoffFactor = 2,
+  idempotent = true
 ): Promise<T> {
   let attempt = 0;
   while (attempt < retries) {
@@ -14,20 +15,26 @@ export async function withRetry<T>(
         throw error;
       }
 
-      // Check if it's a rate limit error (429) or server error (5xx)
+      // 429 (rate limit) oznacza, że żądanie zostało ODRZUCONE przed przetworzeniem
+      // — ponowienie jest zawsze bezpieczne, nawet dla operacji nieidempotentnych.
       const isRateLimit = error?.status === 429 || error?.response?.status === 429;
-      const isServerError = error?.status >= 500 || error?.response?.status >= 500;
+
+      // 5xx i błędy sieci (socket hang up itd.) mogą zostawić żądanie CZĘŚCIOWO
+      // przetworzone: dla operacji nieidempotentnych (np. pages.create) ponowienie
+      // tworzy duplikat. Ponawiaj je tylko, gdy wołający deklaruje idempotent=true.
+      const isServerError = idempotent && (error?.status >= 500 || error?.response?.status >= 500);
 
       const transientCodes = ['ECONNRESET', 'ETIMEDOUT', 'ECONNABORTED', 'EPIPE', 'ENOTFOUND', 'EAI_AGAIN', 'ERR_HTTP2_GOAWAY_SESSION', 'ERR_STREAM_WRITE_AFTER_END'];
-      const isTransientNetworkError = transientCodes.includes(error?.code) ||
+      const isTransientNetworkError = idempotent && (transientCodes.includes(error?.code) ||
                                      (error?.message && (
                                        error.message.toLowerCase().includes('socket hang up') ||
                                        error.message.toLowerCase().includes('connreset') ||
                                        error.message.toLowerCase().includes('timeout')
-                                     ));
+                                     )));
 
       if (!isRateLimit && !isServerError && !isTransientNetworkError) {
-        // Don't retry client errors (4xx) other than 429
+        // Nie ponawiaj błędów klienta (4xx poza 429) ani — dla operacji
+        // nieidempotentnych — błędów 5xx/sieci, które mogły już zapisać dane.
         throw error;
       }
 

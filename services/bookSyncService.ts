@@ -8,6 +8,33 @@ import { createLogger } from "../logger";
 
 const log = createLogger("BookSync");
 
+/**
+ * Buduje listę tagów autora dla pola multi_select. KOLEJNOŚĆ MA ZNACZENIE:
+ * najpierw normalizacja (mapowania potrafią rozwinąć jedno nazwisko w kilka
+ * rozdzielonych przecinkiem, np. "Liu Cixin" → "Liu Cixin, Ken Liu"), potem
+ * podział po przecinku, a sanitizacja NA KOŃCU. `sanitizeNotionTag` usuwa
+ * przecinki (Notion nie dopuszcza ich w opcjach select/multi_select) — gdy
+ * sanitizacja biegła PRZED normalizacją, wstrzyknięty przez mapowanie przecinek
+ * trafiał do nazwy opcji i Notion odrzucał cały wiersz (laureat gubiony w ciszy).
+ * Deduplikacja jest case-insensitive, z zachowaniem pierwszej napotkanej pisowni.
+ */
+export function buildAuthorTags(raw: string): string[] {
+  if (!raw) return [];
+  const seen = new Set<string>();
+  const tags: string[] = [];
+  for (const part of raw.split(",")) {
+    const normalized = normalizeData(part.trim(), "author");
+    for (const piece of normalized.split(",")) {
+      const tag = sanitizeNotionTag(piece);
+      if (tag && !seen.has(tag.toLowerCase())) {
+        seen.add(tag.toLowerCase());
+        tags.push(tag);
+      }
+    }
+  }
+  return tags;
+}
+
 export class BookSyncService {
   constructor(private notion: NotionAdapter, private wiki: WikiAdapter) {}
 
@@ -189,11 +216,7 @@ export class BookSyncService {
     // normalizowanie tylko nowej wartości (np. "A. E. Van Vogt" vs zapisane
     // "A. E. van Vogt") powodowało aktualizację przy każdym sync, która nigdy nie
     // "chwytała". Aktualizuj tylko, gdy faktycznie dochodzi nowy autor.
-    const parseAuthors = (raw: string) =>
-      raw.split(',')
-        .map((a: string) => sanitizeNotionTag(a))
-        .filter(Boolean)
-        .map((a: string) => normalizeData(a, 'author'));
+    const parseAuthors = (raw: string) => buildAuthorTags(raw);
 
     const newAuthors = parseAuthors(book.author || "");
     const existingAuthors = parseAuthors(existingBook.author || "");
@@ -380,11 +403,7 @@ export class BookSyncService {
               properties["Rok"] = { multi_select: [{ name: book.year.toString() }] };
             }
             if (book.author) {
-              const authors = Array.from(new Set(
-                book.author.split(',')
-                  .map((a: string) => normalizeData(sanitizeNotionTag(a), 'author'))
-                  .filter(Boolean)
-              ));
+              const authors = buildAuthorTags(book.author);
               properties["Autor"] = { multi_select: authors.slice(0, 100).map(name => ({ name })) };
             }
             if (book.awards && book.awards.length > 0) {

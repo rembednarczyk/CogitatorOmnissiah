@@ -362,10 +362,13 @@ export class NotionAdapter {
       ? { type: "data_source_id", data_source_id: this.actualDataSourceId! }
       : { type: "database_id", database_id: this.actualDataSourceId! };
 
+    // idempotent=false: pages.create tworzy nowy wiersz — po błędzie sieci/5xx
+    // ponowienie mogłoby zdublować książkę (błąd resetu socketu po zapisie).
+    // 429 nadal jest ponawiane (żądanie odrzucone przed przetworzeniem).
     const response = await withRetry(() => this.notion.pages.create({
       parent: parent,
       properties
-    } as any));
+    } as any), 3, 1000, 2, false);
     return response;
   }
 }
