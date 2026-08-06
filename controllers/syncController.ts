@@ -111,7 +111,9 @@ const setupSSE = (res: Response) => {
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
-  return (data: SyncEvent) => res.write(`data: ${JSON.stringify(data)}\n\n`);
+  return (data: SyncEvent) => {
+    if (!res.writableEnded) res.write(`data: ${JSON.stringify(data)}\n\n`);
+  };
 };
 
 export const runSync = async (req: Request, res: Response) => {
@@ -136,9 +138,21 @@ const executeSyncTask = async (
   errorMessage: string
 ) => {
   if (syncManager.isSyncing) return res.status(400).json({ error: "Inna synchronizacja jest już w toku." });
-  
+
   const sendEvent = setupSSE(res);
-  const keepAlive = setInterval(() => res.write(": keepalive\n\n"), 15000);
+  const keepAlive = setInterval(() => {
+    if (!res.writableEnded) res.write(": keepalive\n\n");
+  }, 15000);
+
+  // Rozłączenie klienta (zamknięta karta, utrata sieci) — anuluj zadanie,
+  // żeby osierocony sync nie blokował kolejnych rytuałów godzinami
+  req.on("close", () => {
+    if (!res.writableEnded) {
+      clearInterval(keepAlive);
+      syncManager.stopActiveSync();
+    }
+  });
+
   try {
     await task(sendEvent);
     clearInterval(keepAlive);

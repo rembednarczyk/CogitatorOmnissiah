@@ -111,7 +111,10 @@ export function useSync(endpoint: string, stopEndpoint: string, initialState: Pa
           }
         }
       }
-      return true;
+      // Strumień zakończył się bez zdarzenia complete/error (np. anulowanie po
+      // stronie serwera) — nie zostawiaj UI w wiecznym stanie ładowania
+      setState(prev => ({ ...prev, loading: false, statusMessage: null, progress: null }));
+      return false;
     } catch (err: any) {
       console.error(`Sync error for ${endpoint}:`, err);
       setState(prev => ({ 
