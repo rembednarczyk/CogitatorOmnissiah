@@ -66,7 +66,8 @@ export interface SyncState {
 }
 
 export interface SyncEvent {
-  type: "status" | "progress" | "complete" | "error";
+  // "match" / "search_attempt" są emitowane przez skanery (Vinted/Biblioteka)
+  type: "status" | "progress" | "complete" | "error" | "match" | "search_attempt";
   message?: string;
   error?: string;
   current?: number;

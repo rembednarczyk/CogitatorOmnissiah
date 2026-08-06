@@ -1,8 +1,9 @@
 import React from "react";
 import { motion } from "motion/react";
 import { Calendar, ChevronDown, ChevronUp, CheckCircle2, Circle } from "lucide-react";
+import { YearlyStat } from "../../hooks/useStats";
 
-export const YearlyProgressItem: React.FC<{ year: any }> = ({ year }) => {
+export const YearlyProgressItem: React.FC<{ year: YearlyStat }> = ({ year }) => {
   const [isExpanded, setIsExpanded] = React.useState(false);
   const percent = year.total > 0 ? Math.round((year.read / year.total) * 100) : 0;
 
