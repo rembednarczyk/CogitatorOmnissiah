@@ -1,5 +1,6 @@
 import React from "react";
 import { motion } from "motion/react";
+import { getRitualGradient } from "../../theme/ritualColors";
 
 interface ProgressBarProps {
   current: number;
@@ -11,12 +12,7 @@ interface ProgressBarProps {
 
 export const ProgressBar: React.FC<ProgressBarProps> = ({ current, total, label, icon: Icon, color = "cyan" }) => {
   const percent = total > 0 ? Math.round((current / total) * 100) : 0;
-  const colorClass = color === "cyan" ? "from-cyan-500 to-blue-600" : 
-                     color === "purple" ? "from-purple-500 to-indigo-600" :
-                     color === "orange" ? "from-orange-500 to-red-600" : "from-emerald-500 to-teal-600";
-  const shadowClass = color === "cyan" ? "shadow-cyan-500/20" : 
-                      color === "purple" ? "shadow-purple-500/20" :
-                      color === "orange" ? "shadow-orange-500/20" : "shadow-emerald-500/20";
+  const { gradient: colorClass, shadow: shadowClass } = getRitualGradient(color);
 
   return (
     <div className="space-y-2">
