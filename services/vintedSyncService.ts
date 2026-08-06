@@ -199,7 +199,7 @@ export class VintedSyncService {
                 items.push({
                   id: item.id,
                   title: item.title || itemTitle,
-                  price: item.price?.amount || item.total_item_price?.amount || item.price?.amount_decimal || item.price || "??",
+                  price: item.price?.amount || item.total_item_price?.amount || item.price?.amount_decimal || "??",
                   currency: item.price?.currency_code || item.currency || "PLN",
                   url: item.url ? (item.url.startsWith('http') ? item.url : `https://www.vinted.pl${item.url}`) : `https://www.vinted.pl/items/${item.id}`
                 });
@@ -216,7 +216,10 @@ export class VintedSyncService {
                 const block = itemBlocks[j];
                 const urlMatch = block.match(/href="(\/items\/[^"]+)"/);
                 const titleMatch = block.match(/title="([^"]+)"/);
-                const priceMatch = block.match(/aria-label="([^"]*?(\d+[.,]\d+)\s*([A-Z]{3}|zł))"/i) ||
+                // Oba warianty mają teraz group1 = kwota, group2 = waluta (wcześniej
+                // wariant aria-label miał grupę 1 = cały tekst etykiety, więc jako
+                // cena pokazywał się śmieć typu "Marka: …, cena: 25,00 zł").
+                const priceMatch = block.match(/aria-label="[^"]*?(\d+[.,]\d+)\s*([A-Z]{3}|zł)"/i) ||
                                    block.match(/>(\d+[.,]\d+)\s*([A-Z]{3}|zł)</i);
 
                 if (urlMatch && titleMatch) {
@@ -226,7 +229,7 @@ export class VintedSyncService {
                       title: itemTitle,
                       url: `https://www.vinted.pl${urlMatch[1]}`,
                       price: priceMatch ? priceMatch[1] : "Sprawdź",
-                      currency: priceMatch ? (priceMatch[3] || priceMatch[2]) : "PLN"
+                      currency: priceMatch ? priceMatch[2] : "PLN"
                     });
                   }
                 }

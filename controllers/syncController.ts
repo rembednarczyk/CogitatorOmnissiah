@@ -133,7 +133,10 @@ const setupSSE = (res: Response) => {
   // dzięki czemu klient dostaje zdarzenia na bieżąco (a nie dopiero na końcu).
   res.write(`:${" ".repeat(2048)}\n\n`);
   return (data: SyncEvent) => {
-    if (!res.writableEnded) res.write(`data: ${JSON.stringify(data)}\n\n`);
+    // Po abort klienta socket bywa `destroyed` przy wciąż `writableEnded === false`
+    // — sam guard writableEnded przepuszczał zapis do martwego socketu, co rzucało
+    // nieobsłużony 'error' na strumieniu. Sprawdzaj też destroyed.
+    if (!res.writableEnded && !res.destroyed) res.write(`data: ${JSON.stringify(data)}\n\n`);
   };
 };
 
@@ -169,7 +172,7 @@ const executeSyncTask = async (
   // Częstszy keepalive (5s) utrzymuje strumień "gorący" u proxy, które inaczej
   // zbierają dane w bufor między rzadkimi zapisami długiego zadania.
   const keepAlive = setInterval(() => {
-    if (!res.writableEnded) res.write(": keepalive\n\n");
+    if (!res.writableEnded && !res.destroyed) res.write(": keepalive\n\n");
   }, 5000);
 
   // Rozłączenie klienta (zamknięta karta, utrata sieci) — anuluj zadanie,

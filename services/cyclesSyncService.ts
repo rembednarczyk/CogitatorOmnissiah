@@ -107,15 +107,18 @@ export class CyclesSyncService {
           }
 
           // 4. Direct Fetch Fallback (Exact title from Notion)
+          // Bez wewnętrznego catch — fetchPageContent zwraca "" dla brakującej
+          // strony, ale RZUCA przy awarii infrastruktury (blokada IP/timeout).
+          // Połykanie tego rzutu zamieniało "sieć padła" w "brak danych → pomiń",
+          // przez co awaria widoczna tylko w tej ścieżce znikała po cichu. Teraz
+          // propaguje do per-book catch niżej i trafia do errors[].
           if (!wikitext && plTitle) {
-            try {
-              const content = await this.wiki.fetchPageContent(plTitle);
-              const wikiAuthor = WikiParser.extractAuthor(content);
-              if (isAuthorMatch(wikiAuthor, notionAuthor)) {
-                wikitext = content;
-                foundSource = `Direct Fetch: ${plTitle}`;
-              }
-            } catch (e) {}
+            const content = await this.wiki.fetchPageContent(plTitle);
+            const wikiAuthor = WikiParser.extractAuthor(content);
+            if (isAuthorMatch(wikiAuthor, notionAuthor)) {
+              wikitext = content;
+              foundSource = `Direct Fetch: ${plTitle}`;
+            }
           }
 
           if (!wikitext) return;
