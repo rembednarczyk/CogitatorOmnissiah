@@ -35,18 +35,34 @@ export function useSync(endpoint: string, stopEndpoint: string, initialState: Pa
       startTime: Date.now() 
     }));
 
+    // Watchdog: jeśli strumień zawiśnie (proxy buforuje, brak jakiegokolwiek
+    // ruchu), przerwij po 30 s ciszy. Serwer wysyła keepalive co 5 s, więc na
+    // zdrowym połączeniu timer jest stale resetowany i nigdy nie odpala.
+    const controller = new AbortController();
+    let watchdog: ReturnType<typeof setTimeout> | null = null;
+    let stalled = false;
+    const armWatchdog = () => {
+      if (watchdog) clearTimeout(watchdog);
+      watchdog = setTimeout(() => {
+        stalled = true;
+        controller.abort();
+      }, 30000);
+    };
+
     try {
       const fetchOptions: RequestInit = {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
       };
-      
+
       if (params && Object.keys(params).length > 0) {
         fetchOptions.body = JSON.stringify(params);
       }
 
+      armWatchdog();
       const res = await fetch(endpoint, fetchOptions);
-      
+
       if (!res.ok) {
         let errorMessage = `Błąd serwera: ${res.status}`;
         try {
@@ -57,16 +73,17 @@ export function useSync(endpoint: string, stopEndpoint: string, initialState: Pa
         }
         throw new Error(errorMessage);
       }
-      
+
       const reader = res.body?.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
-      
+
       if (reader) {
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
-          
+          armWatchdog(); // każdy fragment (także keepalive) resetuje watchdog
+
           buffer += decoder.decode(value, { stream: true });
           const lines = buffer.split('\n\n');
           buffer = lines.pop() || "";
@@ -116,15 +133,20 @@ export function useSync(endpoint: string, stopEndpoint: string, initialState: Pa
       setState(prev => ({ ...prev, loading: false, statusMessage: null, progress: null }));
       return false;
     } catch (err: any) {
+      const message = stalled
+        ? "Połączenie z serwerem zawisło (brak odpowiedzi przez 30 s). Możliwe buforowanie strumienia przez hosting. Odśwież stronę i spróbuj ponownie; jeśli się powtarza, uruchom Diagnostykę."
+        : err?.message || "Błąd synchronizacji.";
       console.error(`Sync error for ${endpoint}:`, err);
-      setState(prev => ({ 
-        ...prev, 
-        error: err.message, 
-        loading: false, 
-        statusMessage: null, 
-        progress: null 
+      setState(prev => ({
+        ...prev,
+        error: message,
+        loading: false,
+        statusMessage: null,
+        progress: null
       }));
       return false;
+    } finally {
+      if (watchdog) clearTimeout(watchdog);
     }
   }, [endpoint]);
 
