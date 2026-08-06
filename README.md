@@ -166,7 +166,7 @@ Port pochodzi ze zmiennej `PORT` (domyślnie `3000`).
 Repozytorium zawiera blueprint **[`render.yaml`](./render.yaml)**:
 
 - **Runtime:** Node
-- **Build:** `npm install && npm run build`
+- **Build:** `npm ci --include=dev && npm run build`
 - **Start:** `npm start`
 - **Health check:** `/api/health`
 - **Zmienne:** ustaw `NOTION_API_KEY`, `NOTION_DATABASE_ID` (oraz opcjonalnie `BASIC_AUTH_USER`/`BASIC_AUTH_PASSWORD`) jako sekrety; `NODE_ENV=production`.
@@ -174,6 +174,13 @@ Repozytorium zawiera blueprint **[`render.yaml`](./render.yaml)**:
 Możesz wdrożyć jako *Blueprint* (Render odczyta `render.yaml`) albo ręcznie jako *Web Service* z powyższymi ustawieniami. Na darmowym planie instancja usypia po ~15 min bezczynności (pierwsze wejście po przerwie trwa ~30–60 s).
 
 SSE za proxy Rendera jest zahartowane po stronie serwera (padding wymuszający flush, `X-Accel-Buffering: no`, częsty keepalive) — patrz [Rozwiązywanie problemów](#rozwiązywanie-problemów).
+
+### Bezpieczeństwo
+
+To narzędzie osobiste bez wieloużytkownikowej autoryzacji, ale na publicznym URL warto je chronić:
+
+- **Ochrona hasłem (opt-in):** ustaw `BASIC_AUTH_USER` + `BASIC_AUTH_PASSWORD`, aby wymusić HTTP Basic Auth na całym serwisie (SPA + API). Bez tych zmiennych autoryzacja jest wyłączona (brak lockoutu). `/api/health` pozostaje otwarte dla health checku.
+- **Walidacja mutacji schematu:** `PATCH /api/notion/schema` przyjmuje wyłącznie typy `select`/`multi_select` i poprawną listę opcji `{ name }` — reszta jest odrzucana (400).
 
 ---
 

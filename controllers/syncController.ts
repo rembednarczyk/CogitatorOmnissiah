@@ -65,13 +65,29 @@ export const getNotionSchema = async (req: Request, res: Response) => {
   }
 };
 
+// Ten endpoint edytuje wyłącznie opcje kolumn select/multi_select — waliduj
+// wejście zanim trafi do Notion (mutacja schematu jest operacją uprzywilejowaną).
+const ALLOWED_SCHEMA_TYPES = new Set(["select", "multi_select"]);
+
 export const updateNotionSchema = async (req: Request, res: Response) => {
   try {
-    const { propertyName, propertyType, newOptions } = req.body;
+    const { propertyName, propertyType, newOptions } = req.body ?? {};
+
+    if (typeof propertyName !== "string" || propertyName.trim() === "" || propertyName.length > 200) {
+      return res.status(400).json({ error: "Nieprawidłowa nazwa właściwości." });
+    }
+    if (!ALLOWED_SCHEMA_TYPES.has(propertyType)) {
+      return res.status(400).json({ error: `Niedozwolony typ właściwości: ${propertyType}. Dozwolone: select, multi_select.` });
+    }
+    if (!Array.isArray(newOptions) || newOptions.length > 500 ||
+        !newOptions.every(o => o && typeof o === "object" && typeof o.name === "string")) {
+      return res.status(400).json({ error: "Nieprawidłowa lista opcji (oczekiwano tablicy { name })." });
+    }
+
     await syncManager.updateNotionSchema(propertyName, propertyType, newOptions);
     res.json({ success: true });
   } catch (error: any) {
-    console.error("Schema Update Error:", error);
+    log.error("Schema Update Error", { message: error?.message });
     res.status(500).json({ error: error.message || "Wystąpił błąd podczas aktualizacji schematu." });
   }
 };
