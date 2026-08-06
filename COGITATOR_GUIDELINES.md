@@ -18,6 +18,7 @@
 - **SSE Parsing**: All streaming hooks MUST consume the stream through the shared `consumeSSE` primitive (`src/utils/sse.ts`), which buffers chunks across TCP reads (split on `\n\n`, keep the remainder) and parses `data:` lines. Never re-implement the read/buffer loop or `JSON.parse` a raw chunk line-by-line. `consumeSSE(body, onEvent, onChunk?)`: `onEvent` returns `true` to stop early (e.g. after `complete`/`error`); `onChunk` re-arms per-read watchdogs (see `useSync`).
 - **Logic Isolation**: No `useEffect` for data fetching in components. Use Custom Hooks:
   - `useSync`: Standard for all long-running server operations.
+  - `useSyncManager`: Owns every ritual's `useSync` instance plus cross-ritual orchestration (mutual reset, the sequential "Wielki Rytuał" full sync, the aggregate result). `App` consumes it and stays presentational — never re-declare the sync instances or full-sync sequence in a component.
   - `useStats`: Global dashboard data.
   - `useLibraryCheck`: Isolated library scanning state.
   - `useConfig`: Notion schema and connection status.
