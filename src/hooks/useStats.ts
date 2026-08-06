@@ -20,6 +20,22 @@ export interface YearlyStat {
   books: { id: string; title: string; author: string; read: boolean }[];
 }
 
+export interface LibraryStat {
+  id: string;
+  name: string;
+  books: { id: string; title: string; author: string; year?: number | null; read: boolean }[];
+}
+
+export interface IdentifiedBook {
+  id: string;
+  title: string;
+  author: string;
+  year?: number | null;
+  // Wypełniane przez skan biblioteki (OPAC) — tytuł/autor odczytany z katalogu
+  extractedTitle?: string | null;
+  extractedAuthor?: string | null;
+}
+
 export interface Stats {
   authorStats: AuthorStat[];
   awardBooksStats: { read: number; total: number };
@@ -27,15 +43,11 @@ export interface Stats {
   awardCoverage: AwardCoverageStat[];
   allAwardsStats: { read: number; total: number };
   yearlyStats: YearlyStat[];
-  libraryStats: {
-    id: string;
-    name: string;
-    books: { id: string; title: string; author: string; year?: number | null; read: boolean }[];
-  }[];
+  libraryStats: LibraryStat[];
 }
 
 export interface IdentifiedBooks {
-  [libraryId: string]: { id: string; title: string; author: string; year?: number | null }[];
+  [libraryId: string]: IdentifiedBook[];
 }
 
 export function useStats() {

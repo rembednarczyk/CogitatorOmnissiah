@@ -1,9 +1,10 @@
 import React from "react";
 import { motion } from "motion/react";
 import { Library, ChevronDown, ChevronUp, CheckCircle2, Loader2 } from "lucide-react";
+import { LibraryStat } from "../../hooks/useStats";
 
 interface LibraryProgressItemProps {
-  library: any;
+  library: LibraryStat;
   onMarkAsRead: (pageId: string) => void;
   markingId: string | null;
 }

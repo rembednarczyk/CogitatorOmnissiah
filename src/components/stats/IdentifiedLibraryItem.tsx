@@ -2,10 +2,11 @@ import React from "react";
 import { motion } from "motion/react";
 import { Search, ChevronDown, ChevronUp, Loader2, CheckCircle2 } from "lucide-react";
 import { formatETA } from "../../utils/time";
+import { IdentifiedBook } from "../../hooks/useStats";
 
 interface IdentifiedLibraryItemProps {
-  library: { id: string; name: string; code: string }; 
-  books: any[]; 
+  library: { id: string; name: string; code: string };
+  books: IdentifiedBook[];
   onCheck: () => void;
   onStop: () => void;
   onMarkAsRead: (pageId: string) => void;

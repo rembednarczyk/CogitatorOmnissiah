@@ -1,8 +1,9 @@
 import React from "react";
 import { motion } from "motion/react";
 import { User, ChevronDown, ChevronUp, CheckCircle2, Circle } from "lucide-react";
+import { AuthorStat } from "../../hooks/useStats";
 
-export const AuthorProgressItem: React.FC<{ author: any }> = ({ author }) => {
+export const AuthorProgressItem: React.FC<{ author: AuthorStat }> = ({ author }) => {
   const [isExpanded, setIsExpanded] = React.useState(false);
   const percent = author.total > 0 ? Math.round((author.read / author.total) * 100) : 0;
   const color = author.read === author.total ? "emerald" : "cyan";

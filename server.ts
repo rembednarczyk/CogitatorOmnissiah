@@ -21,6 +21,7 @@ import { IntegrityService } from "./services/integrityService";
 import { withRetry } from "./retry";
 import syncRoutes from "./routes/syncRoutes";
 import { createLogger, classifyHttpError } from "./logger";
+import { SyncEvent } from "./src/types";
 
 dotenv.config();
 
@@ -96,39 +97,39 @@ class SyncManager {
     }
   }
 
-  async runBookSync(params: { awardName?: string; pageTitle?: string; syncAll?: boolean }, sendEvent: (data: any) => void) {
+  async runBookSync(params: { awardName?: string; pageTitle?: string; syncAll?: boolean }, sendEvent: (data: SyncEvent) => void) {
     await this.executeTask('book', (checkCancellation) => bookSyncService.runBookSync(params, sendEvent, checkCancellation));
   }
 
-  async runPurifySync(sendEvent: (data: any) => void) {
+  async runPurifySync(sendEvent: (data: SyncEvent) => void) {
     await this.executeTask('purify', (checkCancellation) => purificationService.runPurification(sendEvent, checkCancellation));
   }
 
-  async runSchemaSync(sendEvent: (data: any) => void) {
+  async runSchemaSync(sendEvent: (data: SyncEvent) => void) {
     await this.executeTask('schema', (checkCancellation) => schemaValidationService.runSchemaValidation(sendEvent, checkCancellation));
   }
 
-  async runPublisherSync(sendEvent: (data: any) => void) {
+  async runPublisherSync(sendEvent: (data: SyncEvent) => void) {
     await this.executeTask('publisher', (checkCancellation) => publisherSyncService.runPublisherSync(sendEvent, checkCancellation));
   }
 
-  async runSeriesSync(sendEvent: (data: any) => void) {
+  async runSeriesSync(sendEvent: (data: SyncEvent) => void) {
     await this.executeTask('series', (checkCancellation) => seriesSyncService.runSeriesSync(sendEvent, checkCancellation));
   }
 
-  async runDuplicateCheck(sendEvent: (data: any) => void) {
+  async runDuplicateCheck(sendEvent: (data: SyncEvent) => void) {
     await this.executeTask('duplicates', (checkCancellation) => duplicateSyncService.runDuplicateCheck(sendEvent, checkCancellation));
   }
 
-  async runLpSync(sendEvent: (data: any) => void) {
+  async runLpSync(sendEvent: (data: SyncEvent) => void) {
     await this.executeTask('lp', (checkCancellation) => lpSyncService.runLpSync(sendEvent, checkCancellation));
   }
 
-  async runCyclesSync(sendEvent: (data: any) => void) {
+  async runCyclesSync(sendEvent: (data: SyncEvent) => void) {
     await this.executeTask('cycles', (checkCancellation) => cyclesSyncService.runCyclesSync(sendEvent, checkCancellation));
   }
 
-  async runIntegrityCheck(sendEvent: (data: any) => void) {
+  async runIntegrityCheck(sendEvent: (data: SyncEvent) => void) {
     await this.executeTask('integrity', (checkCancellation) => integrityService.runIntegrityCheck(sendEvent, checkCancellation));
   }
 
@@ -140,7 +141,7 @@ class SyncManager {
     return await this.notion.addTagToMultiSelect(pageId, "Źródło", "Przeczytane");
   }
 
-  async checkLibraryAvailability(libraryCode: string, sendEvent: (data: any) => void) {
+  async checkLibraryAvailability(libraryCode: string, sendEvent: (data: SyncEvent) => void) {
     await this.executeTask('library', async (checkCancellation) => {
       sendEvent({ type: "status", message: "Pobieranie listy książek z Notion..." });
       const allBooks = await this.notion.getBooksForStats(undefined, checkCancellation);
@@ -277,7 +278,7 @@ class SyncManager {
     });
   }
 
-  async checkVintedAvailability(sendEvent: (data: any) => void) {
+  async checkVintedAvailability(sendEvent: (data: SyncEvent) => void) {
     await this.executeTask('vinted', async (checkCancellation) => {
       try {
         sendEvent({ type: "status", message: "Pobieranie listy książek z Notion..." });
