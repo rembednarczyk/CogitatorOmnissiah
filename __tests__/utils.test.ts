@@ -76,5 +76,13 @@ describe('utils', () => {
       expect(normalizeAuthor('Stanisław Lem (1921-2006)')).toBe('stanisław lem');
       expect(normalizeAuthor('George R. R. Martin')).toBe('george r r martin');
     });
+
+    it('preserves accented Latin-1 letters (must not drop ó/é/á)', () => {
+      // Regression: the old ASCII \w + Latin-Extended-A class silently deleted
+      // Latin-1 accented letters, corrupting author-match keys.
+      expect(normalizeAuthor('Wróblewski')).toBe('wróblewski');
+      expect(normalizeAuthor('Różewicz')).toBe('różewicz');
+      expect(normalizeAuthor('José Saramago')).toBe('josé saramago');
+    });
   });
 });

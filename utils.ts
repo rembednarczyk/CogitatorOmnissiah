@@ -102,8 +102,11 @@ export function normalizeAuthor(author: string): string {
     }
   }
   
-  // Remove special characters and extra spaces
-  normalized = normalized.replace(/[^\w\s\u0100-\u017F]/g, '').replace(/\s+/g, ' ').trim();
-  
+  // Remove punctuation/symbols but KEEP every Unicode letter and digit.
+  // The old class [^\w\s\u0100-\u017F] used ASCII \w plus only Latin Extended-A,
+  // so it silently deleted Latin-1 accented letters \u2014 "Wr\u00F3blewski" \u2192 "wrblewski",
+  // "Jos\u00E9" \u2192 "jos" \u2014 corrupting author-match keys. \p{L} keeps all letters.
+  normalized = normalized.replace(/[^\p{L}\p{N}\s]/gu, '').replace(/\s+/g, ' ').trim();
+
   return normalized;
 }

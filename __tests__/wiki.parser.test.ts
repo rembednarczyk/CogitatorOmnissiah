@@ -113,6 +113,19 @@ describe('WikiParser', () => {
       const wikitext = '{{Książka\n | autor           = Isaac Asimov\n | redaktor        = \n | autor okladki   = Chris Moore\n}}';
       expect(WikiParser.extractAuthor(wikitext)).toBe('Isaac Asimov');
     });
+
+    it('does not truncate a {{sortname}} author at the first pipe', () => {
+      // Regression: [^\n|]+ captured only "{{sortname" and the cleanup was dead.
+      expect(WikiParser.extractAuthor('| autor = {{sortname|Ursula K.|Le Guin}}')).toBe('Ursula K. Le Guin');
+    });
+
+    it('resolves a {{Autor}} template author', () => {
+      expect(WikiParser.extractAuthor('| autor = {{Autor|Jan Kowalski|1950}}')).toBe('Jan Kowalski');
+    });
+
+    it('resolves a piped wikilink author without leaking brackets', () => {
+      expect(WikiParser.extractAuthor('| autor = [[Stanisław Lem|Lem, Stanisław]]')).toBe('Lem, Stanisław');
+    });
   });
 
 });

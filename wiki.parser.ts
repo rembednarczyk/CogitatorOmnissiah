@@ -59,17 +59,21 @@ export class WikiParser {
   }
 
   static extractAuthor(wikitext: string): string {
-    // Look for autor, twórca, or redaktor in infoboxes
-    const authorRegex = /\|\s*(autor|twórca|redaktor|scenariusz|tekst)\s*=\s*([^\n|]+)/gi;
+    // Look for autor, twórca, or redaktor in infoboxes.
+    // Wartość może zawierać szablony/linki z pipe: {{sortname|Ursula K.|Le Guin}},
+    // {{Autor|Jan Kowalski}}, [[Stanisław Lem|Lem, Stanisław]]. Dopasuj całe
+    // [[...]]/{{...}} jako jeden token — inaczej capture `[^\n|]+` ucinał wartość na
+    // pierwszym `|` (np. do "{{sortname"), przez co czyszczenie szablonów w
+    // cleanWikitext nigdy nie miało czego przetworzyć.
+    const authorRegex = /\|\s*(autor|twórca|redaktor|scenariusz|tekst)\s*=\s*((?:\[\[[^\]]*\]\]|\{\{[^{}]*\}\}|[^\n|])+)/gi;
     let match;
     let authors: string[] = [];
-    
+
     while ((match = authorRegex.exec(wikitext)) !== null) {
-      let rawAuthor = match[2];
-      rawAuthor = rawAuthor.replace(/\{\{sortname\|([^|}]+)\|([^|}]+)(?:\|[^}]+)?\}\}/gi, '$1 $2');
-      rawAuthor = rawAuthor.replace(/\{\{Autor\|([^|}]+)(?:\|[^}]*)?\}\}/gi, '$1');
-      const cleaned = this.cleanWikitext(rawAuthor);
-      // Pusty parametr (np. "| redaktor = " ze spacją) matchuje [^\n|]+ — odfiltruj
+      // cleanWikitext rozwija [[Cel|Etykieta]]→Etykieta, {{sortname|a|b}}→"a b",
+      // {{Autor|a}}→a i usuwa pozostałe szablony/znaczniki.
+      const cleaned = this.cleanWikitext(match[2]);
+      // Pusty parametr (np. "| redaktor = " ze spacją) matchuje — odfiltruj
       if (cleaned) authors.push(cleaned);
     }
     
