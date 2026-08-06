@@ -17,11 +17,12 @@ Scrapes the OPAC (Online Public Access Catalog) of the Municipal Public Library 
 
 ## 3. Reliability & Performance
 - **Retry Pattern**: Uses `withRetry` (3 attempts, 2000ms delay) to handle network timeouts or temporary OPAC unavailability.
-- **Concurrency**: Uses `p-limit(2)` to limit concurrent requests, preventing the OPAC server from blocking the application's IP.
+- **Concurrency**: Sequential — one book at a time. The scan is fail-fast on network errors to surface problems early rather than hammering the OPAC.
 - **Throttling**: Adds a 500ms delay between requests to ensure a steady, non-aggressive scraping pace.
-- **Timeout**: Sets a 20000ms (20s) timeout for each request.
+- **Timeout**: The keep-alive `https.Agent` uses a 45 000 ms socket timeout.
+- **Input safety**: `libraryCode` is URL-encoded before being interpolated into the OPAC query.
 
 ## 4. Implementation Details
-- **HTTPS Agent**: Uses `https.Agent` with `rejectUnauthorized: false` to avoid issues with potential SSL certificate misconfigurations on the OPAC server.
+- **HTTPS Agent**: A keep-alive `https.Agent` with normal TLS verification (both OPAC and the app use valid certificates).
 - **Progress Reporting**: Sends SSE events for each book being checked, including the current progress (e.g., "Sprawdzanie: Tytuł (5/100)").
 - **Output**: Returns a list of available books with their extracted titles and authors.
