@@ -22,7 +22,7 @@ Environment variables (see `.env.example`): `NOTION_API_KEY`, `NOTION_DATABASE_I
 ## Architecture map
 
 - **Adapters** (repo root): `notion.adapter.ts`, `wiki.adapter.ts` — pure API wrappers, no business logic. "No data" and "infrastructure failure" are distinct: `fetchPageContent` returns `""` for a missing page but throws on network failure; `fetchPagesContentBulk` returns `{ contents, failedTitles }` so services can report what was skipped.
-- **Services** (`/services/`): one service per sync concern (`bookSyncService`, `duplicateSyncService`, `publisherSyncService`, `seriesSyncService`, `cyclesSyncService`, `lpSyncService`, `statsService`, `integrityService`, `purificationService`, `schemaValidationService`). Logic-heavy, stateless where possible.
+- **Services** (`/services/`): one service per sync concern (`bookSyncService`, `duplicateSyncService`, `publisherSyncService`, `seriesSyncService`, `cyclesSyncService`, `lpSyncService`, `statsService`, `integrityService`, `purificationService`, `schemaValidationService`, `libraryCheckService`, `vintedSyncService`). Logic-heavy, stateless where possible. The HTML scanners (`libraryCheckService`, `vintedSyncService`) scrape public pages rather than Notion/Wiki APIs and share `scrapingClient.ts` (repo root: User-Agent rotation + keep-alive HTTPS agent).
 - **Orchestration**: `SyncManager` in `server.ts` coordinates services, concurrency (`p-limit`), cancellation, and SSE progress events.
 - **Controllers/Routes** (`/controllers/`, `/routes/`): HTTP parsing/response only; delegate to services.
 - **Frontend** (`/src/`): components in `src/components/` (atomic parts in subdirs), all data fetching via custom hooks in `src/hooks/` (`useSync` is the standard SSE pattern — reuse it, don't re-implement).
