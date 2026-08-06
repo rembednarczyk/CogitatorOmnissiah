@@ -44,6 +44,7 @@
   - `/src/hooks/__tests__/`: Custom React hooks.
 - **Mocking**: Use `vi.mock` for external dependencies (Notion SDK, Axios).
 - **Environment**: Use `@vitest-environment node` for backend tests and JSDOM for frontend tests.
+- **Orchestration & SSE contract**: `__tests__/syncManager.test.ts` guards the task lifecycle (single-active-task lock, `stopActiveSync`/`resetSyncState` cancellation, lock release) and the SSE stream contract (well-formed `data:` frames, terminal `complete`, `400` on a concurrent sync). Mock the sync service (constructable `vi.fn()` + prototype methods) so the emitted event sequence is deterministic; never assert on real service internals here.
 
 ## 5. TOKEN OPTIMIZATION (AI INSTRUCTIONS)
 - **Surgical Edits**: Use `edit_file` with precise `TargetContent`. Never replace whole files.
