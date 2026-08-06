@@ -1,13 +1,15 @@
-# COGITATOR OMNISSIAH: ARCHITECTURAL GUIDELINES (v1.4)
+# COGITATOR OMNISSIAH: ARCHITECTURAL GUIDELINES (v1.5)
 
 ## 1. CORE ARCHITECTURE (BACKEND)
 - **Pattern**: Service-Adapter-Manager.
 - **Adapters**: `NotionAdapter`, `WikiAdapter`. Pure API wrappers. No business logic.
 - **Services**: `*SyncService`, `StatsService`, `IntegrityService`, `PurificationService`, `SchemaValidationService`. Logic-heavy, stateless where possible.
 - **Orchestration**: `SyncManager` (in `server.ts`). Each task owns a `SyncTask` state object with its own cancellation flag; `executeTask` releases the lock only if it still belongs to the finishing task, and `resetSyncState` cancels the orphaned task before releasing the lock. Never reintroduce shared mutable booleans for task state.
-- **Communication**: SSE (Server-Sent Events) for real-time progress. Use `sendEvent({ type, ... })`. The controller cancels the active task on client disconnect (`req.on("close")`) and guards writes with `writableEnded`.
+- **Communication**: SSE (Server-Sent Events) for real-time progress. Use `sendEvent({ type, ... })`. Client-disconnect cancellation MUST listen on `res.on("close")`, NOT `req.on("close")` — for a POST with a body, `req` emits `close` when `express.json()` finishes reading the body (mid-response), which spuriously cancelled active syncs. Guard writes with `writableEnded`.
+- **SSE hosting hardening**: proxies (e.g. Render) buffer streamed responses. `setupSSE` sends `X-Accel-Buffering: no`, `flushHeaders()`, a ~2KB comment padding to push past the buffer threshold, and a 5s keepalive. The client (`useSync`) has a 30s stall watchdog. Do not remove these.
 - **Concurrency**: Use `p-limit` for external API calls (Notion/Wiki/OPAC).
-- **Error Handling**: Distinguish "no data" from "infrastructure failure": `fetchPageContent` returns `""` for a missing page but THROWS on network failure/IP block; `fetchPagesContentBulk` returns `{ contents, failedTitles }` and services surface `failedTitles` in their error summaries. A sync must never report a clean `complete` when its data source was unreachable.
+- **Error Handling**: Distinguish "no data" from "infrastructure failure": `fetchPageContent` returns `""` for a missing page but THROWS a typed `WikiFetchError` on network failure/IP block; `fetchPagesContentBulk` returns `{ contents, failedTitles }` and services surface `failedTitles` in their error summaries. A sync must never report a clean `complete` when its data source was unreachable.
+- **Observability**: use the structured `logger.ts` (`createLogger(component)`) and `classifyHttpError()` (maps failures to `ip_blocked`/`rate_limited`/`timeout`/`dns`/… with a user hint). `GET /api/diagnostics` is the end-to-end health check (Notion + parse each award page). Never log secrets — context objects carry metadata only.
 - **Resilience**: `withRetry` handles transient network errors (socket hang up, timeout, ECONNRESET) with exponential backoff and honors `Retry-After` on 429 responses.
 
 ## 2. FRONTEND ARCHITECTURE (REACT)
@@ -28,6 +30,7 @@
 - **Purification Ritual (SRP)**: Deep cleaning (Wiki syntax stripping, native Notion formatting removal) is EXCLUSIVE to `PurificationService`. `BookSyncService` stays with simple whitespace normalization to avoid scope creep.
 - **Wiki Parser Priority**: When extracting from `{{tabela wydania}}`, always pick the highest indexed `informacjaN` that is NOT empty, and take both `wydawca` and `seria` from that single (latest) edition — never backfill an empty field from an older edition (the latest edition is authoritative so the data mirrors current reality). Fallback to `{{Książka}}` only if no valid `infowydanie` is found.
 - **Locus Categories**: Exclude only the YA category ("Powieść dla młodzieży"). All other Locus categories (incl. Horror/Dark Fantasy and Pierwsza powieść) are intentionally synced as "Nagroda Locus".
+- **Idempotency (multi_select)**: Compare multi_select values (authors, publisher, series, awards) CASE-INSENSITIVELY, and normalize BOTH the wiki and the existing-Notion side before comparing. Notion matches option names case-insensitively and keeps its own casing, so comparing a normalized new value against a raw Notion value re-updates the field on every sync forever. Authors are MERGED (union), never replaced — manual Notion authors must survive.
 - **Notion Schema**: Always check for column existence before writing. Handled by `SchemaValidationService`.
 - **Library Scan**: 30000ms timeout, 500ms delay, 4 retries. Fail-fast on network error. Uses `withRetry`.
 - **Vinted Scan**: 30000ms timeout, 3 retries, 3-5s delay with jitter.
@@ -53,7 +56,7 @@
 - **Palette**: `cyan-500` (primary), `purple-600` (secondary), `slate-900/20` (glass).
 
 ## 7. ALGORITHM DOCUMENTATION
-- **Detailed Instructions**: Detailed machine instructions for each core functionality are located in the `/docs/` directory.
+- **Detailed Instructions**: Detailed machine instructions for each core functionality are located in the `/docs/` directory (index: `docs/README.md`). Deployment, observability and troubleshooting live in the root `README.md`.
 - **Available Docs**:
   - `docs/book-sync.md`: Book Synchronization Algorithm.
   - `docs/publisher-series-sync.md`: Publisher & Series Synchronization.
@@ -65,7 +68,7 @@
   - `docs/schema-validation.md`: Schema Validation & Initialization.
   - `docs/lp-sync.md`: Lp (Position) Synchronization.
   - `docs/cycles-sync.md`: Book Cycles Detection.
-  - `docs/vinted-scanner.md`: AI-Powered Market Search.
+  - `docs/vinted-scanner.md`: Vinted Market Search (direct HTML scraper — NOT AI).
 
 ## 8. DOCUMENTATION & MAINTENANCE
 - **Self-Correction**: After every major architectural change or logic fix (e.g., new service, parser update), the AI Agent MUST review and update `COGITATOR_GUIDELINES.md` and `README.md`.

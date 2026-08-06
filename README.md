@@ -1,129 +1,274 @@
-# Adeptus Archivist: Sci-Fi Award Synchronizer
+# Cogitator Omnissiah
 
-Adeptus Archivist is a specialized tool designed to bridge the gap between sci-fi literature encyclopedias and personal Notion databases. It automates the process of tracking award-winning science fiction novels, ensuring your personal library or reading list is always up-to-date with the latest data from the "Archiwum Encyklopedii Fantastyki".
+**Cogitator Omnissiah** synchronizuje nagrody literackie science‑fiction — **Hugo**, **Nebula** i **Locus** — z *Archiwum Encyklopedii Fantastyki* (MediaWiki) do osobistej bazy **Notion**. Zbiera zwycięzców i nominowanych, wzbogaca ich o wydawcę, serię i przynależność do cyklu, pilnuje integralności danych i pomaga śledzić postępy czytelnicze oraz szukać fizycznych egzemplarzy w bibliotece i na Vinted.
 
-## Project Goals
+Interfejs i nazewnictwo utrzymane są w klimacie Warhammer 40k / Adeptus Mechanicus („rytuały synchronizacji", „Duch Maszyny", „sanctity") — to świadoma konwencja, którą należy zachować przy zmianach.
 
-- **Automated Data Harvesting**: Extract structured data from MediaWiki-based encyclopedias (specifically Hugo, Nebula, and Locus awards).
-- **Notion Integration**: Seamlessly synchronize harvested data with a Notion database, handling both new entries and updates to existing ones.
-- **Data Enrichment**: Automatically fetch additional details like publishers and series information for each book.
-- **Market Intelligence**: Integrated Vinted scanner to help users find physical copies of award-winning books.
-
-## Architectural Solutions
-
-### 1. Hybrid Full-Stack Architecture
-The application uses a **Vite + Express** hybrid setup. 
-- **Frontend**: A high-performance React SPA styled with Tailwind CSS, featuring a "Cyber-Archivist" aesthetic. It uses Framer Motion for immersive animations and Lucide-React for iconography.
-- **Backend**: An Express.js server that handles long-running synchronization tasks, API proxying, and secure communication with external services (Notion, MediaWiki).
-
-### 2. Service-Oriented Architecture (Refactored)
-To adhere to the **Single Responsibility Principle (SRP)**, the backend has been refactored into a modular structure:
-- **Services (`/services/`)**: Encapsulate core business logic for different synchronization tasks (e.g., `BookSyncService`, `DuplicateSyncService`, `PublisherSyncService`, `SeriesSyncService`, `CyclesSyncService`, `LpSyncService`, `StatsService`, `IntegrityService`, `PurificationService`, `SchemaValidationService`).
-- **Controllers (`/controllers/`)**: Handle HTTP request parsing and response formatting, delegating business logic to services.
-- **Routes (`/routes/`)**: Define API endpoints and map them to appropriate controllers.
-- **SyncManager**: Acts as an orchestrator that coordinates the execution of various synchronization services.
-
-### 3. Adapter Pattern for External Services
-To maintain clean separation of concerns, the project implements dedicated adapters:
-- **NotionAdapter**: Encapsulates the complexity of the Notion SDK, managing database queries, page creation, and property mapping.
-- **WikiAdapter**: Handles HTTP communication with the MediaWiki API, including content fetching and slot-based data retrieval.
-
-### 4. Real-Time Progress Tracking (SSE)
-Synchronization tasks can be time-consuming. The system uses **Server-Sent Events (SSE)** to provide real-time feedback to the frontend. This allows the user to see exactly which book is being processed, the current progress percentage, and estimated time of arrival (ETA).
-
-### 5. Intelligent Data Merging & Normalization
-The sync engine doesn't just overwrite data. It:
-- **Data Normalization**: A dedicated `DataNormalizer` service handles specific exceptions for publishers (e.g., "Zysk i S-ka") and original titles to ensure consistency across different data sources.
-- **Diff Engine**: A specialized `DiffEngine` ensures that multi-select properties in Notion are compared correctly (ignoring order and whitespace) before triggering an update.
-- **Multi-Award Handling**: Correctly merges multiple awards for a single book (e.g., a book winning both Hugo and Nebula).
-- **Smart Updates**: Compares existing Notion data with Wiki data and only performs updates if changes are detected, minimizing API calls.
-
-### 6. AI-Powered Market Search
-The "Vinted Artifact Scanner" leverages the **Gemini 3 Flash** model with Google Search grounding. This allows the app to perform real-time web searches for current listings on Vinted.pl, providing users with direct links to purchase books.
-
-## Tech Stack
-
-- **Frontend**: React 19, Tailwind CSS 4, Motion, Lucide-React.
-- **Backend**: Node.js, Express, Axios.
-- **Integrations**: Notion SDK, MediaWiki API, Google GenAI (Gemini).
-- **Dev Tools**: Vitest, TypeScript, Vite, tsx, esbuild.
-
-## Environment Configuration
-
-The application requires the following environment variables:
-- `NOTION_API_KEY`: Your Notion integration token.
-- `NOTION_DATABASE_ID`: The ID of the target Notion database.
-- `GEMINI_API_KEY`: API key for AI-powered features.
+> **Uwaga o naturze projektu.** To osobiste narzędzie jednego użytkownika, nie usługa wieloosobowa. Endpointy nie są uwierzytelniane — uruchamiaj je za prywatnym hostingiem/siecią, nie wystawiaj publicznie bez własnej warstwy autoryzacji.
 
 ---
-*Developed for the preservation of literary artifacts in the digital age.*
 
-## Test Suite
+## Spis treści
 
-The project includes a comprehensive test suite covering frontend, backend, and core logic, organized into a clean directory structure.
+- [Funkcje (rytuały)](#funkcje-rytuały)
+- [Architektura](#architektura)
+- [Struktura projektu](#struktura-projektu)
+- [Wymagania wstępne](#wymagania-wstępne)
+- [Konfiguracja Notion](#konfiguracja-notion)
+- [Zmienne środowiskowe](#zmienne-środowiskowe)
+- [Uruchomienie lokalne](#uruchomienie-lokalne)
+- [Wdrożenie (Render)](#wdrożenie-render)
+- [Referencja API](#referencja-api)
+- [Potok synchronizacji książek](#potok-synchronizacji-książek)
+- [Integralność i idempotencja danych](#integralność-i-idempotencja-danych)
+- [Obserwowalność i diagnostyka](#obserwowalność-i-diagnostyka)
+- [Rozwiązywanie problemów](#rozwiązywanie-problemów)
+- [Testy](#testy)
+- [Dokumentacja i konwencje](#dokumentacja-i-konwencje)
 
-### 1. Test Directory Structure
-- **`/__tests__/`**: Infrastructure, adapters, and server tests.
-- **`/services/__tests__/`**: Business logic and synchronization services.
-- **`/src/__tests__/`**: Main UI components (e.g., `App.test.tsx`).
-- **`/src/hooks/__tests__/`**: Custom React hooks.
+---
 
-### 2. Frontend Integration Tests (`src/__tests__/App.test.tsx`)
-- **Status Ducha Maszyny**: Verifies the rendering of the "Machine Spirit" status and award links.
-- **Award Selection**: Ensures all award options (Hugo, Nebula, Locus, All) are available in the dropdown.
-- **Synchronization Flow**:
-    - Tests single award synchronization (Hugo, Nebula, Locus).
-    - Tests "All Awards" synchronization flow.
-    - Verifies real-time UI updates during streaming (status messages, progress bar).
-    - **Sync Summary**: Asserts on the final summary, checking counts for added, updated, and skipped items, and verifying the list of added book names.
-- **Tool Navigation**: Checks the visibility of data exploration, cycle marking, and Rytuał Rekonstrukcji Liczb tools.
-- **Schema Editor**:
-    - Verifies rendering of Notion properties and their status (usage percentage).
-    - Tests the ability to delete options from properties (except for the "Autor" property).
-- **Vinted Scanner**: Verifies the UI state during a Vinted artifact search.
+## Funkcje (rytuały)
 
-### 3. Backend API Tests (`__tests__/server.test.ts`)
-- **Health & Config**: Verifies `/api/health` and `/api/config` endpoints.
-- **Notion Schema**: Tests fetching and updating the Notion database schema via `/api/notion/schema`.
-- **Sync Control**:
-    - Verifies the initiation of the synchronization stream via `/api/sync`.
-    - Tests the synchronization stop mechanism via `/api/sync/stop`.
+Każda operacja to osobne, anulowalne zadanie strumieniowane do UI przez SSE.
 
-### 4. Core Logic & Service Tests
-- **Data Extraction (`__tests__/wiki.parser.test.ts`)**: Tests the `WikiParser` logic for extracting publisher and series information from complex MediaWiki wikitext templates.
-- **Service Logic (`services/__tests__/*.test.ts`)**: Comprehensive tests for each synchronization service, ensuring correct data comparison, normalization, and Notion updates.
-- **Hook Logic (`src/hooks/__tests__/*.test.ts`)**: Verifies the behavior of custom React hooks, including SSE handling in `useSync`.
+| Rytuał | Endpoint | Co robi |
+| --- | --- | --- |
+| **Synchronizacja Nagród** (book sync) | `POST /api/sync` | Pobiera stronę nagrody z encyklopedii, parsuje zwycięzców i nominowanych, scala duplikaty (jedna książka = wiele nagród) i zapisuje/aktualizuje rekordy w Notion. |
+| **Inicjacja Schematu** | `POST /api/sync-schema` | Zakłada/naprawia wymagane kolumny bazy Notion (typy, nazwa kolumny głównej). |
+| **Puryfikacja** | `POST /api/sync-purify` | Czyści tytuły z pozostałości składni wiki i natywnego formatowania Notion. |
+| **Wydawcy / Serie** | `POST /api/sync-publisher`, `POST /api/sync-series` | Dociąga wydawcę i serię ze strony każdej książki (z weryfikacją autora). |
+| **Cykle** | `POST /api/sync-cycles` | Zaznacza „Część cyklu" na podstawie danych ze strony wiki. |
+| **Rekonstrukcja Liczb (Lp)** | `POST /api/sync-lp` | Przenumerowuje kolumnę „Lp" wg roku i tytułu. |
+| **Duplikaty** | `POST /api/sync-duplicates` | Wykrywa potencjalne duplikaty (tytuł + podobieństwo autora). |
+| **Sanctity (Integralność)** | `POST /api/sync-integrity` | Porównuje bazę Notion z wiki: liczby per rok/nagroda, unikalność Lp/tytułów. |
+| **Statystyki** | `GET /api/stats` | Agregaty do dashboardu (postęp autorów, roczników, pokrycie nagród, biblioteki). |
+| **Skan Biblioteki** | `POST /api/library-check` | Sprawdza dostępność w OPAC MBP Lublin (scraping HTML). |
+| **Skan Vinted** | `POST /api/vinted-check` | Szuka fizycznych egzemplarzy na vinted.pl (scraping HTML). |
 
-### Running Tests
-To execute the full test suite, run:
-```bash
-npm test
+**Rytuał Pełnej Synchronizacji** uruchamia sekwencję 1–7 (Schemat → Puryfikacja → Nagrody → Cykle → Wydawcy → Serie → Lp); przerwanie któregokolwiek kroku zatrzymuje całą sekwencję.
+
+---
+
+## Architektura
+
+Hybryda **Vite + Express** serwowana z jednego procesu Node.
+
+- **Frontend** — React 19 SPA (Tailwind CSS, `motion/react`, `lucide-react`). Całe pobieranie danych przez custom hooki (`useSync` to wzorzec SSE do wielokrotnego użycia). W dev serwowany przez Vite w trybie middleware; w produkcji jako statyczny build z `dist/`.
+- **Backend** — Express. Długie zadania synchronizacji strumieniowane przez **Server‑Sent Events (SSE)**.
+- **SyncManager** (`server.ts`) — orkiestrator: pojedyncze aktywne zadanie z własnym tokenem anulowania, współbieżność przez `p-limit`, zdarzenia postępu.
+- **Adaptery** — `NotionAdapter`, `WikiAdapter`: czyste wrappery API bez logiki biznesowej. Rozróżniają „brak danych" od „awarii infrastruktury" (patrz [Obserwowalność](#obserwowalność-i-diagnostyka)).
+- **Serwisy** (`/services/`) — po jednym na koncern synchronizacji, logika‑centryczne, w miarę bezstanowe.
+- **Kontrolery / Trasy** — tylko parsowanie żądań i formowanie odpowiedzi SSE; delegują do serwisów.
+
+Szczegóły zasad architektonicznych: **[`COGITATOR_GUIDELINES.md`](./COGITATOR_GUIDELINES.md)**.
+
+### Stack
+
+- **Frontend:** React 19, Tailwind CSS 4, Motion, Lucide‑React
+- **Backend:** Node.js, Express, Axios
+- **Integracje:** Notion SDK (`@notionhq/client`), MediaWiki API, OPAC MBP Lublin, vinted.pl
+- **Narzędzia:** TypeScript (strict), Vite, tsx, esbuild, Vitest
+
+---
+
+## Struktura projektu
+
+```
+.
+├── server.ts                # Express + SyncManager (orkiestracja, SSE, skan biblioteki/Vinted)
+├── notion.adapter.ts        # wrapper Notion SDK (zapytania, zapis, schemat)
+├── wiki.adapter.ts          # klient MediaWiki (fetch treści, kategorie, wyszukiwanie)
+├── wiki.parser.ts           # ekstrakcja metadanych z wikitekstu (tabele nagród, {{tabela wydania}})
+├── retry.ts                 # withRetry — backoff + honorowanie Retry-After
+├── logger.ts                # strukturalny logger + klasyfikacja błędów HTTP
+├── utils.ts                 # cleanTitle, sanitize, similarity, countCommonWords
+├── controllers/             # parsowanie HTTP + warstwa SSE
+├── routes/                  # definicje endpointów
+├── services/                # logika biznesowa (jeden serwis = jeden rytuał)
+│   ├── bookSyncService.ts   dataNormalizer.ts    diffEngine.ts
+│   ├── duplicateSyncService.ts   publisherSyncService.ts   seriesSyncService.ts
+│   ├── cyclesSyncService.ts      lpSyncService.ts          statsService.ts
+│   ├── purificationService.ts    schemaValidationService.ts  integrityService.ts
+├── src/                     # frontend React
+│   ├── App.tsx  components/  hooks/  utils/  types.ts  constants.ts
+├── docs/                    # szczegółowa dokumentacja algorytmów (per serwis)
+├── render.yaml              # blueprint wdrożenia na Render
+└── .claude/                 # hook SessionStart (npm install) dla Claude Code on the web
 ```
 
-## Synchronization Process
+---
 
-The synchronization process is a multi-stage pipeline designed to ensure data integrity and minimize Notion API usage.
+## Wymagania wstępne
 
-### 1. Data Harvesting
-- **Wiki Fetching**: The `WikiAdapter` fetches raw wikitext from the "Archiwum Encyklopedii Fantastyki" for the selected award page.
-- **Parsing**: The `WikiParser` processes the wikitext, stripping HTML/Wiki markup, normalizing table structures, and extracting book metadata (year, author, titles). It uses a priority system to pick the most relevant edition details from `{{tabela wydania}}`.
+- **Node.js 18+** (build celuje w `node18`; rozwijane na Node 20/22).
+- Konto **Notion** z integracją i bazą danych.
+- Testy działają bez żadnych sekretów — wszystkie usługi zewnętrzne są mockowane.
 
-### 2. Data Merging & Normalization
-- **Data Normalization**: The `DataNormalizer` service applies specific rules to publishers and titles to handle known variations and ensure data consistency.
-- **Deduplication**: Books appearing multiple times (e.g., winning multiple awards) are merged into a single entry with a combined list of awards.
-- **Duplicate Detection**: The system uses a strict word-matching algorithm on original titles. If two books share at least two significant words (ignoring common stop words and short words) in their original titles, they are flagged as potential duplicates.
-- **Award Logic**: If a book wins Hugo, Nebula, and Locus, it is automatically tagged with the "Wszystkie" (All) award.
+---
 
-### 3. Notion Synchronization
-- **Database Query**: The system queries the existing Notion database to build a map of books already present, using Polish or original titles as keys.
-- **Comparison & Action**:
-    - **New Book**: If not found, a new row is created in Notion with all properties.
-    - **Existing Book**: If found, the system compares existing Notion data with the new data.
-    - **Update**: If differences are detected (e.g., new award, title change), only the specific fields are updated in Notion.
-    - **Skip**: If no changes are detected, the book is skipped to save API quota.
+## Konfiguracja Notion
 
-### 4. Real-Time Reporting
-- The backend streams progress updates to the frontend using **Server-Sent Events (SSE)**, reporting:
-    - `status`: Current stage of the pipeline.
-    - `progress`: Percentage completion for long-running tasks.
-    - `complete`: Final summary containing counts of added, updated, and skipped books, along with lists of added/updated titles.
+1. Utwórz **integrację** w [notion.so/my-integrations](https://www.notion.so/my-integrations) i skopiuj *Internal Integration Token* → to `NOTION_API_KEY`.
+2. Utwórz (lub wskaż) bazę danych i **udostępnij ją integracji** (menu `•••` → *Connections* → wybierz integrację). Bez tego kroku Notion zwróci `object_not_found`.
+3. Skopiuj **ID bazy** z URL (32‑znakowy ciąg) → to `NOTION_DATABASE_ID`.
+4. Kolumny nie muszą istnieć wcześniej — uruchom rytuał **Inicjacja Schematu** (`/api/sync-schema`), który założy brakujące:
+
+   | Kolumna | Typ |
+   | --- | --- |
+   | `Lp` | title (kolumna główna) |
+   | `Autor`, `Rok`, `Wydawnictwo`, `Seria`, `Nagroda` | multi_select |
+   | `Tytuł polski`, `Tytuł oryginalny` | rich_text |
+   | `Część cyklu` | checkbox |
+
+   Kolumna `Źródło` (multi_select) używana jest przez statystyki i skany do znaczników `Przeczytane`, `Biblioteka`, `Biblioteka 9`, `Posiadam`.
+
+---
+
+## Zmienne środowiskowe
+
+Skopiuj `.env.example` do `.env` i uzupełnij:
+
+| Zmienna | Wymagana | Opis |
+| --- | --- | --- |
+| `NOTION_API_KEY` | ✅ | Token integracji Notion. |
+| `NOTION_DATABASE_ID` | ✅ | ID docelowej bazy Notion. |
+| `GEMINI_API_KEY` | ➖ | **Obecnie nieużywana** — zarezerwowana; skaner Vinted działa przez scraping HTML, nie AI. |
+
+---
+
+## Uruchomienie lokalne
+
+```bash
+npm install
+npm run dev      # serwer dev (tsx server.ts) — API + frontend Vite na http://localhost:3000
+```
+
+Pozostałe komendy:
+
+```bash
+npm run build    # vite build + esbuild bundle server.ts → dist/server.cjs
+npm start        # uruchom produkcyjny build (node dist/server.cjs)
+npm run lint     # tsc --noEmit (tryb strict; brak osobnego lintera)
+npm test         # vitest run (pełny pakiet)
+npx vitest run <ścieżka>   # pojedynczy plik testowy
+```
+
+Port pochodzi ze zmiennej `PORT` (domyślnie `3000`).
+
+> **Wskazówka.** Encyklopedia bywa chroniona przed ruchem z centrów danych. Jeśli synchronizacje działają lokalnie, ale nie na hostingu, zobacz [Rozwiązywanie problemów](#rozwiązywanie-problemów).
+
+---
+
+## Wdrożenie (Render)
+
+Repozytorium zawiera blueprint **[`render.yaml`](./render.yaml)**:
+
+- **Runtime:** Node
+- **Build:** `npm install && npm run build`
+- **Start:** `npm start`
+- **Health check:** `/api/health`
+- **Zmienne:** ustaw `NOTION_API_KEY`, `NOTION_DATABASE_ID` (i opcjonalnie `GEMINI_API_KEY`) jako sekrety; `NODE_ENV=production`.
+
+Możesz wdrożyć jako *Blueprint* (Render odczyta `render.yaml`) albo ręcznie jako *Web Service* z powyższymi ustawieniami. Na darmowym planie instancja usypia po ~15 min bezczynności (pierwsze wejście po przerwie trwa ~30–60 s).
+
+SSE za proxy Rendera jest zahartowane po stronie serwera (padding wymuszający flush, `X-Accel-Buffering: no`, częsty keepalive) — patrz [Rozwiązywanie problemów](#rozwiązywanie-problemów).
+
+---
+
+## Referencja API
+
+Wszystkie endpointy synchronizacji zwracają strumień **SSE** (`text/event-stream`) ze zdarzeniami `status` / `progress` / `complete` / `error`. Endpointy odczytu zwracają JSON.
+
+| Metoda | Ścieżka | Opis |
+| --- | --- | --- |
+| GET | `/api/health` | Status serwera + `isSyncing`. |
+| GET | `/api/config` | Obecność kluczy (booleany, bez sekretów). |
+| GET | `/api/diagnostics` | **Diagnostyka end‑to‑end** (Notion + pobranie i parsowanie stron nagród) z podsumowaniem po polsku. |
+| GET | `/api/stats` | Agregaty do dashboardu. |
+| GET | `/api/notion/schema` | Bieżący schemat bazy. |
+| PATCH | `/api/notion/schema` | Modyfikacja opcji właściwości. |
+| GET | `/api/wiki/last-update` | Data ostatniej edycji strony wiki. |
+| POST | `/api/sync` | Synchronizacja nagród (`{ awardName, pageTitle, syncAll }`). |
+| POST | `/api/sync-schema`, `/api/sync-purify`, `/api/sync-publisher`, `/api/sync-series`, `/api/sync-cycles`, `/api/sync-lp`, `/api/sync-duplicates`, `/api/sync-integrity` | Pozostałe rytuały. |
+| POST | `/api/library-check`, `/api/vinted-check` | Skany dostępności. |
+| POST | `/api/mark-as-read` | Oznaczenie książki jako „Przeczytane". |
+| POST | `/api/*/stop` | Zatrzymanie danego rytuału. |
+| POST | `/api/sync/reset` | Awaryjny reset stanu synchronizacji. |
+
+---
+
+## Potok synchronizacji książek
+
+1. **Zbieranie** — `WikiAdapter` pobiera wikitekst strony nagrody; `WikiParser`/`bookSyncService` parsuje tabelę zwycięzców i nominowanych (obsługa remisów, wierszy `rowspan`, książek wielu autorów, dodatkowej kolumny Retro Hugo, wykluczenia kategorii Locus YA).
+2. **Scalanie i normalizacja** — jedna książka zdobywająca kilka nagród zostaje scalona w jeden rekord; `dataNormalizer` ujednolica autorów/wydawców/tytuły; przy Hugo + Nebula + Locus dokładany jest tag „Wszystkie".
+3. **Zapis do Notion** — budowana jest mapa istniejących rekordów; nowe książki są tworzone, istniejące **porównywane pole po polu** i aktualizowane tylko przy realnej zmianie; brak zmian → pominięcie (oszczędność limitów API).
+4. **Raport na żywo** — SSE strumieniuje `status`/`progress`, a `complete` niesie podsumowanie (dodane / zaktualizowane / pominięte / duplikaty).
+
+Szczegóły algorytmów: **[`docs/`](./docs)** (patrz [indeks](./docs/README.md)).
+
+---
+
+## Integralność i idempotencja danych
+
+- **Scalanie autorów, nie nadpisywanie** — autorzy dopisani ręcznie w Notion nigdy nie znikają.
+- **Porównania case‑insensitive dla multi_select** — Notion dopasowuje opcje bez względu na wielkość liter i zachowuje własną pisownię, więc różnica samej wielkości liter nie wywołuje pozornych aktualizacji przy każdym syncu.
+- **Najnowsze wydanie jest miarodajne** — wydawca i seria pochodzą z najnowszego wydania z `{{tabela wydania}}`, bez mieszania pól między wydaniami.
+- **Weryfikacja autora** przy synchronizacji wydawców/serii/cykli — strona o tym samym tytule dotycząca innego dzieła nie nadpisze danych.
+- **Rozróżnienie awarii od braku danych** — pełna awaria pobierania nie raportuje się jako „udany, pusty" sync (patrz niżej).
+
+Decyzje projektowe (np. kategorie Locus, priorytet wydania) są udokumentowane w `docs/` i `COGITATOR_GUIDELINES.md` z adnotacją „nie naprawiać wstecz".
+
+---
+
+## Obserwowalność i diagnostyka
+
+- **Strukturalny logger** (`logger.ts`) — jedna linia na wpis: `[POZIOM] [Komponent] wiadomość {kontekst}`. Bez sekretów.
+- **Klasyfikacja błędów** — nieudane żądanie HTTP jest mapowane na przyczynę: `ip_blocked` (403/Cloudflare), `rate_limited` (429), `server_error` (5xx), `timeout`, `dns`, `http_error` — z podpowiedzią dla użytkownika.
+- **`WikiFetchError`** — adapter wiki rzuca typowany błąd niosący klasyfikację i wskazówkę, którą kontroler pokazuje w UI.
+- **`GET /api/diagnostics`** — jedno wywołanie sprawdzające Notion oraz pobranie i sparsowanie każdej strony nagrody; zwraca raport JSON z podsumowaniem po polsku. Najszybszy sposób ustalić, dlaczego sync nie działa. Dostępny też jako przycisk **„Uruchom Diagnostykę"** w karcie Status.
+
+---
+
+## Rozwiązywanie problemów
+
+| Objaw | Prawdopodobna przyczyna | Co zrobić |
+| --- | --- | --- |
+| Sync kończy się błędem `ip_blocked` / HTTP 403 | IP serwera (np. hosting) jest blokowane przez encyklopedię/Cloudflare | Uruchom lokalnie / z innej sieci, albo użyj proxy o zaufanym IP. Potwierdź przez `/api/diagnostics`. |
+| Notion: `object_not_found` | Baza nieudostępniona integracji lub błędne `NOTION_DATABASE_ID` | Udostępnij bazę integracji (*Connections*) i sprawdź ID. |
+| „Sparsowano 0 książek" mimo pobrania strony | Zmieniony tytuł strony w encyklopedii lub układ tabeli | Sprawdź logi `[BookSync]` i tytuły w kodzie; porównaj ze stroną wiki. |
+| UI „nie reaguje" / brak postępu na hostingu | Buforowanie strumienia SSE przez proxy | Zahartowane po stronie serwera (padding + `X-Accel-Buffering: no` + keepalive). Klient ma watchdog 30 s, który pokaże komunikat zamiast martwego UI. |
+
+Zawsze zaczynaj od **`/api/diagnostics`** i logów — pole `summary` zwykle wprost wskazuje przyczynę.
+
+---
+
+## Testy
+
+Vitest, uporządkowane w podkatalogach `__tests__/`:
+
+- `/__tests__/` — infrastruktura, adaptery, serwer (`@vitest-environment node`)
+- `/services/__tests__/` — logika biznesowa i serwisy synchronizacji
+- `/src/__tests__/` — komponenty UI (JSDOM)
+- `/src/hooks/__tests__/` — custom hooki (m.in. obsługa SSE w `useSync`)
+
+Wszystkie usługi zewnętrzne (Notion SDK, axios) są mockowane przez `vi.mock`, więc testy działają bez sekretów.
+
+```bash
+npm test        # pełny pakiet
+npm run lint    # type-check w trybie strict
+```
+
+---
+
+## Dokumentacja i konwencje
+
+- **[`COGITATOR_GUIDELINES.md`](./COGITATOR_GUIDELINES.md)** — autorytatywne zasady architektoniczne (backend, frontend, integralność danych, testy, design system). Obowiązują przy każdej zmianie.
+- **[`docs/`](./docs)** — szczegółowa dokumentacja algorytmów per serwis ([indeks](./docs/README.md)).
+- **[`CLAUDE.md`](./CLAUDE.md)** — zwięzła mapa projektu dla asystenta Claude Code.
+
+Konwencje: Tailwind CSS (motyw glassmorphism, `slate-950` + akcenty `cyan-400`/`purple-500`), `motion/react` do animacji, `lucide-react` do ikon; nazewnictwo i teksty UI w klimacie Adeptus Mechanicus. Po większych zmianach architektonicznych aktualizuj `COGITATOR_GUIDELINES.md` i ten plik (zob. wytyczne §8).
+
+---
+
+*Ku chwale Omnissiaha — w służbie zachowania literackich artefaktów w epoce cyfrowej.*
