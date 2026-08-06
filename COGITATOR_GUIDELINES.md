@@ -1,0 +1,71 @@
+# COGITATOR OMNISSIAH: ARCHITECTURAL GUIDELINES (v1.3)
+
+## 1. CORE ARCHITECTURE (BACKEND)
+- **Pattern**: Service-Adapter-Manager.
+- **Adapters**: `NotionAdapter`, `WikiAdapter`. Pure API wrappers. No business logic.
+- **Services**: `*SyncService`, `StatsService`, `IntegrityService`, `PurificationService`, `SchemaValidationService`. Logic-heavy, stateless where possible.
+- **Orchestration**: `SyncManager` (in `server.ts`). Manages concurrency, cancellation tokens, and global sync state.
+- **Communication**: SSE (Server-Sent Events) for real-time progress. Use `sendEvent({ type, ... })`.
+- **Concurrency**: Use `p-limit` for external API calls (Notion/Wiki/OPAC).
+- **Error Handling**: Fail-fast for library scans. Detailed logging for timeouts/network errors. Use `withRetry` for flaky external services.
+- **Resilience**: `withRetry` handles transient network errors (socket hang up, timeout, ECONNRESET) with exponential backoff.
+
+## 2. FRONTEND ARCHITECTURE (REACT)
+- **Component Decomposition**: Strict SRP. UI components in `src/components/` (atomic parts in subdirs like `stats/`).
+- **Logic Isolation**: No `useEffect` for data fetching in components. Use Custom Hooks:
+  - `useSync`: Standard for all long-running server operations.
+  - `useStats`: Global dashboard data.
+  - `useLibraryCheck`: Isolated library scanning state.
+  - `useConfig`: Notion schema and connection status.
+  - `useWikiUpdates`: Tracking recent changes in the encyclopedia.
+- **Styling**: Tailwind CSS only. Theme: Glassmorphism, `slate-950` background, `cyan-400` / `purple-500` accents.
+- **Animations**: `motion/react` (Framer Motion). Use for entry/exit and progress bars.
+- **Dynamic UI**: Progress bars and summary cards SHOULD inherit the color of the active ritual (passed via `SyncState.color`) to provide visual feedback and reinforce ritual identity.
+
+## 3. DATA INTEGRITY & SYNC LOGIC
+- **Duplicate Detection**: Multi-signal (Title PL, Title Orig, Author Similarity, Common Words).
+- **Purification Ritual (SRP)**: Deep cleaning (Wiki syntax stripping, native Notion formatting removal) is EXCLUSIVE to `PurificationService`. `BookSyncService` stays with simple whitespace normalization to avoid scope creep.
+- **Wiki Parser Priority**: When extracting from `{{tabela wydania}}`, always pick the highest indexed `informacjaN` that is NOT empty. Fallback to `{{Książka}}` only if no valid `infowydanie` is found.
+- **Notion Schema**: Always check for column existence before writing. Handled by `SchemaValidationService`.
+- **Library Scan**: 30000ms timeout, 500ms delay, 4 retries. Fail-fast on network error. Uses `withRetry`.
+- **Vinted Scan**: 30000ms timeout, 3 retries, 3-5s delay with jitter.
+
+## 4. TEST ARCHITECTURE (VITEST)
+- **Structure**: Tests are organized into `__tests__` subdirectories to maintain `src` cleanliness.
+  - `/__tests__/`: Infrastructure, adapters, and server tests.
+  - `/services/__tests__/`: Business logic and synchronization services.
+  - `/src/__tests__/`: Main UI components.
+  - `/src/hooks/__tests__/`: Custom React hooks.
+- **Mocking**: Use `vi.mock` for external dependencies (Notion SDK, Axios).
+- **Environment**: Use `@vitest-environment node` for backend tests and JSDOM for frontend tests.
+
+## 5. TOKEN OPTIMIZATION (AI INSTRUCTIONS)
+- **Surgical Edits**: Use `edit_file` with precise `TargetContent`. Never replace whole files.
+- **Context Awareness**: Read `package.json` and `server.ts` imports before adding new services.
+- **Conciseness**: Skip apologies and meta-talk. Execute -> Summarize.
+- **Reuse**: Reference `useSync` patterns instead of re-implementing SSE handling.
+
+## 6. DESIGN SYSTEM
+- **Font**: Display (Headings) = Tracking-tighter, uppercase. Body = Sans.
+- **Icons**: `lucide-react`.
+- **Palette**: `cyan-500` (primary), `purple-600` (secondary), `slate-900/20` (glass).
+
+## 7. ALGORITHM DOCUMENTATION
+- **Detailed Instructions**: Detailed machine instructions for each core functionality are located in the `/docs/` directory.
+- **Available Docs**:
+  - `docs/book-sync.md`: Book Synchronization Algorithm.
+  - `docs/publisher-series-sync.md`: Publisher & Series Synchronization.
+  - `docs/duplicate-detection.md`: Duplicate Detection & Management.
+  - `docs/library-check.md`: Library Availability Check (Scraping).
+  - `docs/stats-service.md`: Statistics Generation.
+  - `docs/integrity-service.md`: Data Integrity & Sanctity.
+  - `docs/purification-service.md`: Data Purification.
+  - `docs/schema-validation.md`: Schema Validation & Initialization.
+  - `docs/lp-sync.md`: Lp (Position) Synchronization.
+  - `docs/cycles-sync.md`: Book Cycles Detection.
+  - `docs/vinted-scanner.md`: AI-Powered Market Search.
+
+## 8. DOCUMENTATION & MAINTENANCE
+- **Self-Correction**: After every major architectural change or logic fix (e.g., new service, parser update), the AI Agent MUST review and update `COGITATOR_GUIDELINES.md` and `README.md`.
+- **Version Control**: Increment the version in the header if significant changes are made.
+- **Consistency**: Ensure that `README.md` descriptions match the actual implementation in `services/`.
