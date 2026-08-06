@@ -94,6 +94,11 @@ describe('WikiParser', () => {
       `;
       expect(WikiParser.extractAuthor(wikitext)).toBe('Stanisław Lem');
     });
+
+    it('ignores empty parameters like "redaktor = " (space before newline)', () => {
+      const wikitext = '{{Książka\n | autor           = Isaac Asimov\n | redaktor        = \n | autor okladki   = Chris Moore\n}}';
+      expect(WikiParser.extractAuthor(wikitext)).toBe('Isaac Asimov');
+    });
   });
 
 });

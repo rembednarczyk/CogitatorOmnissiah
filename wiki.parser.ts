@@ -66,7 +66,9 @@ export class WikiParser {
       let rawAuthor = match[2];
       rawAuthor = rawAuthor.replace(/\{\{sortname\|([^|}]+)\|([^|}]+)(?:\|[^}]+)?\}\}/gi, '$1 $2');
       rawAuthor = rawAuthor.replace(/\{\{Autor\|([^|}]+)(?:\|[^}]*)?\}\}/gi, '$1');
-      authors.push(this.cleanWikitext(rawAuthor));
+      const cleaned = this.cleanWikitext(rawAuthor);
+      // Pusty parametr (np. "| redaktor = " ze spacją) matchuje [^\n|]+ — odfiltruj
+      if (cleaned) authors.push(cleaned);
     }
     
     if (authors.length > 0) return authors.join(", ");
