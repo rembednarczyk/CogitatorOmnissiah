@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from "react";
 import { IdentifiedBooks } from "./useStats";
 import { consumeSSE } from "../utils/sse";
+import { createStallWatchdog } from "../utils/stallWatchdog";
 
 export type { IdentifiedBooks };
 
@@ -21,12 +22,16 @@ export function useLibraryCheck() {
     setCheckProgress({ current: 0, total: 0, message: "Inicjowanie...", startTime: Date.now() });
     setLibraryError(null);
     
-    return new Promise<void>(async (resolve, reject) => {
+    const watchdog = createStallWatchdog();
+
+    return new Promise<void>(async (resolve) => {
       try {
+        watchdog.arm();
         const response = await fetch("/api/library-check", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ libraryCode })
+          body: JSON.stringify({ libraryCode }),
+          signal: watchdog.signal
         });
 
         if (!response.ok) throw new Error("Błąd podczas sprawdzania biblioteki");
@@ -64,12 +69,17 @@ export function useLibraryCheck() {
           } else if (data.type === "error") {
             throw new Error(data.error);
           }
-        });
+        }, watchdog.arm);
         resolve();
       } catch (err: any) {
-        setLibraryError(err.message);
+        setLibraryError(
+          watchdog.stalled
+            ? "Połączenie z serwerem zawisło (brak odpowiedzi przez 30 s). Możliwe buforowanie strumienia przez hosting. Odśwież i spróbuj ponownie."
+            : err.message
+        );
         resolve(); // Resolve anyway so the next library can be checked
       } finally {
+        watchdog.clear();
         isCheckingRef.current = false;
         setCheckingLibrary(null);
         setCheckProgress(null);
