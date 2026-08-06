@@ -130,6 +130,10 @@ const setupSSE = (res: Response) => {
   res.setHeader("X-Accel-Buffering", "no");
   // Wyślij nagłówki natychmiast, żeby połączenie było otwarte zanim ruszy zadanie.
   res.flushHeaders?.();
+  // Padding ~2KB komentarza: niektóre proxy (Render) buforują odpowiedź do progu
+  // kilku KB zanim zaczną strumieniować — to wypycha bufor i wymusza flush,
+  // dzięki czemu klient dostaje zdarzenia na bieżąco (a nie dopiero na końcu).
+  res.write(`:${" ".repeat(2048)}\n\n`);
   return (data: SyncEvent) => {
     if (!res.writableEnded) res.write(`data: ${JSON.stringify(data)}\n\n`);
   };
@@ -164,9 +168,11 @@ const executeSyncTask = async (
   sendEvent({ type: "status", message: "Połączono z serwerem. Inicjacja rytuału..." });
   log.info("Sync task started", { endpoint: req.path });
 
+  // Częstszy keepalive (5s) utrzymuje strumień "gorący" u proxy, które inaczej
+  // zbierają dane w bufor między rzadkimi zapisami długiego zadania.
   const keepAlive = setInterval(() => {
     if (!res.writableEnded) res.write(": keepalive\n\n");
-  }, 15000);
+  }, 5000);
 
   // Rozłączenie klienta (zamknięta karta, utrata sieci) — anuluj zadanie,
   // żeby osierocony sync nie blokował kolejnych rytuałów godzinami
