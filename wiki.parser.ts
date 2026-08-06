@@ -46,9 +46,11 @@ export class WikiParser {
       const foundSeria = infoSeriaMatch ? this.cleanWikitext(infoSeriaMatch[1]) : "";
 
       if (foundWydawca || foundSeria) {
-        if (foundWydawca) wydawca = foundWydawca;
-        if (foundSeria) seria = foundSeria;
-        // Znaleźliśmy najnowsze wydanie z danymi, przerywamy szukanie głębiej
+        // Najnowsze wydanie z danymi jest miarodajne w całości — przypisz OBA pola,
+        // także puste. Nie pozwól, by seria ze starszego wydania (lub z globalnego
+        // fallbacku {{Książka}}) przeciekła, gdy najnowsze wydanie jej nie ma.
+        wydawca = foundWydawca;
+        seria = foundSeria;
         break;
       }
     }

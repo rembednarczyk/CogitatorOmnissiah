@@ -26,7 +26,8 @@
 ## 3. DATA INTEGRITY & SYNC LOGIC
 - **Duplicate Detection**: Multi-signal (Title PL, Title Orig, Author Similarity, Common Words).
 - **Purification Ritual (SRP)**: Deep cleaning (Wiki syntax stripping, native Notion formatting removal) is EXCLUSIVE to `PurificationService`. `BookSyncService` stays with simple whitespace normalization to avoid scope creep.
-- **Wiki Parser Priority**: When extracting from `{{tabela wydania}}`, always pick the highest indexed `informacjaN` that is NOT empty. Fallback to `{{Książka}}` only if no valid `infowydanie` is found.
+- **Wiki Parser Priority**: When extracting from `{{tabela wydania}}`, always pick the highest indexed `informacjaN` that is NOT empty, and take both `wydawca` and `seria` from that single (latest) edition — never backfill an empty field from an older edition (the latest edition is authoritative so the data mirrors current reality). Fallback to `{{Książka}}` only if no valid `infowydanie` is found.
+- **Locus Categories**: Exclude only the YA category ("Powieść dla młodzieży"). All other Locus categories (incl. Horror/Dark Fantasy and Pierwsza powieść) are intentionally synced as "Nagroda Locus".
 - **Notion Schema**: Always check for column existence before writing. Handled by `SchemaValidationService`.
 - **Library Scan**: 30000ms timeout, 500ms delay, 4 retries. Fail-fast on network error. Uses `withRetry`.
 - **Vinted Scan**: 30000ms timeout, 3 retries, 3-5s delay with jitter.
