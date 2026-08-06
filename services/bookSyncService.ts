@@ -183,20 +183,29 @@ export class BookSyncService {
       updates["Tytuł oryginalny"] = { rich_text: [{ text: { content: cleanExistingOrig } }] };
     }
 
-    // Update Author if it differs
-    const newAuthors = Array.from(new Set(
-      normalizeData(book.author || "", 'author').split(',')
+    // Update Author if it differs.
+    // Normalizuj i porównuj OBIE strony case-insensitive: Notion dopasowuje opcje
+    // multi_select bez względu na wielkość liter i zachowuje własną pisownię, więc
+    // normalizowanie tylko nowej wartości (np. "A. E. Van Vogt" vs zapisane
+    // "A. E. van Vogt") powodowało aktualizację przy każdym sync, która nigdy nie
+    // "chwytała". Aktualizuj tylko, gdy faktycznie dochodzi nowy autor.
+    const parseAuthors = (raw: string) =>
+      raw.split(',')
         .map((a: string) => sanitizeNotionTag(a))
         .filter(Boolean)
-    ));
-    const existingAuthors = (existingBook.author || "").split(',')
-      .map((a: string) => sanitizeNotionTag(a))
-      .filter(Boolean);
-    
+        .map((a: string) => normalizeData(a, 'author'));
+
+    const newAuthors = parseAuthors(book.author || "");
+    const existingAuthors = parseAuthors(existingBook.author || "");
+    const existingLower = new Set(existingAuthors.map(a => a.toLowerCase()));
+
     // Merge authors (union) — never drop authors added manually in Notion
     const combinedAuthors = [...existingAuthors];
     for (const a of newAuthors) {
-      if (!combinedAuthors.includes(a)) combinedAuthors.push(a);
+      if (!existingLower.has(a.toLowerCase())) {
+        combinedAuthors.push(a);
+        existingLower.add(a.toLowerCase());
+      }
     }
     const authorsChanged = combinedAuthors.length !== existingAuthors.length;
 
@@ -373,7 +382,7 @@ export class BookSyncService {
             if (book.author) {
               const authors = Array.from(new Set(
                 book.author.split(',')
-                  .map((a: string) => sanitizeNotionTag(a))
+                  .map((a: string) => normalizeData(sanitizeNotionTag(a), 'author'))
                   .filter(Boolean)
               ));
               properties["Autor"] = { multi_select: authors.slice(0, 100).map(name => ({ name })) };
