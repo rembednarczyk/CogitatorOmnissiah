@@ -3,7 +3,9 @@ services:
     name: cogitator-omnissiah
     runtime: node
     plan: free
-    buildCommand: npm install && npm run build
+    # --include=dev: build tools live in devDependencies; ensure they install
+    # for the build even if the environment omits devDeps.
+    buildCommand: npm ci --include=dev && npm run build
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:
@@ -13,5 +15,8 @@ services:
         sync: false
       - key: NOTION_DATABASE_ID
         sync: false
-      - key: GEMINI_API_KEY
+      # Opcjonalna ochrona hasłem (ustaw obie, aby wymusić Basic Auth):
+      - key: BASIC_AUTH_USER
+        sync: false
+      - key: BASIC_AUTH_PASSWORD
         sync: false

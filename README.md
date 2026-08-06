@@ -133,7 +133,8 @@ Skopiuj `.env.example` do `.env` i uzupełnij:
 | --- | --- | --- |
 | `NOTION_API_KEY` | ✅ | Token integracji Notion. |
 | `NOTION_DATABASE_ID` | ✅ | ID docelowej bazy Notion. |
-| `GEMINI_API_KEY` | ➖ | **Obecnie nieużywana** — zarezerwowana; skaner Vinted działa przez scraping HTML, nie AI. |
+| `PORT` | ➖ | Port serwera (domyślnie `3000`). |
+| `BASIC_AUTH_USER` / `BASIC_AUTH_PASSWORD` | ➖ | Ustaw **obie**, aby włączyć ochronę hasłem (HTTP Basic Auth) na publicznym URL. Puste = brak autoryzacji. |
 
 ---
 
@@ -168,7 +169,7 @@ Repozytorium zawiera blueprint **[`render.yaml`](./render.yaml)**:
 - **Build:** `npm install && npm run build`
 - **Start:** `npm start`
 - **Health check:** `/api/health`
-- **Zmienne:** ustaw `NOTION_API_KEY`, `NOTION_DATABASE_ID` (i opcjonalnie `GEMINI_API_KEY`) jako sekrety; `NODE_ENV=production`.
+- **Zmienne:** ustaw `NOTION_API_KEY`, `NOTION_DATABASE_ID` (oraz opcjonalnie `BASIC_AUTH_USER`/`BASIC_AUTH_PASSWORD`) jako sekrety; `NODE_ENV=production`.
 
 Możesz wdrożyć jako *Blueprint* (Render odczyta `render.yaml`) albo ręcznie jako *Web Service* z powyższymi ustawieniami. Na darmowym planie instancja usypia po ~15 min bezczynności (pierwsze wejście po przerwie trwa ~30–60 s).
 
