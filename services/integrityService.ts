@@ -65,6 +65,11 @@ export class IntegrityService {
           .replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, "")
           .replace(/\s{2,}/g, " ")
           .trim();
+
+        // Pusty tytuł → pusty klucz, żeby .filter(Boolean) go odrzucił.
+        // Klucz "|autor" scalałby różne książki tego samego autora.
+        if (!normTitle) return "";
+
         return `${normTitle}|${normAuthor}`;
       };
 

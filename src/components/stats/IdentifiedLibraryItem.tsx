@@ -42,14 +42,16 @@ export const IdentifiedLibraryItem: React.FC<IdentifiedLibraryItemProps> = ({
       <div 
         className="flex items-center justify-between text-xs font-bold uppercase tracking-tighter p-2 rounded-xl border border-slate-800/50 bg-slate-900/20"
       >
-        <div 
+        <button
+          type="button"
           onClick={() => setIsExpanded(!isExpanded)}
-          className="flex items-center gap-2 text-slate-400 cursor-pointer hover:text-blue-400 transition-colors flex-1"
+          aria-expanded={isExpanded}
+          className="flex items-center gap-2 text-slate-400 cursor-pointer hover:text-blue-400 transition-colors flex-1 text-left"
         >
           <Search className="w-4 h-4" />
           <span className="text-sm">{library.name}</span>
           {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-        </div>
+        </button>
         
         <div className="flex items-center gap-3">
           {books.length > 0 && (

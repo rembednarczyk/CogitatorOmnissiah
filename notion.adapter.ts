@@ -7,6 +7,7 @@ export class NotionAdapter {
   private notion: Client;
   private actualDataSourceId: string | null = null;
   private isDataSource: boolean = true;
+  private initPromise: Promise<void> | null = null;
 
   constructor(apiKey: string, private databaseId: string) {
     this.notion = new Client({ auth: apiKey });
@@ -14,16 +15,26 @@ export class NotionAdapter {
 
   async init(): Promise<void> {
     if (this.actualDataSourceId) return; // Already initialized
+    // Deduplikuj równoległe wywołania init() — jedna inicjalizacja w locie
+    if (!this.initPromise) {
+      this.initPromise = this.doInit().catch((err) => {
+        this.initPromise = null; // pozwól spróbować ponownie po błędzie
+        throw err;
+      });
+    }
+    return this.initPromise;
+  }
 
+  private async doInit(): Promise<void> {
     try {
-      // Try as data_source first
-      await (this.notion as any).dataSources.retrieve({ data_source_id: this.databaseId });
+      // Try as data_source first (withRetry nie ponawia 404 — tylko 429/5xx/sieć)
+      await withRetry(() => (this.notion as any).dataSources.retrieve({ data_source_id: this.databaseId }));
       this.actualDataSourceId = this.databaseId;
       this.isDataSource = true;
     } catch (e: any) {
       // Fallback to database
       try {
-        const database = await this.notion.databases.retrieve({ database_id: this.databaseId }) as any;
+        const database = await withRetry(() => this.notion.databases.retrieve({ database_id: this.databaseId })) as any;
         if (database.data_sources && database.data_sources.length > 0) {
           this.actualDataSourceId = database.data_sources[0].id;
           this.isDataSource = true;
@@ -33,7 +44,11 @@ export class NotionAdapter {
           this.isDataSource = false;
         }
       } catch (dbError: any) {
-        throw new Error(`Nie można znaleźć bazy danych ani źródła danych o ID: ${this.databaseId}. Upewnij się, że integracja ma dostęp.`);
+        // "Brak dostępu" tylko przy prawdziwym 404 — timeout to nie problem uprawnień
+        if (dbError?.code === "object_not_found" || dbError?.status === 404) {
+          throw new Error(`Nie można znaleźć bazy danych ani źródła danych o ID: ${this.databaseId}. Upewnij się, że integracja ma dostęp.`);
+        }
+        throw new Error(`Błąd połączenia z Notion podczas inicjalizacji: ${dbError?.message || dbError}`);
       }
     }
   }
@@ -210,36 +225,10 @@ export class NotionAdapter {
     return allBooks;
   }
 
-  async getBooksForStats(onProgress?: (count: number) => void): Promise<NotionBook[]> {
-    await this.init();
-    const allBooks: NotionBook[] = [];
-    let hasMore = true;
-    let nextCursor: string | undefined = undefined;
-
-    while (hasMore) {
-      let response: any;
-      if (this.isDataSource) {
-        response = await withRetry(() => (this.notion as any).dataSources.query({
-          data_source_id: this.actualDataSourceId!,
-          start_cursor: nextCursor,
-        }));
-      } else {
-        response = await withRetry(() => (this.notion.databases as any).query({
-          database_id: this.actualDataSourceId!,
-          start_cursor: nextCursor,
-        }));
-      }
-
-      for (const page of response.results) {
-        allBooks.push(this.parseNotionPageToBook(page as NotionPage));
-      }
-
-      hasMore = response.has_more;
-      nextCursor = response.next_cursor ?? undefined;
-      if (onProgress) onProgress(allBooks.length);
-    }
-
-    return allBooks;
+  async getBooksForStats(onProgress?: (count: number) => void, checkCancellation?: () => boolean): Promise<NotionBook[]> {
+    // Ta sama pętla co queryAllBooks — jedna implementacja, żeby skany
+    // biblioteki/Vinted też dało się anulować w fazie pobierania z Notion
+    return this.queryAllBooks(onProgress, checkCancellation);
   }
 
   buildPropertyValue(value: string, type: string): any {

@@ -13,9 +13,11 @@ export const LibraryProgressItem: React.FC<LibraryProgressItemProps> = ({ librar
 
   return (
     <div className="space-y-4">
-      <div 
+      <button
+        type="button"
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center justify-between text-xs font-bold uppercase tracking-tighter cursor-pointer hover:bg-slate-900/50 p-2 rounded-xl transition-colors group border border-transparent hover:border-blue-500/20"
+        aria-expanded={isExpanded}
+        className="w-full flex items-center justify-between text-xs font-bold uppercase tracking-tighter cursor-pointer hover:bg-slate-900/50 p-2 rounded-xl transition-colors group border border-transparent hover:border-blue-500/20 text-left"
       >
         <div className="flex items-center gap-2 text-slate-400 group-hover:text-blue-400 transition-colors">
           <Library className="w-4 h-4" />
@@ -25,7 +27,7 @@ export const LibraryProgressItem: React.FC<LibraryProgressItemProps> = ({ librar
         <div className="text-slate-200 bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/20">
           {library.books.length}
         </div>
-      </div>
+      </button>
       
       {isExpanded && (
         <motion.div 

@@ -18,7 +18,7 @@ export const ProgressAndResults: React.FC<ProgressAndResultsProps> = ({
   const state = activeSync.state;
   const color = state.color || "cyan";
   const progress = state.progress || { current: 0, total: 1 };
-  const percent = Math.round((progress.current / progress.total) * 100);
+  const percent = progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0;
 
   // Map color names to Tailwind classes
   const colorMap: Record<string, { text: string, border: string, bg: string, shadow: string }> = {

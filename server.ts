@@ -140,7 +140,7 @@ class SyncManager {
   async checkLibraryAvailability(libraryCode: string, sendEvent: (data: any) => void) {
     await this.executeTask('library', async (checkCancellation) => {
       sendEvent({ type: "status", message: "Pobieranie listy książek z Notion..." });
-      const allBooks = await this.notion.getBooksForStats();
+      const allBooks = await this.notion.getBooksForStats(undefined, checkCancellation);
       
       // Filter books that are NOT (Przeczytane, Biblioteka, Biblioteka 9, Posiadam)
       const candidates = allBooks.filter(b => {
@@ -278,7 +278,7 @@ class SyncManager {
     await this.executeTask('vinted', async (checkCancellation) => {
       try {
         sendEvent({ type: "status", message: "Pobieranie listy książek z Notion..." });
-        const allBooks = await this.notion.getBooksForStats();
+        const allBooks = await this.notion.getBooksForStats(undefined, checkCancellation);
         
         // Filter books:
         // - Have Polish title
@@ -376,6 +376,9 @@ class SyncManager {
               type: "search_attempt",
               result: { id: book.id, title, author: book.author, url, status: "no_results", itemCount: 0 }
             });
+            // Odczekaj jak przy każdym innym zapytaniu — pomijanie opóźnienia
+            // przy braku wyników (częsty przypadek) to prosta droga do blokady
+            await new Promise(resolve => setTimeout(resolve, 3000 + Math.floor(Math.random() * 2000)));
             continue;
           }
           

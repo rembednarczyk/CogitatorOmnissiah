@@ -3,14 +3,26 @@ import { XCircle, CheckCircle2, RefreshCw, AlertCircle, Copy, Check } from "luci
 import { motion } from "motion/react";
 import { useSync } from "../hooks/useSync";
 
+const stepDotColorMap: Record<string, string> = {
+  emerald: "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]",
+  amber: "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]",
+  cyan: "bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.5)]",
+  blue: "bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]",
+  rose: "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]",
+  indigo: "bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]",
+  purple: "bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.5)]",
+};
+
 interface SyncSummaryResultProps {
   syncs: ReturnType<typeof useSync>[];
   fullSyncResults?: any[] | null;
+  onClearFullResults?: () => void;
 }
 
 export const SyncSummaryResult: React.FC<SyncSummaryResultProps> = ({
   syncs,
-  fullSyncResults
+  fullSyncResults,
+  onClearFullResults
 }) => {
   const [copied, setCopied] = useState(false);
   
@@ -26,10 +38,8 @@ export const SyncSummaryResult: React.FC<SyncSummaryResultProps> = ({
     const allDuplicates = fullSyncResults.flatMap(curr => curr.result?.summary?.duplicates || []);
 
     const handleCloseFull = () => {
-      // In App.tsx we should probably have a way to clear this, 
-      // but for now we can just reset all syncs which is what handleClose does
       syncs.forEach(s => s.setState(prev => ({ ...prev, result: null })));
-      // Note: fullSyncResults is managed by App.tsx, so we might need a prop to clear it
+      onClearFullResults?.();
     };
 
     return (
@@ -43,8 +53,8 @@ export const SyncSummaryResult: React.FC<SyncSummaryResultProps> = ({
             <h3 className="text-xl font-bold font-display text-cyan-400 uppercase tracking-widest">Podsumowanie Wielkiego Rytuału</h3>
             <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mt-1">Pełna Synchronizacja Archiwów Zakończona</p>
           </div>
-          <button 
-            onClick={() => window.location.reload()} // Simplest way to clear everything for now or just wait for next sync
+          <button
+            onClick={handleCloseFull}
             className="text-slate-500 hover:text-slate-200 transition-colors"
             title="Zamknij podsumowanie"
           >
@@ -69,10 +79,11 @@ export const SyncSummaryResult: React.FC<SyncSummaryResultProps> = ({
         <div className="space-y-4">
           <h4 className="text-xs font-bold text-slate-400 uppercase tracking-[0.3em] mb-4">Szczegóły Poszczególnych Kroków</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {fullSyncResults.map((res, i) => (
-              <div key={i} className="p-3 rounded-xl bg-slate-900/40 border border-slate-800/50 flex items-center justify-between">
+            {fullSyncResults.map((res) => (
+              <div key={res.name} className="p-3 rounded-xl bg-slate-900/40 border border-slate-800/50 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`w-2 h-2 rounded-full bg-${res.color}-500 shadow-[0_0_8px_rgba(var(--${res.color}-500-rgb),0.5)]`} />
+                  {/* Tailwind nie generuje klas budowanych dynamicznie — mapuj statycznie */}
+                  <div className={`w-2 h-2 rounded-full ${stepDotColorMap[res.color] || stepDotColorMap.cyan}`} />
                   <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">{res.name}</span>
                 </div>
                 <div className="text-[10px] font-mono text-slate-500">
@@ -168,7 +179,7 @@ export const SyncSummaryResult: React.FC<SyncSummaryResultProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             {[
               { label: "Dodano", count: summary.added?.length || 0, color: "text-emerald-400", bg: "bg-emerald-500/10" },
-              { label: "Zaktualizowano", count: (summary.updated?.length || 0) + (activeResult.updated || 0) - (summary.updated?.length || 0), color: theme.text, bg: theme.bg },
+              { label: "Zaktualizowano", count: activeResult.updated || summary.updated?.length || 0, color: theme.text, bg: theme.bg },
               { label: "Pominięto", count: summary.skipped?.length || 0, color: "text-slate-400", bg: "bg-slate-500/10" },
               { label: "Duplikaty", count: summary.duplicates?.length || 0, color: "text-amber-400", bg: "bg-amber-500/10" }
             ].map((stat, i) => (

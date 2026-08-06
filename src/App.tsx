@@ -350,9 +350,10 @@ export default function App() {
 
               {/* Sync Summary Result */}
               <AnimatePresence>
-                <SyncSummaryResult 
+                <SyncSummaryResult
                   syncs={syncs}
                   fullSyncResults={fullSyncResults}
+                  onClearFullResults={() => setFullSyncResults(null)}
                 />
               </AnimatePresence>
 
