@@ -1,5 +1,4 @@
 import express from "express";
-import { createServer as createViteServer } from "vite";
 import path from "path";
 import { NotionAdapter } from "./notion.adapter";
 import { WikiAdapter } from "./wiki.adapter";
@@ -584,12 +583,14 @@ export const app = express();
 app.use(express.json());
 app.use("/api", syncRoutes);
 
-const PORT = 3000;
+const PORT = parseInt(process.env.PORT || "3000", 10);
 let server: any;
 
 export async function startServer() {
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production" && !process.env.VITEST) {
+    // Dynamic import keeps vite out of the production bundle
+    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
