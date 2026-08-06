@@ -152,10 +152,7 @@ class SyncManager {
       sendEvent({ type: "status", message: `Znaleziono ${candidates.length} kandydatów do sprawdzenia...` });
       
       const results: any[] = [];
-      const limit = pLimit(2); // Limit concurrent requests to avoid blocking
-      
       const httpsAgent = new https.Agent({ 
-        rejectUnauthorized: false,
         keepAlive: true,
         keepAliveMsecs: 1000,
         timeout: 45000,
@@ -178,7 +175,7 @@ class SyncManager {
           total: candidates.length
         });
 
-        const url = `https://opac.mbp.lublin.pl/search/description?q=${encodeURIComponent(title)}&index=1&scope=full&f2%5B0%5D=${libraryCode}`;
+        const url = `https://opac.mbp.lublin.pl/search/description?q=${encodeURIComponent(title)}&index=1&scope=full&f2%5B0%5D=${encodeURIComponent(libraryCode)}`;
         
         const headers = {
           'User-Agent': getRandomUserAgent(),
@@ -272,7 +269,8 @@ class SyncManager {
         await new Promise(resolve => setTimeout(resolve, 500));
       }
 
-      sendEvent({ type: "complete", result: { success: true, results, message: `Zakończono sprawdzanie. Znaleziono ${results.length} książek.` } });
+      const wasCancelled = checkCancellation();
+      sendEvent({ type: "complete", result: { success: !wasCancelled, cancelled: wasCancelled, results, message: wasCancelled ? `Skanowanie przerwane. Znaleziono ${results.length} książek przed przerwaniem.` : `Zakończono sprawdzanie. Znaleziono ${results.length} książek.` } });
     });
   }
 
@@ -295,7 +293,6 @@ class SyncManager {
         
         const results: any[] = [];
       const httpsAgent = new https.Agent({ 
-        rejectUnauthorized: false,
         keepAlive: true,
         keepAliveMsecs: 1000,
         timeout: 45000,
@@ -566,7 +563,8 @@ class SyncManager {
         await new Promise(resolve => setTimeout(resolve, 3000 + jitter));
       }
 
-      sendEvent({ type: "complete", result: { success: true, results, message: `Zakończono skanowanie Vinted. Znaleziono oferty dla ${results.length} książek.` } });
+      const wasCancelled = checkCancellation();
+      sendEvent({ type: "complete", result: { success: !wasCancelled, cancelled: wasCancelled, results, message: wasCancelled ? `Skanowanie Vinted przerwane. Znaleziono oferty dla ${results.length} książek przed przerwaniem.` : `Zakończono skanowanie Vinted. Znaleziono oferty dla ${results.length} książek.` } });
       } catch (error: any) {
         console.error("Vinted Initialization Error:", error);
         sendEvent({ type: "error", error: `Błąd inicjalizacji Vinted: ${error.message}` });

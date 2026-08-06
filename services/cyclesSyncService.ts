@@ -66,8 +66,8 @@ export class CyclesSyncService {
           let foundSource = "";
 
           // 1. Try Bulk Fetch results (Polish title first, then Original)
-          wikitext = (plTitle ? wikiContents[plTitle.toLowerCase()] : null) || 
-                     (origTitle ? wikiContents[origTitle.toLowerCase()] : null);
+          wikitext = (plTitle ? wikiContents[plTitle.toLowerCase()] : null) ||
+                     (origTitle ? wikiContents[origTitle.toLowerCase()] : null) || "";
 
           if (wikitext) {
             const wikiAuthor = WikiParser.extractAuthor(wikitext);

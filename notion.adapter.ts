@@ -185,7 +185,7 @@ export class NotionAdapter {
     while (hasMore) {
       if (checkCancellation && checkCancellation()) break;
       
-      let response;
+      let response: any;
       if (this.isDataSource) {
         response = await withRetry(() => (this.notion as any).dataSources.query({
           data_source_id: this.actualDataSourceId!,
@@ -217,7 +217,7 @@ export class NotionAdapter {
     let nextCursor: string | undefined = undefined;
 
     while (hasMore) {
-      let response;
+      let response: any;
       if (this.isDataSource) {
         response = await withRetry(() => (this.notion as any).dataSources.query({
           data_source_id: this.actualDataSourceId!,

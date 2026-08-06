@@ -1,36 +1,10 @@
 import { NotionAdapter } from "../notion.adapter";
 import { WikiAdapter } from "../wiki.adapter";
 import { BookSyncService } from "./bookSyncService";
-import { SyncEvent, NotionBook, Book } from "../src/types";
+import { SyncEvent, NotionBook, Book, IntegrityCheckResult } from "../src/types";
 import { normalizeData } from "./dataNormalizer";
 
-export interface IntegrityCheckResult {
-  lpUniqueness: { status: boolean; duplicates: string[] };
-  yearCountMatch: { 
-    status: boolean; 
-    diffs: { 
-      year: string; 
-      notion: number; 
-      wiki: number;
-      notionOnly?: string[];
-      wikiOnly?: string[];
-      misplaced?: { title: string, otherYear: string }[];
-      collisions?: { title: string, matches: string[] }[];
-    }[] 
-  };
-  originalTitleUniqueness: { status: boolean; duplicates: string[] };
-  polishTitleUniqueness: { status: boolean; duplicates: string[] };
-  awardCountMatch: { 
-    status: boolean; 
-    diffs: { 
-      award: string; 
-      notion: number; 
-      wiki: number;
-      notionOnly?: string[];
-      wikiOnly?: string[];
-    }[] 
-  };
-}
+export type { IntegrityCheckResult };
 
 export class IntegrityService {
   private bookSyncService: BookSyncService;

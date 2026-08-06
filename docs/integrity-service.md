@@ -20,7 +20,7 @@ Performs a comprehensive cross-reference check between the Notion database and t
   - **Exclusion**: Ignores "Locus YA" (Powieść dla młodzieży) category as it's not tracked in the main database.
   - **Misplaced Detection**: Identifies books that exist in both databases but have different years.
   - **Notion Only / Wiki Only**: Lists books that are missing from one of the databases for a specific year.
-  - **Collisions**: Uses fuzzy matching (similarity > 0.8) to identify potential matches when exact titles differ.
+  - **Collisions**: Identifies same-book candidates across years via robust-key set intersection (normalized `title|author` keys shared between entries).
 - **Award Count Match**:
   - Compares the count of books for each award (Hugo, Nebula, Locus) in Notion vs. Wiki.
   - Identifies specific books that are missing the award tag in Notion.

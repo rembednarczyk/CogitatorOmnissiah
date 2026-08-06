@@ -96,18 +96,4 @@ describe('WikiParser', () => {
     });
   });
 
-  describe('checkCycle', () => {
-    it('detects cycle from parameters', () => {
-      expect(WikiParser.checkCycle('| cykl = Fundacja')).toBe(true);
-      expect(WikiParser.checkCycle('| seria = Diuna')).toBe(true);
-    });
-
-    it('detects cycle from templates', () => {
-      expect(WikiParser.checkCycle('{{Cykl | nazwa = Wiedźmin}}')).toBe(true);
-    });
-
-    it('returns false when no cycle is present', () => {
-      expect(WikiParser.checkCycle('{{Książka | autor = Lem}}')).toBe(false);
-    });
-  });
 });

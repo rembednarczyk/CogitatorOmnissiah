@@ -77,12 +77,12 @@ export function useSync(endpoint: string, stopEndpoint: string, initialState: Pa
                 const data: SyncEvent = JSON.parse(line.substring(6));
                 
                 if (data.type === "status") {
-                  setState(prev => ({ ...prev, statusMessage: data.message }));
+                  setState(prev => ({ ...prev, statusMessage: data.message ?? null }));
                 } else if (data.type === "progress") {
-                  setState(prev => ({ 
-                    ...prev, 
-                    statusMessage: data.message,
-                    progress: { current: data.current, total: data.total }
+                  setState(prev => ({
+                    ...prev,
+                    statusMessage: data.message ?? null,
+                    progress: { current: data.current ?? 0, total: data.total ?? 0 }
                   }));
                 } else if (data.type === "complete") {
                   const finalResult = onComplete ? onComplete(data.result) : data.result;
@@ -95,9 +95,9 @@ export function useSync(endpoint: string, stopEndpoint: string, initialState: Pa
                   }));
                   return finalResult;
                 } else if (data.type === "error") {
-                  setState(prev => ({ 
-                    ...prev, 
-                    error: data.error, 
+                  setState(prev => ({
+                    ...prev,
+                    error: data.error ?? "Nieznany błąd synchronizacji",
                     loading: false,
                     statusMessage: null,
                     progress: null

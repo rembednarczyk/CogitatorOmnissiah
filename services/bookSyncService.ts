@@ -231,16 +231,6 @@ export class BookSyncService {
     return updates;
   }
 
-  private countCommonWords(title1: string, title2: string): number {
-    const words1 = new Set(title1.toLowerCase().split(/\s+/).filter(w => w.length > 0));
-    const words2 = new Set(title2.toLowerCase().split(/\s+/).filter(w => w.length > 0));
-    let common = 0;
-    for (const w1 of words1) {
-      if (words2.has(w1)) common++;
-    }
-    return common;
-  }
-
   async runBookSync(params: SyncParams, sendEvent: (data: SyncEvent) => void, checkCancellation: () => boolean) {
     try {
       sendEvent({ type: "status", message: "Inicjalizacja bazy Notion..." });

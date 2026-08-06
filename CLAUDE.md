@@ -7,7 +7,7 @@ Cogitator Omnissiah — a full-stack app that syncs sci-fi book awards (Hugo, Ne
 ```bash
 npm run dev      # Start dev server (tsx server.ts — serves API + Vite frontend)
 npm run build    # vite build + esbuild bundle of server.ts → dist/server.cjs
-npm run lint     # tsc --noEmit (type-check; no separate linter configured)
+npm run lint     # tsc --noEmit (strict mode; no separate linter configured)
 npm test         # vitest run (full suite)
 npx vitest run <path>   # Run a single test file
 ```
@@ -21,7 +21,7 @@ Environment variables (see `.env.example`): `NOTION_API_KEY`, `NOTION_DATABASE_I
 
 ## Architecture map
 
-- **Adapters** (repo root): `notion.adapter.ts`, `wiki.adapter.ts` — pure API wrappers, no business logic. External failures degrade gracefully (return empty results + `console.warn`) rather than throw.
+- **Adapters** (repo root): `notion.adapter.ts`, `wiki.adapter.ts` — pure API wrappers, no business logic. "No data" and "infrastructure failure" are distinct: `fetchPageContent` returns `""` for a missing page but throws on network failure; `fetchPagesContentBulk` returns `{ contents, failedTitles }` so services can report what was skipped.
 - **Services** (`/services/`): one service per sync concern (`bookSyncService`, `duplicateSyncService`, `publisherSyncService`, `seriesSyncService`, `cyclesSyncService`, `lpSyncService`, `statsService`, `integrityService`, `purificationService`, `schemaValidationService`). Logic-heavy, stateless where possible.
 - **Orchestration**: `SyncManager` in `server.ts` coordinates services, concurrency (`p-limit`), cancellation, and SSE progress events.
 - **Controllers/Routes** (`/controllers/`, `/routes/`): HTTP parsing/response only; delegate to services.
