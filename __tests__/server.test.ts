@@ -72,6 +72,20 @@ describe('Backend API Endpoints', () => {
     expect(res.body).toEqual({ success: true });
   });
 
+  it('PATCH /api/notion/schema rejects a disallowed property type', async () => {
+    const res = await request(app)
+      .patch('/api/notion/schema')
+      .send({ propertyName: 'Autor', propertyType: 'title', newOptions: [{ name: 'x' }] });
+    expect(res.status).toBe(400);
+  });
+
+  it('PATCH /api/notion/schema rejects malformed options', async () => {
+    const res = await request(app)
+      .patch('/api/notion/schema')
+      .send({ propertyName: 'Autor', propertyType: 'multi_select', newOptions: "not-an-array" });
+    expect(res.status).toBe(400);
+  });
+
   it('POST /api/sync starts a sync stream', async () => {
     const res = await request(app)
       .post('/api/sync')

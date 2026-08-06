@@ -22,6 +22,7 @@ import { withRetry } from "./retry";
 import syncRoutes from "./routes/syncRoutes";
 import { createLogger, classifyHttpError } from "./logger";
 import { SyncEvent } from "./src/types";
+import { basicAuth } from "./middleware/basicAuth";
 
 dotenv.config();
 
@@ -680,6 +681,9 @@ class SyncManager {
 export const syncManager = new SyncManager(notionAdapter, wikiAdapter);
 
 export const app = express();
+// Opt-in Basic Auth (aktywne tylko gdy ustawiono BASIC_AUTH_USER + _PASSWORD).
+// Musi być pierwszy, by chronić także SPA i pliki statyczne.
+app.use(basicAuth());
 app.use(express.json());
 app.use("/api", syncRoutes);
 

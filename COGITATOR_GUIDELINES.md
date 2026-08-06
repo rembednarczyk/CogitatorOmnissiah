@@ -11,6 +11,7 @@
 - **Error Handling**: Distinguish "no data" from "infrastructure failure": `fetchPageContent` returns `""` for a missing page but THROWS a typed `WikiFetchError` on network failure/IP block; `fetchPagesContentBulk` returns `{ contents, failedTitles }` and services surface `failedTitles` in their error summaries. A sync must never report a clean `complete` when its data source was unreachable.
 - **Observability**: use the structured `logger.ts` (`createLogger(component)`) and `classifyHttpError()` (maps failures to `ip_blocked`/`rate_limited`/`timeout`/`dns`/… with a user hint). `GET /api/diagnostics` is the end-to-end health check (Notion + parse each award page). Never log secrets — context objects carry metadata only.
 - **Resilience**: `withRetry` handles transient network errors (socket hang up, timeout, ECONNRESET) with exponential backoff and honors `Retry-After` on 429 responses.
+- **Security**: opt-in HTTP Basic Auth (`middleware/basicAuth.ts`) protects the whole service when `BASIC_AUTH_USER`+`BASIC_AUTH_PASSWORD` are set (`/api/health` stays open). Validate privileged mutations before forwarding to Notion — `updateNotionSchema` allows only `select`/`multi_select` and a well-formed `{ name }` option list. Encode/validate any request value interpolated into an outbound URL.
 
 ## 2. FRONTEND ARCHITECTURE (REACT)
 - **Component Decomposition**: Strict SRP. UI components in `src/components/` (atomic parts in subdirs like `stats/`).
