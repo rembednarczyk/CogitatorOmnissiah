@@ -1,0 +1,135 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { Client } from '@notionhq/client';
+
+const mockClient = {
+  databases: {
+    retrieve: vi.fn(),
+    update: vi.fn(),
+    query: vi.fn(),
+  },
+  dataSources: {
+    retrieve: vi.fn(),
+    update: vi.fn(),
+    query: vi.fn(),
+  },
+  pages: {
+    update: vi.fn(),
+    create: vi.fn(),
+  }
+};
+
+vi.mock('@notionhq/client', () => {
+  return {
+    Client: class {
+      constructor() {
+        return mockClient;
+      }
+    }
+  };
+});
+
+import { NotionAdapter } from '../notion.adapter';
+
+describe('NotionAdapter', () => {
+  let adapter: NotionAdapter;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    adapter = new NotionAdapter('test-key', 'test-db-id');
+  });
+
+  describe('init', () => {
+    it('initializes as data source if possible', async () => {
+      mockClient.dataSources.retrieve.mockResolvedValueOnce({ id: 'test-db-id' });
+      
+      await adapter.init();
+      
+      expect(mockClient.dataSources.retrieve).toHaveBeenCalledWith({ data_source_id: 'test-db-id' });
+      expect((adapter as any).isDataSource).toBe(true);
+      expect((adapter as any).actualDataSourceId).toBe('test-db-id');
+    });
+
+    it('falls back to database if data source retrieve fails', async () => {
+      mockClient.dataSources.retrieve.mockRejectedValueOnce(new Error('Not found'));
+      mockClient.databases.retrieve.mockResolvedValueOnce({ id: 'test-db-id', data_sources: [] });
+      
+      await adapter.init();
+      
+      expect(mockClient.databases.retrieve).toHaveBeenCalledWith({ database_id: 'test-db-id' });
+      expect((adapter as any).isDataSource).toBe(false);
+      expect((adapter as any).actualDataSourceId).toBe('test-db-id');
+    });
+
+    it('uses data source from database if available', async () => {
+      mockClient.dataSources.retrieve.mockRejectedValueOnce(new Error('Not found'));
+      mockClient.databases.retrieve.mockResolvedValueOnce({ 
+        id: 'test-db-id', 
+        data_sources: [{ id: 'ds-123' }] 
+      });
+      
+      await adapter.init();
+      
+      expect((adapter as any).isDataSource).toBe(true);
+      expect((adapter as any).actualDataSourceId).toBe('ds-123');
+    });
+  });
+
+  describe('getSchema', () => {
+    it('returns schema from data source', async () => {
+      mockClient.dataSources.retrieve.mockResolvedValueOnce({ id: 'test-db-id' }); // for init
+      mockClient.dataSources.retrieve.mockResolvedValueOnce({ properties: { 'Tytuł': {} } }); // for getSchema
+      
+      const schema = await adapter.getSchema();
+      expect(schema).toEqual({ 'Tytuł': {} });
+    });
+  });
+
+  describe('queryAllBooks', () => {
+    it('queries all books and parses them correctly', async () => {
+      mockClient.dataSources.retrieve.mockResolvedValueOnce({ id: 'test-db-id' }); // for init
+      
+      const mockPage = {
+        id: 'page-1',
+        properties: {
+          'Tytuł polski': { type: 'title', title: [{ plain_text: 'Solaris' }] },
+          'Autor': { type: 'rich_text', rich_text: [{ plain_text: 'Stanisław Lem' }] },
+          'Rok': { type: 'number', number: 1961 },
+          'Nagroda': { type: 'multi_select', multi_select: [{ name: 'Zajdel' }] }
+        }
+      };
+      
+      mockClient.dataSources.query.mockResolvedValueOnce({
+        results: [mockPage],
+        has_more: false
+      });
+
+      const books = await adapter.queryAllBooks();
+      
+      expect(books).toHaveLength(1);
+      expect(books[0]).toEqual(expect.objectContaining({
+        id: 'page-1',
+        plTitle: 'Solaris',
+        author: 'Stanisław Lem',
+        year: '1961',
+        awards: ['Zajdel']
+      }));
+    });
+  });
+
+  describe('updateDatabaseProperty', () => {
+    it('updates a property correctly', async () => {
+      mockClient.dataSources.retrieve.mockResolvedValueOnce({ id: 'test-db-id' }); // for init
+      
+      await adapter.updateDatabaseProperty('test-db-id', 'Wydawnictwo', 'rich_text');
+      
+      expect(mockClient.dataSources.update).toHaveBeenCalledWith({
+        data_source_id: 'test-db-id',
+        properties: {
+          'Wydawnictwo': {
+            rich_text: {}
+          }
+        }
+      });
+    });
+  });
+});

@@ -1,0 +1,37 @@
+import express from "express";
+import * as syncController from "../controllers/syncController";
+
+const router = express.Router();
+
+router.get("/stats", syncController.getStats);
+router.get("/wiki/last-update", syncController.getWikiLastUpdate);
+router.get("/health", syncController.getHealth);
+router.get("/config", syncController.getConfig);
+router.get("/notion/schema", syncController.getNotionSchema);
+router.patch("/notion/schema", syncController.updateNotionSchema);
+router.post("/sync/reset", syncController.resetSyncState);
+router.post("/sync/stop", syncController.stopSync);
+router.post("/sync-schema/stop", syncController.stopSchemaSync);
+router.post("/sync-purify/stop", syncController.stopPurifySync);
+router.post("/sync-publisher/stop", syncController.stopPublisherSync);
+router.post("/sync-series/stop", syncController.stopSeriesSync);
+router.post("/sync-cycles/stop", syncController.stopCyclesSync);
+router.post("/sync-lp/stop", syncController.stopLpSync);
+router.post("/sync-duplicates/stop", syncController.stopDuplicatesSync);
+router.post("/sync-integrity/stop", syncController.stopIntegrityCheck);
+router.post("/library-check/stop", syncController.stopLibraryCheck);
+router.post("/sync", syncController.runSync);
+router.post("/sync-schema", syncController.runSchemaSync);
+router.post("/sync-purify", syncController.runPurifySync);
+router.post("/sync-publisher", syncController.runPublisherSync);
+router.post("/sync-series", syncController.runSeriesSync);
+router.post("/sync-cycles", syncController.runCyclesSync);
+router.post("/sync-lp", syncController.runLpSync);
+router.post("/sync-duplicates", syncController.runDuplicateCheck);
+router.post("/sync-integrity", syncController.runIntegrityCheck);
+router.post("/mark-as-read", syncController.markAsRead);
+router.post("/vinted-check", syncController.checkVintedAvailability);
+router.post("/vinted-check/stop", syncController.stopVintedCheck);
+router.post("/library-check", syncController.checkLibraryAvailability);
+
+export default router;
