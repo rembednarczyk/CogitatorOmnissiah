@@ -82,7 +82,19 @@ export function isWikiAuthorMatch(wikiAuthor: string, notionAuthor: string): boo
     if (!wikiAuthor || !notionAuthor) return true;
     const normWiki = normalizeData(wikiAuthor, 'author').toLowerCase().trim();
     const normNotion = normalizeData(notionAuthor, 'author').toLowerCase().trim();
+    if (!normWiki || !normNotion) return true;
+    if (normWiki === normNotion) return true;
 
-    if (normWiki.includes(normNotion) || normNotion.includes(normWiki)) return true;
+    // Dopasowanie na poziomie CAŁYCH SŁÓW, nie surowego substringa. Wcześniej
+    // `normNotion.includes(normWiki)` akceptowało kolizje prefiksowe — "lem"
+    // pasowało do "lemański", "ann" do "anna" — przepuszczając stronę o innym
+    // dziele. Wymagamy, by krótsze nazwisko było PEŁNYM imieniem (≥2 słowa)
+    // w całości zawartym w drugim.
+    const words = (s: string) => new Set(s.split(/[\s,]+/).filter(Boolean));
+    const a = words(normWiki);
+    const b = words(normNotion);
+    const [small, big] = a.size <= b.size ? [a, b] : [b, a];
+    if (small.size >= 2 && [...small].every((w) => big.has(w))) return true;
+
     return calculateSimilarity(normWiki, normNotion) > 0.6;
 }

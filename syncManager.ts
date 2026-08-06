@@ -228,13 +228,15 @@ class SyncManager {
   }
 
   resetSyncState() {
-    // Nie zostawiaj osieroconego zadania piszącego do Notion — najpierw anuluj,
-    // potem zwolnij blokadę. Zadanie zachowuje własny obiekt stanu, więc jego
-    // finally nie wyczyści stanu nowego zadania (porównanie tożsamości w executeTask).
-    if (this.currentTask) {
-      this.currentTask.cancelRequested = true;
-      this.currentTask = null;
-    }
+    // Anuluj aktywne zadanie, ale NIE zeruj blokady natychmiast. Wcześniej
+    // resetSyncState od razu ustawiał currentTask = null, przez co isSyncing
+    // stawał się false i kolejny POST /sync-* startował drugie zadanie, gdy
+    // osierocone wciąż pisało do Notion (łamiąc "dokładnie jeden sync naraz").
+    // Zamiast tego sygnalizujemy anulowanie; blokada zwolni się w `finally`
+    // zadania (identity-check), gdy zauważy cancelRequested i wyjdzie — a że
+    // wszystkie rytuały sprawdzają checkCancellation w pętlach i mają ograniczone
+    // timeouty (axios/withRetry), następuje to szybko i bez okna równoległych zapisów.
+    this.stopActiveSync();
   }
 }
 
