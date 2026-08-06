@@ -44,6 +44,43 @@ interface SyncTask {
   cancelRequested: boolean;
 }
 
+/** Kanoniczne nazwy rytuałów synchronizacji — jedno źródło prawdy dla dispatchu. */
+export type SyncTaskName =
+  | "book"
+  | "purify"
+  | "schema"
+  | "publisher"
+  | "series"
+  | "duplicates"
+  | "lp"
+  | "cycles"
+  | "integrity"
+  | "library"
+  | "vinted";
+
+type TaskFn = (checkCancellation: () => boolean) => Promise<void>;
+
+/**
+ * Rejestr rytuałów: nazwa → fabryka `taskFn`. Każdy serwis ma inaczej nazwaną
+ * metodę `run*`, ale wszystkie mają ten sam kontrakt `(sendEvent, checkCancellation)`;
+ * rejestr spina je w jedną tablicę, dzięki czemu SyncManager.run() jest jednym
+ * generycznym dispatcherem zamiast kilkunastu bliźniaczych metod. `book` i
+ * `library` przyjmują dodatkowe parametry z żądania (przez argument `params`).
+ */
+const TASK_REGISTRY: Record<SyncTaskName, (sendEvent: (data: SyncEvent) => void, params?: any) => TaskFn> = {
+  book:       (s, p) => (cc) => bookSyncService.runBookSync(p ?? {}, s, cc),
+  purify:     (s) => (cc) => purificationService.runPurification(s, cc),
+  schema:     (s) => (cc) => schemaValidationService.runSchemaValidation(s, cc),
+  publisher:  (s) => (cc) => publisherSyncService.runPublisherSync(s, cc),
+  series:     (s) => (cc) => seriesSyncService.runSeriesSync(s, cc),
+  duplicates: (s) => (cc) => duplicateSyncService.runDuplicateCheck(s, cc),
+  lp:         (s) => (cc) => lpSyncService.runLpSync(s, cc),
+  cycles:     (s) => (cc) => cyclesSyncService.runCyclesSync(s, cc),
+  integrity:  (s) => (cc) => integrityService.runIntegrityCheck(s, cc),
+  library:    (s, p) => (cc) => libraryCheckService.runLibraryCheck(p.libraryCode, s, cc),
+  vinted:     (s) => (cc) => vintedSyncService.runVintedCheck(s, cc),
+};
+
 class SyncManager {
   private currentTask: SyncTask | null = null;
 
@@ -84,40 +121,15 @@ class SyncManager {
     }
   }
 
-  async runBookSync(params: { awardName?: string; pageTitle?: string; syncAll?: boolean }, sendEvent: (data: SyncEvent) => void) {
-    await this.executeTask('book', (checkCancellation) => bookSyncService.runBookSync(params, sendEvent, checkCancellation));
-  }
-
-  async runPurifySync(sendEvent: (data: SyncEvent) => void) {
-    await this.executeTask('purify', (checkCancellation) => purificationService.runPurification(sendEvent, checkCancellation));
-  }
-
-  async runSchemaSync(sendEvent: (data: SyncEvent) => void) {
-    await this.executeTask('schema', (checkCancellation) => schemaValidationService.runSchemaValidation(sendEvent, checkCancellation));
-  }
-
-  async runPublisherSync(sendEvent: (data: SyncEvent) => void) {
-    await this.executeTask('publisher', (checkCancellation) => publisherSyncService.runPublisherSync(sendEvent, checkCancellation));
-  }
-
-  async runSeriesSync(sendEvent: (data: SyncEvent) => void) {
-    await this.executeTask('series', (checkCancellation) => seriesSyncService.runSeriesSync(sendEvent, checkCancellation));
-  }
-
-  async runDuplicateCheck(sendEvent: (data: SyncEvent) => void) {
-    await this.executeTask('duplicates', (checkCancellation) => duplicateSyncService.runDuplicateCheck(sendEvent, checkCancellation));
-  }
-
-  async runLpSync(sendEvent: (data: SyncEvent) => void) {
-    await this.executeTask('lp', (checkCancellation) => lpSyncService.runLpSync(sendEvent, checkCancellation));
-  }
-
-  async runCyclesSync(sendEvent: (data: SyncEvent) => void) {
-    await this.executeTask('cycles', (checkCancellation) => cyclesSyncService.runCyclesSync(sendEvent, checkCancellation));
-  }
-
-  async runIntegrityCheck(sendEvent: (data: SyncEvent) => void) {
-    await this.executeTask('integrity', (checkCancellation) => integrityService.runIntegrityCheck(sendEvent, checkCancellation));
+  /**
+   * Generyczny dispatch rytuału: pobiera fabrykę z rejestru, buduje `taskFn`
+   * i uruchamia ją pod blokadą pojedynczego zadania. `params` niosą dane
+   * z żądania dla rytuałów, które ich wymagają (`book`, `library`).
+   */
+  async run(taskName: SyncTaskName, sendEvent: (data: SyncEvent) => void, params?: any) {
+    const makeTaskFn = TASK_REGISTRY[taskName];
+    if (!makeTaskFn) throw new Error(`Nieznany rytuał synchronizacji: ${taskName}`);
+    await this.executeTask(taskName, makeTaskFn(sendEvent, params));
   }
 
   async getWikiLastUpdate(pageTitle: string) {
@@ -126,14 +138,6 @@ class SyncManager {
 
   async markAsRead(pageId: string) {
     return await this.notion.addTagToMultiSelect(pageId, "Źródło", "Przeczytane");
-  }
-
-  async checkLibraryAvailability(libraryCode: string, sendEvent: (data: SyncEvent) => void) {
-    await this.executeTask('library', (checkCancellation) => libraryCheckService.runLibraryCheck(libraryCode, sendEvent, checkCancellation));
-  }
-
-  async checkVintedAvailability(sendEvent: (data: SyncEvent) => void) {
-    await this.executeTask('vinted', (checkCancellation) => vintedSyncService.runVintedCheck(sendEvent, checkCancellation));
   }
 
   /**
