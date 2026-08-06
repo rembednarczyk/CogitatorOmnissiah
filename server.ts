@@ -20,8 +20,11 @@ import { SchemaValidationService } from "./services/schemaValidationService";
 import { IntegrityService } from "./services/integrityService";
 import { withRetry } from "./retry";
 import syncRoutes from "./routes/syncRoutes";
+import { createLogger, classifyHttpError } from "./logger";
 
 dotenv.config();
+
+const serverLog = createLogger("Server");
 
 const USER_AGENTS = [
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -575,6 +578,86 @@ class SyncManager {
     });
   }
 
+  /**
+   * Diagnostyka end-to-end: sprawdza połączenie z Notion oraz pobranie i
+   * parsowanie każdej strony nagrody z encyklopedii. Zwraca strukturę JSON,
+   * którą można otworzyć w przeglądarce (GET /api/diagnostics) — jedno miejsce,
+   * by zobaczyć, DLACZEGO sync nie działa (blokada IP, brak strony, 0 książek).
+   */
+  async runDiagnostics() {
+    const startedAt = Date.now();
+    const report: any = {
+      env: {
+        hasNotionKey: !!process.env.NOTION_API_KEY,
+        hasDatabaseId: !!process.env.NOTION_DATABASE_ID,
+        hasGeminiKey: !!process.env.GEMINI_API_KEY,
+        nodeEnv: process.env.NODE_ENV || "(unset)",
+      },
+      notion: { ok: false } as any,
+      wiki: [] as any[],
+      summary: "",
+    };
+
+    // 1. Notion — inicjalizacja i lekki odczyt schematu
+    try {
+      await this.notion.init();
+      const schema = await this.notion.getSchema();
+      report.notion = { ok: true, propertyCount: schema ? Object.keys(schema).length : 0 };
+      serverLog.info("Diagnostics: Notion OK", report.notion);
+    } catch (err: any) {
+      report.notion = { ok: false, error: err?.message, code: err?.code };
+      serverLog.error("Diagnostics: Notion FAILED", report.notion);
+    }
+
+    // 2. Wiki — pobranie każdej strony nagrody z osobna
+    const AWARDS = [
+      { name: "Nagroda Hugo", title: "Hugo nagroda powieść" },
+      { name: "Nagroda Nebula", title: "Nebula nagroda najlepsza powieść" },
+      { name: "Nagroda Locus", title: "Locus nagroda powieść" },
+    ];
+    for (const aw of AWARDS) {
+      const t0 = Date.now();
+      try {
+        const books = await bookSyncService.fetchBooksFromMediaWiki(aw.title, aw.name, () => {});
+        const entry = {
+          award: aw.name, pageTitle: aw.title, ok: true,
+          booksParsed: books.length, ms: Date.now() - t0,
+          note: books.length === 0 ? "Pobrano stronę, ale sparsowano 0 książek — sprawdź tytuł strony lub układ tabeli." : undefined,
+        };
+        report.wiki.push(entry);
+        serverLog.info("Diagnostics: wiki page OK", entry);
+      } catch (err: any) {
+        const info = classifyHttpError(err);
+        const entry = {
+          award: aw.name, pageTitle: aw.title, ok: false,
+          classification: err?.classification || info.class,
+          status: err?.status || info.status,
+          hint: err?.userHint || info.hint,
+          error: err?.message, ms: Date.now() - t0,
+        };
+        report.wiki.push(entry);
+        serverLog.error("Diagnostics: wiki page FAILED", entry);
+      }
+    }
+
+    // 3. Podsumowanie diagnozy
+    const wikiOk = report.wiki.filter((w: any) => w.ok);
+    const wikiBlocked = report.wiki.filter((w: any) => w.classification === "ip_blocked");
+    if (!report.notion.ok) {
+      report.summary = "Notion nie odpowiada — sprawdź NOTION_API_KEY / NOTION_DATABASE_ID i dostęp integracji.";
+    } else if (wikiBlocked.length > 0) {
+      report.summary = "Encyklopedia blokuje żądania serwera (403/Cloudflare). To najczęstsza przyczyna niedziałających synchronizacji na hostingu — IP serwera jest zablokowane. Uruchom lokalnie lub użyj proxy o zaufanym IP.";
+    } else if (wikiOk.length > 0 && wikiOk.every((w: any) => w.booksParsed === 0)) {
+      report.summary = "Strony pobrane, ale sparsowano 0 książek — prawdopodobnie zmienił się tytuł strony w encyklopedii albo układ tabeli.";
+    } else if (wikiOk.length === report.wiki.length) {
+      report.summary = "Wszystko działa: Notion i encyklopedia odpowiadają, książki są parsowane. Jeśli sync nadal nie działa, sprawdź logi konkretnego rytuału.";
+    } else {
+      report.summary = "Częściowa awaria pobierania z encyklopedii — szczegóły w polu 'wiki'.";
+    }
+    report.ms = Date.now() - startedAt;
+    return report;
+  }
+
   stopActiveSync() {
     if (this.currentTask) {
       this.currentTask.cancelRequested = true;
@@ -622,16 +705,26 @@ export async function startServer() {
   }
 
   server = app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    serverLog.info(`Server running on port ${PORT}`, {
+      port: PORT,
+      nodeEnv: process.env.NODE_ENV || "(unset)",
+      hasNotionKey: !!process.env.NOTION_API_KEY,
+      hasDatabaseId: !!process.env.NOTION_DATABASE_ID,
+      hasGeminiKey: !!process.env.GEMINI_API_KEY,
+      diagnostics: "GET /api/diagnostics",
+    });
+    if (!process.env.NOTION_API_KEY || !process.env.NOTION_DATABASE_ID) {
+      serverLog.warn("Brak NOTION_API_KEY lub NOTION_DATABASE_ID — synchronizacje z Notion nie zadziałają.");
+    }
   });
 }
 
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  serverLog.error('Unhandled Rejection', { reason: (reason as any)?.message || String(reason) });
 });
 
 process.on('uncaughtException', (err) => {
-  console.error('Uncaught Exception thrown:', err);
+  serverLog.error('Uncaught Exception', { message: err?.message, stack: err?.stack?.split("\n").slice(0, 4).join(" | ") });
 });
 
 if (process.env.NODE_ENV !== 'test' && !process.env.VITEST) {

@@ -2,6 +2,9 @@ import axios from "axios";
 import http from "http";
 import https from "https";
 import { withRetry } from "./retry";
+import { createLogger, classifyHttpError, ErrorClass } from "./logger";
+
+const log = createLogger("WikiAdapter");
 
 const httpAgent = new http.Agent({ keepAlive: true });
 const httpsAgent = new https.Agent({ keepAlive: true });
@@ -16,6 +19,26 @@ const wikiAxios = axios.create({
     'Accept-Language': 'pl-PL,pl;q=0.9,en-US;q=0.8,en;q=0.7'
   }
 });
+
+/**
+ * Błąd pobierania z encyklopedii z rozpoznaną klasą przyczyny.
+ * Serwisy i diagnostyka mogą odczytać `classification` i `userHint`,
+ * żeby pokazać użytkownikowi konkretną, użyteczną informację.
+ */
+export class WikiFetchError extends Error {
+  classification: ErrorClass;
+  status?: number;
+  code?: string;
+  userHint: string;
+  constructor(message: string, info: { class: ErrorClass; status?: number; code?: string; hint: string }) {
+    super(message);
+    this.name = "WikiFetchError";
+    this.classification = info.class;
+    this.status = info.status;
+    this.code = info.code;
+    this.userHint = info.hint;
+  }
+}
 
 export class WikiAdapter {
   private readonly baseUrl = "https://encyklopediafantastyki.pl/api.php";
@@ -53,8 +76,15 @@ export class WikiAdapter {
       const rev = page.revisions[0];
       return rev.content ?? rev["*"] ?? rev.slots?.main?.content ?? "";
     } catch (error: any) {
-      console.warn(`Błąd pobierania strony "${title}": ${error.message} (zablokowane IP?)`);
-      throw new Error(`Nie udało się pobrać strony "${title}" z encyklopedii: ${error.message}`);
+      const info = classifyHttpError(error);
+      log.error(`Nie udało się pobrać strony "${title}"`, {
+        title, class: info.class, status: info.status, code: info.code,
+        message: error?.message, snippet: info.snippet,
+      });
+      throw new WikiFetchError(
+        `Nie udało się pobrać strony "${title}" z encyklopedii (${info.class}${info.status ? ` / HTTP ${info.status}` : ""}). ${info.hint}`,
+        info
+      );
     }
   }
 
@@ -156,11 +186,12 @@ export class WikiAdapter {
           continueParams = response.data.continue || {};
         } while (Object.keys(continueParams).length > 0);
       } catch (error: any) {
-        if (error.response?.status === 403) {
-          console.warn(`Wiki API 403 Forbidden dla bulk fetch. Prawdopodobnie blokada IP.`);
-        } else {
-          console.warn(`Error fetching bulk pages:`, error.message);
-        }
+        const info = classifyHttpError(error);
+        log.warn(`Bulk fetch chunku nieudany (${chunk.length} tytułów pominięto)`, {
+          class: info.class, status: info.status, code: info.code,
+          message: error?.message, snippet: info.snippet,
+          firstTitles: chunk.slice(0, 3),
+        });
         // Continue with other chunks even if one fails, but record what was lost
         failedTitles.push(...chunk);
       }
@@ -187,7 +218,8 @@ export class WikiAdapter {
       }
       return [];
     } catch (error: any) {
-      console.warn(`Błąd wyszukiwania "${query}": ${error.message} (zablokowane IP?)`);
+      const info = classifyHttpError(error);
+      log.warn(`Wyszukiwanie "${query}" nieudane`, { class: info.class, status: info.status, code: info.code, message: error?.message });
       return [];
     }
   }
@@ -220,7 +252,8 @@ export class WikiAdapter {
 
       return allTitles;
     } catch (error: any) {
-      console.warn(`Błąd pobierania kategorii "${category}": ${error.message} (zablokowane IP?)`);
+      const info = classifyHttpError(error);
+      log.warn(`Pobieranie kategorii "${category}" nieudane (zwracam ${allTitles.length} zebranych)`, { class: info.class, status: info.status, code: info.code, message: error?.message });
       // Zwróć to, co udało się zebrać przed awarią, zamiast wyrzucać częściowe wyniki
       return allTitles;
     }

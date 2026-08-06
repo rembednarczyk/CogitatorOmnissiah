@@ -4,6 +4,9 @@ import { WikiAdapter } from "../wiki.adapter";
 import { calculateSimilarity, countCommonWords, cleanTitle, sanitizeNotionString, sanitizeNotionTag, isValidUrl } from "../utils";
 import { Book, NotionBook, SyncEvent, SyncParams } from "../src/types";
 import { normalizeData } from "./dataNormalizer";
+import { createLogger } from "../logger";
+
+const log = createLogger("BookSync");
 
 export class BookSyncService {
   constructor(private notion: NotionAdapter, private wiki: WikiAdapter) {}
@@ -11,7 +14,12 @@ export class BookSyncService {
   async fetchBooksFromMediaWiki(pageTitle: string, awardName: string, sendEvent: (data: SyncEvent) => void): Promise<Book[]> {
     sendEvent({ type: "status", message: `Inicjacja ekstrakcji danych z Archiwum Encyklopedii: ${awardName}...` });
     const wikitext = await this.wiki.fetchPageContent(pageTitle);
-    
+
+    if (!wikitext) {
+      // Strona istnieje w kodzie, ale wiki zwróciła pustą treść (brak strony / zmieniony tytuł)
+      log.warn(`Pusta treść strony "${pageTitle}" — 0 książek dla ${awardName}`, { pageTitle, awardName });
+    }
+
     sendEvent({ type: "status", message: `Dekodowanie tablic wyników: ${awardName}...` });
     const books: Book[] = [];
     
@@ -148,6 +156,7 @@ export class BookSyncService {
         });
       }
     }
+    log.info(`Sparsowano ${books.length} książek dla ${awardName}`, { awardName, pageTitle, wikitextLength: wikitext.length, books: books.length });
     return books;
   }
 
