@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { IdentifiedBooks } from "./useStats";
+import { consumeSSE } from "../utils/sse";
 
 export type { IdentifiedBooks };
 
@@ -30,68 +31,40 @@ export function useLibraryCheck() {
 
         if (!response.ok) throw new Error("Błąd podczas sprawdzania biblioteki");
 
-        const reader = response.body?.getReader();
-        if (!reader) {
-          resolve();
-          return;
-        }
-
-        // Buforuj między chunkami (wzorzec z useSync) — zdarzenie SSE może być
-        // rozcięte między dwa odczyty TCP i JSON.parse na fragmencie wywala skan
-        const decoder = new TextDecoder();
-        let buffer = "";
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n\n");
-          buffer = lines.pop() || "";
-
-          for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              let data: any;
-              try {
-                data = JSON.parse(line.substring(6));
-              } catch (e) {
-                console.error("Błąd parsowania SSE:", e);
-                continue;
-              }
-              if (data.type === "progress") {
-                setCheckProgress(prev => ({ 
-                  current: data.current, 
-                  total: data.total, 
-                  message: data.message,
-                  startTime: prev?.startTime || Date.now()
-                }));
-              } else if (data.type === "status") {
-                setCheckProgress(prev => ({ 
-                  current: prev?.current || 0, 
-                  total: prev?.total || 0, 
-                  message: data.message,
-                  startTime: prev?.startTime || Date.now()
-                }));
-              } else if (data.type === "match") {
-                setIdentifiedBooks(prev => {
-                  const currentLibraryBooks = prev[libraryId] || [];
-                  // Check if already exists to avoid duplicates (though server shouldn't send them)
-                  if (currentLibraryBooks.some(b => b.id === data.result.id)) return prev;
-                  return {
-                    ...prev,
-                    [libraryId]: [...currentLibraryBooks, data.result]
-                  };
-                });
-              } else if (data.type === "complete") {
-                setIdentifiedBooks(prev => ({
-                  ...prev,
-                  [libraryId]: data.result.results
-                }));
-              } else if (data.type === "error") {
-                throw new Error(data.error);
-              }
-            }
+        await consumeSSE(response.body, (data) => {
+          if (data.type === "progress") {
+            setCheckProgress(prev => ({
+              current: data.current ?? 0,
+              total: data.total ?? 0,
+              message: data.message ?? "",
+              startTime: prev?.startTime || Date.now()
+            }));
+          } else if (data.type === "status") {
+            setCheckProgress(prev => ({
+              current: prev?.current || 0,
+              total: prev?.total || 0,
+              message: data.message ?? "",
+              startTime: prev?.startTime || Date.now()
+            }));
+          } else if (data.type === "match") {
+            setIdentifiedBooks(prev => {
+              const currentLibraryBooks = prev[libraryId] || [];
+              // Check if already exists to avoid duplicates (though server shouldn't send them)
+              if (currentLibraryBooks.some(b => b.id === data.result.id)) return prev;
+              return {
+                ...prev,
+                [libraryId]: [...currentLibraryBooks, data.result]
+              };
+            });
+          } else if (data.type === "complete") {
+            setIdentifiedBooks(prev => ({
+              ...prev,
+              [libraryId]: data.result.results
+            }));
+          } else if (data.type === "error") {
+            throw new Error(data.error);
           }
-        }
+        });
         resolve();
       } catch (err: any) {
         setLibraryError(err.message);

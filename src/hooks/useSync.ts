@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { SyncState, SyncEvent } from "../types";
+import { consumeSSE } from "../utils/sse";
 
 export function useSync(endpoint: string, stopEndpoint: string, initialState: Partial<SyncState> = {}) {
   const [state, setState] = useState<SyncState>({
@@ -74,59 +75,46 @@ export function useSync(endpoint: string, stopEndpoint: string, initialState: Pa
         throw new Error(errorMessage);
       }
 
-      const reader = res.body?.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      if (reader) {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          armWatchdog(); // każdy fragment (także keepalive) resetuje watchdog
-
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n\n');
-          buffer = lines.pop() || "";
-          
-          for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              try {
-                const data: SyncEvent = JSON.parse(line.substring(6));
-                
-                if (data.type === "status") {
-                  setState(prev => ({ ...prev, statusMessage: data.message ?? null }));
-                } else if (data.type === "progress") {
-                  setState(prev => ({
-                    ...prev,
-                    statusMessage: data.message ?? null,
-                    progress: { current: data.current ?? 0, total: data.total ?? 0 }
-                  }));
-                } else if (data.type === "complete") {
-                  const finalResult = onComplete ? onComplete(data.result) : data.result;
-                  setState(prev => ({ 
-                    ...prev, 
-                    result: finalResult, 
-                    statusMessage: null, 
-                    progress: null,
-                    loading: false
-                  }));
-                  return finalResult;
-                } else if (data.type === "error") {
-                  setState(prev => ({
-                    ...prev,
-                    error: data.error ?? "Nieznany błąd synchronizacji",
-                    loading: false,
-                    statusMessage: null,
-                    progress: null
-                  }));
-                  return false;
-                }
-              } catch (e) {
-                console.error("Błąd parsowania SSE:", e);
-              }
-            }
-          }
+      // Konsumpcja strumienia SSE; onChunk resetuje watchdog przy każdym odczycie
+      // (także keepalive liczy się jako aktywność). Wynik complete/error łapiemy
+      // do `outcome`, bo callback nie może bezpośrednio wyjść z startSync.
+      let outcome: { type: "complete"; result: any } | { type: "error" } | null = null;
+      await consumeSSE(res.body, (data: SyncEvent) => {
+        if (data.type === "status") {
+          setState(prev => ({ ...prev, statusMessage: data.message ?? null }));
+        } else if (data.type === "progress") {
+          setState(prev => ({
+            ...prev,
+            statusMessage: data.message ?? null,
+            progress: { current: data.current ?? 0, total: data.total ?? 0 }
+          }));
+        } else if (data.type === "complete") {
+          const finalResult = onComplete ? onComplete(data.result) : data.result;
+          setState(prev => ({
+            ...prev,
+            result: finalResult,
+            statusMessage: null,
+            progress: null,
+            loading: false
+          }));
+          outcome = { type: "complete", result: finalResult };
+          return true;
+        } else if (data.type === "error") {
+          setState(prev => ({
+            ...prev,
+            error: data.error ?? "Nieznany błąd synchronizacji",
+            loading: false,
+            statusMessage: null,
+            progress: null
+          }));
+          outcome = { type: "error" };
+          return true;
         }
+      }, armWatchdog);
+
+      if (outcome) {
+        const result = outcome as { type: "complete"; result: any } | { type: "error" };
+        return result.type === "complete" ? result.result : false;
       }
       // Strumień zakończył się bez zdarzenia complete/error (np. anulowanie po
       // stronie serwera) — nie zostawiaj UI w wiecznym stanie ładowania

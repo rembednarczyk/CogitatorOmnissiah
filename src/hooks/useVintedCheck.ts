@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from "react";
+import { consumeSSE } from "../utils/sse";
 
 export interface VintedResult {
   id: string;
@@ -52,70 +53,42 @@ export function useVintedCheck() {
         throw new Error(errorData.error || `Błąd serwera: ${response.status}`);
       }
 
-      const reader = response.body?.getReader();
-      if (!reader) {
-        setIsChecking(false);
-        return;
-      }
-
-      // Buforuj między chunkami (wzorzec z useSync) — zdarzenie SSE może być
-      // rozcięte między dwa odczyty TCP i JSON.parse na fragmencie wywala skan
-      const decoder = new TextDecoder();
-      let buffer = "";
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n\n");
-        buffer = lines.pop() || "";
-
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            let data: any;
-            try {
-              data = JSON.parse(line.substring(6));
-            } catch (e) {
-              console.error("Błąd parsowania SSE:", e);
-              continue;
+      await consumeSSE(response.body, (data) => {
+        if (data.type === "progress") {
+          setCheckProgress(prev => ({
+            current: data.current ?? 0,
+            total: data.total ?? 0,
+            message: data.message ?? "",
+            startTime: prev?.startTime || Date.now()
+          }));
+        } else if (data.type === "status") {
+          setCheckProgress(prev => ({
+            current: prev?.current || 0,
+            total: prev?.total || 0,
+            message: data.message ?? "",
+            startTime: prev?.startTime || Date.now()
+          }));
+        } else if (data.type === "match") {
+          setVintedResults(prev => {
+            if (prev.some(r => r.id === data.result.id)) return prev;
+            return [...prev, data.result];
+          });
+        } else if (data.type === "search_attempt") {
+          setSearchAttempts(prev => {
+            const existing = prev.findIndex(a => a.id === data.result.id);
+            if (existing !== -1) {
+              const next = [...prev];
+              next[existing] = data.result;
+              return next;
             }
-            if (data.type === "progress") {
-              setCheckProgress(prev => ({ 
-                current: data.current, 
-                total: data.total, 
-                message: data.message,
-                startTime: prev?.startTime || Date.now()
-              }));
-            } else if (data.type === "status") {
-              setCheckProgress(prev => ({ 
-                current: prev?.current || 0, 
-                total: prev?.total || 0, 
-                message: data.message,
-                startTime: prev?.startTime || Date.now()
-              }));
-            } else if (data.type === "match") {
-              setVintedResults(prev => {
-                if (prev.some(r => r.id === data.result.id)) return prev;
-                return [...prev, data.result];
-              });
-            } else if (data.type === "search_attempt") {
-              setSearchAttempts(prev => {
-                const existing = prev.findIndex(a => a.id === data.result.id);
-                if (existing !== -1) {
-                  const next = [...prev];
-                  next[existing] = data.result;
-                  return next;
-                }
-                return [...prev, data.result];
-              });
-            } else if (data.type === "complete") {
-              setVintedResults(data.result.results);
-            } else if (data.type === "error") {
-              throw new Error(data.error);
-            }
-          }
+            return [...prev, data.result];
+          });
+        } else if (data.type === "complete") {
+          setVintedResults(data.result.results);
+        } else if (data.type === "error") {
+          throw new Error(data.error);
         }
-      }
+      });
     } catch (err: any) {
       setVintedError(err.message);
     } finally {
