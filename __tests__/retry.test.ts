@@ -57,6 +57,40 @@ describe('withRetry', () => {
     expect(fn).toHaveBeenCalledTimes(1);
   });
 
+  it('does NOT retry a non-idempotent op on a transient network error', async () => {
+    // pages.create (addRow) may have already written before the socket reset —
+    // retrying would duplicate the row, so idempotent=false must not retry it.
+    const netErr = new Error('socket hang up');
+    (netErr as any).code = 'ECONNRESET';
+    const fn = vi.fn().mockRejectedValue(netErr);
+
+    await expect(withRetry(fn, 3, 100, 2, false)).rejects.toThrow('socket hang up');
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it('does NOT retry a non-idempotent op on a 5xx error', async () => {
+    const error503 = new Error('Service Unavailable');
+    (error503 as any).status = 503;
+    const fn = vi.fn().mockRejectedValue(error503);
+
+    await expect(withRetry(fn, 3, 100, 2, false)).rejects.toThrow('Service Unavailable');
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it('still retries a non-idempotent op on 429 (request was rejected, not processed)', async () => {
+    const error429 = new Error('Rate limit');
+    (error429 as any).status = 429;
+    const fn = vi.fn()
+      .mockRejectedValueOnce(error429)
+      .mockResolvedValueOnce('success');
+
+    const promise = withRetry(fn, 3, 100, 2, false);
+    await vi.runAllTimersAsync();
+
+    expect(await promise).toBe('success');
+    expect(fn).toHaveBeenCalledTimes(2);
+  });
+
   it('throws after max retries', async () => {
     const error500 = new Error('Server error');
     (error500 as any).status = 500;

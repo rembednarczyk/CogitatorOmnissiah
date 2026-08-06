@@ -1,8 +1,36 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { BookSyncService } from '../bookSyncService';
+import { BookSyncService, buildAuthorTags } from '../bookSyncService';
 import { NotionAdapter } from '../../notion.adapter';
 import { WikiAdapter } from '../../wiki.adapter';
 import { Book, NotionBook } from '../../src/types';
+
+describe('buildAuthorTags', () => {
+  it('never emits a multi_select tag containing a comma, even when a mapping injects one', () => {
+    // "Liu Cixin" maps to "Liu Cixin, Ken Liu"; Notion rejects commas in options.
+    const tags = buildAuthorTags('Liu Cixin');
+    expect(tags).toEqual(['Liu Cixin', 'Ken Liu']);
+    expect(tags.some(t => t.includes(','))).toBe(false);
+  });
+
+  it('splits an already-merged comma author string into clean tags and dedups', () => {
+    const tags = buildAuthorTags('Liu Cixin, Ken Liu');
+    expect(tags).toEqual(['Liu Cixin', 'Ken Liu']);
+  });
+
+  it('handles the Hamilton pseudonym mapping without a comma tag', () => {
+    const tags = buildAuthorTags('Edmond Hamilton (jako Brett Sterling)');
+    expect(tags).toEqual(['Edmond Hamilton', 'Brett Sterling']);
+    expect(tags.some(t => t.includes(','))).toBe(false);
+  });
+
+  it('passes ordinary single authors through unchanged', () => {
+    expect(buildAuthorTags('Stanisław Lem')).toEqual(['Stanisław Lem']);
+  });
+
+  it('returns [] for empty input', () => {
+    expect(buildAuthorTags('')).toEqual([]);
+  });
+});
 
 describe('BookSyncService', () => {
   let service: BookSyncService;
