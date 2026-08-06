@@ -239,26 +239,33 @@ export class BookSyncService {
     const newAwards = (book.awards || []).map(sanitizeNotionTag).filter(Boolean);
     const existingAwards = (existingBook.awards || []).map(sanitizeNotionTag).filter(Boolean);
     
-    const combinedAwardsSet = new Set([...existingAwards]);
+    // Case-insensitive union (jak autorzy/wydawca/seria). Notion dopasowuje opcje
+    // multi_select bez względu na wielkość liter i zachowuje własną pisownię, więc
+    // porównanie case-sensitive mogło re-dodać istniejący tag (np. ręcznie wpisane
+    // "nagroda hugo" obok wygenerowanego "Nagroda Hugo"). Zob. GUIDELINES §3.
+    const awardsLower = new Set(existingAwards.map(a => a.toLowerCase()));
+    const combinedAwards = [...existingAwards];
     let awardsUpdated = false;
 
     for (const aw of newAwards) {
-      if (!combinedAwardsSet.has(aw)) {
-        combinedAwardsSet.add(aw);
+      if (!awardsLower.has(aw.toLowerCase())) {
+        combinedAwards.push(aw);
+        awardsLower.add(aw.toLowerCase());
         awardsUpdated = true;
       }
     }
-    
-    const hasHugo = combinedAwardsSet.has("Nagroda Hugo");
-    const hasNebula = combinedAwardsSet.has("Nagroda Nebula");
-    const hasLocus = combinedAwardsSet.has("Nagroda Locus");
-    if (hasHugo && hasNebula && hasLocus && !combinedAwardsSet.has("Wszystkie")) {
-      combinedAwardsSet.add("Wszystkie");
+
+    const hasHugo = awardsLower.has("nagroda hugo");
+    const hasNebula = awardsLower.has("nagroda nebula");
+    const hasLocus = awardsLower.has("nagroda locus");
+    if (hasHugo && hasNebula && hasLocus && !awardsLower.has("wszystkie")) {
+      combinedAwards.push("Wszystkie");
+      awardsLower.add("wszystkie");
       awardsUpdated = true;
     }
-    
+
     if (awardsUpdated) {
-      updates["Nagroda"] = { multi_select: Array.from(combinedAwardsSet).map(name => ({ name })) };
+      updates["Nagroda"] = { multi_select: combinedAwards.slice(0, 100).map(name => ({ name })) };
     }
 
     // Update Year if it differs

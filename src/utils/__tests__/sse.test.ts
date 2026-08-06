@@ -11,8 +11,9 @@ function mockBody(chunks: string[]) {
       if (i < chunks.length) return { value: enc.encode(chunks[i++]), done: false };
       return { value: undefined, done: true };
     }),
+    cancel: vi.fn(async () => {}),
   };
-  return { getReader: () => reader } as any;
+  return { getReader: () => reader, _reader: reader } as any;
 }
 
 describe("consumeSSE", () => {
@@ -39,7 +40,7 @@ describe("consumeSSE", () => {
     expect(events).toEqual([{ type: "status", message: "joined" }]);
   });
 
-  it("stops early when the callback returns true", async () => {
+  it("stops early when the callback returns true and cancels the reader", async () => {
     const body = mockBody([
       'data: {"type":"complete","result":1}\n\n',
       'data: {"type":"status","message":"after"}\n\n',
@@ -51,6 +52,14 @@ describe("consumeSSE", () => {
     });
     expect(seen).toHaveLength(1);
     expect(seen[0].type).toBe("complete");
+    // early exit must release the stream so the fetch connection isn't leaked
+    expect(body._reader.cancel).toHaveBeenCalled();
+  });
+
+  it("does NOT cancel the reader on natural stream completion", async () => {
+    const body = mockBody(['data: {"type":"status","message":"A"}\n\n']);
+    await consumeSSE(body, () => {});
+    expect(body._reader.cancel).not.toHaveBeenCalled();
   });
 
   it("skips malformed JSON without aborting the stream", async () => {

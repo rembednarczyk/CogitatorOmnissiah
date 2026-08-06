@@ -219,6 +219,9 @@ export class NotionAdapter {
 
       hasMore = response.has_more;
       nextCursor = response.next_cursor ?? undefined;
+      // Zabezpieczenie: has_more === true bez kursora oznaczałoby ponowne pobranie
+      // strony 1 od początku w kółko (i podwójne liczenie). Przerwij zamiast zawisnąć.
+      if (hasMore && !nextCursor) break;
       if (onProgress) onProgress(allBooks.length);
     }
 

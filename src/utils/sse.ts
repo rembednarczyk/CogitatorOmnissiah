@@ -20,27 +20,37 @@ export async function consumeSSE(
 
   const decoder = new TextDecoder();
   let buffer = "";
+  let finished = false;
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    onChunk?.();
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) { finished = true; break; }
+      onChunk?.();
 
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split("\n\n");
-    buffer = lines.pop() || "";
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n\n");
+      buffer = lines.pop() || "";
 
-    for (const line of lines) {
-      if (!line.startsWith("data: ")) continue;
-      let event: SyncEvent;
-      try {
-        event = JSON.parse(line.substring(6));
-      } catch (e) {
-        console.error("Błąd parsowania SSE:", e);
-        continue;
+      for (const line of lines) {
+        if (!line.startsWith("data: ")) continue;
+        let event: SyncEvent;
+        try {
+          event = JSON.parse(line.substring(6));
+        } catch (e) {
+          console.error("Błąd parsowania SSE:", e);
+          continue;
+        }
+        const signal = await onEvent(event);
+        if (signal === true || signal === "stop") return;
       }
-      const signal = await onEvent(event);
-      if (signal === true || signal === "stop") return;
+    }
+  } finally {
+    // Gdy wychodzimy wcześniej (stop na complete/error albo rzut z onEvent),
+    // strumień fetch zostałby zablokowany i nieanulowany. Anuluj czytnik, by
+    // zwolnić połączenie — poza przypadkiem naturalnego końca (done).
+    if (!finished) {
+      try { await reader.cancel(); } catch { /* czytnik może nie wspierać cancel */ }
     }
   }
 }
