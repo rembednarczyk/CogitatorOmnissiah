@@ -13,7 +13,6 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@google/genai": "^1.29.0",
     "@notionhq/client": "^5.15.0",
     "@tailwindcss/vite": "^4.1.14",
     "@vitejs/plugin-react": "^5.0.4",
