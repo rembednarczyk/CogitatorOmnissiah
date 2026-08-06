@@ -175,10 +175,16 @@ const executeSyncTask = async (
   }, 5000);
 
   // Rozłączenie klienta (zamknięta karta, utrata sieci) — anuluj zadanie,
-  // żeby osierocony sync nie blokował kolejnych rytuałów godzinami
-  req.on("close", () => {
+  // żeby osierocony sync nie blokował kolejnych rytuałów godzinami.
+  // UWAGA: nasłuchujemy na res, nie req. Dla POST z ciałem req emituje "close"
+  // po skonsumowaniu ciała przez express.json() — nie przy rozłączeniu klienta —
+  // co anulowało aktywny sync tuż po starcie. res "close" odpala się dopiero gdy
+  // odpowiedź faktycznie się zamyka; przy normalnym końcu writableEnded==true,
+  // więc guard poniżej nie anuluje niczego przez pomyłkę.
+  res.on("close", () => {
     if (!res.writableEnded) {
       clearInterval(keepAlive);
+      log.warn("Klient rozłączył się w trakcie synchronizacji — przerywam zadanie.", { endpoint: req.path });
       syncManager.stopActiveSync();
     }
   });
