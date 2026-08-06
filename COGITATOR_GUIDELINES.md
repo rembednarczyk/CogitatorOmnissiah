@@ -15,7 +15,7 @@
 
 ## 2. FRONTEND ARCHITECTURE (REACT)
 - **Component Decomposition**: Strict SRP. UI components in `src/components/` (atomic parts in subdirs like `stats/`).
-- **SSE Parsing**: All streaming hooks MUST buffer chunks across TCP reads (`buffer += decoder.decode(value, { stream: true })`, split on `\n\n`, keep the remainder) — see `useSync`. Never `JSON.parse` a raw chunk line-by-line.
+- **SSE Parsing**: All streaming hooks MUST consume the stream through the shared `consumeSSE` primitive (`src/utils/sse.ts`), which buffers chunks across TCP reads (split on `\n\n`, keep the remainder) and parses `data:` lines. Never re-implement the read/buffer loop or `JSON.parse` a raw chunk line-by-line. `consumeSSE(body, onEvent, onChunk?)`: `onEvent` returns `true` to stop early (e.g. after `complete`/`error`); `onChunk` re-arms per-read watchdogs (see `useSync`).
 - **Logic Isolation**: No `useEffect` for data fetching in components. Use Custom Hooks:
   - `useSync`: Standard for all long-running server operations.
   - `useStats`: Global dashboard data.
