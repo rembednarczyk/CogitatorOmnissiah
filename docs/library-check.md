@@ -1,9 +1,9 @@
-# Library Availability Check Algorithm (server.ts)
+# Library Availability Check Algorithm (`services/libraryCheckService.ts`)
 
 ## 1. Overview
 Scrapes the OPAC (Online Public Access Catalog) of the Municipal Public Library in Lublin (MBP Lublin) to check the availability of books in specific branches.
 
-## 2. Scraping Logic (`checkLibraryAvailability`)
+## 2. Scraping Logic (`LibraryCheckService.runLibraryCheck`)
 - **Source**: `https://opac.mbp.lublin.pl/search/description?q={title}&index=1&scope=full&f2%5B0%5D={libraryCode}`.
 - **Target**: Books in Notion that are NOT marked as "Przeczytane", "Biblioteka", "Biblioteka 9", or "Posiadam".
 - **Parsing Strategy**:
