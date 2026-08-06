@@ -55,12 +55,12 @@ describe("SyncManager lifecycle", () => {
       return new Promise<void>((res) => { release = res; });
     };
 
-    const running = syncManager.runBookSync({}, vi.fn());
+    const running = syncManager.run("book", vi.fn(), {});
     // executeTask ustawia currentTask synchronicznie, zanim odda sterowanie
     expect(syncManager.isSyncing).toBe(true);
     expect(syncManager.activeTask).toBe("book");
 
-    await expect(syncManager.runPurifySync(vi.fn())).rejects.toThrow(/już w toku/);
+    await expect(syncManager.run("purify", vi.fn())).rejects.toThrow(/już w toku/);
 
     // stopActiveSync ustawia flagę anulowania widoczną przez token zadania
     expect(captured()).toBe(false);
@@ -83,7 +83,7 @@ describe("SyncManager lifecycle", () => {
       return new Promise<void>((res) => { release = res; });
     };
 
-    const running = syncManager.runBookSync({}, vi.fn());
+    const running = syncManager.run("book", vi.fn(), {});
     expect(syncManager.isSyncing).toBe(true);
 
     syncManager.resetSyncState();
@@ -92,9 +92,10 @@ describe("SyncManager lifecycle", () => {
     expect(syncManager.activeTask).toBe(null);
     expect(captured()).toBe(true);
 
-    // Nowe zadanie może wystartować, mimo że stare jeszcze "wisi"
+    // Nowe zadanie może wystartować, mimo że stare jeszcze "wisi" — użyj
+    // sterowalnego zadania `book` (zmockowanego), by test był deterministyczny
     h.runBook = () => Promise.resolve();
-    await syncManager.runPurifySync(vi.fn());
+    await syncManager.run("book", vi.fn(), {});
 
     release(); // sprzątanie starego zadania — jego finally nie ruszy nowego stanu
     await running;
@@ -103,6 +104,11 @@ describe("SyncManager lifecycle", () => {
 
   it("stopActiveSync returns false when nothing is running", () => {
     expect(syncManager.stopActiveSync()).toBe(false);
+  });
+
+  it("run() rejects an unknown ritual name without taking the lock", async () => {
+    await expect(syncManager.run("bogus" as any, vi.fn())).rejects.toThrow(/Nieznany rytuał/);
+    expect(syncManager.isSyncing).toBe(false);
   });
 
   afterAll(() => closeServer());

@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { syncManager } from "../syncManager";
+import { syncManager, SyncTaskName } from "../syncManager";
 import { SyncEvent, SyncParams } from "../src/types";
 import { createLogger } from "../logger";
 
@@ -105,37 +105,19 @@ const stopSyncTask = (res: Response, message: string) => {
   }
 };
 
-export const stopSync = (req: Request, res: Response) => {
-  stopSyncTask(res, "Zatrzymywanie synchronizacji...");
-};
+// Zatrzymanie jest globalne (anuluje aktywne zadanie, jakiekolwiek by nie było) —
+// handlery różnią się wyłącznie komunikatem. Generujemy je z fabryki.
+const makeStopHandler = (message: string) =>
+  (_req: Request, res: Response) => stopSyncTask(res, message);
 
-export const stopPublisherSync = (req: Request, res: Response) => {
-  stopSyncTask(res, "Zatrzymywanie synchronizacji wydawnictw...");
-};
-
-export const stopSeriesSync = (req: Request, res: Response) => {
-  stopSyncTask(res, "Zatrzymywanie synchronizacji serii...");
-};
-
-export const stopCyclesSync = (req: Request, res: Response) => {
-  stopSyncTask(res, "Zatrzymywanie synchronizacji cykli...");
-};
-
-export const stopLpSync = (req: Request, res: Response) => {
-  stopSyncTask(res, "Zatrzymywanie aktualizacji Lp...");
-};
-
-export const stopDuplicatesSync = (req: Request, res: Response) => {
-  stopSyncTask(res, "Zatrzymywanie sprawdzania duplikatów...");
-};
-
-export const stopLibraryCheck = (req: Request, res: Response) => {
-  stopSyncTask(res, "Zatrzymywanie skanowania biblioteki...");
-};
-
-export const stopIntegrityCheck = (req: Request, res: Response) => {
-  stopSyncTask(res, "Zatrzymano skanowanie integralności.");
-};
+export const stopSync = makeStopHandler("Zatrzymywanie synchronizacji...");
+export const stopPublisherSync = makeStopHandler("Zatrzymywanie synchronizacji wydawnictw...");
+export const stopSeriesSync = makeStopHandler("Zatrzymywanie synchronizacji serii...");
+export const stopCyclesSync = makeStopHandler("Zatrzymywanie synchronizacji cykli...");
+export const stopLpSync = makeStopHandler("Zatrzymywanie aktualizacji Lp...");
+export const stopDuplicatesSync = makeStopHandler("Zatrzymywanie sprawdzania duplikatów...");
+export const stopLibraryCheck = makeStopHandler("Zatrzymywanie skanowania biblioteki...");
+export const stopIntegrityCheck = makeStopHandler("Zatrzymano skanowanie integralności.");
 
 const setupSSE = (res: Response) => {
   res.setHeader("Content-Type", "text/event-stream");
@@ -165,7 +147,7 @@ export const runSync = async (req: Request, res: Response) => {
   await executeSyncTask(
     req,
     res,
-    (sendEvent) => syncManager.runBookSync({ awardName, pageTitle, syncAll }, sendEvent),
+    (sendEvent) => syncManager.run("book", sendEvent, { awardName, pageTitle, syncAll }),
     "Sync Error:"
   );
 };
@@ -228,85 +210,25 @@ const executeSyncTask = async (
   }
 };
 
-export const runPublisherSync = async (req: Request, res: Response) => {
-  await executeSyncTask(
-    req,
-    res,
-    (sendEvent) => syncManager.runPublisherSync(sendEvent),
-    "Sync Publisher Error:"
-  );
-};
+// Rytuały bez parametrów żądania mają identyczny handler — różnią się tylko
+// nazwą zadania i etykietą błędu. Generujemy je z tabeli zamiast powielać.
+const makeSyncHandler = (task: SyncTaskName, errorLabel: string) =>
+  async (req: Request, res: Response) => {
+    await executeSyncTask(req, res, (sendEvent) => syncManager.run(task, sendEvent), errorLabel);
+  };
 
-export const runSeriesSync = async (req: Request, res: Response) => {
-  await executeSyncTask(
-    req,
-    res,
-    (sendEvent) => syncManager.runSeriesSync(sendEvent),
-    "Sync Series Error:"
-  );
-};
+export const runPublisherSync = makeSyncHandler("publisher", "Sync Publisher Error:");
+export const runSeriesSync = makeSyncHandler("series", "Sync Series Error:");
+export const runCyclesSync = makeSyncHandler("cycles", "Sync Cycles Error:");
+export const runLpSync = makeSyncHandler("lp", "Sync Lp Error:");
+export const runDuplicateCheck = makeSyncHandler("duplicates", "Sync Duplicates Error:");
+export const runPurifySync = makeSyncHandler("purify", "Sync Purify Error:");
+export const runSchemaSync = makeSyncHandler("schema", "Sync Schema Error:");
+export const runIntegrityCheck = makeSyncHandler("integrity", "Integrity Check Error:");
 
-export const runCyclesSync = async (req: Request, res: Response) => {
-  await executeSyncTask(
-    req,
-    res,
-    (sendEvent) => syncManager.runCyclesSync(sendEvent),
-    "Sync Cycles Error:"
-  );
-};
+export const stopPurifySync = makeStopHandler("Zatrzymano rytuał puryfikacji.");
 
-export const runLpSync = async (req: Request, res: Response) => {
-  await executeSyncTask(
-    req,
-    res,
-    (sendEvent) => syncManager.runLpSync(sendEvent),
-    "Sync Lp Error:"
-  );
-};
-
-export const runDuplicateCheck = async (req: Request, res: Response) => {
-  await executeSyncTask(
-    req,
-    res,
-    (sendEvent) => syncManager.runDuplicateCheck(sendEvent),
-    "Sync Duplicates Error:"
-  );
-};
-
-export const runPurifySync = async (req: Request, res: Response) => {
-  await executeSyncTask(
-    req,
-    res,
-    (sendEvent) => syncManager.runPurifySync(sendEvent),
-    "Sync Purify Error:"
-  );
-};
-
-export const stopPurifySync = (req: Request, res: Response) => {
-  stopSyncTask(res, "Zatrzymano rytuał puryfikacji.");
-};
-
-export const runSchemaSync = async (req: Request, res: Response) => {
-  await executeSyncTask(
-    req,
-    res,
-    (sendEvent) => syncManager.runSchemaSync(sendEvent),
-    "Sync Schema Error:"
-  );
-};
-
-export const runIntegrityCheck = async (req: Request, res: Response) => {
-  await executeSyncTask(
-    req,
-    res,
-    (sendEvent) => syncManager.runIntegrityCheck(sendEvent),
-    "Integrity Check Error:"
-  );
-};
-
-export const stopSchemaSync = (req: Request, res: Response) => {
-  stopSyncTask(res, "Zatrzymano inicjalizację schematu.");
-};
+export const stopSchemaSync = makeStopHandler("Zatrzymano inicjalizację schematu.");
 
 export const markAsRead = async (req: Request, res: Response) => {
   try {
@@ -328,14 +250,12 @@ export const checkVintedAvailability = async (req: Request, res: Response) => {
   await executeSyncTask(
     req,
     res,
-    (sendEvent) => syncManager.checkVintedAvailability(sendEvent),
+    (sendEvent) => syncManager.run("vinted", sendEvent),
     "Vinted Check Error:"
   );
 };
 
-export const stopVintedCheck = (req: Request, res: Response) => {
-  stopSyncTask(res, "Zatrzymywanie skanowania Vinted...");
-};
+export const stopVintedCheck = makeStopHandler("Zatrzymywanie skanowania Vinted...");
 
 export const checkLibraryAvailability = async (req: Request, res: Response) => {
   const { libraryCode } = req.body;
@@ -344,7 +264,7 @@ export const checkLibraryAvailability = async (req: Request, res: Response) => {
   await executeSyncTask(
     req,
     res,
-    (sendEvent) => syncManager.checkLibraryAvailability(libraryCode, sendEvent),
+    (sendEvent) => syncManager.run("library", sendEvent, { libraryCode }),
     "Library Check Error:"
   );
 };
