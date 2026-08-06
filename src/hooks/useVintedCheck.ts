@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { consumeSSE } from "../utils/sse";
+import { createStallWatchdog } from "../utils/stallWatchdog";
 
 export interface VintedResult {
   id: string;
@@ -41,11 +42,15 @@ export function useVintedCheck() {
     setSearchAttempts([]);
     setCheckProgress({ current: 0, total: 0, message: "Inicjowanie...", startTime: Date.now() });
     setVintedError(null);
-    
+
+    const watchdog = createStallWatchdog();
+
     try {
+      watchdog.arm();
       const response = await fetch("/api/vinted-check", {
         method: "POST",
-        headers: { "Content-Type": "application/json" }
+        headers: { "Content-Type": "application/json" },
+        signal: watchdog.signal
       });
 
       if (!response.ok) {
@@ -88,10 +93,15 @@ export function useVintedCheck() {
         } else if (data.type === "error") {
           throw new Error(data.error);
         }
-      });
+      }, watchdog.arm);
     } catch (err: any) {
-      setVintedError(err.message);
+      setVintedError(
+        watchdog.stalled
+          ? "Połączenie z serwerem zawisło (brak odpowiedzi przez 30 s). Możliwe buforowanie strumienia przez hosting. Odśwież i spróbuj ponownie."
+          : err.message
+      );
     } finally {
+      watchdog.clear();
       isCheckingRef.current = false;
       setIsChecking(false);
       setCheckProgress(null);
