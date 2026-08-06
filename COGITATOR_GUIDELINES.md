@@ -1,17 +1,18 @@
-# COGITATOR OMNISSIAH: ARCHITECTURAL GUIDELINES (v1.3)
+# COGITATOR OMNISSIAH: ARCHITECTURAL GUIDELINES (v1.4)
 
 ## 1. CORE ARCHITECTURE (BACKEND)
 - **Pattern**: Service-Adapter-Manager.
 - **Adapters**: `NotionAdapter`, `WikiAdapter`. Pure API wrappers. No business logic.
 - **Services**: `*SyncService`, `StatsService`, `IntegrityService`, `PurificationService`, `SchemaValidationService`. Logic-heavy, stateless where possible.
-- **Orchestration**: `SyncManager` (in `server.ts`). Manages concurrency, cancellation tokens, and global sync state.
-- **Communication**: SSE (Server-Sent Events) for real-time progress. Use `sendEvent({ type, ... })`.
+- **Orchestration**: `SyncManager` (in `server.ts`). Each task owns a `SyncTask` state object with its own cancellation flag; `executeTask` releases the lock only if it still belongs to the finishing task, and `resetSyncState` cancels the orphaned task before releasing the lock. Never reintroduce shared mutable booleans for task state.
+- **Communication**: SSE (Server-Sent Events) for real-time progress. Use `sendEvent({ type, ... })`. The controller cancels the active task on client disconnect (`req.on("close")`) and guards writes with `writableEnded`.
 - **Concurrency**: Use `p-limit` for external API calls (Notion/Wiki/OPAC).
-- **Error Handling**: Fail-fast for library scans. Detailed logging for timeouts/network errors. Use `withRetry` for flaky external services.
-- **Resilience**: `withRetry` handles transient network errors (socket hang up, timeout, ECONNRESET) with exponential backoff.
+- **Error Handling**: Distinguish "no data" from "infrastructure failure": `fetchPageContent` returns `""` for a missing page but THROWS on network failure/IP block; `fetchPagesContentBulk` returns `{ contents, failedTitles }` and services surface `failedTitles` in their error summaries. A sync must never report a clean `complete` when its data source was unreachable.
+- **Resilience**: `withRetry` handles transient network errors (socket hang up, timeout, ECONNRESET) with exponential backoff and honors `Retry-After` on 429 responses.
 
 ## 2. FRONTEND ARCHITECTURE (REACT)
 - **Component Decomposition**: Strict SRP. UI components in `src/components/` (atomic parts in subdirs like `stats/`).
+- **SSE Parsing**: All streaming hooks MUST buffer chunks across TCP reads (`buffer += decoder.decode(value, { stream: true })`, split on `\n\n`, keep the remainder) — see `useSync`. Never `JSON.parse` a raw chunk line-by-line.
 - **Logic Isolation**: No `useEffect` for data fetching in components. Use Custom Hooks:
   - `useSync`: Standard for all long-running server operations.
   - `useStats`: Global dashboard data.

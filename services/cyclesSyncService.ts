@@ -2,9 +2,8 @@ import pLimit from "p-limit";
 import { NotionAdapter } from "../notion.adapter";
 import { WikiAdapter } from "../wiki.adapter";
 import { WikiParser } from "../wiki.parser";
-import { calculateSimilarity } from "../utils";
 import { NotionBook, SyncEvent } from "../src/types";
-import { normalizeData } from "./dataNormalizer";
+import { isWikiAuthorMatch } from "./dataNormalizer";
 
 export class CyclesSyncService {
   constructor(private notion: NotionAdapter, private wiki: WikiAdapter) {}
@@ -27,21 +26,17 @@ export class CyclesSyncService {
       ])) as string[];
       
       sendEvent({ type: "status", message: `Pobieranie treści ${titlesToFetch.length} stron z Encyklopedii (Bulk API)...` });
-      const wikiContents = await this.wiki.fetchPagesContentBulk(titlesToFetch);
+      const { contents: wikiContents, failedTitles } = await this.wiki.fetchPagesContentBulk(titlesToFetch);
 
       let processedCount = 0, updatedCount = 0;
       const syncSummary = { added: [] as string[], updated: [] as string[] };
       const errors: any[] = [];
+      if (failedTitles.length > 0) {
+        errors.push({ book: `${failedTitles.length} stron`, error: `Nie udało się pobrać treści z encyklopedii (fallback przez wyszukiwarkę): ${failedTitles.slice(0, 5).join(", ")}${failedTitles.length > 5 ? "…" : ""}` });
+      }
       const limit = pLimit(3);
       
-      const isAuthorMatch = (wikiAuthor: string, notionAuthor: string) => {
-        if (!wikiAuthor || !notionAuthor) return true;
-        const normWiki = normalizeData(wikiAuthor, 'author').toLowerCase().trim();
-        const normNotion = normalizeData(notionAuthor, 'author').toLowerCase().trim();
-        
-        if (normWiki.includes(normNotion) || normNotion.includes(normWiki)) return true;
-        return calculateSimilarity(normWiki, normNotion) > 0.6;
-      };
+      const isAuthorMatch = isWikiAuthorMatch;
 
       const checkCycleInWikitext = (wikitext: string): boolean => {
         if (!wikitext) return false;
@@ -71,8 +66,8 @@ export class CyclesSyncService {
           let foundSource = "";
 
           // 1. Try Bulk Fetch results (Polish title first, then Original)
-          wikitext = (plTitle ? wikiContents[plTitle.toLowerCase()] : null) || 
-                     (origTitle ? wikiContents[origTitle.toLowerCase()] : null);
+          wikitext = (plTitle ? wikiContents[plTitle.toLowerCase()] : null) ||
+                     (origTitle ? wikiContents[origTitle.toLowerCase()] : null) || "";
 
           if (wikitext) {
             const wikiAuthor = WikiParser.extractAuthor(wikitext);

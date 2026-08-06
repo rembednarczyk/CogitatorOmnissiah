@@ -47,7 +47,10 @@ describe('SeriesSyncService', () => {
 
     mockNotion.queryAllBooks.mockResolvedValue(mockBooks);
     mockWiki.fetchPagesContentBulk.mockResolvedValue({
-      'solaris': '{{Książka infobox\n|seria = Nowa Seria\n}}'
+      contents: {
+        'solaris': '{{Książka infobox\n|seria = Nowa Seria\n}}'
+      },
+      failedTitles: []
     });
 
     await service.runSeriesSync(mockSendEvent, () => false);

@@ -47,7 +47,10 @@ describe('PublisherSyncService', () => {
 
     mockNotion.queryAllBooks.mockResolvedValue(mockBooks);
     mockWiki.fetchPagesContentBulk.mockResolvedValue({
-      'solaris': '{{Książka infobox\n|wydawca = Nowe Wydawnictwo\n}}'
+      contents: {
+        'solaris': '{{Książka infobox\n|wydawca = Nowe Wydawnictwo\n}}'
+      },
+      failedTitles: []
     });
 
     await service.runPublisherSync(mockSendEvent, () => false);

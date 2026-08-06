@@ -7,6 +7,16 @@ interface SanctityDebuggerProps {
   result: IntegrityCheckResult | null;
 }
 
+interface DiffEntry {
+  title: string;
+  notion: number;
+  wiki: number;
+  notionOnly?: string[];
+  wikiOnly?: string[];
+  misplaced?: { title: string; otherYear: string }[];
+  collisions?: { title: string; matches: string[] }[];
+}
+
 export const SanctityDebugger: React.FC<SanctityDebuggerProps> = ({ result }) => {
   const [selectedDiff, setSelectedDiff] = React.useState<string | null>(null);
 
@@ -20,7 +30,7 @@ export const SanctityDebugger: React.FC<SanctityDebuggerProps> = ({ result }) =>
 
   if (!hasHeresy) return null;
 
-  const diffItems = [
+  const diffItems: { id: string; label: string; status: boolean; data: DiffEntry[] }[] = [
     {
       id: "years",
       label: "Rozbieżności Roczników",

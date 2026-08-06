@@ -96,13 +96,13 @@ export default function App() {
     // 1. Schema Initiation
     clearOthers(schemaSync);
     const res1 = await schemaSync.startSync({}, undefined, "Krok 1/7: Rytuał Inicjacji Schematu...");
-    if (!res1) return;
+    if (!res1 || res1.success === false) return;
     results.push({ name: "Schemat", result: res1, color: "emerald" });
 
     // 2. Purification
     clearOthers(purifySync);
     const res2 = await purifySync.startSync({}, undefined, "Krok 2/7: Rytuał Puryfikacji...");
-    if (!res2) return;
+    if (!res2 || res2.success === false) return;
     results.push({ name: "Puryfikacja", result: res2, color: "amber" });
 
     // 3. Sync Awards (Wszystkie)
@@ -111,25 +111,25 @@ export default function App() {
       awardName: "Wszystkie Nagrody",
       syncAll: true
     }, undefined, "Krok 3/7: Synchronizacja Nagród...");
-    if (!res3) return;
+    if (!res3 || res3.success === false) return;
     results.push({ name: "Nagrody", result: res3, color: "cyan" });
 
     // 4. Cycles Marking
     clearOthers(cyclesSync);
     const res4 = await cyclesSync.startSync({}, undefined, "Krok 4/7: Rytuał Oznaczania Cykli...");
-    if (!res4) return;
+    if (!res4 || res4.success === false) return;
     results.push({ name: "Cykle", result: res4, color: "blue" });
 
     // 5. Publisher Sync
     clearOthers(publisherSync);
     const res5 = await publisherSync.startSync({}, undefined, "Krok 5/7: Rytuał Wydania...");
-    if (!res5) return;
+    if (!res5 || res5.success === false) return;
     results.push({ name: "Wydawcy", result: res5, color: "rose" });
 
     // 6. Series Sync
     clearOthers(seriesSync);
     const res6 = await seriesSync.startSync({}, undefined, "Krok 6/7: Rytuał Seryjny...");
-    if (!res6) return;
+    if (!res6 || res6.success === false) return;
     results.push({ name: "Serie", result: res6, color: "indigo" });
 
     // 7. Numbers Reconstruction (Lp)

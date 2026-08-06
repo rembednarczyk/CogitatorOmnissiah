@@ -114,6 +114,8 @@ export const SyncSummaryResult: React.FC<SyncSummaryResultProps> = ({
     );
   }
 
+  if (!activeSync) return null;
+
   const activeResult = activeSync.state.result;
   const color = activeSync.state.color || "cyan";
   const summary = activeResult?.summary;

@@ -17,10 +17,10 @@ Synchronizes book data from MediaWiki award tables (Hugo, Nebula, Locus) to a No
 - **Normalization**: Original titles and authors are normalized using `dataNormalizer`.
 
 ## 3. Comparison & Update Logic (`compareBooks`)
-- **Diff Engine**: Uses `DiffEngine` to perform stable comparisons of multi-select and string properties, ensuring updates are only made when meaningful changes occur.
+- **Comparison**: Performs field-by-field comparisons of sanitized values, ensuring updates are only made when meaningful changes occur.
 - **Polish Title**: Updates if the Wiki title differs from Notion. Preserves existing links if valid.
 - **Original Title**: Fills if empty in Notion.
-- **Author**: Merges authors, ensuring a unique list (max 100). Normalizes names (e.g., "Liu Cixin" -> "Liu Cixin, Ken Liu").
+- **Author**: Merges authors as a union of Notion and Wiki values (never removes authors added manually in Notion), ensuring a unique list (max 100). Normalizes names (e.g., "Liu Cixin" -> "Liu Cixin, Ken Liu").
 - **Awards**: Combines existing awards with new ones. Automatically adds "Wszystkie" tag if Hugo, Nebula, and Locus are all present.
 - **Year**: Appends new years to the multi-select list.
 

@@ -3,7 +3,7 @@ import { NotionAdapter } from "../notion.adapter";
 import { WikiAdapter } from "../wiki.adapter";
 import { WikiParser } from "../wiki.parser";
 import { NotionBook, SyncEvent } from "../src/types";
-import { normalizeData } from "./dataNormalizer";
+import { normalizeData, isWikiAuthorMatch } from "./dataNormalizer";
 import { DiffEngine } from "./diffEngine";
 
 export class PublisherSyncService {
@@ -19,11 +19,14 @@ export class PublisherSyncService {
       const titlesToFetch = Array.from(new Set(allBooks.map(b => b.plTitle || b.origTitle).filter(Boolean))) as string[];
       
       sendEvent({ type: "status", message: `Pobieranie treści ${titlesToFetch.length} stron z Encyklopedii (Bulk API)...` });
-      const wikiContents = await this.wiki.fetchPagesContentBulk(titlesToFetch);
+      const { contents: wikiContents, failedTitles } = await this.wiki.fetchPagesContentBulk(titlesToFetch);
 
       let processedCount = 0, updatedCount = 0;
       const syncSummary = { added: [] as string[], updated: [] as string[] };
       const errors: any[] = [];
+      if (failedTitles.length > 0) {
+        errors.push({ book: `${failedTitles.length} stron`, error: `Nie udało się pobrać treści z encyklopedii (książki pominięte): ${failedTitles.slice(0, 5).join(", ")}${failedTitles.length > 5 ? "…" : ""}` });
+      }
       
       const wydawnictwoPropType = "multi_select";
       const limit = pLimit(3);
@@ -42,6 +45,10 @@ export class PublisherSyncService {
         try {
           const wikitext = wikiContents[titleToSearch.toLowerCase()];
           if (!wikitext) return;
+
+          // Zweryfikuj autora — strona o tym samym tytule może dotyczyć innego dzieła
+          const wikiAuthor = WikiParser.extractAuthor(wikitext);
+          if (!isWikiAuthorMatch(wikiAuthor, book.author || "")) return;
 
           const extracted = WikiParser.extractPublisherAndSeries(wikitext);
           let wydawca = extracted.wydawca;

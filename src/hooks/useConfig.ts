@@ -11,17 +11,22 @@ export function useConfig() {
   const [schemaLoading, setSchemaLoading] = useState(false);
   const [schemaError, setSchemaError] = useState<string | null>(null);
 
-  const fetchConfig = useCallback(() => {
-    fetch("/api/health")
-      .then((res) => res.json())
-      .then((data) => {
-        fetch("/api/config")
-          .then(res => res.json())
-          .then(configData => {
-            setConfigStatus({ ...configData, isSyncing: data.isSyncing, loading: false });
-          });
-      })
-      .catch(console.error);
+  const fetchConfig = useCallback(async () => {
+    try {
+      const healthRes = await fetch("/api/health");
+      if (!healthRes.ok) throw new Error(`Błąd serwera: ${healthRes.status}`);
+      const health = await healthRes.json();
+
+      const configRes = await fetch("/api/config");
+      if (!configRes.ok) throw new Error(`Błąd serwera: ${configRes.status}`);
+      const configData = await configRes.json();
+
+      setConfigStatus({ ...configData, isSyncing: health.isSyncing, loading: false });
+    } catch (err) {
+      console.error("Config fetch error:", err);
+      // Nie zostawiaj karty statusu w wiecznej "Inicjalizacji Duchów Maszyny"
+      setConfigStatus(prev => ({ ...prev, loading: false }));
+    }
   }, []);
 
   const fetchSchema = useCallback(async () => {

@@ -48,14 +48,22 @@ const purificationService = new PurificationService(notionAdapter);
 const schemaValidationService = new SchemaValidationService(notionAdapter);
 const integrityService = new IntegrityService(notionAdapter, wikiAdapter);
 
+interface SyncTask {
+  name: string;
+  cancelRequested: boolean;
+}
+
 class SyncManager {
-  public activeTask: string | null = null;
-  public cancelRequested = false;
+  private currentTask: SyncTask | null = null;
 
   constructor(private notion: NotionAdapter, private wiki: WikiAdapter) {}
 
+  get activeTask() {
+    return this.currentTask?.name ?? null;
+  }
+
   get isSyncing() {
-    return this.activeTask !== null;
+    return this.currentTask !== null;
   }
 
   async getStats() {
@@ -70,52 +78,55 @@ class SyncManager {
     return await this.notion.updateSchema(propertyName, propertyType, newOptions);
   }
 
-  private async executeTask(taskName: string, taskFn: () => Promise<void>) {
+  private async executeTask(taskName: string, taskFn: (checkCancellation: () => boolean) => Promise<void>) {
     if (this.isSyncing) throw new Error(`Inna synchronizacja (${this.activeTask}) jest już w toku.`);
-    this.activeTask = taskName;
-    this.cancelRequested = false;
+    const task: SyncTask = { name: taskName, cancelRequested: false };
+    this.currentTask = task;
     try {
-      await taskFn();
+      await taskFn(() => task.cancelRequested);
     } finally {
-      this.activeTask = null;
-      this.cancelRequested = false;
+      // Zwolnij blokadę tylko jeśli nadal należy do tego zadania —
+      // po resetSyncState() mogło już wystartować nowe zadanie
+      if (this.currentTask === task) {
+        this.currentTask = null;
+      }
     }
   }
 
   async runBookSync(params: { awardName?: string; pageTitle?: string; syncAll?: boolean }, sendEvent: (data: any) => void) {
-    await this.executeTask('book', () => bookSyncService.runBookSync(params, sendEvent, () => this.cancelRequested));
+    await this.executeTask('book', (checkCancellation) => bookSyncService.runBookSync(params, sendEvent, checkCancellation));
   }
 
   async runPurifySync(sendEvent: (data: any) => void) {
-    await this.executeTask('purify', () => purificationService.runPurification(sendEvent, () => this.cancelRequested));
+    await this.executeTask('purify', (checkCancellation) => purificationService.runPurification(sendEvent, checkCancellation));
   }
 
   async runSchemaSync(sendEvent: (data: any) => void) {
-    await this.executeTask('schema', () => schemaValidationService.runSchemaValidation(sendEvent, () => this.cancelRequested));
+    await this.executeTask('schema', (checkCancellation) => schemaValidationService.runSchemaValidation(sendEvent, checkCancellation));
   }
 
   async runPublisherSync(sendEvent: (data: any) => void) {
-    await this.executeTask('publisher', () => publisherSyncService.runPublisherSync(sendEvent, () => this.cancelRequested));
+    await this.executeTask('publisher', (checkCancellation) => publisherSyncService.runPublisherSync(sendEvent, checkCancellation));
   }
 
   async runSeriesSync(sendEvent: (data: any) => void) {
-    await this.executeTask('series', () => seriesSyncService.runSeriesSync(sendEvent, () => this.cancelRequested));
+    await this.executeTask('series', (checkCancellation) => seriesSyncService.runSeriesSync(sendEvent, checkCancellation));
   }
 
   async runDuplicateCheck(sendEvent: (data: any) => void) {
-    await this.executeTask('duplicates', () => duplicateSyncService.runDuplicateCheck(sendEvent, () => this.cancelRequested));
+    await this.executeTask('duplicates', (checkCancellation) => duplicateSyncService.runDuplicateCheck(sendEvent, checkCancellation));
   }
 
   async runLpSync(sendEvent: (data: any) => void) {
-    await this.executeTask('lp', () => lpSyncService.runLpSync(sendEvent, () => this.cancelRequested));
+    await this.executeTask('lp', (checkCancellation) => lpSyncService.runLpSync(sendEvent, checkCancellation));
   }
 
   async runCyclesSync(sendEvent: (data: any) => void) {
-    await this.executeTask('cycles', () => cyclesSyncService.runCyclesSync(sendEvent, () => this.cancelRequested));
+    await this.executeTask('cycles', (checkCancellation) => cyclesSyncService.runCyclesSync(sendEvent, checkCancellation));
   }
 
   async runIntegrityCheck(sendEvent: (data: any) => void) {
-    await this.executeTask('integrity', () => integrityService.runIntegrityCheck(sendEvent, () => this.cancelRequested));
+    await this.executeTask('integrity', (checkCancellation) => integrityService.runIntegrityCheck(sendEvent, checkCancellation));
   }
 
   async getWikiLastUpdate(pageTitle: string) {
@@ -127,7 +138,7 @@ class SyncManager {
   }
 
   async checkLibraryAvailability(libraryCode: string, sendEvent: (data: any) => void) {
-    await this.executeTask('library', async () => {
+    await this.executeTask('library', async (checkCancellation) => {
       sendEvent({ type: "status", message: "Pobieranie listy książek z Notion..." });
       const allBooks = await this.notion.getBooksForStats();
       
@@ -141,10 +152,7 @@ class SyncManager {
       sendEvent({ type: "status", message: `Znaleziono ${candidates.length} kandydatów do sprawdzenia...` });
       
       const results: any[] = [];
-      const limit = pLimit(2); // Limit concurrent requests to avoid blocking
-      
       const httpsAgent = new https.Agent({ 
-        rejectUnauthorized: false,
         keepAlive: true,
         keepAliveMsecs: 1000,
         timeout: 45000,
@@ -152,7 +160,7 @@ class SyncManager {
       });
 
       for (let i = 0; i < candidates.length; i++) {
-        if (this.cancelRequested) {
+        if (checkCancellation()) {
           sendEvent({ type: "status", message: "Skanowanie przerwane przez użytkownika." });
           break;
         }
@@ -167,7 +175,7 @@ class SyncManager {
           total: candidates.length
         });
 
-        const url = `https://opac.mbp.lublin.pl/search/description?q=${encodeURIComponent(title)}&index=1&scope=full&f2%5B0%5D=${libraryCode}`;
+        const url = `https://opac.mbp.lublin.pl/search/description?q=${encodeURIComponent(title)}&index=1&scope=full&f2%5B0%5D=${encodeURIComponent(libraryCode)}`;
         
         const headers = {
           'User-Agent': getRandomUserAgent(),
@@ -261,12 +269,13 @@ class SyncManager {
         await new Promise(resolve => setTimeout(resolve, 500));
       }
 
-      sendEvent({ type: "complete", result: { success: true, results, message: `Zakończono sprawdzanie. Znaleziono ${results.length} książek.` } });
+      const wasCancelled = checkCancellation();
+      sendEvent({ type: "complete", result: { success: !wasCancelled, cancelled: wasCancelled, results, message: wasCancelled ? `Skanowanie przerwane. Znaleziono ${results.length} książek przed przerwaniem.` : `Zakończono sprawdzanie. Znaleziono ${results.length} książek.` } });
     });
   }
 
   async checkVintedAvailability(sendEvent: (data: any) => void) {
-    await this.executeTask('vinted', async () => {
+    await this.executeTask('vinted', async (checkCancellation) => {
       try {
         sendEvent({ type: "status", message: "Pobieranie listy książek z Notion..." });
         const allBooks = await this.notion.getBooksForStats();
@@ -284,7 +293,6 @@ class SyncManager {
         
         const results: any[] = [];
       const httpsAgent = new https.Agent({ 
-        rejectUnauthorized: false,
         keepAlive: true,
         keepAliveMsecs: 1000,
         timeout: 45000,
@@ -292,7 +300,7 @@ class SyncManager {
       });
 
       for (let i = 0; i < candidates.length; i++) {
-        if (this.cancelRequested) {
+        if (checkCancellation()) {
           sendEvent({ type: "status", message: "Skanowanie Vinted przerwane przez użytkownika." });
           break;
         }
@@ -555,7 +563,8 @@ class SyncManager {
         await new Promise(resolve => setTimeout(resolve, 3000 + jitter));
       }
 
-      sendEvent({ type: "complete", result: { success: true, results, message: `Zakończono skanowanie Vinted. Znaleziono oferty dla ${results.length} książek.` } });
+      const wasCancelled = checkCancellation();
+      sendEvent({ type: "complete", result: { success: !wasCancelled, cancelled: wasCancelled, results, message: wasCancelled ? `Skanowanie Vinted przerwane. Znaleziono oferty dla ${results.length} książek przed przerwaniem.` : `Zakończono skanowanie Vinted. Znaleziono oferty dla ${results.length} książek.` } });
       } catch (error: any) {
         console.error("Vinted Initialization Error:", error);
         sendEvent({ type: "error", error: `Błąd inicjalizacji Vinted: ${error.message}` });
@@ -564,16 +573,21 @@ class SyncManager {
   }
 
   stopActiveSync() {
-    if (this.activeTask) {
-      this.cancelRequested = true;
+    if (this.currentTask) {
+      this.currentTask.cancelRequested = true;
       return true;
     }
     return false;
   }
 
   resetSyncState() {
-    this.activeTask = null;
-    this.cancelRequested = false;
+    // Nie zostawiaj osieroconego zadania piszącego do Notion — najpierw anuluj,
+    // potem zwolnij blokadę. Zadanie zachowuje własny obiekt stanu, więc jego
+    // finally nie wyczyści stanu nowego zadania (porównanie tożsamości w executeTask).
+    if (this.currentTask) {
+      this.currentTask.cancelRequested = true;
+      this.currentTask = null;
+    }
   }
 }
 

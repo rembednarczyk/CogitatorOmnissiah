@@ -1,3 +1,5 @@
+import { calculateSimilarity } from "../utils";
+
 export type NormalizationContext = 'publisher' | 'title' | 'series' | 'author';
 
 const MAPPINGS: Record<NormalizationContext, Record<string, string>> = {
@@ -67,4 +69,20 @@ export function normalizeData(value: string, context: NormalizationContext): str
     }
     
     return value;
+}
+
+/**
+ * Sprawdza, czy autor ze strony wiki pasuje do autora z Notion.
+ * Chroni przed pobraniem danych z niewłaściwej strony o tym samym tytule
+ * (inna książka, film, strona ujednoznaczniająca).
+ * Brak autora po którejkolwiek stronie jest akceptowany (strony wiki nie
+ * zawsze mają infobox z autorem).
+ */
+export function isWikiAuthorMatch(wikiAuthor: string, notionAuthor: string): boolean {
+    if (!wikiAuthor || !notionAuthor) return true;
+    const normWiki = normalizeData(wikiAuthor, 'author').toLowerCase().trim();
+    const normNotion = normalizeData(notionAuthor, 'author').toLowerCase().trim();
+
+    if (normWiki.includes(normNotion) || normNotion.includes(normWiki)) return true;
+    return calculateSimilarity(normWiki, normNotion) > 0.6;
 }

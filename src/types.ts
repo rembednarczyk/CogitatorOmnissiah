@@ -96,5 +96,14 @@ export interface IntegrityCheckResult {
   };
   originalTitleUniqueness: { status: boolean; duplicates: string[] };
   polishTitleUniqueness: { status: boolean; duplicates: string[] };
-  awardCountMatch: { status: boolean; diffs: { award: string; notion: number; wiki: number }[] };
+  awardCountMatch: {
+    status: boolean;
+    diffs: {
+      award: string;
+      notion: number;
+      wiki: number;
+      notionOnly?: string[];
+      wikiOnly?: string[];
+    }[]
+  };
 }

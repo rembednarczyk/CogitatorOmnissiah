@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 
 export interface IdentifiedBooks {
   [libraryId: string]: { title: string; author: string; year?: number | null }[];
@@ -9,9 +9,13 @@ export function useLibraryCheck() {
   const [checkingLibrary, setCheckingLibrary] = useState<string | null>(null);
   const [checkProgress, setCheckProgress] = useState<{ current: number; total: number; message: string; startTime: number | null } | null>(null);
   const [libraryError, setLibraryError] = useState<string | null>(null);
+  // Ref zamiast stanu w strażniku — stan w domknięciu bywa nieaktualny
+  // (dwa kliknięcia w tym samym ticku uruchamiały dwa równoległe skany)
+  const isCheckingRef = useRef(false);
 
   const checkLibrary = useCallback(async (libraryId: string, libraryCode: string) => {
-    if (checkingLibrary) return;
+    if (isCheckingRef.current) return;
+    isCheckingRef.current = true;
     setCheckingLibrary(libraryId);
     setIdentifiedBooks(prev => ({ ...prev, [libraryId]: [] }));
     setCheckProgress({ current: 0, total: 0, message: "Inicjowanie...", startTime: Date.now() });
@@ -33,17 +37,27 @@ export function useLibraryCheck() {
           return;
         }
 
+        // Buforuj między chunkami (wzorzec z useSync) — zdarzenie SSE może być
+        // rozcięte między dwa odczyty TCP i JSON.parse na fragmencie wywala skan
         const decoder = new TextDecoder();
+        let buffer = "";
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
 
-          const chunk = decoder.decode(value);
-          const lines = chunk.split("\n");
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n\n");
+          buffer = lines.pop() || "";
 
           for (const line of lines) {
             if (line.startsWith("data: ")) {
-              const data = JSON.parse(line.substring(6));
+              let data: any;
+              try {
+                data = JSON.parse(line.substring(6));
+              } catch (e) {
+                console.error("Błąd parsowania SSE:", e);
+                continue;
+              }
               if (data.type === "progress") {
                 setCheckProgress(prev => ({ 
                   current: data.current, 
@@ -84,11 +98,12 @@ export function useLibraryCheck() {
         setLibraryError(err.message);
         resolve(); // Resolve anyway so the next library can be checked
       } finally {
+        isCheckingRef.current = false;
         setCheckingLibrary(null);
         setCheckProgress(null);
       }
     });
-  }, [checkingLibrary]);
+  }, []);
 
   const stopLibraryCheck = useCallback(async () => {
     try {
@@ -99,8 +114,8 @@ export function useLibraryCheck() {
   }, []);
 
   const checkAllLibraries = useCallback(async (branches: { id: string; code: string }[]) => {
-    if (checkingLibrary) return;
-    
+    if (isCheckingRef.current) return;
+
     for (const branch of branches) {
       // Need to await the completion of each check.
       // Since checkLibrary sets state and doesn't return a promise that resolves on completion,
@@ -110,7 +125,7 @@ export function useLibraryCheck() {
       // Wait a moment between libraries
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
-  }, [checkingLibrary, checkLibrary]);
+  }, [checkLibrary]);
 
   return { 
     identifiedBooks, 
