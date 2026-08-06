@@ -2,13 +2,13 @@ import React from "react";
 import { motion } from "motion/react";
 import { User, ChevronDown, ChevronUp, CheckCircle2, Circle } from "lucide-react";
 import { AuthorStat } from "../../hooks/useStats";
+import { getRitualGradient } from "../../theme/ritualColors";
 
 export const AuthorProgressItem: React.FC<{ author: AuthorStat }> = ({ author }) => {
   const [isExpanded, setIsExpanded] = React.useState(false);
   const percent = author.total > 0 ? Math.round((author.read / author.total) * 100) : 0;
   const color = author.read === author.total ? "emerald" : "cyan";
-  const colorClass = color === "emerald" ? "from-emerald-500 to-teal-600" : "from-cyan-500 to-blue-600";
-  const shadowClass = color === "emerald" ? "shadow-emerald-500/20" : "shadow-cyan-500/20";
+  const { gradient: colorClass, shadow: shadowClass } = getRitualGradient(color);
 
   return (
     <div className="space-y-2">

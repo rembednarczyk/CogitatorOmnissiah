@@ -2,16 +2,7 @@ import React, { useState } from "react";
 import { XCircle, CheckCircle2, RefreshCw, AlertCircle, Copy, Check } from "lucide-react";
 import { motion } from "motion/react";
 import { useSync } from "../hooks/useSync";
-
-const stepDotColorMap: Record<string, string> = {
-  emerald: "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]",
-  amber: "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]",
-  cyan: "bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.5)]",
-  blue: "bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]",
-  rose: "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]",
-  indigo: "bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]",
-  purple: "bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.5)]",
-};
+import { getRitualTheme, getRitualDot } from "../theme/ritualColors";
 
 interface SyncSummaryResultProps {
   syncs: ReturnType<typeof useSync>[];
@@ -83,7 +74,7 @@ export const SyncSummaryResult: React.FC<SyncSummaryResultProps> = ({
               <div key={res.name} className="p-3 rounded-xl bg-slate-900/40 border border-slate-800/50 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   {/* Tailwind nie generuje klas budowanych dynamicznie — mapuj statycznie */}
-                  <div className={`w-2 h-2 rounded-full ${stepDotColorMap[res.color] || stepDotColorMap.cyan}`} />
+                  <div className={`w-2 h-2 rounded-full ${getRitualDot(res.color)}`} />
                   <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">{res.name}</span>
                 </div>
                 <div className="text-[10px] font-mono text-slate-500">
@@ -131,19 +122,9 @@ export const SyncSummaryResult: React.FC<SyncSummaryResultProps> = ({
   const color = activeSync.state.color || "cyan";
   const summary = activeResult?.summary;
 
-  // Map color names to Tailwind classes
-  const colorMap: Record<string, { text: string, border: string, bg: string }> = {
-    cyan: { text: "text-cyan-400", border: "border-cyan-500/20", bg: "bg-cyan-500/10" },
-    rose: { text: "text-rose-400", border: "border-rose-500/20", bg: "bg-rose-500/10" },
-    indigo: { text: "text-indigo-400", border: "border-indigo-500/20", bg: "bg-indigo-500/10" },
-    blue: { text: "text-blue-400", border: "border-blue-500/20", bg: "bg-blue-500/10" },
-    purple: { text: "text-purple-400", border: "border-purple-500/20", bg: "bg-purple-500/10" },
-    orange: { text: "text-orange-400", border: "border-orange-500/20", bg: "bg-orange-500/10" },
-    amber: { text: "text-amber-400", border: "border-amber-500/20", bg: "bg-amber-500/10" },
-    emerald: { text: "text-emerald-400", border: "border-emerald-500/20", bg: "bg-emerald-500/10" },
-  };
-
-  const theme = colorMap[color] || colorMap.cyan;
+  // Motyw rytuału (patrz src/theme/ritualColors.ts). Tu bg = miękkie tło karty.
+  const t = getRitualTheme(color);
+  const theme = { text: t.text, border: t.border, bg: t.bgSoft };
 
   const handleClose = () => {
     syncs.forEach(s => s.setState(prev => ({ ...prev, result: null })));
