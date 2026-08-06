@@ -90,9 +90,14 @@ export class BookSyncService {
       }
 
       if (cells.length === 1) {
-        if (books.length > 0) {
-          let extraAuthor = parseCell(cells[0]) as string;
-          extraAuthor = extraAuthor.replace(/\s*\(remis\)/gi, '').trim();
+        const cellText = parseCell(cells[0]) as string;
+        const yearOnly = cellText.replace(/['\[\]]/g, '').trim().match(/^(\d{4})$/);
+        if (yearOnly) {
+          // Wiersz zawierający wyłącznie rok (rowspan) — to nowy rocznik,
+          // nie dodatkowy autor poprzedniej książki
+          lastYear = yearOnly[1];
+        } else if (books.length > 0) {
+          const extraAuthor = cellText.replace(/\s*\(remis\)/gi, '').trim();
           books[books.length - 1].author += ", " + extraAuthor;
         }
         continue;

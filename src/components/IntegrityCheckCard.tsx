@@ -96,9 +96,11 @@ export const IntegrityCheckCard: React.FC<IntegrityCheckCardProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {checks.map((check) => (
           <div key={check.id} className="relative">
-            <div 
+            <button
+              type="button"
               onClick={() => toggleExpand(check.id)}
-              className={`flex flex-col p-2 rounded-xl border transition-all cursor-pointer ${
+              aria-expanded={expanded === check.id}
+              className={`w-full flex flex-col p-2 rounded-xl border transition-all cursor-pointer text-left ${
                 result ? (check.status ? 'bg-emerald-500/5 border-emerald-500/10' : 'bg-rose-500/5 border-rose-500/20 animate-pulse') : 'bg-slate-950/30 border-slate-800/50'
               } hover:border-slate-600`}
             >
@@ -115,8 +117,8 @@ export const IntegrityCheckCard: React.FC<IntegrityCheckCardProps> = ({
                   {renderStatus(check.status)}
                 </div>
               )}
-            </div>
-            
+            </button>
+
             <AnimatePresence>
               {expanded === check.id && check.details.length > 0 && (
                 <motion.div

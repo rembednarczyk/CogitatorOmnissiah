@@ -173,7 +173,10 @@ export function SchemaEditor({ schema, onSchemaUpdated }: SchemaEditorProps) {
         Konfiguracja Systemowa Kolumn
       </h3>
       <div className="space-y-5">
-        {Object.entries(schema).sort((a, b) => a[0].localeCompare(b[0])).map(([key, value]: [string, any], index) => {
+        {schema._empty && (
+          <p className="text-xs text-slate-500 font-mono">{(schema._empty as any).type}</p>
+        )}
+        {Object.entries(schema).filter(([key]) => key !== "_empty").sort((a, b) => a[0].localeCompare(b[0])).map(([key, value]: [string, any], index) => {
           const isSelectType = value.type === 'multi_select' || value.type === 'select';
           const options = isSelectType ? [...(value[value.type]?.options || [])].sort((a, b) => a.name.localeCompare(b.name)) : [];
           const isOverLimit = options.length >= NOTION_OPTION_LIMIT;

@@ -106,8 +106,8 @@ export const StatsSection: React.FC = () => {
             Indeks Autorów
           </h3>
           <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-            {stats.authorStats.map((author, idx) => (
-              <AuthorProgressItem key={idx} author={author} />
+            {stats.authorStats.map((author) => (
+              <AuthorProgressItem key={author.name} author={author} />
             ))}
           </div>
         </motion.div>
@@ -167,8 +167,8 @@ export const StatsSection: React.FC = () => {
             Chronologia Przeczytanych
           </h3>
           <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-            {stats.yearlyStats.map((year, idx) => (
-              <YearlyProgressItem key={idx} year={year} />
+            {stats.yearlyStats.map((year) => (
+              <YearlyProgressItem key={year.year} year={year} />
             ))}
           </div>
         </motion.div>
@@ -232,9 +232,9 @@ export const StatsSection: React.FC = () => {
             Książki dostępne w bibliotekach
           </h3>
           <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-            {stats.libraryStats.map((library, idx) => (
+            {stats.libraryStats.map((library) => (
               <LibraryProgressItem 
-                key={idx} 
+                key={library.id} 
                 library={library} 
                 onMarkAsRead={handleMarkAsRead}
                 markingId={markingId}

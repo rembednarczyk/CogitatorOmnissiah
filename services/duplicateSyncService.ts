@@ -89,7 +89,7 @@ export class DuplicateSyncService {
         }
         
         if (i % 10 === 0 || i === allBooks.length - 1) {
-          sendEvent({ type: "progress", message: "Sprawdzanie duplikatów...", current: i, total: allBooks.length });
+          sendEvent({ type: "progress", message: "Sprawdzanie duplikatów...", current: i + 1, total: allBooks.length });
         }
       }
       

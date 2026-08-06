@@ -1,8 +1,7 @@
 import { useState, useCallback, useRef } from "react";
+import { IdentifiedBooks } from "./useStats";
 
-export interface IdentifiedBooks {
-  [libraryId: string]: { title: string; author: string; year?: number | null }[];
-}
+export type { IdentifiedBooks };
 
 export function useLibraryCheck() {
   const [identifiedBooks, setIdentifiedBooks] = useState<IdentifiedBooks>({});
@@ -76,7 +75,7 @@ export function useLibraryCheck() {
                 setIdentifiedBooks(prev => {
                   const currentLibraryBooks = prev[libraryId] || [];
                   // Check if already exists to avoid duplicates (though server shouldn't send them)
-                  if (currentLibraryBooks.some(b => (b as any).id === data.result.id)) return prev;
+                  if (currentLibraryBooks.some(b => b.id === data.result.id)) return prev;
                   return {
                     ...prev,
                     [libraryId]: [...currentLibraryBooks, data.result]

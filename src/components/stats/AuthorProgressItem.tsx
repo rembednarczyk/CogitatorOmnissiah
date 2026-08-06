@@ -11,9 +11,11 @@ export const AuthorProgressItem: React.FC<{ author: any }> = ({ author }) => {
 
   return (
     <div className="space-y-2">
-      <div 
+      <button
+        type="button"
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center justify-between text-xs font-bold uppercase tracking-tighter cursor-pointer hover:bg-slate-900/50 p-1 rounded-lg transition-colors group"
+        aria-expanded={isExpanded}
+        className="w-full flex items-center justify-between text-xs font-bold uppercase tracking-tighter cursor-pointer hover:bg-slate-900/50 p-1 rounded-lg transition-colors group text-left"
       >
         <div className="flex items-center gap-2 text-slate-400 group-hover:text-cyan-400 transition-colors">
           <User className="w-3 h-3" />
@@ -21,7 +23,7 @@ export const AuthorProgressItem: React.FC<{ author: any }> = ({ author }) => {
           {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
         </div>
         <div className="text-slate-200">{author.read} / {author.total} ({percent}%)</div>
-      </div>
+      </button>
       <div className="h-2 bg-slate-950 rounded-full overflow-hidden border border-slate-800 p-0.5">
         <motion.div 
           initial={{ width: 0 }}
