@@ -1,0 +1,2 @@
+# CogitatorOmmnissiah
+A full-stack application that syncs book awards from Encyklopedia Fantastyki (MediaWiki API) to a Notion database.
