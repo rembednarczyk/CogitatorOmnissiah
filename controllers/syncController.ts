@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { syncManager } from "../server";
+import { syncManager } from "../syncManager";
 import { SyncEvent, SyncParams } from "../src/types";
 import { createLogger } from "../logger";
 
