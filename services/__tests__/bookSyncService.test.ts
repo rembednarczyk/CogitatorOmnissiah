@@ -182,6 +182,68 @@ describe('BookSyncService', () => {
       expect(names).toContain('Frank Herbert');
       expect(names).toContain('Kevin J. Anderson');
     });
+
+    it('is idempotent when Notion stores a different-case author (no churny re-updates)', () => {
+      // Notion keeps its own option casing ("van Vogt"); wiki normalizes to
+      // "Van Vogt". These are the same author — must NOT trigger an update.
+      const existing: NotionBook = {
+        id: '1',
+        plTitle: 'Slan',
+        origTitle: 'Slan',
+        author: 'A. E. van Vogt', // stored casing from Notion
+        year: '1941',
+        awards: ['Nagroda Hugo'],
+        zrodlo: [],
+        currentWydawnictwo: '',
+        currentSeria: '',
+        currentCzesccyklu: false,
+        lp: '1',
+        plTitleRichText: [],
+        origTitleRichText: []
+      };
+      const newBook: Book = {
+        polishTitle: 'Slan',
+        originalTitle: 'Slan',
+        author: 'A. E. Van Vogt', // wiki-normalized casing
+        year: '1941',
+        award: 'Nagroda Hugo',
+        awards: ['Nagroda Hugo'],
+        polishTitleLink: null
+      };
+
+      const updates = service.compareBooks(existing, newBook);
+      expect(updates).not.toHaveProperty('Autor');
+    });
+
+    it('is idempotent for a multi-author book with mixed casing', () => {
+      const existing: NotionBook = {
+        id: '1',
+        plTitle: 'The Winged Man',
+        origTitle: 'The Winged Man',
+        author: 'A. E. van Vogt, Edna Mayne Hull',
+        year: '1945',
+        awards: ['Nagroda Hugo'],
+        zrodlo: [],
+        currentWydawnictwo: '',
+        currentSeria: '',
+        currentCzesccyklu: false,
+        lp: '1',
+        plTitleRichText: [],
+        origTitleRichText: []
+      };
+      const newBook: Book = {
+        polishTitle: 'The Winged Man',
+        originalTitle: 'The Winged Man',
+        author: 'A. E. Van Vogt, Edna Mayne Hull',
+        year: '1945',
+        award: 'Nagroda Hugo',
+        awards: ['Nagroda Hugo'],
+        polishTitleLink: null
+      };
+
+      const updates = service.compareBooks(existing, newBook);
+      expect(updates).not.toHaveProperty('Autor');
+    });
   });
 
   describe('runBookSync', () => {
