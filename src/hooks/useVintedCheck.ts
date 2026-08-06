@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 
 export interface VintedResult {
   id: string;
@@ -29,9 +29,12 @@ export function useVintedCheck() {
   const [isChecking, setIsChecking] = useState(false);
   const [checkProgress, setCheckProgress] = useState<{ current: number; total: number; message: string; startTime: number | null } | null>(null);
   const [vintedError, setVintedError] = useState<string | null>(null);
+  // Ref zamiast stanu w strażniku — stan w domknięciu bywa nieaktualny
+  const isCheckingRef = useRef(false);
 
   const runVintedCheck = useCallback(async () => {
-    if (isChecking) return;
+    if (isCheckingRef.current) return;
+    isCheckingRef.current = true;
     setIsChecking(true);
     setVintedResults([]);
     setSearchAttempts([]);
@@ -55,17 +58,27 @@ export function useVintedCheck() {
         return;
       }
 
+      // Buforuj między chunkami (wzorzec z useSync) — zdarzenie SSE może być
+      // rozcięte między dwa odczyty TCP i JSON.parse na fragmencie wywala skan
       const decoder = new TextDecoder();
+      let buffer = "";
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        const chunk = decoder.decode(value);
-        const lines = chunk.split("\n");
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n\n");
+        buffer = lines.pop() || "";
 
         for (const line of lines) {
           if (line.startsWith("data: ")) {
-            const data = JSON.parse(line.substring(6));
+            let data: any;
+            try {
+              data = JSON.parse(line.substring(6));
+            } catch (e) {
+              console.error("Błąd parsowania SSE:", e);
+              continue;
+            }
             if (data.type === "progress") {
               setCheckProgress(prev => ({ 
                 current: data.current, 
@@ -106,10 +119,11 @@ export function useVintedCheck() {
     } catch (err: any) {
       setVintedError(err.message);
     } finally {
+      isCheckingRef.current = false;
       setIsChecking(false);
       setCheckProgress(null);
     }
-  }, [isChecking]);
+  }, []);
 
   const stopVintedCheck = useCallback(async () => {
     try {

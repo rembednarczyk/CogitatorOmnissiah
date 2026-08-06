@@ -65,6 +65,43 @@ describe('WikiAdapter', () => {
 
       await expect(wikiAdapter.fetchPageContent('Unknown Title')).resolves.toBe('');
     });
+
+    it('throws on infrastructure failure instead of masking it as missing page', async () => {
+      mockGet.mockRejectedValue(Object.assign(new Error('Request failed with status code 403'), { response: { status: 403 } }));
+
+      await expect(wikiAdapter.fetchPageContent('Any Title')).rejects.toThrow('Nie udało się pobrać strony');
+    });
+  });
+
+  describe('fetchPagesContentBulk', () => {
+    it('returns contents and follows the MediaWiki continue token', async () => {
+      mockGet
+        .mockResolvedValueOnce({
+          data: {
+            query: { pages: { '1': { title: 'Solaris', revisions: [{ '*': 'Content A' }] } } },
+            continue: { rvcontinue: 'token', continue: '||' }
+          }
+        })
+        .mockResolvedValueOnce({
+          data: {
+            query: { pages: { '2': { title: 'Diuna', revisions: [{ '*': 'Content B' }] } } }
+          }
+        });
+
+      const { contents, failedTitles } = await wikiAdapter.fetchPagesContentBulk(['Solaris', 'Diuna']);
+      expect(contents['solaris']).toBe('Content A');
+      expect(contents['diuna']).toBe('Content B');
+      expect(failedTitles).toEqual([]);
+      expect(mockGet).toHaveBeenCalledTimes(2);
+    });
+
+    it('reports failed titles instead of silently dropping them', async () => {
+      mockGet.mockRejectedValue(Object.assign(new Error('Request failed with status code 403'), { response: { status: 403 } }));
+
+      const { contents, failedTitles } = await wikiAdapter.fetchPagesContentBulk(['Solaris', 'Diuna']);
+      expect(contents).toEqual({});
+      expect(failedTitles).toEqual(['Solaris', 'Diuna']);
+    });
   });
 
   describe('fetchPageContentWithSlots', () => {

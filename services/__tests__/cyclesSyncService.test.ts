@@ -50,7 +50,10 @@ describe('CyclesSyncService', () => {
 
     mockNotion.queryAllBooks.mockResolvedValue(mockBooks);
     mockWiki.fetchPagesContentBulk.mockResolvedValue({
-      'solaris': '{{Książka infobox\n|autor = Stanisław Lem\n|cykl = Opowieści o pilocie Pirxie\n}}'
+      contents: {
+        'solaris': '{{Książka infobox\n|autor = Stanisław Lem\n|cykl = Opowieści o pilocie Pirxie\n}}'
+      },
+      failedTitles: []
     });
 
     await service.runCyclesSync(mockSendEvent, () => false);
