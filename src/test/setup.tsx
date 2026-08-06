@@ -160,19 +160,6 @@ vi.mock('../firebase', () => ({
   },
 }));
 
-// Mocking Google GenAI
-vi.mock('@google/genai', () => {
-  return {
-    GoogleGenAI: class {
-      models = {
-        generateContent: vi.fn().mockResolvedValue({
-          text: JSON.stringify([{ title: "Solaris - Stanislaw Lem", price: "45 PLN", link: "https://vinted.pl/123" }])
-        })
-      };
-    }
-  };
-});
-
 // Mocking Lucide icons
 vi.mock('lucide-react', async () => {
   const actual = await vi.importActual('lucide-react');

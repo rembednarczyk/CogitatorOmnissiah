@@ -1,7 +1,7 @@
 # Vinted Scanner (Market Search)
 
 ## 1. Overview
-Searches **vinted.pl** for physical, second-hand copies of the tracked books. This is a direct HTML scraper — it fetches Vinted's catalog search page over HTTP and parses the response. **It does not use any AI / LLM** (despite the `@google/genai` dependency and `GEMINI_API_KEY` still being present, they are not used by this feature).
+Searches **vinted.pl** for physical, second-hand copies of the tracked books. This is a direct HTML scraper — it fetches Vinted's catalog search page over HTTP and parses the response. **It does not use any AI / LLM.** (An earlier design intended a Gemini-based search; that was never implemented, and the `@google/genai` dependency has been removed. `GEMINI_API_KEY` remains only as an unused/reserved env var.)
 
 ## 2. Search Logic (`checkVintedAvailability` in `server.ts`)
 - **Candidates**: Books from Notion that are NOT already read/owned (excludes the `Przeczytane`, `Biblioteka`, `Biblioteka 9`, `Posiadam` source tags), with a non-empty Polish title.
