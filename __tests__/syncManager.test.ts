@@ -75,7 +75,7 @@ describe("SyncManager lifecycle", () => {
     expect(syncManager.activeTask).toBe(null);
   });
 
-  it("resetSyncState cancels the active task and releases the lock immediately", async () => {
+  it("resetSyncState cancels the task and holds the lock until it settles (no concurrent task)", async () => {
     let release!: () => void;
     let captured!: () => boolean;
     h.runBook = (_p, _s, checkCancel) => {
@@ -87,19 +87,16 @@ describe("SyncManager lifecycle", () => {
     expect(syncManager.isSyncing).toBe(true);
 
     syncManager.resetSyncState();
-    // Lock wolny od razu, a osierocone zadanie dostało sygnał anulowania
-    expect(syncManager.isSyncing).toBe(false);
-    expect(syncManager.activeTask).toBe(null);
+    // Anulowanie zasygnalizowane, ale blokada TRZYMANA — brak okna równoległych
+    // zapisów: osierocone zadanie wciąż jest właścicielem locka aż do wyjścia.
     expect(captured()).toBe(true);
+    expect(syncManager.isSyncing).toBe(true);
+    await expect(syncManager.run("purify", vi.fn())).rejects.toThrow(/już w toku/);
 
-    // Nowe zadanie może wystartować, mimo że stare jeszcze "wisi" — użyj
-    // sterowalnego zadania `book` (zmockowanego), by test był deterministyczny
-    h.runBook = () => Promise.resolve();
-    await syncManager.run("book", vi.fn(), {});
-
-    release(); // sprzątanie starego zadania — jego finally nie ruszy nowego stanu
+    release(); // zadanie zauważa anulowanie i wychodzi → finally zwalnia lock
     await running;
     expect(syncManager.isSyncing).toBe(false);
+    expect(syncManager.activeTask).toBe(null);
   });
 
   it("stopActiveSync returns false when nothing is running", () => {
