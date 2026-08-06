@@ -13,7 +13,7 @@ Synchronizes book data from MediaWiki award tables (Hugo, Nebula, Locus) to a No
     - Removes table attributes (e.g., `rowspan`, `style`).
     - Strips wiki links `[[Page|Text]]` -> `Text`.
     - Extracts links for Polish titles to use as Notion URLs.
-    - Handles special cases like "Nagroda Locus" (skipping YA category if requested).
+    - Handles special cases like "Nagroda Locus": only the "Powieść dla młodzieży" (YA) category is excluded. All other Locus categories — Powieść, Powieść SF, Powieść fantasy, Pierwsza powieść, and Horror/Dark Fantasy — are intentionally included and tagged "Nagroda Locus".
 - **Normalization**: Original titles and authors are normalized using `dataNormalizer`.
 
 ## 3. Comparison & Update Logic (`compareBooks`)

@@ -74,6 +74,20 @@ describe('WikiParser', () => {
       expect(result.seria).toBe('Klasyka');
     });
 
+    it('takes both fields from the latest edition and does not backfill series from an older one', () => {
+      // Decyzja projektowa: najnowsze wydanie jest miarodajne. Wydanie 2022 (Rebis)
+      // ma wydawcę, ale pustą serię — seria z wydania 1989 NIE ma się cofać.
+      const wikitext = `
+        {{tabela wydania
+        |informacja1={{infowydanie|wydawca= klubówka |seria= Wielkie Serie SF|isbn= }}
+        |informacja3={{infowydanie|wydawca= Rebis|seria= |isbn= 9788381885492}}
+        }}
+      `;
+      const result = WikiParser.extractPublisherAndSeries(wikitext);
+      expect(result.wydawca).toBe('Rebis');
+      expect(result.seria).toBe('');
+    });
+
     it('does not match wydawca inside współwydawca', () => {
       const wikitext = `
         {{tabela wydania

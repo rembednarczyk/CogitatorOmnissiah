@@ -9,6 +9,8 @@ Extracts publisher and series information from individual book pages in the Arch
   - Scans for `informacjaN` where N is the highest index (e.g., `informacja3` > `informacja1`).
   - This ensures the *latest* Polish edition's data is used.
   - Extracts `wydawca` and `seria` from the `{{infowydanie}}` template.
+  - **Latest edition is authoritative (by design)**: the newest edition that has *any* value (publisher or series) wins, and both fields are taken from that one edition. If the newest edition has a publisher but no series, the series stays empty — the algorithm deliberately does NOT backfill the series from an older edition, so the data reflects the current-reality edition rather than a mix of editions. Do not "fix" this to merge fields across editions.
+  - Note: `współwydawca` / `podseria` and similar parameters are excluded (the match is anchored to the exact parameter name).
 - **Priority 2 (Fallback)**: `{{Książka}}` template.
   - Used only if no valid `infowydanie` is found.
   - Extracts `wydawca` and `seria` fields.
