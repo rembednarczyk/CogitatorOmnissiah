@@ -6,6 +6,7 @@ const router = express.Router();
 router.get("/stats", syncController.getStats);
 router.get("/wiki/last-update", syncController.getWikiLastUpdate);
 router.get("/health", syncController.getHealth);
+router.get("/diagnostics", syncController.getDiagnostics);
 router.get("/config", syncController.getConfig);
 router.get("/notion/schema", syncController.getNotionSchema);
 router.patch("/notion/schema", syncController.updateNotionSchema);

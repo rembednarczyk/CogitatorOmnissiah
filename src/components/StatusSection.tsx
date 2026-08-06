@@ -1,7 +1,8 @@
 import React from "react";
-import { Zap, Loader2, ExternalLink, History } from "lucide-react";
-import { motion } from "motion/react";
+import { Zap, Loader2, ExternalLink, History, Stethoscope, CheckCircle2, XCircle } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
 import { useWikiUpdates, WikiLink } from "../hooks/useWikiUpdates";
+import { useDiagnostics } from "../hooks/useDiagnostics";
 
 interface StatusSectionProps {
   configStatus: {
@@ -20,6 +21,7 @@ const WIKI_LINKS: WikiLink[] = [
 
 export const StatusSection: React.FC<StatusSectionProps> = ({ configStatus }) => {
   const wikiUpdates = useWikiUpdates(WIKI_LINKS, !configStatus.loading);
+  const { report, loading: diagLoading, error: diagError, runDiagnostics } = useDiagnostics();
 
   return (
     <motion.section 
@@ -93,6 +95,61 @@ export const StatusSection: React.FC<StatusSectionProps> = ({ configStatus }) =>
                 </motion.div>
               ))}
             </div>
+          </div>
+
+          <div className="pt-4 border-t border-slate-800/50">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] ml-1">
+                Diagnostyka Połączeń (Notion + Encyklopedia)
+              </div>
+              <button
+                onClick={() => runDiagnostics()}
+                disabled={diagLoading}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900/50 border border-cyan-500/30 hover:border-cyan-400/60 text-cyan-400 transition-all text-xs font-bold uppercase tracking-widest disabled:opacity-50"
+              >
+                {diagLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Stethoscope className="w-3.5 h-3.5" />}
+                {diagLoading ? "Diagnozuję..." : "Uruchom Diagnostykę"}
+              </button>
+            </div>
+
+            <AnimatePresence>
+              {diagError && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
+                  className="mt-3 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-medium"
+                >
+                  {diagError}
+                </motion.div>
+              )}
+              {report && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
+                  className="mt-3 space-y-2 overflow-hidden"
+                >
+                  <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 text-xs text-slate-300 font-medium leading-relaxed">
+                    {report.summary}
+                  </div>
+                  <div className="flex items-center gap-2 text-[11px] font-mono">
+                    {report.notion.ok
+                      ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      : <XCircle className="w-3.5 h-3.5 text-red-500 shrink-0" />}
+                    <span className="text-slate-400">Notion: {report.notion.ok ? `OK (${report.notion.propertyCount} kolumn)` : (report.notion.error || "błąd")}</span>
+                  </div>
+                  {report.wiki.map((w) => (
+                    <div key={w.award} className="flex items-start gap-2 text-[11px] font-mono">
+                      {w.ok && (w.booksParsed ?? 0) > 0
+                        ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                        : <XCircle className="w-3.5 h-3.5 text-red-500 shrink-0 mt-0.5" />}
+                      <span className="text-slate-400">
+                        {w.award}: {w.ok ? `${w.booksParsed} książek` : `${w.classification || "błąd"}${w.status ? ` (HTTP ${w.status})` : ""}`}
+                        {w.hint && !w.ok && <span className="block text-slate-500 mt-0.5">{w.hint}</span>}
+                        {w.note && <span className="block text-amber-500/80 mt-0.5">{w.note}</span>}
+                      </span>
+                    </div>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       )}

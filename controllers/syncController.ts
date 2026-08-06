@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
 import { syncManager } from "../server";
 import { SyncEvent, SyncParams } from "../src/types";
+import { createLogger } from "../logger";
+
+const log = createLogger("SyncController");
 
 export const getStats = async (req: Request, res: Response) => {
   try {
@@ -21,6 +24,17 @@ export const getWikiLastUpdate = async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error("Wiki Last Update Error:", error);
     res.status(500).json({ error: error.message || "Wystąpił błąd podczas pobierania daty aktualizacji." });
+  }
+};
+
+export const getDiagnostics = async (req: Request, res: Response) => {
+  try {
+    const report = await syncManager.runDiagnostics();
+    // Zwróć 200 zawsze — raport sam opisuje status; ułatwia odczyt w przeglądarce.
+    res.json(report);
+  } catch (error: any) {
+    log.error("Diagnostics endpoint failed", { message: error?.message });
+    res.status(500).json({ error: error?.message || "Diagnostyka nie powiodła się." });
   }
 };
 
@@ -109,8 +123,13 @@ export const stopIntegrityCheck = (req: Request, res: Response) => {
 
 const setupSSE = (res: Response) => {
   res.setHeader("Content-Type", "text/event-stream");
-  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Cache-Control", "no-cache, no-transform");
   res.setHeader("Connection", "keep-alive");
+  // Wyłącz buforowanie po stronie proxy (nginx/Render) — bez tego zdarzenia SSE
+  // nie docierają do klienta na bieżąco i UI "nie reaguje" na hostingu.
+  res.setHeader("X-Accel-Buffering", "no");
+  // Wyślij nagłówki natychmiast, żeby połączenie było otwarte zanim ruszy zadanie.
+  res.flushHeaders?.();
   return (data: SyncEvent) => {
     if (!res.writableEnded) res.write(`data: ${JSON.stringify(data)}\n\n`);
   };
@@ -140,6 +159,11 @@ const executeSyncTask = async (
   if (syncManager.isSyncing) return res.status(400).json({ error: "Inna synchronizacja jest już w toku." });
 
   const sendEvent = setupSSE(res);
+  // Natychmiastowy sygnał, że połączenie żyje — użytkownik widzi reakcję od razu,
+  // nawet jeśli pierwszy krok zadania (pobranie z wiki) trwa kilka sekund.
+  sendEvent({ type: "status", message: "Połączono z serwerem. Inicjacja rytuału..." });
+  log.info("Sync task started", { endpoint: req.path });
+
   const keepAlive = setInterval(() => {
     if (!res.writableEnded) res.write(": keepalive\n\n");
   }, 15000);
@@ -156,11 +180,22 @@ const executeSyncTask = async (
   try {
     await task(sendEvent);
     clearInterval(keepAlive);
+    log.info("Sync task finished", { endpoint: req.path });
     res.end();
   } catch (error: any) {
     clearInterval(keepAlive);
-    console.error(errorMessage, error);
-    sendEvent({ type: "error", error: error.message || errorMessage });
+    log.error(`${errorMessage} ${error?.message || ""}`, {
+      endpoint: req.path,
+      name: error?.name,
+      classification: error?.classification,
+      status: error?.status,
+      stack: error?.stack?.split("\n").slice(0, 4).join(" | "),
+    });
+    // WikiFetchError niesie userHint z konkretną wskazówką — pokaż ją użytkownikowi.
+    const userMessage = error?.userHint
+      ? `${error.message}`
+      : error?.message || errorMessage;
+    sendEvent({ type: "error", error: userMessage });
     res.end();
   }
 };
