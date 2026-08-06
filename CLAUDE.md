@@ -12,7 +12,7 @@ npm test         # vitest run (full suite)
 npx vitest run <path>   # Run a single test file
 ```
 
-Environment variables (see `.env.example`): `NOTION_API_KEY`, `NOTION_DATABASE_ID`, `GEMINI_API_KEY`. Tests mock all external services and run without them.
+Environment variables (see `.env.example`): `NOTION_API_KEY`, `NOTION_DATABASE_ID` (required); `BASIC_AUTH_USER`/`BASIC_AUTH_PASSWORD` (optional, opt-in Basic Auth). Tests mock all external services and run without them.
 
 ## Required reading
 

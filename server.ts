@@ -591,7 +591,6 @@ class SyncManager {
       env: {
         hasNotionKey: !!process.env.NOTION_API_KEY,
         hasDatabaseId: !!process.env.NOTION_DATABASE_ID,
-        hasGeminiKey: !!process.env.GEMINI_API_KEY,
         nodeEnv: process.env.NODE_ENV || "(unset)",
       },
       notion: { ok: false } as any,
@@ -711,7 +710,6 @@ export async function startServer() {
       nodeEnv: process.env.NODE_ENV || "(unset)",
       hasNotionKey: !!process.env.NOTION_API_KEY,
       hasDatabaseId: !!process.env.NOTION_DATABASE_ID,
-      hasGeminiKey: !!process.env.GEMINI_API_KEY,
       diagnostics: "GET /api/diagnostics",
     });
     if (!process.env.NOTION_API_KEY || !process.env.NOTION_DATABASE_ID) {

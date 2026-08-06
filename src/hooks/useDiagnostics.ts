@@ -14,7 +14,7 @@ export interface WikiDiagnostic {
 }
 
 export interface DiagnosticsReport {
-  env: { hasNotionKey: boolean; hasDatabaseId: boolean; hasGeminiKey: boolean; nodeEnv: string };
+  env: { hasNotionKey: boolean; hasDatabaseId: boolean; nodeEnv: string };
   notion: { ok: boolean; propertyCount?: number; error?: string };
   wiki: WikiDiagnostic[];
   summary: string;
