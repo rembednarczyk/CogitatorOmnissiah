@@ -1,7 +1,8 @@
 import { Client } from "@notionhq/client";
 import { withRetry } from "./retry";
 import { sanitizeNotionString, sanitizeNotionTag } from "./utils";
-import { NotionPage, NotionProperty, NotionPageProperties, NotionBook } from "./src/types";
+import { NotionPage, NotionBook } from "./src/types";
+import { mapPageToBook } from "./notionMapper";
 
 export class NotionAdapter {
   private notion: Client;
@@ -53,142 +54,50 @@ export class NotionAdapter {
     }
   }
 
+  // --- Dual-mode helpers ---
+  // Notion udostępnia bazę jako "data source" (nowe API) lub klasyczną "database".
+  // Te trzy helpery kapsułkują rozgałęzienie isDataSource, które wcześniej było
+  // powielone w ~7 metodach.
+
+  private async retrieveSource(id: string): Promise<any> {
+    return this.isDataSource
+      ? await withRetry(() => (this.notion as any).dataSources.retrieve({ data_source_id: id }))
+      : await withRetry(() => this.notion.databases.retrieve({ database_id: id }));
+  }
+
+  private async updateSource(id: string, properties: any): Promise<void> {
+    if (this.isDataSource) {
+      await withRetry(() => (this.notion as any).dataSources.update({ data_source_id: id, properties }));
+    } else {
+      await withRetry(() => this.notion.databases.update({ database_id: id, properties } as any));
+    }
+  }
+
+  private async querySource(startCursor?: string): Promise<any> {
+    return this.isDataSource
+      ? await withRetry(() => (this.notion as any).dataSources.query({ data_source_id: this.actualDataSourceId!, start_cursor: startCursor }))
+      : await withRetry(() => (this.notion.databases as any).query({ database_id: this.actualDataSourceId!, start_cursor: startCursor }));
+  }
+
   async getSchema(): Promise<any> {
     await this.init();
-    if (this.isDataSource) {
-      const dataSource = await withRetry(() => (this.notion as any).dataSources.retrieve({
-        data_source_id: this.actualDataSourceId!,
-      }));
-      return (dataSource as any).properties;
-    } else {
-      const database = await withRetry(() => this.notion.databases.retrieve({
-        database_id: this.actualDataSourceId!,
-      }));
-      return (database as any).properties;
-    }
+    const source = await this.retrieveSource(this.actualDataSourceId!);
+    return source.properties;
   }
 
   async updateSchema(propertyName: string, propertyType: string, newOptions: any): Promise<void> {
     await this.init();
-    const propertiesPayload: any = {
-      [propertyName]: {
-        [propertyType]: {
-          options: newOptions
-        }
-      }
-    };
-
-    if (this.isDataSource) {
-      await withRetry(() => (this.notion as any).dataSources.update({
-        data_source_id: this.actualDataSourceId!,
-        properties: propertiesPayload
-      }));
-    } else {
-      await withRetry(() => this.notion.databases.update({
-        database_id: this.actualDataSourceId!,
-        properties: propertiesPayload
-      } as any));
-    }
+    await this.updateSource(this.actualDataSourceId!, {
+      [propertyName]: { [propertyType]: { options: newOptions } }
+    });
   }
 
   async createColumnIfNeeded(columnName: string, type: string = "rich_text"): Promise<void> {
     await this.init();
     const schema = await this.getSchema();
     if (!schema[columnName]) {
-      if (this.isDataSource) {
-        await withRetry(() => (this.notion as any).dataSources.update({
-          data_source_id: this.actualDataSourceId!,
-          properties: {
-            [columnName]: { [type]: {} }
-          }
-        }));
-      } else {
-        await withRetry(() => this.notion.databases.update({
-          database_id: this.actualDataSourceId!,
-          properties: {
-            [columnName]: { [type]: {} }
-          }
-        } as any));
-      }
+      await this.updateSource(this.actualDataSourceId!, { [columnName]: { [type]: {} } });
     }
-  }
-
-  private getProp(props: NotionPageProperties, name: string): NotionProperty | undefined {
-    if (props[name]) return props[name];
-    const lowerName = name.toLowerCase();
-    for (const key in props) {
-      if (key.toLowerCase() === lowerName) return props[key];
-    }
-    return undefined;
-  }
-
-  private getPlainText(prop?: NotionProperty): string {
-    if (!prop) return "";
-    const type = prop.type;
-    if (type === "title") return prop.title?.map((t) => t.plain_text).join("") || "";
-    if (type === "rich_text") return prop.rich_text?.map((t) => t.plain_text).join("") || "";
-    if (type === "number") return prop.number !== undefined && prop.number !== null ? prop.number.toString() : "";
-    if (type === "select") return prop.select?.name || "";
-    if (type === "multi_select") return prop.multi_select?.map((x) => x.name).join(", ") || "";
-    if (type === "checkbox") return prop.checkbox?.toString() || "";
-    if (type === "url") return prop.url || "";
-    return "";
-  }
-
-  private parseNotionPageToBook(page: NotionPage): NotionBook {
-    const props = page.properties;
-    
-    const plTitle = this.getPlainText(this.getProp(props, "Tytuł polski"));
-    const origTitle = this.getPlainText(this.getProp(props, "Tytuł oryginalny"));
-    const author = this.getPlainText(this.getProp(props, "Autor"));
-    
-    const plTitleProp = this.getProp(props, "Tytuł polski");
-    const origTitleProp = this.getProp(props, "Tytuł oryginalny");
-    const plTitleRichText = plTitleProp?.type === "title" ? plTitleProp.title : plTitleProp?.rich_text || [];
-    const origTitleRichText = origTitleProp?.type === "title" ? origTitleProp.title : origTitleProp?.rich_text || [];
-
-    const yearProp = this.getProp(props, "Rok");
-    let year: string | undefined = undefined;
-    if (yearProp) {
-      if (yearProp.type === "multi_select") {
-        year = yearProp.multi_select?.map((x) => x.name).join(", ");
-      } else if (yearProp.type === "number") {
-        year = yearProp.number !== undefined && yearProp.number !== null ? yearProp.number.toString() : undefined;
-      } else {
-        year = this.getPlainText(yearProp).trim() || undefined;
-      }
-    }
-
-    const currentWydawnictwo = this.getPlainText(this.getProp(props, "Wydawnictwo"));
-    const currentSeria = this.getPlainText(this.getProp(props, "Seria"));
-    const currentCzesccyklu = this.getProp(props, "Część cyklu")?.checkbox || false;
-    const lp = this.getPlainText(this.getProp(props, "Lp"));
-
-    const nagrodaProp = this.getProp(props, "Nagroda");
-    const awards = nagrodaProp?.type === "multi_select"
-      ? nagrodaProp.multi_select?.map((x) => x.name) || []
-      : (nagrodaProp?.type === "select" && nagrodaProp.select?.name ? [nagrodaProp.select.name] : []);
-
-    const zrodloProp = this.getProp(props, "Źródło");
-    const zrodlo = zrodloProp?.type === "multi_select" 
-      ? zrodloProp.multi_select?.map((x) => x.name) || []
-      : (zrodloProp?.type === "select" && zrodloProp.select?.name ? [zrodloProp.select.name] : []);
-
-    return { 
-      id: page.id, 
-      plTitle, 
-      origTitle, 
-      author, 
-      year, 
-      currentWydawnictwo, 
-      currentSeria, 
-      currentCzesccyklu, 
-      lp, 
-      awards, 
-      zrodlo,
-      plTitleRichText, 
-      origTitleRichText 
-    };
   }
 
   async queryAllBooks(onProgress?: (count: number) => void, checkCancellation?: () => boolean): Promise<NotionBook[]> {
@@ -199,22 +108,11 @@ export class NotionAdapter {
 
     while (hasMore) {
       if (checkCancellation && checkCancellation()) break;
-      
-      let response: any;
-      if (this.isDataSource) {
-        response = await withRetry(() => (this.notion as any).dataSources.query({
-          data_source_id: this.actualDataSourceId!,
-          start_cursor: nextCursor,
-        }));
-      } else {
-        response = await withRetry(() => (this.notion.databases as any).query({
-          database_id: this.actualDataSourceId!,
-          start_cursor: nextCursor,
-        }));
-      }
+
+      const response = await this.querySource(nextCursor);
 
       for (const page of response.results) {
-        allBooks.push(this.parseNotionPageToBook(page as NotionPage));
+        allBooks.push(mapPageToBook(page as NotionPage));
       }
 
       hasMore = response.has_more;
@@ -309,47 +207,17 @@ export class NotionAdapter {
 
   async retrieveDataSource(dataSourceId: string): Promise<any> {
     await this.init();
-    if (this.isDataSource) {
-      return await withRetry(() => (this.notion as any).dataSources.retrieve({ data_source_id: dataSourceId }));
-    } else {
-      return await withRetry(() => this.notion.databases.retrieve({ database_id: dataSourceId }));
-    }
+    return this.retrieveSource(dataSourceId);
   }
 
   async updateDatabaseProperty(databaseId: string, propertyName: string, propertyType: string): Promise<void> {
     await this.init();
-    const propertiesPayload = {
-      [propertyName]: { [propertyType]: {} }
-    };
-    if (this.isDataSource) {
-      await withRetry(() => (this.notion as any).dataSources.update({
-        data_source_id: databaseId,
-        properties: propertiesPayload
-      }));
-    } else {
-      await withRetry(() => this.notion.databases.update({
-        database_id: databaseId,
-        properties: propertiesPayload
-      } as any));
-    }
+    await this.updateSource(databaseId, { [propertyName]: { [propertyType]: {} } });
   }
 
   async renameProperty(databaseId: string, oldName: string, newName: string): Promise<void> {
     await this.init();
-    const propertiesPayload = {
-      [oldName]: { name: newName }
-    };
-    if (this.isDataSource) {
-      await withRetry(() => (this.notion as any).dataSources.update({
-        data_source_id: databaseId,
-        properties: propertiesPayload
-      }));
-    } else {
-      await withRetry(() => this.notion.databases.update({
-        database_id: databaseId,
-        properties: propertiesPayload
-      } as any));
-    }
+    await this.updateSource(databaseId, { [oldName]: { name: newName } });
   }
 
   async updatePage(pageId: string, properties: any): Promise<void> {
