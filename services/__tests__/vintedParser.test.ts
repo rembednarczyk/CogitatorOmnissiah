@@ -87,12 +87,18 @@ describe("vintedDiagnostics", () => {
     expect(d.noResultsMarker).toBe(false);
   });
 
-  it("detects the catalog JSON path and a bot block", () => {
-    const html = `<div data-component-name="Catalog"></div> cloudflare captcha`;
-    const d = vintedDiagnostics(html, 3);
+  it("detects the catalog JSON path", () => {
+    const d = vintedDiagnostics(`<div data-component-name="Catalog"></div>`, 3);
     expect(d.hasCatalogJson).toBe(true);
-    expect(d.blockedMarker).toBe(true);
     expect(d.parsed).toBe(3);
+  });
+
+  it("flags a block only for a small challenge page, not a huge normal page", () => {
+    // Mała strona challenge → blokada.
+    expect(vintedDiagnostics(`<html>Just a moment... checking your browser</html>`, 0).blockedMarker).toBe(true);
+    // Wielka normalna strona zawierająca słowo „cloudflare" (analytics) → NIE blokada.
+    const huge = `<html>${"x".repeat(200000)} cloudflare robot captcha</html>`;
+    expect(vintedDiagnostics(huge, 5).blockedMarker).toBe(false);
   });
 
   it("detects the no-results marker", () => {

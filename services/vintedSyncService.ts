@@ -4,7 +4,7 @@ import { SyncEvent } from "../src/types";
 import { withRetry } from "../retry";
 import { createLogger } from "../logger";
 import { getRandomUserAgent, createScrapingAgent } from "../scrapingClient";
-import { parseVintedItems, vintedDiagnostics } from "./vintedParser";
+import { parseVintedItems, vintedDiagnostics, looksBlocked } from "./vintedParser";
 
 const log = createLogger("VintedScan");
 
@@ -98,8 +98,8 @@ export class VintedSyncService {
           const html = response.data;
           log.info(`Odpowiedź Vinted`, { title, chars: html.length });
 
-          // Debug logging for empty results
-          if (html.includes("cloudflare") || html.includes("captcha") || html.includes("robot")) {
+          // Blokada = MAŁA strona challenge, nie samo słowo w wielkim HTML.
+          if (looksBlocked(html)) {
             log.warn(`Vinted zablokował żądanie (wykrycie bota)`, { title });
             sendEvent({ type: "status", message: `⚠️ Vinted wykrył bota przy "${title}". Próbuję ominąć...` });
             sendEvent({
