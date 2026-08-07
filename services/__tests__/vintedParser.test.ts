@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseVintedItems } from "../vintedParser";
+import { parseVintedItems, parseVintedPrice } from "../vintedParser";
 
 // Catalog blob with &quot;-escaped JSON, as in the real page
 const catalogHtml = (json: object) =>
@@ -50,5 +50,39 @@ describe("parseVintedItems", () => {
 
   it("returns [] when nothing matches any path", () => {
     expect(parseVintedItems("<html><body>nic</body></html>", "Solaris", "Lem")).toEqual([]);
+  });
+
+  it("exposes a numeric priceValue and a photo from the catalog JSON", () => {
+    const html = catalogHtml({
+      items: { list: [{ id: 1, title: "Solaris Lem", price: { amount: "12,50", currency_code: "PLN" }, url: "/items/1", photo: { url: "https://img/1.jpg" } }] },
+    });
+    const items = parseVintedItems(html, "Solaris", "Lem");
+    expect(items[0].priceValue).toBe(12.5);
+    expect(items[0].photo).toBe("https://img/1.jpg");
+  });
+
+  it("sets priceValue to null when the price is a placeholder", () => {
+    const html = `<div class="feed-grid__item"><a href="/items/5" title="Solaris"></a></div>`;
+    const items = parseVintedItems(html, "Solaris", "Lem");
+    expect(items[0].price).toBe("Sprawdź");
+    expect(items[0].priceValue).toBeNull();
+  });
+});
+
+describe("parseVintedPrice", () => {
+  it("parses integers, decimals and comma decimals", () => {
+    expect(parseVintedPrice("15")).toBe(15);
+    expect(parseVintedPrice("12.90")).toBe(12.9);
+    expect(parseVintedPrice("25,00")).toBe(25);
+    expect(parseVintedPrice("1 200,50")).toBe(1200.5);
+    expect(parseVintedPrice(30)).toBe(30);
+  });
+
+  it("returns null for placeholders and non-numeric input", () => {
+    expect(parseVintedPrice("Sprawdź")).toBeNull();
+    expect(parseVintedPrice("??")).toBeNull();
+    expect(parseVintedPrice("")).toBeNull();
+    expect(parseVintedPrice(null)).toBeNull();
+    expect(parseVintedPrice(undefined)).toBeNull();
   });
 });
