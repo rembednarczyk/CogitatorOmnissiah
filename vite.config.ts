@@ -2,9 +2,14 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import {defineConfig} from 'vite';
+import {version} from './package.json';
 
 export default defineConfig(() => {
   return {
+    // Wersja aplikacji (z package.json) dostępna w kodzie klienta jako __APP_VERSION__.
+    define: {
+      __APP_VERSION__: JSON.stringify(version),
+    },
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
