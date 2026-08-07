@@ -22,7 +22,9 @@ export function useLibraryCheck() {
     setCheckProgress({ current: 0, total: 0, message: "Inicjowanie...", startTime: Date.now() });
     setLibraryError(null);
     
-    const watchdog = createStallWatchdog();
+    // Skaner biblioteki bywa długi (setki tytułów, retry/timeout OPAC) — 90 s
+    // ciszy zamiast 30 s; keepalive co 5 s resetuje odliczanie na żywym łączu.
+    const watchdog = createStallWatchdog(90000);
 
     return new Promise<void>(async (resolve) => {
       try {
@@ -74,7 +76,7 @@ export function useLibraryCheck() {
       } catch (err: any) {
         setLibraryError(
           watchdog.stalled
-            ? "Połączenie z serwerem zawisło (brak odpowiedzi przez 30 s). Możliwe buforowanie strumienia przez hosting. Odśwież i spróbuj ponownie."
+            ? "Połączenie z serwerem zawisło (brak odpowiedzi przez 90 s). Możliwe buforowanie strumienia przez hosting. Odśwież i spróbuj ponownie."
             : err.message
         );
         resolve(); // Resolve anyway so the next library can be checked

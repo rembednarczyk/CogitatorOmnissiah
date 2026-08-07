@@ -83,6 +83,27 @@ describe('VintedSyncService', () => {
     expect(complete.result.results).toHaveLength(0);
   });
 
+  it('retries a bot-blocked title in a second pass and can recover a match', async () => {
+    const notion = makeNotion([{ id: '1', plTitle: 'Solaris', author: 'Lem', zrodlo: [] }]);
+    // 1st pass: Cloudflare block; 2nd pass: real catalog with a match.
+    mockedGet
+      .mockResolvedValueOnce({ data: '<html>cloudflare captcha robot</html>' })
+      .mockResolvedValueOnce({
+        data: CATALOG_HTML({ items: { list: [{ id: 9, title: 'Solaris Lem', price: { amount: '10', currency_code: 'PLN' }, url: '/items/9' }] } }),
+      });
+
+    const svc = new VintedSyncService(notion);
+    await svc.runVintedCheck(sendEvent, never);
+
+    const events = sendEvent.mock.calls.map((c: any) => c[0]);
+    expect(events.some((e: any) => e.type === 'search_attempt' && e.result.status === 'blocked')).toBe(true);
+    expect(mockedGet).toHaveBeenCalledTimes(2); // main pass + retry pass
+    const match = events.find((e: any) => e.type === 'match');
+    expect(match?.result.id).toBe('1');
+    const complete = events.find((e: any) => e.type === 'complete');
+    expect(complete.result.results).toHaveLength(1);
+  });
+
   it('excludes owned/read books from the candidate set', async () => {
     const notion = makeNotion([
       { id: '1', plTitle: 'Solaris', author: 'Lem', zrodlo: ['Posiadam'] },
