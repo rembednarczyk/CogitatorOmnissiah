@@ -25,6 +25,15 @@ export interface StoredVintedData {
   offers: StoredOffer[];
 }
 
+/** Widok składowanych danych książki (do renderu kafelków/paczek z bazy — etap 3). */
+export interface StoredBookView {
+  id: string;
+  title: string;
+  author: string;
+  scannedAt: string;
+  offers: StoredOffer[];
+}
+
 /** VintedItem (ze skanu) → StoredOffer (do zapisu). */
 export function offerFromItem(item: VintedItem): StoredOffer {
   return {

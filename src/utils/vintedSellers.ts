@@ -25,6 +25,57 @@ export interface SellerBundle {
   totalPremium: number;
 }
 
+/** Payload składowanej książki z `GET /api/vinted-stored` (etap 3). */
+export interface StoredBookPayload {
+  id: string;
+  title: string;
+  author: string;
+  scannedAt: string;
+  offers: { url: string; title?: string; price: number | null; currency: string; photo?: string | null; seller?: VintedSeller | null }[];
+}
+
+export interface StoredView {
+  results: VintedResult[];
+  sellersByUrl: Record<string, VintedSeller | null>;
+  /** Najstarszy / najświeższy `scannedAt` w zbiorze (znacznik świeżości). */
+  oldest: string | null;
+  newest: string | null;
+}
+
+/**
+ * Czysta transformacja składowanego payloadu → widok renderowalny tym samym UI co skan
+ * live (VintedResult[] + mapa url→sprzedawca + zakres świeżości). Dzięki temu kafelki i
+ * paczki lecą z bazy bez re-scrape, reużywając `groupBySeller` i istniejący render.
+ */
+export function storedToView(books: StoredBookPayload[]): StoredView {
+  const results: VintedResult[] = [];
+  const sellersByUrl: Record<string, VintedSeller | null> = {};
+  let oldest: string | null = null;
+  let newest: string | null = null;
+  for (const b of books) {
+    results.push({
+      id: b.id,
+      title: b.title,
+      author: b.author,
+      scannedAt: b.scannedAt,
+      vintedItems: b.offers.map(o => ({
+        title: o.title ?? "",
+        price: o.price ?? "??",
+        priceValue: o.price ?? null,
+        currency: o.currency ?? "zł",
+        url: o.url,
+        photo: o.photo ?? null,
+      })),
+    });
+    for (const o of b.offers) if (o.url) sellersByUrl[o.url] = o.seller ?? null;
+    if (b.scannedAt) {
+      if (!oldest || b.scannedAt < oldest) oldest = b.scannedAt;
+      if (!newest || b.scannedAt > newest) newest = b.scannedAt;
+    }
+  }
+  return { results, sellersByUrl, oldest, newest };
+}
+
 /**
  * Nakłada mapę `url → sprzedawca` (dociągniętą on-demand) na wyniki skanu i zwraca
  * paczki: sprzedawców mających ≥2 RÓŻNE książki. Dla każdej książki bierze NAJTAŃSZĄ

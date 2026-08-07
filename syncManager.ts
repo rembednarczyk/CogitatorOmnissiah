@@ -148,6 +148,11 @@ class SyncManager {
     return await this.notion.addTagToMultiSelect(pageId, "Źródło", tag);
   }
 
+  /** Odczyt składowanych wyników Vinted (kafelki/paczki z bazy — bez re-scrape). */
+  async getVintedStored() {
+    return await vintedSyncService.getStoredData();
+  }
+
   /**
    * Diagnostyka end-to-end: sprawdza połączenie z Notion oraz pobranie i
    * parsowanie każdej strony nagrody z encyklopedii. Zwraca strukturę JSON,

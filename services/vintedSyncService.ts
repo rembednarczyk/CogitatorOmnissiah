@@ -6,7 +6,7 @@ import { createLogger } from "../logger";
 import { getRandomUserAgent, createScrapingAgent } from "../scrapingClient";
 import { parseVintedItems, vintedDiagnostics, looksBlocked, extractVintedSeller, VintedItem } from "./vintedParser";
 import { NotionBook } from "../src/types";
-import { offerFromItem, parseVintedData, mergeOffers, serializeVintedData, StoredVintedData, StoredOffer } from "./vintedStore";
+import { offerFromItem, parseVintedData, mergeOffers, serializeVintedData, StoredVintedData, StoredOffer, StoredBookView } from "./vintedStore";
 
 const log = createLogger("VintedScan");
 
@@ -46,6 +46,21 @@ function memMb() {
  */
 export class VintedSyncService {
   constructor(private notion: NotionAdapter) {}
+
+  /**
+   * Etap 3: czyta składowane wyniki Vinted ze wszystkich książek (blob VintedData) do
+   * renderu kafelków/paczek z bazy — bez re-scrape. Zwraca tylko książki z ofertami.
+   */
+  async getStoredData(): Promise<{ books: StoredBookView[]; generatedAt: string }> {
+    const allBooks = await this.notion.getBooksForStats(undefined, undefined, { cache: true });
+    const books: StoredBookView[] = [];
+    for (const b of allBooks) {
+      const data = parseVintedData(b.vintedData);
+      if (!data || data.offers.length === 0) continue;
+      books.push({ id: b.id, title: b.plTitle, author: b.author || "", scannedAt: data.scannedAt, offers: data.offers });
+    }
+    return { books, generatedAt: new Date().toISOString() };
+  }
 
   /**
    * Zapisuje świeżo zeskanowane oferty książki do Notion (blob VintedData), scalając ze
