@@ -56,9 +56,15 @@ export default function App() {
             <Database className="w-12 h-12 text-cyan-400" />
           </motion.div>
           <div className="flex-1">
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tighter font-display mb-2">
+            <h1 className="text-4xl md:text-5xl font-bold tracking-tighter font-display mb-2 flex items-center justify-center md:justify-start gap-3 flex-wrap">
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 drop-shadow-[0_0_20px_rgba(34,211,238,0.3)]">
                 COGITATOR OMNISSIAH
+              </span>
+              <span
+                className="text-[10px] font-mono font-bold tracking-widest text-cyan-400/70 bg-cyan-500/10 border border-cyan-500/20 rounded-full px-2 py-0.5 self-center"
+                title="Wersja rytuału"
+              >
+                v{__APP_VERSION__}
               </span>
             </h1>
             <p className="text-slate-400 text-lg font-medium tracking-wide uppercase flex items-center justify-center md:justify-start gap-2">
