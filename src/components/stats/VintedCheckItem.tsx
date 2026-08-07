@@ -106,11 +106,14 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
           color={isChecking ? "rose" : "cyan"}
           icon={isChecking ? Loader2 : Search}
           animate={isChecking ? "spin" : undefined}
+          disabled={!isChecking && isResolving}
           title={isChecking ? "Przerwij Rytuał Skanowania" : "Rytuał Skanowania Vinted"}
           subtitle={isChecking ? "Zatrzymanie aktywnego przeszukania katalogu" : "Przeszukanie katalogu Vinted — język polski, od 2 PLN"}
           onClick={() => {
-            if (isChecking) onStop();
-            else onCheck(resumeScan ? { skipScannedWithinDays: RESUME_DAYS } : undefined);
+            if (isChecking) { onStop(); return; }
+            // Wyjdź z widoku bazy, żeby świeże wyniki skanu były widoczne (nie pinowane do stored).
+            clearStored();
+            onCheck(resumeScan ? { skipScannedWithinDays: RESUME_DAYS } : undefined);
           }}
         />
 
@@ -258,6 +261,9 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
         </p>
       )}
       {storedError && <p className="text-xs text-red-400 italic px-2">{storedError}</p>}
+      {stored && stored.results.length === 0 && !isLoadingStored && (
+        <p className="text-xs text-slate-500 italic px-2">Baza Vinted jest pusta — najpierw uruchom skan (i „Ustal sprzedawców (baza)").</p>
+      )}
 
       {usingStored && (
         <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-[11px] text-indigo-200 font-medium">

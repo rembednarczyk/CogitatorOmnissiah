@@ -184,6 +184,10 @@ export class VintedSyncService {
               type: "search_attempt",
               result: { id: book.id, title, author: book.author, url, status: "blocked", itemCount: 0, debug: { ...vintedDiagnostics(html, 0), ...memMb() } }
             });
+            // Blok to NIE „brak ofert": NIE zapisujemy pustki (zachowaj składowane oferty
+            // i ustalonych sprzedawców) ani `scannedAt`, by wznowienie ponowiło tę książkę.
+            await new Promise(resolve => setTimeout(resolve, 3000 + Math.floor(Math.random() * 2000)));
+            continue;
           }
 
           if (html.includes("Brak wyników") || html.includes("Nie znaleźliśmy żadnych przedmiotów")) {
@@ -205,10 +209,9 @@ export class VintedSyncService {
           const items = parseVintedItems(html, title, book.author || "");
           const debug = { ...vintedDiagnostics(html, items.length), ...memMb() };
 
-          // Utrwal wynik (match lub 0 ofert) — scala ze składowanymi, zachowuje sprzedawców.
-          if (persistEnabled) await this.persistBookOffers(book, items, scannedAt);
-
           if (items.length > 0) {
+            // Utrwal (scala ze składowanymi — zachowuje sprzedawców przy niezmienionym URL).
+            if (persistEnabled) await this.persistBookOffers(book, items, scannedAt);
             const matchResult = {
               id: book.id,
               title: book.plTitle,
@@ -232,6 +235,15 @@ export class VintedSyncService {
               }
             }
           } else {
+            // 0 ofert BEZ markera „brak wyników" i bez blokady: realnie pusto ALBO cichy
+            // miss parsera. Nie kasuj wcześniej zapisanych ofert/sprzedawców — utrwal pustkę
+            // tylko, gdy nic wcześniej nie było (pierwszy skan tej książki).
+            const hadStored = (parseVintedData(book.vintedData)?.offers.length ?? 0) > 0;
+            if (persistEnabled && !hadStored) {
+              await this.persistBookOffers(book, [], scannedAt);
+            } else if (hadStored) {
+              log.warn("0 ofert mimo zapisanych wcześniej — pomijam zapis (możliwy miss/blok), zachowuję dane", { title });
+            }
             sendEvent({
               type: "search_attempt",
               result: { id: book.id, title, author: book.author, url, status: "no_results", itemCount: 0, debug }
