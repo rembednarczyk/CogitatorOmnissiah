@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.0.4** (źródło prawdy: `metadata.json`; mirror w `package.json`).
+- Wersja aplikacji: **1.1.0** (źródło prawdy: `metadata.json`; mirror w `package.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - Suite: 187+ testów zielonych; `npm run lint` (tsc) czysty.
@@ -59,6 +59,11 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.1.0** — Vinted: grupowanie per sprzedawca (on-demand, „low hanging fruit").
+  Przycisk „Grupuj per sprzedawca" dociąga sprzedawcę ze strony najtańszej oferty każdej
+  książki (`extractVintedSeller`: `/member/{id}` + `data-testid="profile-username"`),
+  serwis `resolveSellers` (SSE, throttling jak skan, cap 100, zdarzenie `seller_resolved`),
+  endpoint `POST /api/vinted-group`, czysty `groupBySeller` (≥2 książki) + sekcja UI.
 - **1.0.4** — Skaner Vinted: self-kill NAPRAWIONY (KROK 3). Root cause POTWIERDZONY logami
   Rendera: `JavaScript heap out of memory` przy ~268 MB, heap rósł monotonicznie
   ~10 MB/książkę (pełny GC nie zwalniał). Przyczyna: V8 SlicedString — pola oferty
@@ -80,8 +85,11 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
 
 ## Otwarte pozycje
 
-- **Seller bundling** (analiza) — grupowanie trafień po sprzedawcy, by kupić kilka książek
-  u jednej osoby („low hanging fruit"). Blokada: sprzedawcy brak w skanie katalogu.
-  Kierunek: dwufazowo, on-demand — faza 2 dociąga sprzedawcę tylko dla dopasowanych
-  ofert (cap: najtańsza/książkę), grupowanie + UI na froncie. Wymaga próbki HTML strony
-  `/items/{id}` LUB sprawdzenia `/api/v2/items/{id}` (JSON, mały) — NIE zgadywać selektora.
+- (brak)
+
+## Zrobione (skrót)
+
+- **Seller bundling** (1.1.0) — ZROBIONE. Opcja A (parsowanie strony oferty), on-demand.
+  Sprzedawca ze strony `/items/{id}` (markery zweryfikowane: `href="/member/{id}"` +
+  `data-testid="profile-username"`, oba unikalne 1×). Grupujemy najtańszą/książkę (1
+  fetch/książkę — mniej ekspozycji na Cloudflare). Opcja B (wewn. API) odpadła — brak wjazdu.

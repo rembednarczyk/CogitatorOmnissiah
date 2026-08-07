@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseVintedItems, parseVintedPrice, extractPriceFromText, vintedDiagnostics } from "../vintedParser";
+import { parseVintedItems, parseVintedPrice, extractPriceFromText, vintedDiagnostics, extractVintedSeller } from "../vintedParser";
 
 // Catalog blob with &quot;-escaped JSON, as in the real page
 const catalogHtml = (json: object) =>
@@ -146,6 +146,30 @@ describe("vintedDiagnostics", () => {
 
   it("detects the no-results marker", () => {
     expect(vintedDiagnostics("Nie znaleźliśmy żadnych przedmiotów", 0).noResultsMarker).toBe(true);
+  });
+});
+
+describe("extractVintedSeller", () => {
+  it("extracts seller id + login from the item page markup", () => {
+    const html = `<a class="web_ui__Cell__link" href="/member/141611249"><div class="prefix"></div></a>` +
+      `<span class="web_ui__Text__bold" data-testid="profile-username">fabrykamalp</span>`;
+    expect(extractVintedSeller(html)).toEqual({
+      id: "141611249",
+      login: "fabrykamalp",
+      url: "https://www.vinted.pl/member/141611249",
+    });
+  });
+
+  it("returns null when there is no /member/ link", () => {
+    expect(extractVintedSeller("<html><body>brak sprzedawcy</body></html>")).toBeNull();
+  });
+
+  it("falls back to user-{id} when the username marker is absent", () => {
+    expect(extractVintedSeller(`<a href="/member/999"></a>`)).toEqual({
+      id: "999",
+      login: "user-999",
+      url: "https://www.vinted.pl/member/999",
+    });
   });
 });
 

@@ -67,7 +67,8 @@ export interface SyncState {
 
 export interface SyncEvent {
   // "match" / "search_attempt" są emitowane przez skanery (Vinted/Biblioteka)
-  type: "status" | "progress" | "complete" | "error" | "match" | "search_attempt";
+  // "seller_resolved" — grupowanie Vinted per sprzedawca (dociąganie sprzedawcy oferty)
+  type: "status" | "progress" | "complete" | "error" | "match" | "search_attempt" | "seller_resolved";
   message?: string;
   error?: string;
   current?: number;

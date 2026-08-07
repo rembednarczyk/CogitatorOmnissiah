@@ -4,9 +4,27 @@ import { SyncEvent } from "../src/types";
 import { withRetry } from "../retry";
 import { createLogger } from "../logger";
 import { getRandomUserAgent, createScrapingAgent } from "../scrapingClient";
-import { parseVintedItems, vintedDiagnostics, looksBlocked } from "./vintedParser";
+import { parseVintedItems, vintedDiagnostics, looksBlocked, extractVintedSeller } from "./vintedParser";
 
 const log = createLogger("VintedScan");
+
+/** Nagłówki żądania Vinted (świeży User-Agent na wywołanie). Wspólne dla skanu i grupowania. */
+function vintedRequestHeaders() {
+  return {
+    'User-Agent': getRandomUserAgent(),
+    'Accept-Language': 'pl-PL,pl;q=0.9,en-US;q=0.8,en;q=0.7',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+    'Referer': 'https://www.vinted.pl/',
+    'Upgrade-Insecure-Requests': '1',
+    'Sec-Fetch-Dest': 'document',
+    'Sec-Fetch-Mode': 'navigate',
+    'Sec-Fetch-Site': 'none',
+    'Sec-Fetch-User': '?1',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'Connection': 'keep-alive',
+    'Cache-Control': 'max-age=0',
+  };
+}
 
 /**
  * Odczyt pamięci procesu (MB). Strony Vinted to ~7 MB HTML każda — na hostingu z
@@ -59,20 +77,7 @@ export class VintedSyncService {
         const title = book.plTitle;
         const searchText = `${title} ${book.author || ""}`.trim();
 
-        const headers = {
-          'User-Agent': getRandomUserAgent(),
-          'Accept-Language': 'pl-PL,pl;q=0.9,en-US;q=0.8,en;q=0.7',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-          'Referer': 'https://www.vinted.pl/',
-          'Upgrade-Insecure-Requests': '1',
-          'Sec-Fetch-Dest': 'document',
-          'Sec-Fetch-Mode': 'navigate',
-          'Sec-Fetch-Site': 'none',
-          'Sec-Fetch-User': '?1',
-          'Accept-Encoding': 'gzip, deflate, br',
-          'Connection': 'keep-alive',
-          'Cache-Control': 'max-age=0',
-        };
+        const headers = vintedRequestHeaders();
 
         sendEvent({
           type: "progress",
@@ -193,5 +198,61 @@ export class VintedSyncService {
       log.error("Błąd inicjalizacji Vinted", { message: error.message });
       sendEvent({ type: "error", error: `Błąd inicjalizacji Vinted: ${error.message}` });
     }
+  }
+
+  /**
+   * On-demand: dla podanych ofert (zwykle najtańsza/książkę) dociąga sprzedawcę ze
+   * strony oferty `/items/...` i emituje `seller_resolved` per oferta. Sprzedawcy nie
+   * ma w katalogu, więc to osobne żądania — ten sam throttling/retry/blok co skan,
+   * by nie prowokować Cloudflare. Korelacja po `url` (id oferty bywa puste w ścieżkach
+   * fallback parsera). Grupowanie/UI robi front na tych danych.
+   */
+  async resolveSellers(
+    items: { url: string }[],
+    sendEvent: (data: SyncEvent) => void,
+    checkCancellation: () => boolean,
+  ) {
+    const httpsAgent = createScrapingAgent();
+    const total = items.length;
+    sendEvent({ type: "status", message: `Ustalanie sprzedawców dla ${total} ofert...` });
+
+    for (let i = 0; i < items.length; i++) {
+      if (checkCancellation()) {
+        sendEvent({ type: "status", message: "Grupowanie per sprzedawca przerwane przez użytkownika." });
+        break;
+      }
+      const item = items[i];
+      const url = item.url;
+      sendEvent({ type: "progress", message: `Sprzedawca oferty (${i + 1}/${total})`, current: i + 1, total });
+
+      if (!url || !/\/items\//.test(url)) {
+        sendEvent({ type: "seller_resolved", result: { url, seller: null } });
+        continue;
+      }
+
+      try {
+        const response = await withRetry(async () => {
+          return await axios.get(url, { httpsAgent, headers: vintedRequestHeaders(), timeout: 30000 });
+        }, 3, 4000);
+        const html = response.data;
+
+        if (looksBlocked(html)) {
+          log.warn("Vinted zablokował stronę oferty (sprzedawca)", { url });
+          sendEvent({ type: "seller_resolved", result: { url, seller: null, blocked: true, ...memMb() } });
+        } else {
+          const seller = extractVintedSeller(html);
+          sendEvent({ type: "seller_resolved", result: { url, seller, ...memMb() } });
+        }
+      } catch (err: any) {
+        log.warn("Błąd ustalania sprzedawcy", { url, error: err.message });
+        sendEvent({ type: "seller_resolved", result: { url, seller: null, error: err.message } });
+      }
+
+      // Ten sam throttling co skan — nie prowokujemy blokady IP.
+      await new Promise(resolve => setTimeout(resolve, 3000 + Math.floor(Math.random() * 2000)));
+    }
+
+    const wasCancelled = checkCancellation();
+    sendEvent({ type: "complete", result: { success: !wasCancelled, cancelled: wasCancelled } });
   }
 }
