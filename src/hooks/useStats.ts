@@ -70,9 +70,25 @@ export function useStats() {
     }
   }, []);
 
+  // Optymistyczne dopisanie książki do sekcji „Książki dostępne w bibliotekach"
+  // zaraz po otagowaniu (Biblioteka / Biblioteka 9), bez czekania na kolejny
+  // refetch — Notion bywa opóźniony w odczycie tuż po zapisie, więc pełne
+  // odświeżenie potrafi jeszcze nie widzieć nowego tagu. `libraryStats[].id`
+  // to nazwa tagu, więc dopasowujemy filię po znaczniku.
+  const addBookToLibrarySection = useCallback((tag: string, book: { id: string; title: string; author: string; year?: number | null }) => {
+    setStats(prev => {
+      if (!prev) return prev;
+      const libraryStats = prev.libraryStats.map(ls => {
+        if (ls.id !== tag || ls.books.some(b => b.id === book.id)) return ls;
+        return { ...ls, books: [...ls.books, { ...book, read: false }] };
+      });
+      return { ...prev, libraryStats };
+    });
+  }, []);
+
   useEffect(() => {
     fetchStats();
   }, [fetchStats]);
 
-  return { stats, loading, error, fetchStats };
+  return { stats, loading, error, fetchStats, addBookToLibrarySection };
 }
