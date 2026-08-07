@@ -4,7 +4,7 @@ import { SyncEvent } from "../src/types";
 import { withRetry } from "../retry";
 import { createLogger } from "../logger";
 import { getRandomUserAgent, createScrapingAgent } from "../scrapingClient";
-import { parseVintedItems } from "./vintedParser";
+import { parseVintedItems, vintedDiagnostics } from "./vintedParser";
 
 const log = createLogger("VintedScan");
 
@@ -104,7 +104,7 @@ export class VintedSyncService {
             sendEvent({ type: "status", message: `⚠️ Vinted wykrył bota przy "${title}". Próbuję ominąć...` });
             sendEvent({
               type: "search_attempt",
-              result: { id: book.id, title, author: book.author, url, status: "blocked", itemCount: 0 }
+              result: { id: book.id, title, author: book.author, url, status: "blocked", itemCount: 0, debug: vintedDiagnostics(html, 0) }
             });
           }
 
@@ -114,7 +114,7 @@ export class VintedSyncService {
             log.info(`Brak wyników na Vinted`, { searchText });
             sendEvent({
               type: "search_attempt",
-              result: { id: book.id, title, author: book.author, url, status: "no_results", itemCount: 0 }
+              result: { id: book.id, title, author: book.author, url, status: "no_results", itemCount: 0, debug: vintedDiagnostics(html, 0) }
             });
             // Odczekaj jak przy każdym innym zapytaniu — pomijanie opóźnienia
             // przy braku wyników (częsty przypadek) to prosta droga do blokady
@@ -123,6 +123,7 @@ export class VintedSyncService {
           }
 
           const items = parseVintedItems(html, title, book.author || "");
+          const debug = vintedDiagnostics(html, items.length);
 
           if (items.length > 0) {
             const matchResult = {
@@ -136,19 +137,19 @@ export class VintedSyncService {
             sendEvent({ type: "match", result: matchResult });
             sendEvent({
               type: "search_attempt",
-              result: { id: book.id, title, author: book.author, url, status: "success", itemCount: items.length }
+              result: { id: book.id, title, author: book.author, url, status: "success", itemCount: items.length, debug }
             });
           } else {
             sendEvent({
               type: "search_attempt",
-              result: { id: book.id, title, author: book.author, url, status: "no_results", itemCount: 0 }
+              result: { id: book.id, title, author: book.author, url, status: "no_results", itemCount: 0, debug }
             });
           }
         } catch (err: any) {
           log.warn(`Błąd sprawdzania Vinted`, { title, error: err.message || "Nieznany błąd" });
           sendEvent({
             type: "search_attempt",
-            result: { id: book.id, title, author: book.author, url, status: "error", itemCount: 0 }
+            result: { id: book.id, title, author: book.author, url, status: "error", itemCount: 0, debug: { error: err.message, code: err.code, httpStatus: err.response?.status } }
           });
           if (err.response?.status === 429) {
             sendEvent({

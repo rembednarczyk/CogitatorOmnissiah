@@ -25,6 +25,20 @@ export interface VintedSearchAttempt {
   url: string;
   status: "pending" | "success" | "no_results" | "blocked" | "error";
   itemCount: number;
+  // Diagnostyka (Krok 2) — pomaga odróżnić realny brak ofert od bloku / gubienia
+  // ofert przez parser. Kształt zależny od ścieżki (HTML vs błąd sieci).
+  debug?: {
+    chars?: number;
+    hasCatalogJson?: boolean;
+    hasFeedGrid?: boolean;
+    itemLinks?: number;
+    blockedMarker?: boolean;
+    noResultsMarker?: boolean;
+    parsed?: number;
+    error?: string;
+    code?: string;
+    httpStatus?: number;
+  };
 }
 
 export function useVintedCheck() {

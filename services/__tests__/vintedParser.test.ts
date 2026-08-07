@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseVintedItems, parseVintedPrice, extractPriceFromText } from "../vintedParser";
+import { parseVintedItems, parseVintedPrice, extractPriceFromText, vintedDiagnostics } from "../vintedParser";
 
 // Catalog blob with &quot;-escaped JSON, as in the real page
 const catalogHtml = (json: object) =>
@@ -74,6 +74,29 @@ describe("parseVintedItems", () => {
     const html = `<div class="feed-grid__item"><a href="/items/5" title="Solaris"></a></div>`;
     const items = parseVintedItems(html, "Solaris", "Lem");
     expect(items[0].priceValue).toBeNull();
+  });
+});
+
+describe("vintedDiagnostics", () => {
+  it("flags a likely parser miss: item links present but nothing parsed and no markers", () => {
+    const html = `<html><body><a href="/items/1"></a><a href="/items/2"></a></body></html>`;
+    const d = vintedDiagnostics(html, 0);
+    expect(d.itemLinks).toBe(2);
+    expect(d.parsed).toBe(0);
+    expect(d.blockedMarker).toBe(false);
+    expect(d.noResultsMarker).toBe(false);
+  });
+
+  it("detects the catalog JSON path and a bot block", () => {
+    const html = `<div data-component-name="Catalog"></div> cloudflare captcha`;
+    const d = vintedDiagnostics(html, 3);
+    expect(d.hasCatalogJson).toBe(true);
+    expect(d.blockedMarker).toBe(true);
+    expect(d.parsed).toBe(3);
+  });
+
+  it("detects the no-results marker", () => {
+    expect(vintedDiagnostics("Nie znaleźliśmy żadnych przedmiotów", 0).noResultsMarker).toBe(true);
   });
 });
 
