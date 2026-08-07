@@ -44,6 +44,51 @@ describe('IntegrityService', () => {
     }));
   });
 
+  it('detects duplicate original titles for the same author', async () => {
+    const mockBooks: NotionBook[] = [
+      { id: '1', lp: '1', plTitle: 'Solaris', author: 'Stanisław Lem', origTitle: 'Solaris', year: '1961', awards: ['Nagroda Hugo'], zrodlo: [], currentWydawnictwo: '', currentSeria: '', currentCzesccyklu: false, plTitleRichText: [], origTitleRichText: [] },
+      { id: '2', lp: '2', plTitle: 'Solaris', author: 'Stanisław Lem', origTitle: 'Solaris', year: '1961', awards: ['Nagroda Hugo'], zrodlo: [], currentWydawnictwo: '', currentSeria: '', currentCzesccyklu: false, plTitleRichText: [], origTitleRichText: [] },
+    ];
+    mockNotion.queryAllBooks.mockResolvedValue(mockBooks);
+    mockWiki.fetchPageContent.mockResolvedValue('');
+
+    await service.runIntegrityCheck(mockSendEvent, () => false);
+
+    expect(mockSendEvent).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'complete',
+      result: expect.objectContaining({
+        originalTitleUniqueness: expect.objectContaining({ status: false }),
+        polishTitleUniqueness: expect.objectContaining({ status: false }),
+      })
+    }));
+  });
+
+  it('reports all checks clean when Notion mirrors the wiki', async () => {
+    const mockNotionBooks: NotionBook[] = [
+      { id: '1', lp: '1', plTitle: 'Solaris', author: 'Stanisław Lem', origTitle: 'Solaris', year: '1961', awards: ['Nagroda Hugo'], zrodlo: [], currentWydawnictwo: '', currentSeria: '', currentCzesccyklu: false, plTitleRichText: [], origTitleRichText: [] },
+    ];
+    const wikiContent = `
+{| class="wikitable"
+|-
+! Rok !! Autor !! Tytuł oryginalny !! Tytuł polski
+|- style="background: #ccffcc"
+| [[1961]] || [[Stanisław Lem]] || ''Solaris'' || Solaris
+|}`;
+    mockNotion.queryAllBooks.mockResolvedValue(mockNotionBooks);
+    // Only the Hugo page returns a book; Nebula/Locus pages are empty.
+    mockWiki.fetchPageContent.mockImplementation((title: string) =>
+      Promise.resolve(title.toLowerCase().includes('hugo') ? wikiContent : '')
+    );
+
+    await service.runIntegrityCheck(mockSendEvent, () => false);
+
+    const complete = mockSendEvent.mock.calls.map((c: any) => c[0]).find((e: any) => e.type === 'complete');
+    expect(complete.result.lpUniqueness.status).toBe(true);
+    expect(complete.result.originalTitleUniqueness.status).toBe(true);
+    expect(complete.result.yearCountMatch.status).toBe(true);
+    expect(complete.result.awardCountMatch.status).toBe(true);
+  });
+
   it('detects year mismatch between Notion and Wiki', async () => {
     const mockNotionBooks: NotionBook[] = [
       { id: '1', lp: '1', plTitle: 'Solaris', author: 'Stanisław Lem', origTitle: 'Solaris', year: '1961', awards: ['Nagroda Hugo'], zrodlo: [], currentWydawnictwo: '', currentSeria: '', currentCzesccyklu: false, plTitleRichText: [], origTitleRichText: [] }
