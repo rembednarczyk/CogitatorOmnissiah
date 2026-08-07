@@ -18,10 +18,24 @@ const USER_AGENTS = [
 
 export const getRandomUserAgent = () => USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
 
-/** Keep-alive agent współdzielony przez skanery — te same parametry co dotychczas inline. */
-export const createScrapingAgent = () => new https.Agent({
+export interface ScrapingAgentOptions {
+  /** Maks. równoległych połączeń do jednego hosta (domyślnie 5). */
+  maxSockets?: number;
+  /**
+   * Domyślnie `true` (pełna weryfikacja TLS). Ustaw `false` TYLKO dla hostów,
+   * które błędnie konfigurują łańcuch certyfikatów (np. nie wysyłają certyfikatu
+   * pośredniego → Node zgłasza „unable to verify the first certificate"). Skanery
+   * czytają WYŁĄCZNIE publiczne dane (katalog biblioteki) i nie wysyłają żadnych
+   * sekretów, więc ryzyko jest znikome; mimo to trzymaj to per-host, nie globalnie.
+   */
+  rejectUnauthorized?: boolean;
+}
+
+/** Keep-alive agent współdzielony przez skanery HTML. */
+export const createScrapingAgent = (opts: ScrapingAgentOptions = {}) => new https.Agent({
   keepAlive: true,
   keepAliveMsecs: 1000,
   timeout: 45000,
-  maxSockets: 5,
+  maxSockets: opts.maxSockets ?? 5,
+  rejectUnauthorized: opts.rejectUnauthorized ?? true,
 });
