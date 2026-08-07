@@ -335,15 +335,17 @@ export class VintedSyncService {
   /**
    * Etap 2 (przyrostowo, wznawialnie): dociąga sprzedawcę do SKŁADOWANYCH ofert bez
    * sprzedawcy i zapisuje z powrotem do Notion. Rozpoznani zostają w blobie, więc kolejny
-   * przebieg bierze tylko wciąż-`null` — dzięki temu można rozłożyć pracę na wiele przebiegów
-   * pod limitem Cloudflare (cap/przebieg). Zapis raz na książkę (mniej zapisów do Notion).
+   * przebieg bierze tylko wciąż-`null`. Bez capu domyślnie: przebieg ustala WSZYSTKIE
+   * brakujące (praca jest skończona — ilość nulli w bazie), ile zdąży zanim padnie; że
+   * zapis idzie raz na książkę, przerwany przebieg i tak utrwala postęp. Rate chroni
+   * throttling, nie liczba total. Opcjonalny `cap` ogranicza przebieg (np. z UI).
    */
   async resolveSellersToStore(
     sendEvent: (data: SyncEvent) => void,
     checkCancellation: () => boolean,
     params?: { cap?: number },
   ) {
-    const CAP = Math.max(1, Math.min(300, params?.cap ?? 150));
+    const CAP = params?.cap && params.cap > 0 ? params.cap : Infinity;
     try {
       sendEvent({ type: "status", message: "Wczytywanie składowanych ofert z Notion..." });
       const allBooks = await this.notion.getBooksForStats(undefined, checkCancellation, { cache: true });
@@ -364,7 +366,12 @@ export class VintedSyncService {
       }
 
       const target = Math.min(totalPending, CAP);
-      sendEvent({ type: "status", message: `Ofert bez sprzedawcy: ${totalPending}. Ten przebieg: ${target} (limit ${CAP}).` });
+      sendEvent({
+        type: "status",
+        message: Number.isFinite(CAP)
+          ? `Ofert bez sprzedawcy: ${totalPending}. Ten przebieg: ${target} (limit ${CAP}).`
+          : `Ofert bez sprzedawcy: ${totalPending}. Ustalam wszystkie w tym przebiegu.`,
+      });
 
       const httpsAgent = createScrapingAgent();
       let fetched = 0, resolved = 0;
