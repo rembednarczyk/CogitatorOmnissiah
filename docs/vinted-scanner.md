@@ -34,6 +34,7 @@ Scraping is rate-limited and unreliable (Cloudflare); analysis (grouping) is che
 - **Throttling**: 3–5 s delay (with jitter) between books — applied on **every** path, including the no-results case, to avoid the request bursts that trigger Cloudflare blocks.
 - **429 handling**: On HTTP 429 waits ~5 s before continuing; 403 is surfaced as a Cloudflare block.
 - **Cancellation**: Cooperative — checks the cancellation token each iteration and reports `cancelled: true` on the `complete` event when stopped.
+- **Source tagging**: a book that has offers on Vinted (a match) gets a `Vinted` tag added to its `Źródło` multi-select in Notion (`addTagToMultiSelect`, best-effort, skipped when the book already carries the tag). It only adds the tag; it isn't removed if the offers later disappear. `Vinted` is not in the scan's exclusion list, so tagged books keep being re-scanned.
 - **Resumable scan**: with the `skipScannedWithinDays` param (frontend "Kontynuuj" checkbox, default on → 3 days), candidates whose stored `scannedAt` is within the window are skipped, so an interrupted run (the ~160-books-per-container limit, or a mobile connection drop when the browser is backgrounded) continues from the un-scanned books instead of restarting. Uncheck it to force a full re-scan (which also refreshes offers, keeping resolved sellers via `mergeOffers`).
 
 ## 4. Frontend Integration
