@@ -4,6 +4,7 @@ import { SyncEvent } from "../src/types";
 import { withRetry } from "../retry";
 import { createLogger } from "../logger";
 import { getRandomUserAgent, createScrapingAgent } from "../scrapingClient";
+import { parseVintedItems } from "./vintedParser";
 
 const log = createLogger("VintedScan");
 
@@ -120,141 +121,7 @@ export class VintedSyncService {
             continue;
           }
 
-          const items: any[] = [];
-
-          // Vinted often stores data in a script tag with data-component-name="Catalog"
-          // or similar. We'll try to find the JSON blob more reliably.
-          let rawItems: any[] = [];
-
-          // Try to find JSON in script tag content or data-props attribute
-          const catalogMatch = html.match(/data-component-name="Catalog"[^>]*data-props="([^"]+)"/s) ||
-                               html.match(/data-component-name="Catalog"[^>]*>\s*({.*?})\s*<\/script>/s);
-
-          if (catalogMatch) {
-            try {
-              // HTML attributes use &quot; instead of "
-              let jsonStr = catalogMatch[1];
-              if (jsonStr.includes('&quot;')) {
-                jsonStr = jsonStr.replace(/&quot;/g, '"')
-                                 .replace(/&amp;/g, '&')
-                                 .replace(/&lt;/g, '<')
-                                 .replace(/&gt;/g, '>')
-                                 .replace(/&#39;/g, "'");
-              }
-              const catalogData = JSON.parse(jsonStr);
-              rawItems = catalogData.items?.list ||
-                         catalogData.items ||
-                         catalogData.catalog?.results?.items ||
-                         catalogData.catalog?.items ||
-                         [];
-              log.info(`Znaleziono elementy w JSON`, { title, count: rawItems.length });
-            } catch (e) {
-              log.warn("Nie udało się sparsować JSON katalogu Vinted", { title });
-            }
-          }
-
-          // Fallback to the old "items" regex if the above failed
-          if (rawItems.length === 0) {
-            const jsonMatch = html.match(/"items":\s*(\[.*?\])/);
-            if (jsonMatch) {
-              try {
-                // Try to find the matching closing bracket for the array
-                let bracketCount = 0;
-                let endIndex = -1;
-                const str = jsonMatch[1];
-                for (let i = 0; i < str.length; i++) {
-                  if (str[i] === '[') bracketCount++;
-                  else if (str[i] === ']') {
-                    bracketCount--;
-                    if (bracketCount === 0) {
-                      endIndex = i + 1;
-                      break;
-                    }
-                  }
-                }
-                const jsonStr = endIndex !== -1 ? str.substring(0, endIndex) : str;
-                rawItems = JSON.parse(jsonStr);
-              } catch (e) {
-                // If it fails, it might be because the regex was too simple
-              }
-            }
-          }
-
-          if (Array.isArray(rawItems)) {
-            for (const item of rawItems) {
-              if (items.length >= 5) break;
-
-              const itemTitle = (item.title || "").toLowerCase();
-              const searchTitle = title.toLowerCase();
-              const searchAuthor = (book.author || "").toLowerCase();
-
-              // More flexible relevance check:
-              // 1. Item title contains the book title
-              // 2. OR Book title contains the item title
-              // 3. OR Item title contains the author's name
-              const hasTitle = itemTitle.includes(searchTitle) || searchTitle.includes(itemTitle);
-              const hasAuthor = searchAuthor && itemTitle.includes(searchAuthor);
-
-              if (hasTitle || hasAuthor) {
-                items.push({
-                  id: item.id,
-                  title: item.title || itemTitle,
-                  price: item.price?.amount || item.total_item_price?.amount || item.price?.amount_decimal || "??",
-                  currency: item.price?.currency_code || item.currency || "PLN",
-                  url: item.url ? (item.url.startsWith('http') ? item.url : `https://www.vinted.pl${item.url}`) : `https://www.vinted.pl/items/${item.id}`
-                });
-              }
-            }
-          }
-
-          // Fallback to regex if JSON parsing failed or found no items
-          if (items.length === 0) {
-            // Look for item blocks
-            const itemBlocks = html.split('class="feed-grid__item"');
-            if (itemBlocks.length > 1) {
-              for (let j = 1; j < itemBlocks.length && items.length < 5; j++) {
-                const block = itemBlocks[j];
-                const urlMatch = block.match(/href="(\/items\/[^"]+)"/);
-                const titleMatch = block.match(/title="([^"]+)"/);
-                // Oba warianty mają teraz group1 = kwota, group2 = waluta (wcześniej
-                // wariant aria-label miał grupę 1 = cały tekst etykiety, więc jako
-                // cena pokazywał się śmieć typu "Marka: …, cena: 25,00 zł").
-                const priceMatch = block.match(/aria-label="[^"]*?(\d+[.,]\d+)\s*([A-Z]{3}|zł)"/i) ||
-                                   block.match(/>(\d+[.,]\d+)\s*([A-Z]{3}|zł)</i);
-
-                if (urlMatch && titleMatch) {
-                  const itemTitle = titleMatch[1];
-                  if (itemTitle.toLowerCase().includes(title.toLowerCase())) {
-                    items.push({
-                      title: itemTitle,
-                      url: `https://www.vinted.pl${urlMatch[1]}`,
-                      price: priceMatch ? priceMatch[1] : "Sprawdź",
-                      currency: priceMatch ? priceMatch[2] : "PLN"
-                    });
-                  }
-                }
-              }
-            }
-          }
-
-          // Last resort: simple global regex
-          if (items.length === 0) {
-            const itemRegex = /href="(\/items\/[^"]+)"[^>]*title="([^"]+)"/g;
-            let match;
-            while ((match = itemRegex.exec(html)) !== null && items.length < 5) {
-              const itemUrl = `https://www.vinted.pl${match[1]}`;
-              const itemTitle = match[2];
-
-              if (itemTitle.toLowerCase().includes(title.toLowerCase())) {
-                items.push({
-                  title: itemTitle,
-                  url: itemUrl,
-                  price: "Sprawdź",
-                  currency: "PLN"
-                });
-              }
-            }
-          }
+          const items = parseVintedItems(html, title, book.author || "");
 
           if (items.length > 0) {
             const matchResult = {
