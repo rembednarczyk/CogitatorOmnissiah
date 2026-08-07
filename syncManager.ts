@@ -80,7 +80,7 @@ const TASK_REGISTRY: Record<SyncTaskName, (sendEvent: (data: SyncEvent) => void,
   cycles:     (s) => (cc) => cyclesSyncService.runCyclesSync(s, cc),
   integrity:  (s) => (cc) => integrityService.runIntegrityCheck(s, cc),
   library:    (s, p) => (cc) => libraryCheckService.runLibraryCheck(p.libraryCode, s, cc),
-  vinted:     (s) => (cc) => vintedSyncService.runVintedCheck(s, cc),
+  vinted:     (s, p) => (cc) => vintedSyncService.runVintedCheck(s, cc, p),
   "vinted-group": (s, p) => (cc) => vintedSyncService.resolveSellers(p.items, s, cc),
   "vinted-resolve-sellers": (s, p) => (cc) => vintedSyncService.resolveSellersToStore(s, cc, p),
 };

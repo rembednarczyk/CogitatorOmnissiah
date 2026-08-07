@@ -81,6 +81,7 @@ export class VintedSyncService {
   async runVintedCheck(
     sendEvent: (data: SyncEvent) => void,
     checkCancellation: () => boolean,
+    params?: { skipScannedWithinDays?: number },
   ) {
     try {
       sendEvent({ type: "status", message: "Pobieranie listy książek z Notion..." });
@@ -90,11 +91,29 @@ export class VintedSyncService {
       // Filter books:
       // - Have Polish title
       // - Exclude from source: Posiadam, Przeczytane, Audioteka, Biblioteka, Biblioteka 9
-      const candidates = allBooks.filter(b => {
+      let candidates = allBooks.filter(b => {
         const zrodlo = b.zrodlo || [];
         const excluded = ["Posiadam", "Przeczytane", "Audioteka", "Biblioteka", "Biblioteka 9"];
         return !zrodlo.some(z => excluded.includes(z)) && b.plTitle && b.plTitle.trim() !== "";
       });
+
+      // Wznawianie: pomiń książki skanowane w ostatnich N dniach — skan rusza od tych
+      // jeszcze niezrobionych (albo starszych niż okno). Dzięki temu przerwany przebieg
+      // (limit ~160/kontener, drop na mobile) kontynuuje się zamiast zaczynać od zera.
+      const skipDays = params?.skipScannedWithinDays;
+      if (skipDays && skipDays > 0) {
+        const cutoff = Date.now() - skipDays * 86_400_000;
+        const before = candidates.length;
+        candidates = candidates.filter(b => {
+          const at = parseVintedData(b.vintedData)?.scannedAt;
+          const t = at ? Date.parse(at) : NaN;
+          return isNaN(t) || t < cutoff; // nigdy nieskanowana lub stara → skanuj
+        });
+        const skipped = before - candidates.length;
+        if (skipped > 0) {
+          sendEvent({ type: "status", message: `Wznawianie: pominięto ${skipped} świeżo skanowanych (< ${skipDays} dni). Do sprawdzenia: ${candidates.length}.` });
+        }
+      }
 
       sendEvent({ type: "status", message: `Znaleziono ${candidates.length} kandydatów do sprawdzenia na Vinted...` });
 

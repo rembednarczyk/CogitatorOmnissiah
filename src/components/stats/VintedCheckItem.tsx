@@ -20,7 +20,7 @@ function shortDate(iso?: string | null): string {
 interface VintedCheckItemProps {
   results: VintedResult[];
   searchAttempts: VintedSearchAttempt[];
-  onCheck: () => void;
+  onCheck: (opts?: { skipScannedWithinDays?: number }) => void;
   onStop: () => void;
   isChecking: boolean;
   progress: any;
@@ -42,8 +42,12 @@ function formatDebug(d: NonNullable<VintedSearchAttempt["debug"]>): string {
   return parts.join(" · ");
 }
 
+const RESUME_DAYS = 3;
+
 export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searchAttempts, onCheck, onStop, isChecking, progress }) => {
   const [showLogs, setShowLogs] = React.useState(false);
+  // Wznawianie: domyślnie pomijamy książki skanowane < RESUME_DAYS dni (kontynuuj, nie od zera).
+  const [resumeScan, setResumeScan] = React.useState(true);
   const { sellersByUrl, isGrouping, groupProgress, groupError, runGrouping, stopGrouping } = useVintedGrouping();
   const { isResolving, resolveProgress, resolveResult, resolveError, runResolve, stopResolve } = useVintedResolveSellers();
   const { stored, isLoadingStored, storedError, loadStored, clearStored } = useVintedStored();
@@ -170,14 +174,29 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
             </button>
           )}
 
+          {!isChecking && (
+            <label
+              className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 cursor-pointer select-none"
+              title={`Pomiń książki skanowane w ostatnich ${RESUME_DAYS} dniach — skan rusza od niezrobionych (kontynuacja po przerwaniu). Odznacz, by skanować wszystko od nowa.`}
+            >
+              <input
+                type="checkbox"
+                checked={resumeScan}
+                onChange={(e) => setResumeScan(e.target.checked)}
+                className="accent-cyan-500 w-3.5 h-3.5"
+              />
+              Kontynuuj
+            </label>
+          )}
+
           <button
             onClick={() => {
               if (isChecking) onStop();
-              else onCheck(); 
+              else onCheck(resumeScan ? { skipScannedWithinDays: RESUME_DAYS } : undefined);
             }}
             className={`flex items-center gap-3 px-6 py-3 rounded-2xl transition-all text-sm font-bold text-white shadow-xl ${
-              isChecking 
-                ? "bg-red-600 hover:bg-red-500 shadow-red-500/20" 
+              isChecking
+                ? "bg-red-600 hover:bg-red-500 shadow-red-500/20"
                 : "bg-cyan-600 hover:bg-cyan-500 shadow-cyan-500/20"
             }`}
           >
