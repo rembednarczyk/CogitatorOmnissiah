@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.3.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.4.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - Suite: 187+ testów zielonych; `npm run lint` (tsc) czysty.
@@ -59,6 +59,11 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.4.0** — Vinted persystencja ETAP 2: przyrostowe dociąganie sprzedawców DO BAZY.
+  `resolveSellersToStore` czyta składowane oferty bez sprzedawcy, dociąga (throttled,
+  cap 150/przebieg, wznawialne — rozpoznani zostają w blobie), zapisuje raz/książkę.
+  Task `vinted-resolve-sellers`, endpoint `POST /api/vinted-resolve-sellers`, hook
+  `useVintedResolveSellers`, przycisk „Ustal sprzedawców (baza)" + postęp/wynik.
 - **1.3.0** — Vinted persystencja ETAP 1 (fundament): wyniki skanu zapisywane do Notion
   (blob JSON w polu `VintedData`, chunk ≤2000 zn., mapper skleja). `vintedStore` (pure:
   serialize/parse/merge — merge ZACHOWUJE sprzedawcę dla ofert z niezmienionym URL).
@@ -96,9 +101,6 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
 
 ## Otwarte pozycje
 
-- **Vinted persystencja ETAP 2** — przyrostowe dociąganie sprzedawcy do bazy: task czyta
-  składowane oferty bez sprzedawcy, dociąga (throttled, cap, wznawialny między
-  przebiegami), zapisuje z powrotem do blobu. Bazuje na `vintedStore` + `saveVintedData`.
 - **Vinted persystencja ETAP 3** — grupowanie i kafelki Z BAZY (bez re-scrape): endpoint
   czyta `VintedData` wszystkich książek → buduje wyniki + `sellersByUrl` → `groupBySeller`.
   Front renderuje kafelki i paczki ze składowanych danych + znacznik świeżości (`scannedAt`).

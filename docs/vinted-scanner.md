@@ -26,7 +26,8 @@ Scraping is rate-limited and unreliable (Cloudflare); analysis (grouping) is che
 - **Store**: a compact JSON blob in a `VintedData` rich_text property on each book row (`services/vintedStore.ts`: `StoredVintedData = { scannedAt, offers[] }`). The adapter chunks it into ≤2000-char rich_text segments (`saveVintedData`); the mapper rejoins them (`getPlainText` → `NotionBook.vintedData`).
 - **Write path** (stage 1): the scan persists per book best-effort (`persistBookOffers`) after each response — matches, or an empty-offers record that still stamps `scannedAt` (scan coverage). `createColumnIfNeeded("VintedData")` ensures the property once per run; a failure disables persistence without failing the scan.
 - **Merge**: `mergeOffers` keeps a previously-resolved **seller** for any offer whose URL still exists, so a re-scan doesn't wipe seller data captured separately; vanished offers drop, new ones enter without a seller.
-- **Stages 2–3** (planned): an incremental job resolves sellers for stored offers lacking one (resumable, capped), then grouping and the tile view read straight from the blob (no re-scrape) with a `scannedAt` freshness marker.
+- **Seller resolution** (stage 2): `resolveSellersToStore` walks stored offers whose `seller` is `null`, fetches each offer page, and writes the seller back into the blob (one Notion write per book). It's **incremental and resumable** — resolved sellers persist, so each run (capped, default 150 fetches) only tackles remaining `null`s; re-run until `remaining` is 0. Task `vinted-resolve-sellers` / `POST /api/vinted-resolve-sellers`; UI button "Ustal sprzedawców (baza)".
+- **Stage 3** (planned): grouping and the tile view read straight from the blob (no re-scrape) with a `scannedAt` freshness marker.
 
 ## 3. Reliability & Anti-Bot Pacing
 - **Timeout**: 45 000 ms per request (via a keep-alive `https.Agent`).

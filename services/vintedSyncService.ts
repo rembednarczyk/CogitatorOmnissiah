@@ -6,7 +6,7 @@ import { createLogger } from "../logger";
 import { getRandomUserAgent, createScrapingAgent } from "../scrapingClient";
 import { parseVintedItems, vintedDiagnostics, looksBlocked, extractVintedSeller, VintedItem } from "./vintedParser";
 import { NotionBook } from "../src/types";
-import { offerFromItem, parseVintedData, mergeOffers, serializeVintedData } from "./vintedStore";
+import { offerFromItem, parseVintedData, mergeOffers, serializeVintedData, StoredVintedData, StoredOffer } from "./vintedStore";
 
 const log = createLogger("VintedScan");
 
@@ -287,5 +287,95 @@ export class VintedSyncService {
 
     const wasCancelled = checkCancellation();
     sendEvent({ type: "complete", result: { success: !wasCancelled, cancelled: wasCancelled } });
+  }
+
+  /**
+   * Etap 2 (przyrostowo, wznawialnie): dociąga sprzedawcę do SKŁADOWANYCH ofert bez
+   * sprzedawcy i zapisuje z powrotem do Notion. Rozpoznani zostają w blobie, więc kolejny
+   * przebieg bierze tylko wciąż-`null` — dzięki temu można rozłożyć pracę na wiele przebiegów
+   * pod limitem Cloudflare (cap/przebieg). Zapis raz na książkę (mniej zapisów do Notion).
+   */
+  async resolveSellersToStore(
+    sendEvent: (data: SyncEvent) => void,
+    checkCancellation: () => boolean,
+    params?: { cap?: number },
+  ) {
+    const CAP = Math.max(1, Math.min(300, params?.cap ?? 150));
+    try {
+      sendEvent({ type: "status", message: "Wczytywanie składowanych ofert z Notion..." });
+      const allBooks = await this.notion.getBooksForStats(undefined, checkCancellation, { cache: true });
+
+      // Książki z ofertami bez sprzedawcy (offer to referencja do data.offers — mutacja wraca do blobu).
+      const pending: { book: NotionBook; data: StoredVintedData; offers: StoredOffer[] }[] = [];
+      let totalPending = 0;
+      for (const book of allBooks) {
+        const data = parseVintedData(book.vintedData);
+        if (!data) continue;
+        const nulls = data.offers.filter(o => o.seller == null && /\/items\//.test(o.url));
+        if (nulls.length) { pending.push({ book, data, offers: nulls }); totalPending += nulls.length; }
+      }
+
+      if (totalPending === 0) {
+        sendEvent({ type: "complete", result: { success: true, resolved: 0, remaining: 0, message: "Wszyscy sprzedawcy już ustaleni w bazie." } });
+        return;
+      }
+
+      const target = Math.min(totalPending, CAP);
+      sendEvent({ type: "status", message: `Ofert bez sprzedawcy: ${totalPending}. Ten przebieg: ${target} (limit ${CAP}).` });
+
+      const httpsAgent = createScrapingAgent();
+      let fetched = 0, resolved = 0;
+
+      for (const p of pending) {
+        if (fetched >= CAP || checkCancellation()) break;
+        let dirty = false;
+        for (const offer of p.offers) {
+          if (fetched >= CAP || checkCancellation()) break;
+          fetched++;
+          sendEvent({ type: "progress", message: `Sprzedawca: ${p.book.plTitle} (${fetched}/${target})`, current: fetched, total: target });
+          try {
+            const response = await withRetry(async () => {
+              return await axios.get(offer.url, { httpsAgent, headers: vintedRequestHeaders(), timeout: 30000 });
+            }, 3, 4000);
+            const html = response.data;
+            if (looksBlocked(html)) {
+              log.warn("Vinted zablokował stronę oferty (sprzedawca, baza)", { url: offer.url });
+            } else {
+              const seller = extractVintedSeller(html);
+              if (seller) {
+                offer.seller = seller;
+                dirty = true;
+                resolved++;
+                sendEvent({ type: "seller_resolved", result: { url: offer.url, seller, ...memMb() } });
+              }
+            }
+          } catch (err: any) {
+            log.warn("Błąd ustalania sprzedawcy (baza)", { url: offer.url, error: err.message });
+          }
+          await new Promise(resolve => setTimeout(resolve, 3000 + Math.floor(Math.random() * 2000)));
+        }
+        // Zapisz książkę raz, po ustaleniu jej ofert (mniej zapisów do Notion).
+        if (dirty) {
+          try {
+            await this.notion.saveVintedData(p.book.id, serializeVintedData(p.data));
+          } catch (e: any) {
+            log.warn("Nie udało się zapisać sprzedawców do VintedData", { title: p.book.plTitle, error: e?.message });
+          }
+        }
+      }
+
+      const wasCancelled = checkCancellation();
+      const remaining = totalPending - resolved;
+      sendEvent({
+        type: "complete",
+        result: {
+          success: !wasCancelled, cancelled: wasCancelled, resolved, remaining,
+          message: `${wasCancelled ? "Przerwano. " : ""}Ustalono sprzedawców: ${resolved}. Pozostało bez sprzedawcy: ${remaining}${remaining > 0 ? " — uruchom ponownie, by dokończyć." : "."}`,
+        },
+      });
+    } catch (error: any) {
+      log.error("Błąd ustalania sprzedawców z bazy", { message: error.message });
+      sendEvent({ type: "error", error: `Błąd ustalania sprzedawców: ${error.message}` });
+    }
   }
 }

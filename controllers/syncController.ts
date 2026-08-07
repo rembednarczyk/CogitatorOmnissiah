@@ -218,6 +218,17 @@ export const groupVintedBySeller = async (req: Request, res: Response) => {
 
 export const stopVintedGroup = makeStopHandler("Zatrzymywanie grupowania per sprzedawca...");
 
+export const resolveVintedSellers = async (req: Request, res: Response) => {
+  await executeSyncTask(
+    req,
+    res,
+    (sendEvent) => syncManager.run("vinted-resolve-sellers", sendEvent, { cap: 150 }),
+    "Vinted Resolve Sellers Error:"
+  );
+};
+
+export const stopVintedResolveSellers = makeStopHandler("Zatrzymywanie ustalania sprzedawców...");
+
 export const checkLibraryAvailability = async (req: Request, res: Response) => {
   const { libraryCode } = req.body;
   if (!libraryCode) return res.status(400).json({ error: "Missing libraryCode parameter" });
