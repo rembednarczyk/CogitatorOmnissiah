@@ -34,7 +34,12 @@ export class LibraryCheckService {
     sendEvent({ type: "status", message: `Znaleziono ${candidates.length} kandydatów do sprawdzenia...` });
 
     const results: any[] = [];
-    const httpsAgent = createScrapingAgent();
+    // OPAC MBP Lublin nie wysyła certyfikatu pośredniego, przez co Node zgłasza
+    // „unable to verify the first certificate" i KAŻDE żądanie leci wyjątkiem
+    // (0 trafień, mimo że skan „idzie"). Wyłączamy weryfikację TLS tylko dla tego
+    // agenta — czytamy publiczny katalog, bez wysyłania sekretów. Vinted zostaje
+    // przy pełnej weryfikacji.
+    const httpsAgent = createScrapingAgent({ rejectUnauthorized: false });
 
     for (let i = 0; i < candidates.length; i++) {
       if (checkCancellation()) {
