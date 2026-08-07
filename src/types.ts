@@ -50,6 +50,8 @@ export interface NotionBook {
   zrodlo?: string[];
   plTitleRichText?: NotionRichTextItem[];
   origTitleRichText?: NotionRichTextItem[];
+  /** Blob JSON składowanych wyników Vinted (pole „VintedData") — parsowany przez vintedStore. */
+  vintedData?: string;
 }
 
 export interface SyncState {

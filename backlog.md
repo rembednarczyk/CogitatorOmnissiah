@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.2.0** (źródło prawdy: `metadata.json`; mirror w `package.json`).
+- Wersja aplikacji: **1.3.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - Suite: 187+ testów zielonych; `npm run lint` (tsc) czysty.
@@ -59,6 +59,12 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.3.0** — Vinted persystencja ETAP 1 (fundament): wyniki skanu zapisywane do Notion
+  (blob JSON w polu `VintedData`, chunk ≤2000 zn., mapper skleja). `vintedStore` (pure:
+  serialize/parse/merge — merge ZACHOWUJE sprzedawcę dla ofert z niezmienionym URL).
+  Skan zapisuje per książka best-effort (match/0 ofert) + `scannedAt`. Adapter:
+  `saveVintedData` + `createColumnIfNeeded("VintedData")`. Payoff (grupowanie/kafelki
+  z bazy) = ETAP 2/3, następne PR.
 - **1.2.0** — Vinted grupowanie: tryb „Wszystkie oferty" (obok „Najtańsze"). „Wszystkie"
   dociąga sprzedawcę KAŻDEJ oferty (cap 150 + raport pominięć), ujawnia many-to-many
   (dopłać grosze, skonsoliduj przesyłkę). `groupBySeller` bierze najtańszą kopię per
@@ -90,7 +96,14 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
 
 ## Otwarte pozycje
 
-- (brak)
+- **Vinted persystencja ETAP 2** — przyrostowe dociąganie sprzedawcy do bazy: task czyta
+  składowane oferty bez sprzedawcy, dociąga (throttled, cap, wznawialny między
+  przebiegami), zapisuje z powrotem do blobu. Bazuje na `vintedStore` + `saveVintedData`.
+- **Vinted persystencja ETAP 3** — grupowanie i kafelki Z BAZY (bez re-scrape): endpoint
+  czyta `VintedData` wszystkich książek → buduje wyniki + `sellersByUrl` → `groupBySeller`.
+  Front renderuje kafelki i paczki ze składowanych danych + znacznik świeżości (`scannedAt`).
+- **Świeżość** — oferty Vinted znikają; kafelki z bazy muszą pokazywać „dane z dnia X"
+  i pozwalać odświeżyć. Wbudować od ETAPU 3.
 
 ## Zrobione (skrót)
 

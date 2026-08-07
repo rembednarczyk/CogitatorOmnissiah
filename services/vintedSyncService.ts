@@ -4,7 +4,9 @@ import { SyncEvent } from "../src/types";
 import { withRetry } from "../retry";
 import { createLogger } from "../logger";
 import { getRandomUserAgent, createScrapingAgent } from "../scrapingClient";
-import { parseVintedItems, vintedDiagnostics, looksBlocked, extractVintedSeller } from "./vintedParser";
+import { parseVintedItems, vintedDiagnostics, looksBlocked, extractVintedSeller, VintedItem } from "./vintedParser";
+import { NotionBook } from "../src/types";
+import { offerFromItem, parseVintedData, mergeOffers, serializeVintedData } from "./vintedStore";
 
 const log = createLogger("VintedScan");
 
@@ -45,6 +47,22 @@ function memMb() {
 export class VintedSyncService {
   constructor(private notion: NotionAdapter) {}
 
+  /**
+   * Zapisuje świeżo zeskanowane oferty książki do Notion (blob VintedData), scalając ze
+   * składowanymi — zachowuje rozpoznanego sprzedawcę dla ofert, których URL nadal istnieje.
+   * Best-effort: błąd zapisu nie przerywa skanu (dane w bazie to bonus, nie warunek).
+   */
+  private async persistBookOffers(book: NotionBook, items: VintedItem[], scannedAt: string): Promise<void> {
+    try {
+      const fresh = items.map(offerFromItem);
+      const prev = parseVintedData(book.vintedData)?.offers;
+      const merged = mergeOffers(fresh, prev);
+      await this.notion.saveVintedData(book.id, serializeVintedData({ scannedAt, offers: merged }));
+    } catch (e: any) {
+      log.warn("Nie udało się zapisać VintedData", { title: book.plTitle, error: e?.message });
+    }
+  }
+
   async runVintedCheck(
     sendEvent: (data: SyncEvent) => void,
     checkCancellation: () => boolean,
@@ -68,6 +86,15 @@ export class VintedSyncService {
       const results: any[] = [];
       const httpsAgent = createScrapingAgent();
 
+      // Zapewnij pole składowania raz na skan; gdy się nie uda — persystencja off (skan i tak leci).
+      let persistEnabled = true;
+      try {
+        await this.notion.createColumnIfNeeded("VintedData");
+      } catch (e: any) {
+        persistEnabled = false;
+        log.warn("Nie udało się zapewnić pola VintedData — persystencja wyłączona", { error: e?.message });
+      }
+
       for (let i = 0; i < candidates.length; i++) {
         if (checkCancellation()) {
           sendEvent({ type: "status", message: "Skanowanie Vinted przerwane przez użytkownika." });
@@ -76,6 +103,7 @@ export class VintedSyncService {
         const book = candidates[i];
         const title = book.plTitle;
         const searchText = `${title} ${book.author || ""}`.trim();
+        const scannedAt = new Date().toISOString();
 
         const headers = vintedRequestHeaders();
 
@@ -132,6 +160,8 @@ export class VintedSyncService {
               type: "search_attempt",
               result: { id: book.id, title, author: book.author, url, status: "no_results", itemCount: 0, debug: { ...vintedDiagnostics(html, 0), ...memMb() } }
             });
+            // Zapisz „przeskanowano, brak ofert" — utrwala pokrycie skanu (wznawialność).
+            if (persistEnabled) await this.persistBookOffers(book, [], scannedAt);
             // Odczekaj jak przy każdym innym zapytaniu — pomijanie opóźnienia
             // przy braku wyników (częsty przypadek) to prosta droga do blokady
             await new Promise(resolve => setTimeout(resolve, 3000 + Math.floor(Math.random() * 2000)));
@@ -140,6 +170,9 @@ export class VintedSyncService {
 
           const items = parseVintedItems(html, title, book.author || "");
           const debug = { ...vintedDiagnostics(html, items.length), ...memMb() };
+
+          // Utrwal wynik (match lub 0 ofert) — scala ze składowanymi, zachowuje sprzedawców.
+          if (persistEnabled) await this.persistBookOffers(book, items, scannedAt);
 
           if (items.length > 0) {
             const matchResult = {
