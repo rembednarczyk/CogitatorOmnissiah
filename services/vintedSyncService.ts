@@ -222,6 +222,15 @@ export class VintedSyncService {
               type: "search_attempt",
               result: { id: book.id, title, author: book.author, url, status: "success", itemCount: items.length, debug }
             });
+            // Książka istnieje na Vinted → oznacz źródło tagiem „Vinted" (best-effort).
+            // Guard po zrodlo pomija zbędny zapis dla już otagowanych (re-scan).
+            if (!(book.zrodlo || []).includes("Vinted")) {
+              try {
+                await this.notion.addTagToMultiSelect(book.id, "Źródło", "Vinted");
+              } catch (e: any) {
+                log.warn("Nie udało się dodać tagu Vinted", { title: book.plTitle, error: e?.message });
+              }
+            }
           } else {
             sendEvent({
               type: "search_attempt",
