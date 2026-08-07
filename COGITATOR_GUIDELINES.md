@@ -3,7 +3,7 @@
 ## 1. CORE ARCHITECTURE (BACKEND)
 - **Pattern**: Service-Adapter-Manager.
 - **Adapters**: `NotionAdapter`, `WikiAdapter`. Pure API wrappers. No business logic.
-- **Services**: `*SyncService`, `StatsService`, `IntegrityService`, `PurificationService`, `SchemaValidationService`, plus the HTML scanners `LibraryCheckService` and `VintedSyncService`. Logic-heavy, stateless where possible. `SyncManager` stays a thin dispatcher — every long-running ritual lives in a service exposing `run*(sendEvent, checkCancellation)`; never inline scraping/sync loops back into `server.ts`. Scanners scrape public HTML (not Notion/Wiki APIs) and share `scrapingClient.ts` (User-Agent rotation + keep-alive HTTPS agent).
+- **Services**: `*SyncService`, `StatsService`, `IntegrityService`, `PurificationService`, `SchemaValidationService`, plus the HTML scanners `LibraryCheckService` and `VintedSyncService`. Logic-heavy, stateless where possible. `SyncManager` (in `syncManager.ts`) stays a thin dispatcher — every long-running ritual lives in a service exposing `run*(sendEvent, checkCancellation)`, wired through `TASK_REGISTRY`; never inline scraping/sync loops back into the manager or `server.ts`. Scanners scrape public HTML (not Notion/Wiki APIs) and share `scrapingClient.ts` (User-Agent rotation + keep-alive HTTPS agent).
 - **Orchestration**: `SyncManager` (in `syncManager.ts`). Each task owns a `SyncTask` state object with its own cancellation flag; `executeTask` releases the lock only if it still belongs to the finishing task. `resetSyncState` signals cancellation but does NOT null `currentTask` — it lets the task's own `finally` release the lock once it observes the cancel and exits, so a still-writing task can never run concurrently with a newly-started one (the "exactly one sync at a time" invariant). Never reintroduce shared mutable booleans for task state, and never force-null the lock while a task is in flight.
 - **Communication**: SSE (Server-Sent Events) for real-time progress. Use `sendEvent({ type, ... })`. Client-disconnect cancellation MUST listen on `res.on("close")`, NOT `req.on("close")` — for a POST with a body, `req` emits `close` when `express.json()` finishes reading the body (mid-response), which spuriously cancelled active syncs. Guard writes with `writableEnded`.
 - **SSE hosting hardening**: proxies (e.g. Render) buffer streamed responses. `setupSSE` sends `X-Accel-Buffering: no`, `flushHeaders()`, a ~2KB comment padding to push past the buffer threshold, and a 5s keepalive. The client (`useSync`) has a 30s stall watchdog. Do not remove these.
@@ -49,7 +49,7 @@
 
 ## 5. TOKEN OPTIMIZATION (AI INSTRUCTIONS)
 - **Surgical Edits**: Use `edit_file` with precise `TargetContent`. Never replace whole files.
-- **Context Awareness**: Read `package.json` and `server.ts` imports before adding new services.
+- **Context Awareness**: Read `package.json` and `syncManager.ts` (the composition root — service wiring + `TASK_REGISTRY`) before adding new services.
 - **Conciseness**: Skip apologies and meta-talk. Execute -> Summarize.
 - **Reuse**: Reference `useSync` patterns instead of re-implementing SSE handling.
 

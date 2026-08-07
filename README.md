@@ -52,14 +52,86 @@ Każda operacja to osobne, anulowalne zadanie strumieniowane do UI przez SSE.
 
 ## Architektura
 
-Hybryda **Vite + Express** serwowana z jednego procesu Node.
+Hybryda **Vite + Express** serwowana z jednego procesu Node. Kod jest ułożony w warstwy o jednym kierunku zależności: **entrypoint → HTTP → domena → serwisy → adaptery → API zewnętrzne**. Logika parsowania i diffowania jest wyniesiona do **czystych funkcji** (bez I/O), więc da się ją testować w izolacji; orkiestratory tylko je spinają.
 
-- **Frontend** — React 19 SPA (Tailwind CSS, `motion/react`, `lucide-react`). Całe pobieranie danych przez custom hooki (`useSync` to wzorzec SSE do wielokrotnego użycia). W dev serwowany przez Vite w trybie middleware; w produkcji jako statyczny build z `dist/`.
-- **Backend** — Express. Długie zadania synchronizacji strumieniowane przez **Server‑Sent Events (SSE)**.
-- **SyncManager** (`server.ts`) — orkiestrator: pojedyncze aktywne zadanie z własnym tokenem anulowania, współbieżność przez `p-limit`, zdarzenia postępu.
-- **Adaptery** — `NotionAdapter`, `WikiAdapter`: czyste wrappery API bez logiki biznesowej. Rozróżniają „brak danych" od „awarii infrastruktury" (patrz [Obserwowalność](#obserwowalność-i-diagnostyka)).
-- **Serwisy** (`/services/`) — po jednym na koncern synchronizacji, logika‑centryczne, w miarę bezstanowe.
-- **Kontrolery / Trasy** — tylko parsowanie żądań i formowanie odpowiedzi SSE; delegują do serwisów.
+```mermaid
+flowchart TB
+    subgraph FE["Frontend — React 19 SPA (src/)"]
+        App["App.tsx (prezentacja)"]
+        USM["hooks/useSyncManager<br/>(orkiestracja rytuałów)"]
+        Hooks["useSync · useStats · useConfig<br/>useLibraryCheck · useVintedCheck"]
+        SSEc["utils/ consumeSSE · stallWatchdog"]
+        App --> USM --> Hooks --> SSEc
+    end
+
+    subgraph EP["Entrypoint"]
+        Srv["server.ts<br/>startServer · Vite/statyka · handlery procesu"]
+        AppTs["app.ts<br/>wiring Express (basicAuth → json → /api)"]
+        Srv --> AppTs
+    end
+
+    subgraph HTTP["Warstwa HTTP (routes/ · controllers/)"]
+        Routes["routes/syncRoutes.ts"]
+        Ctrl["syncController.ts<br/>parsowanie żądań + walidacja"]
+        SSEs["sseStream.ts<br/>transport SSE (padding · keepalive · anulowanie)"]
+        Routes --> Ctrl --> SSEs
+    end
+
+    subgraph DOM["Composition root domeny"]
+        SM["syncManager.ts — SyncManager<br/>blokada 1 zadania · TASK_REGISTRY · run()"]
+    end
+
+    subgraph SVC["Serwisy (services/) — jeden na rytuał"]
+        Book["bookSyncService (orkiestrator)"]
+        Integ["integrityService"]
+        WField["wikiFieldSyncService<br/>(publisher/series)"]
+        Rest["cycles · lp · duplicate<br/>purification · schema · stats"]
+        Scan["libraryCheckService<br/>vintedSyncService"]
+    end
+
+    subgraph PURE["Czyste helpery (bez I/O)"]
+        WP["wiki.parser<br/>parseAwardTable · extractAuthor"]
+        BD["bookDiff<br/>buildBookUpdates · buildAuthorTags"]
+        VP["vintedParser · dataNormalizer · diffEngine"]
+    end
+
+    subgraph ADP["Adaptery — czyste wrappery API"]
+        NA["notion.adapter"]
+        NM["notionMapper<br/>strona → NotionBook"]
+        WA["wiki.adapter"]
+        SC["scrapingClient (UA + keep-alive)"]
+        NA --- NM
+    end
+
+    subgraph EXT["Zewnętrzne"]
+        NAPI[("Notion API")]
+        MW[("MediaWiki")]
+        HTMLp[("OPAC · vinted.pl")]
+    end
+
+    SSEc -. "SSE text/event-stream" .-> SSEs
+    Hooks -. "fetch /api/*" .-> Routes
+    AppTs --> Routes
+    Ctrl --> SM
+    SSEs --> SM
+    SM --> SVC
+    Book --> WP
+    Book --> BD
+    Scan --> VP
+    SVC --> ADP
+    SVC --> PURE
+    NA --> NAPI
+    WA --> MW
+    Scan --> SC --> HTMLp
+```
+
+- **Entrypoint** — `server.ts` (start serwera, middleware Vite/statyka, handlery procesu) montuje **`app.ts`** (samo wiring Express: `basicAuth` → `json` → trasy `/api`). Rozdzielenie kasuje cykl `server ↔ controller`.
+- **Warstwa HTTP** — `routes/` mapuje endpointy na `controllers/syncController.ts` (parsowanie żądań, walidacja); transport długich zadań SSE żyje osobno w `controllers/sseStream.ts` (nagłówki, hardening pod proxy, keepalive, anulowanie przy rozłączeniu klienta).
+- **Composition root domeny** — `syncManager.ts`: `SyncManager` buduje adaptery i serwisy oraz orkiestruje rytuały — jedno aktywne zadanie z własnym tokenem anulowania, rejestr `TASK_REGISTRY` (nazwa → serwis) i jedno generyczne `run(taskName, sendEvent, params?)`. Współbieżność wewnątrz zadań przez `p-limit`.
+- **Serwisy** (`/services/`) — po jednym na koncern; orkiestratory (np. `bookSyncService`, `integrityService`) delegują logikę do czystych helperów.
+- **Czyste helpery** — `wiki.parser` (`parseAwardTable`), `bookDiff` (`buildBookUpdates`/`buildAuthorTags`/`buildNewBookProperties`), `vintedParser`, `dataNormalizer`, `diffEngine`: bez I/O, w pełni testowalne.
+- **Adaptery** — `NotionAdapter`, `WikiAdapter`: czyste wrappery API bez logiki biznesowej. Mapowanie strona Notion → domena wyniesione do `notionMapper`; skanery HTML (biblioteka/Vinted) dzielą `scrapingClient` (rotacja User-Agent + keep-alive). Adaptery rozróżniają „brak danych" od „awarii infrastruktury" (patrz [Obserwowalność](#obserwowalność-i-diagnostyka)).
+- **Frontend** — React 19 SPA (Tailwind CSS, `motion/react`, `lucide-react`). Cała orkiestracja rytuałów w hooku `useSyncManager`; pojedynczy strumień obsługuje `useSync` na współdzielonym prymitywie `consumeSSE` + watchdogu `stallWatchdog`. W dev serwowany przez Vite (middleware), w produkcji jako statyczny build z `dist/`.
 
 Szczegóły zasad architektonicznych: **[`COGITATOR_GUIDELINES.md`](./COGITATOR_GUIDELINES.md)**.
 
@@ -76,22 +148,32 @@ Szczegóły zasad architektonicznych: **[`COGITATOR_GUIDELINES.md`](./COGITATOR_
 
 ```
 .
-├── server.ts                # Express + SyncManager (orkiestracja, SSE, skan biblioteki/Vinted)
-├── notion.adapter.ts        # wrapper Notion SDK (zapytania, zapis, schemat)
+├── server.ts                # entrypoint: startServer, Vite/statyka, handlery procesu
+├── app.ts                   # wiring Express (basicAuth → json → trasy /api)
+├── syncManager.ts           # composition root domeny: SyncManager, rejestr rytuałów, run()
+├── notion.adapter.ts        # wrapper Notion SDK (zapytania, zapis, schemat, dual-mode)
+├── notionMapper.ts          # czyste mapowanie strona Notion → NotionBook
 ├── wiki.adapter.ts          # klient MediaWiki (fetch treści, kategorie, wyszukiwanie)
-├── wiki.parser.ts           # ekstrakcja metadanych z wikitekstu (tabele nagród, {{tabela wydania}})
-├── retry.ts                 # withRetry — backoff + honorowanie Retry-After
+├── wiki.parser.ts           # parser wikitekstu (parseAwardTable, extractAuthor, {{tabela wydania}})
+├── scrapingClient.ts        # współdzielone dla skanerów HTML: rotacja User-Agent + keep-alive agent
+├── retry.ts                 # withRetry — backoff, Retry-After, flaga idempotent
 ├── logger.ts                # strukturalny logger + klasyfikacja błędów HTTP
 ├── utils.ts                 # cleanTitle, sanitize, similarity, countCommonWords
-├── controllers/             # parsowanie HTTP + warstwa SSE
+├── controllers/
+│   ├── syncController.ts    # parsowanie żądań + walidacja (delegacja do serwisów)
+│   └── sseStream.ts         # transport SSE (headers, keepalive, anulowanie)
 ├── routes/                  # definicje endpointów
-├── services/                # logika biznesowa (jeden serwis = jeden rytuał)
-│   ├── bookSyncService.ts   dataNormalizer.ts    diffEngine.ts
-│   ├── duplicateSyncService.ts   publisherSyncService.ts   seriesSyncService.ts
+├── services/                # logika biznesowa (jeden serwis = jeden rytuał) + czyste helpery
+│   ├── bookSyncService.ts   bookDiff.ts          dataNormalizer.ts   diffEngine.ts
+│   ├── duplicateSyncService.ts   wikiFieldSyncService.ts  publisherSyncService.ts  seriesSyncService.ts
 │   ├── cyclesSyncService.ts      lpSyncService.ts          statsService.ts
 │   ├── purificationService.ts    schemaValidationService.ts  integrityService.ts
+│   ├── libraryCheckService.ts    vintedSyncService.ts       vintedParser.ts
 ├── src/                     # frontend React
-│   ├── App.tsx  components/  hooks/  utils/  types.ts  constants.ts
+│   ├── App.tsx  components/  types.ts  constants.ts
+│   ├── hooks/               # useSyncManager (orkiestracja), useSync, useStats, useConfig, …
+│   ├── utils/               # sse (consumeSSE), stallWatchdog, time
+│   └── theme/               # ritualColors (motyw kolorów rytuałów)
 ├── docs/                    # szczegółowa dokumentacja algorytmów (per serwis)
 ├── render.yaml              # blueprint wdrożenia na Render
 └── .claude/                 # hook SessionStart (npm install) dla Claude Code on the web
@@ -208,9 +290,9 @@ Wszystkie endpointy synchronizacji zwracają strumień **SSE** (`text/event-stre
 
 ## Potok synchronizacji książek
 
-1. **Zbieranie** — `WikiAdapter` pobiera wikitekst strony nagrody; `WikiParser`/`bookSyncService` parsuje tabelę zwycięzców i nominowanych (obsługa remisów, wierszy `rowspan`, książek wielu autorów, dodatkowej kolumny Retro Hugo, wykluczenia kategorii Locus YA).
+1. **Zbieranie** — `WikiAdapter` pobiera wikitekst strony nagrody; czysta `WikiParser.parseAwardTable` parsuje tabelę zwycięzców i nominowanych (obsługa remisów, wierszy `rowspan`, książek wielu autorów, dodatkowej kolumny Retro Hugo, wykluczenia kategorii Locus YA). `bookSyncService` jest tu tylko orkiestratorem (fetch → parser → zdarzenia SSE).
 2. **Scalanie i normalizacja** — jedna książka zdobywająca kilka nagród zostaje scalona w jeden rekord; `dataNormalizer` ujednolica autorów/wydawców/tytuły; przy Hugo + Nebula + Locus dokładany jest tag „Wszystkie".
-3. **Zapis do Notion** — budowana jest mapa istniejących rekordów; nowe książki są tworzone, istniejące **porównywane pole po polu** i aktualizowane tylko przy realnej zmianie; brak zmian → pominięcie (oszczędność limitów API).
+3. **Zapis do Notion** — budowana jest mapa istniejących rekordów; czyste buildery z `bookDiff` tworzą payloady (`buildNewBookProperties` dla nowych, `buildBookUpdates` **pole po polu** dla istniejących — aktualizacja tylko przy realnej zmianie); brak zmian → pominięcie (oszczędność limitów API).
 4. **Raport na żywo** — SSE strumieniuje `status`/`progress`, a `complete` niesie podsumowanie (dodane / zaktualizowane / pominięte / duplikaty).
 
 Szczegóły algorytmów: **[`docs/`](./docs)** (patrz [indeks](./docs/README.md)).
