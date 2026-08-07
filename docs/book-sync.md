@@ -3,8 +3,10 @@
 ## 1. Overview
 Synchronizes book data from MediaWiki award tables (Hugo, Nebula, Locus) to a Notion database. It handles extraction, merging, and duplicate detection.
 
-## 2. Extraction Logic (`fetchBooksFromMediaWiki`)
-- **Source**: MediaWiki wikitext of award pages.
+> **Module layout.** `BookSyncService` is now a thin orchestrator (fetch → parse → merge/dedup → write). The award-table parsing is a pure `WikiParser.parseAwardTable(wikitext, awardName)` in `wiki.parser.ts`; the Notion payload builders are pure functions in `services/bookDiff.ts` (`buildBookUpdates`, `buildNewBookProperties`, `buildAuthorTags`). Both are unit-tested in isolation.
+
+## 2. Extraction Logic (`fetchBooksFromMediaWiki` → `WikiParser.parseAwardTable`)
+- **Source**: MediaWiki wikitext of award pages. `fetchBooksFromMediaWiki` fetches the page and emits SSE status; the pure `parseAwardTable` does the actual table parsing.
 - **Parsing Strategy**:
   - Splits wikitext into rows using `|-`.
   - Identifies column mapping (Year, Author, Original Title, Polish Title) by looking for header keywords.
@@ -16,7 +18,7 @@ Synchronizes book data from MediaWiki award tables (Hugo, Nebula, Locus) to a No
     - Handles special cases like "Nagroda Locus": only the "Powieść dla młodzieży" (YA) category is excluded. All other Locus categories — Powieść, Powieść SF, Powieść fantasy, Pierwsza powieść, and Horror/Dark Fantasy — are intentionally included and tagged "Nagroda Locus".
 - **Normalization**: Original titles and authors are normalized using `dataNormalizer`.
 
-## 3. Comparison & Update Logic (`compareBooks`)
+## 3. Comparison & Update Logic (`bookDiff.buildBookUpdates`)
 - **Comparison**: Performs field-by-field comparisons of sanitized values, ensuring updates are only made when meaningful changes occur.
 - **Polish Title**: Updates if the Wiki title differs from Notion. Preserves existing links if valid.
 - **Original Title**: Fills if empty in Notion.

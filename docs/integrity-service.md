@@ -3,6 +3,8 @@
 ## 1. Overview
 Performs a comprehensive cross-reference check between the Notion database and the Archiwum Encyklopedii (Wiki) to ensure data "sanctity" and consistency.
 
+> **Module layout.** `runIntegrityCheck` is a ~45-line orchestrator (fetch Notion + wiki → run checks → assemble result). Each check is a focused private method — `checkLpUniqueness`, `checkTitleDuplicates` (shared by original/Polish via a selector), `computeYearDiffs`, `computeAwardDiffs` — plus `robustKey` and a `mergeBooksByKey` helper shared by the Notion/wiki sides.
+
 ## 2. Verification Logic (`runIntegrityCheck`)
 - **Source**: All records from Notion and all predefined award pages from Wiki (Hugo, Nebula, Locus).
 - **Matching Strategy**:
