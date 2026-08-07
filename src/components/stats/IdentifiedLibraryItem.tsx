@@ -1,6 +1,6 @@
 import React from "react";
 import { motion } from "motion/react";
-import { Search, ChevronDown, ChevronUp, Loader2, Library } from "lucide-react";
+import { Search, ChevronDown, ChevronUp, Loader2, Library, CheckCircle2 } from "lucide-react";
 import { formatETA } from "../../utils/time";
 import { IdentifiedBook } from "../../hooks/useStats";
 
@@ -11,6 +11,8 @@ interface IdentifiedLibraryItemProps {
   onStop: () => void;
   onMarkAsRead: (pageId: string, tag?: string) => void;
   markingId: string | null;
+  // Klucze „{tag}:{pageId}" pozycji już oznaczonych znacznikiem filii.
+  markedIds: Set<string>;
   isChecking: boolean;
   progress: any;
 }
@@ -22,8 +24,9 @@ export const IdentifiedLibraryItem: React.FC<IdentifiedLibraryItemProps> = ({
   onStop, 
   onMarkAsRead,
   markingId,
-  isChecking, 
-  progress 
+  markedIds,
+  isChecking,
+  progress
 }) => {
   const [isExpanded, setIsExpanded] = React.useState(true);
 
@@ -120,6 +123,7 @@ export const IdentifiedLibraryItem: React.FC<IdentifiedLibraryItemProps> = ({
         >
           {sortedBooks.map((book: any, idx: number) => {
             const isExactMatch = book.extractedTitle && book.extractedTitle.toLowerCase() === book.title.toLowerCase();
+            const isMarked = markedIds.has(`${library.sourceTag}:${book.id}`);
             return (
             <div key={idx} className={`flex items-start gap-3 p-3 rounded-xl border transition-colors group/book ${
               isExactMatch 
@@ -144,16 +148,24 @@ export const IdentifiedLibraryItem: React.FC<IdentifiedLibraryItemProps> = ({
 
               <button
                 onClick={() => onMarkAsRead(book.id, library.sourceTag)}
-                disabled={markingId !== null}
-                className={`p-2 rounded-lg border transition-all opacity-40 group-hover/book:opacity-100 ${
-                  markingId === book.id
-                    ? 'bg-blue-500/20 border-blue-500/50 text-blue-400'
-                    : 'bg-slate-900 border-slate-800 text-slate-500 hover:text-blue-400 hover:border-blue-500/30'
+                disabled={markingId !== null || isMarked}
+                className={`p-2 rounded-lg border transition-all ${
+                  isMarked
+                    ? 'opacity-100 bg-emerald-500/10 border-emerald-500/40 text-emerald-500/80 cursor-not-allowed'
+                    : `opacity-40 group-hover/book:opacity-100 ${
+                        markingId === book.id
+                          ? 'bg-blue-500/20 border-blue-500/50 text-blue-400'
+                          : 'bg-slate-900 border-slate-800 text-slate-500 hover:text-blue-400 hover:border-blue-500/30'
+                      }`
                 }`}
-                title={`Oznacz jako dostępne w filii (tag „${library.sourceTag}")`}
+                title={isMarked
+                  ? `Oznaczono w tej filii (tag „${library.sourceTag}")`
+                  : `Oznacz jako dostępne w filii (tag „${library.sourceTag}")`}
               >
                 {markingId === book.id ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
+                ) : isMarked ? (
+                  <CheckCircle2 className="w-4 h-4" />
                 ) : (
                   <Library className="w-4 h-4" />
                 )}
