@@ -48,6 +48,23 @@ describe("parseVintedItems", () => {
     expect(items[0]).toMatchObject({ title: "Solaris Lem", url: "https://www.vinted.pl/items/77", price: "25,00", currency: "zł" });
   });
 
+  it("parses the current Vinted grid (hashed CSS-module class) with structural price and photo", () => {
+    // Realny DOM Vinted: klasa feed-grid jest hashowana, cena i miniatura są w kafelku.
+    const html =
+      `<div class="Grid-module-scss-module__HmDNda__feed-grid__item">` +
+      `<img src="https://images1.vinted.net/t/abc/310x430/x.webp?s=deadbeef" alt="Cień nocy, Andrea Cremer"/>` +
+      `<a href="/items/9368156287-cien-nocy-andrea-cremer?referrer=catalog" title="Cień nocy, Andrea Cremer, Stan: Zadowalający, 3.00 zł, 6.05 zł"></a>` +
+      `<span>3,00 zł</span><span>6,05 zł</span></div>`;
+    const items = parseVintedItems(html, "Cień nocy", "Cremer");
+    expect(items).toHaveLength(1);
+    expect(items[0]).toMatchObject({
+      url: "https://www.vinted.pl/items/9368156287-cien-nocy-andrea-cremer",
+      priceValue: 3,
+      currency: "zł",
+      photo: "https://images1.vinted.net/t/abc/310x430/x.webp?s=deadbeef",
+    });
+  });
+
   it("returns [] when nothing matches any path", () => {
     expect(parseVintedItems("<html><body>nic</body></html>", "Solaris", "Lem")).toEqual([]);
   });
@@ -91,6 +108,12 @@ describe("vintedDiagnostics", () => {
     const d = vintedDiagnostics(`<div data-component-name="Catalog"></div>`, 3);
     expect(d.hasCatalogJson).toBe(true);
     expect(d.parsed).toBe(3);
+  });
+
+  it("detects the feed-grid path even when the CSS-module class is hashed", () => {
+    const d = vintedDiagnostics(`<div class="Grid-module-scss-module__HmDNda__feed-grid__item"></div>`, 2);
+    expect(d.hasFeedGrid).toBe(true);
+    expect(d.parsed).toBe(2);
   });
 
   it("flags a block only for a small challenge page, not a huge normal page", () => {

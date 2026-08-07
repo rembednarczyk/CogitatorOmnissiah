@@ -64,6 +64,11 @@ export function looksBlocked(html: string): boolean {
   return h.length < 100_000 && CHALLENGE_RE.test(h);
 }
 
+// Kafelek oferty w siatce katalogu. Vinted hashuje nazwy klas CSS-modules
+// (`Grid-module-scss-module__HmDNda__feed-grid__item`), więc celujemy w stabilny
+// suffiks `feed-grid__item"`. Trailing `"` odcina wariant `feed-grid__item-content`.
+const FEED_GRID_RE = /feed-grid__item"/;
+
 /**
  * Lekka diagnostyka odpowiedzi Vinted (bez I/O) — pomaga odróżnić realny brak
  * ofert od cichej blokady lub gubienia ofert przez parser. `itemLinks > 0` przy
@@ -74,7 +79,9 @@ export function vintedDiagnostics(html: string, parsed: number): VintedDebug {
   return {
     chars: h.length,
     hasCatalogJson: h.includes('data-component-name="Catalog"'),
-    hasFeedGrid: h.includes('class="feed-grid__item"'),
+    // Vinted hashuje klasy CSS-modules (np. `Grid-module-scss-module__…__feed-grid__item`),
+    // więc dopasowujemy stabilny suffiks `feed-grid__item"`, nie całą klasę.
+    hasFeedGrid: FEED_GRID_RE.test(h),
     itemLinks: (h.match(/\/items\//g) || []).length,
     blockedMarker: looksBlocked(h),
     noResultsMarker: h.includes("Brak wyników") || h.includes("Nie znaleźliśmy żadnych przedmiotów"),
@@ -168,28 +175,40 @@ export function parseVintedItems(html: string, title: string, author: string): V
     }
   }
 
-  // 3. Fallback po blokach feed-grid__item
+  // 3. Fallback po kafelkach siatki feed-grid (aktualny DOM Vinted, klasy hashowane).
+  // Dzielimy na `feed-grid__item"` — łapie stary `class="feed-grid__item"` i nowy
+  // `class="Grid-module-scss-module__…__feed-grid__item"`. Z każdego kafelka bierzemy
+  // URL, tytuł, cenę strukturalną i miniaturę (`images1.vinted.net`).
   if (items.length === 0) {
-    const itemBlocks = html.split('class="feed-grid__item"');
+    const itemBlocks = html.split(FEED_GRID_RE);
     if (itemBlocks.length > 1) {
+      const searchTitle = title.toLowerCase();
+      const searchAuthor = (author || "").toLowerCase();
       for (let j = 1; j < itemBlocks.length && items.length < 5; j++) {
         const block = itemBlocks[j];
-        const urlMatch = block.match(/href="(\/items\/[^"]+)"/);
+        // URL bez query (`?referrer=catalog`) — spójny z kanonicznym linkiem oferty.
+        const urlMatch = block.match(/href="(\/items\/[^"?]+)/);
         const titleMatch = block.match(/title="([^"]+)"/);
-        // Oba warianty mają group1 = kwota, group2 = waluta.
+        // Oba warianty mają group1 = kwota, group2 = waluta. Pierwsze trafienie
+        // w kafelku to cena przedmiotu (drugie = cena z ochroną kupującego).
         const priceMatch = block.match(/aria-label="[^"]*?(\d+[.,]\d+)\s*([A-Z]{3}|zł)"/i) ||
                            block.match(/>(\d+[.,]\d+)\s*([A-Z]{3}|zł)</i);
+        const photoMatch = block.match(/<img[^>]+?src="(https?:\/\/[^"]*vinted\.net\/[^"]+)"/i);
 
         if (urlMatch && titleMatch) {
           const itemTitle = titleMatch[1];
-          if (itemTitle.toLowerCase().includes(title.toLowerCase())) {
+          const lower = itemTitle.toLowerCase();
+          const hasTitle = lower.includes(searchTitle) || searchTitle.includes(lower);
+          const hasAuthor = !!searchAuthor && lower.includes(searchAuthor);
+          if (hasTitle || hasAuthor) {
             const rawPrice = priceMatch ? priceMatch[1] : "Sprawdź";
             items.push({
               title: itemTitle,
               url: `https://www.vinted.pl${urlMatch[1]}`,
               price: rawPrice,
               priceValue: parseVintedPrice(rawPrice),
-              currency: priceMatch ? priceMatch[2] : "PLN"
+              currency: priceMatch ? priceMatch[2] : "PLN",
+              photo: photoMatch ? photoMatch[1] : null
             });
           }
         }
@@ -219,6 +238,7 @@ export function parseVintedItems(html: string, title: string, author: string): V
       const fromText = extractPriceFromText(item.title);
       if (fromText !== null) {
         item.priceValue = fromText;
+        item.price = String(fromText);
         item.currency = "zł";
       }
     }
