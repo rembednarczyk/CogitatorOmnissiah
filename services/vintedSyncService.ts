@@ -277,62 +277,6 @@ export class VintedSyncService {
   }
 
   /**
-   * On-demand: dla podanych ofert (zwykle najtańsza/książkę) dociąga sprzedawcę ze
-   * strony oferty `/items/...` i emituje `seller_resolved` per oferta. Sprzedawcy nie
-   * ma w katalogu, więc to osobne żądania — ten sam throttling/retry/blok co skan,
-   * by nie prowokować Cloudflare. Korelacja po `url` (id oferty bywa puste w ścieżkach
-   * fallback parsera). Grupowanie/UI robi front na tych danych.
-   */
-  async resolveSellers(
-    items: { url: string }[],
-    sendEvent: (data: SyncEvent) => void,
-    checkCancellation: () => boolean,
-  ) {
-    const httpsAgent = createScrapingAgent();
-    const total = items.length;
-    sendEvent({ type: "status", message: `Ustalanie sprzedawców dla ${total} ofert...` });
-
-    for (let i = 0; i < items.length; i++) {
-      if (checkCancellation()) {
-        sendEvent({ type: "status", message: "Grupowanie per sprzedawca przerwane przez użytkownika." });
-        break;
-      }
-      const item = items[i];
-      const url = item.url;
-      sendEvent({ type: "progress", message: `Sprzedawca oferty (${i + 1}/${total})`, current: i + 1, total });
-
-      if (!url || !/\/items\//.test(url)) {
-        sendEvent({ type: "seller_resolved", result: { url, seller: null } });
-        continue;
-      }
-
-      try {
-        const response = await withRetry(async () => {
-          return await axios.get(url, { httpsAgent, headers: vintedRequestHeaders(), timeout: 30000 });
-        }, 3, 4000);
-        const html = response.data;
-
-        if (looksBlocked(html)) {
-          log.warn("Vinted zablokował stronę oferty (sprzedawca)", { url });
-          sendEvent({ type: "seller_resolved", result: { url, seller: null, blocked: true, ...memMb() } });
-        } else {
-          const seller = extractVintedSeller(html);
-          sendEvent({ type: "seller_resolved", result: { url, seller, ...memMb() } });
-        }
-      } catch (err: any) {
-        log.warn("Błąd ustalania sprzedawcy", { url, error: err.message });
-        sendEvent({ type: "seller_resolved", result: { url, seller: null, error: err.message } });
-      }
-
-      // Ten sam throttling co skan — nie prowokujemy blokady IP.
-      await new Promise(resolve => setTimeout(resolve, 3000 + Math.floor(Math.random() * 2000)));
-    }
-
-    const wasCancelled = checkCancellation();
-    sendEvent({ type: "complete", result: { success: !wasCancelled, cancelled: wasCancelled } });
-  }
-
-  /**
    * Etap 2 (przyrostowo, wznawialnie): dociąga sprzedawcę do SKŁADOWANYCH ofert bez
    * sprzedawcy i zapisuje z powrotem do Notion. Rozpoznani zostają w blobie, więc kolejny
    * przebieg bierze tylko wciąż-`null`. Bez capu domyślnie: przebieg ustala WSZYSTKIE
