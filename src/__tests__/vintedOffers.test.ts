@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { sortOffersByPrice, offersPriceSummary, formatVintedPrice, cleanOfferTitle } from "../utils/vintedOffers";
+import { sortOffersByPrice, offersPriceSummary, formatVintedPrice, cleanOfferTitle, sortResultsByCheapest } from "../utils/vintedOffers";
 
 describe("sortOffersByPrice", () => {
   it("sorts ascending and pushes price-less offers to the end", () => {
@@ -40,6 +40,30 @@ describe("formatVintedPrice", () => {
   it("falls back to a label when the price is unknown", () => {
     expect(formatVintedPrice(null)).toBe("cena w ofercie");
     expect(formatVintedPrice(undefined)).toBe("cena w ofercie");
+  });
+});
+
+describe("sortResultsByCheapest", () => {
+  const book = (id: string, prices: (number | null)[]) => ({
+    id,
+    vintedItems: prices.map((p) => ({ priceValue: p })),
+  });
+
+  it("orders books by their cheapest offer and pushes price-less books last", () => {
+    const results = [
+      book("A", [30, 22]),
+      book("B", [null]),
+      book("C", [8, 40]),
+      book("D", [15]),
+    ];
+    expect(sortResultsByCheapest(results).map((r) => r.id)).toEqual(["C", "D", "A", "B"]);
+  });
+
+  it("does not mutate the input", () => {
+    const results = [book("A", [5]), book("B", [1])];
+    const copy = [...results];
+    sortResultsByCheapest(results);
+    expect(results).toEqual(copy);
   });
 });
 
