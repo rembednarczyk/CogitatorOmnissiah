@@ -11,8 +11,10 @@ import { IdentifiedLibraryItem } from "./stats/IdentifiedLibraryItem";
 import { LIBRARY_BRANCHES } from "../constants";
 
 export const StatsSection: React.FC = () => {
-  const { stats, loading, error, fetchStats } = useStats();
+  const { stats, loading, error, fetchStats, addBookToLibrarySection } = useStats();
   const { identifiedBooks, checkingLibrary, checkProgress, libraryError, checkLibrary, checkAllLibraries, stopLibraryCheck } = useLibraryCheck();
+
+  const LIBRARY_TAGS = ["Biblioteka", "Biblioteka 9"];
   const [markingId, setMarkingId] = useState<string | null>(null);
   // Pozycje oznaczone w tej sesji — klucz „{tag}:{pageId}". Skan biblioteki
   // wyklucza już otagowane książki, więc pozycja z listy skanera trafia tu
@@ -33,7 +35,18 @@ export const StatsSection: React.FC = () => {
       if (!res.ok) throw new Error("Błąd podczas oznaczania pozycji");
       const sourceTag = tag ?? "Przeczytane";
       setMarkedIds(prev => new Set(prev).add(`${sourceTag}:${pageId}`));
-      await fetchStats();
+
+      // Tag filii dopisuje pozycję wyłącznie do sekcji „Książki dostępne w
+      // bibliotekach" — aktualizujemy ją optymistycznie (natychmiast, odporne na
+      // opóźnienie odczytu Notiona). „Przeczytane" zmienia wiele przekrojów
+      // (autorzy, chronologia, posiadane), więc tam robimy pełny refetch.
+      if (LIBRARY_TAGS.includes(sourceTag)) {
+        const book = Object.values(identifiedBooks).flat().find(b => b.id === pageId);
+        if (book) addBookToLibrarySection(sourceTag, book);
+        else await fetchStats();
+      } else {
+        await fetchStats();
+      }
     } catch (err: any) {
       console.error(err.message);
       alert(`Błąd: ${err.message}`);
