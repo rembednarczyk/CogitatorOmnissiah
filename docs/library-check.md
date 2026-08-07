@@ -25,6 +25,7 @@ Worked example: for "Gra o tron" (G. R. R. Martin) at Filia Felin, the branch ho
 
 ## 5. Performance & pacing
 - **Concurrency**: up to 6 parallel requests via `p-limit` (agent `maxSockets` matched), instead of the old one-at-a-time loop — ~6× faster over a couple hundred titles.
+- **Shared Notion fetch**: the candidate list is read via `getBooksForStats(…, { cache: true })`, a short-TTL (5 min) opt-in cache in `NotionAdapter`. "Skanuj wszystkie" therefore downloads the whole Notion DB **once** for both branches instead of once per branch; every book write (tagging included) invalidates the cache, and the stats endpoint reads uncached so `/api/stats` stays fresh.
 - **Retries/timeout**: `withRetry(2, 1500ms)`, 20 000 ms per request. No fixed inter-request delay; concurrency is the throttle.
 - **Cancellation**: cooperative — each task checks the token before firing; `complete` reports `cancelled: true` when stopped.
 - **Progress**: a shared counter emits `Sprawdzono {done}/{total} (znaleziono {n})` as tasks finish.

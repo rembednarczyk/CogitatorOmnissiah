@@ -4,14 +4,27 @@ import { sanitizeNotionString, sanitizeNotionTag } from "./utils";
 import { NotionPage, NotionBook } from "./src/types";
 import { mapPageToBook } from "./notionMapper";
 
+// Krótki cache pełnej listy książek dla ścieżek TYLKO-DO-ODCZYTU skanerów
+// (biblioteka „Skanuj wszystkie" odpytywałaby Notion raz na filię). Cache jest
+// opt-in (`{ cache: true }`), więc statystyki (`/api/stats`) zawsze czytają
+// świeże dane, a każdy zapis książki go unieważnia. TTL to tylko bezpiecznik na
+// edycje spoza aplikacji.
+const BOOKS_CACHE_TTL_MS = 5 * 60 * 1000;
+
 export class NotionAdapter {
   private notion: Client;
   private actualDataSourceId: string | null = null;
   private isDataSource: boolean = true;
   private initPromise: Promise<void> | null = null;
+  private booksCache: { data: NotionBook[]; expiresAt: number } | null = null;
 
   constructor(apiKey: string, private databaseId: string) {
     this.notion = new Client({ auth: apiKey });
+  }
+
+  /** Unieważnia cache listy książek — wołane po każdym zapisie zmieniającym książki. */
+  private invalidateBooksCache(): void {
+    this.booksCache = null;
   }
 
   async init(): Promise<void> {
@@ -126,10 +139,27 @@ export class NotionAdapter {
     return allBooks;
   }
 
-  async getBooksForStats(onProgress?: (count: number) => void, checkCancellation?: () => boolean): Promise<NotionBook[]> {
+  async getBooksForStats(
+    onProgress?: (count: number) => void,
+    checkCancellation?: () => boolean,
+    opts?: { cache?: boolean },
+  ): Promise<NotionBook[]> {
     // Ta sama pętla co queryAllBooks — jedna implementacja, żeby skany
-    // biblioteki/Vinted też dało się anulować w fazie pobierania z Notion
-    return this.queryAllBooks(onProgress, checkCancellation);
+    // biblioteki/Vinted też dało się anulować w fazie pobierania z Notion.
+    // `cache: true` współdzieli jedno pobranie między kolejnymi skanami
+    // (np. obie filie w „Skanuj wszystkie") — statystyki wołają bez cache.
+    if (opts?.cache && this.booksCache && this.booksCache.expiresAt > Date.now()) {
+      return this.booksCache.data;
+    }
+
+    const books = await this.queryAllBooks(onProgress, checkCancellation);
+
+    // Nie zapisuj listy urwanej przez anulowanie — byłaby niepełna.
+    const cancelled = checkCancellation ? checkCancellation() : false;
+    if (opts?.cache && !cancelled) {
+      this.booksCache = { data: books, expiresAt: Date.now() + BOOKS_CACHE_TTL_MS };
+    }
+    return books;
   }
 
   buildPropertyValue(value: string, type: string): any {
@@ -159,6 +189,7 @@ export class NotionAdapter {
         "Wydawnictwo": wydawnictwoPayload
       }
     }));
+    this.invalidateBooksCache();
   }
 
   async updateLp(pageId: string, lp: string): Promise<void> {
@@ -168,6 +199,7 @@ export class NotionAdapter {
         "Lp": { title: [{ text: { content: lp } }] }
       }
     }));
+    this.invalidateBooksCache();
   }
 
   async addTagToMultiSelect(pageId: string, propertyName: string, tag: string): Promise<void> {
@@ -190,7 +222,7 @@ export class NotionAdapter {
     
     // 3. Add new tag
     currentTags.push({ name: tag });
-    
+
     // 4. Update page
     await withRetry(() => this.notion.pages.update({
       page_id: pageId,
@@ -198,6 +230,7 @@ export class NotionAdapter {
         [propertyName]: { multi_select: currentTags }
       }
     }));
+    this.invalidateBooksCache();
   }
 
   async resolveDataSourceId(databaseId: string): Promise<string> {
@@ -225,6 +258,7 @@ export class NotionAdapter {
       page_id: pageId,
       properties
     }));
+    this.invalidateBooksCache();
   }
 
   async addRow(properties: any): Promise<any> {
@@ -240,6 +274,7 @@ export class NotionAdapter {
       parent: parent,
       properties
     } as any), 3, 1000, 2, false);
+    this.invalidateBooksCache();
     return response;
   }
 }

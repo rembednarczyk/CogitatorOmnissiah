@@ -27,7 +27,8 @@ export class LibraryCheckService {
     checkCancellation: () => boolean,
   ) {
     sendEvent({ type: "status", message: "Pobieranie listy książek z Notion..." });
-    const allBooks = await this.notion.getBooksForStats(undefined, checkCancellation);
+    // cache: kolejne filie w „Skanuj wszystkie" współdzielą jedno pobranie z Notion.
+    const allBooks = await this.notion.getBooksForStats(undefined, checkCancellation, { cache: true });
 
     // Kandydaci: mają polski tytuł i NIE są już przeczytane/posiadane/w bibliotece.
     const candidates = allBooks.filter((b) => {

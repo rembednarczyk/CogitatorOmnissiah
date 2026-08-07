@@ -13,6 +13,7 @@ const mockClient = {
     query: vi.fn(),
   },
   pages: {
+    retrieve: vi.fn(),
     update: vi.fn(),
     create: vi.fn(),
   }
@@ -113,6 +114,60 @@ describe('NotionAdapter', () => {
         year: '1961',
         awards: ['Zajdel']
       }));
+    });
+  });
+
+  describe('getBooksForStats caching', () => {
+    const page = (id: string) => ({
+      id,
+      properties: { 'Tytuł polski': { type: 'title', title: [{ plain_text: `T-${id}` }] } },
+    });
+
+    it('shares one Notion fetch across cached reads until invalidated', async () => {
+      mockClient.dataSources.retrieve.mockResolvedValue({ id: 'test-db-id' }); // init
+      mockClient.dataSources.query.mockResolvedValue({ results: [page('1')], has_more: false });
+
+      // Pierwszy skan pobiera z Notion...
+      const first = await adapter.getBooksForStats(undefined, undefined, { cache: true });
+      // ...drugi (np. kolejna filia) korzysta z cache — bez nowego query.
+      const second = await adapter.getBooksForStats(undefined, undefined, { cache: true });
+
+      expect(first).toHaveLength(1);
+      expect(second).toEqual(first);
+      expect(mockClient.dataSources.query).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not serve the cache to non-cached (stats) reads', async () => {
+      mockClient.dataSources.retrieve.mockResolvedValue({ id: 'test-db-id' });
+      mockClient.dataSources.query.mockResolvedValue({ results: [page('1')], has_more: false });
+
+      await adapter.getBooksForStats(undefined, undefined, { cache: true }); // primes cache
+      await adapter.getBooksForStats(); // stats path — musi pobrać świeżo
+
+      expect(mockClient.dataSources.query).toHaveBeenCalledTimes(2);
+    });
+
+    it('invalidates the cache after a write (addTagToMultiSelect)', async () => {
+      mockClient.dataSources.retrieve.mockResolvedValue({ id: 'test-db-id' });
+      mockClient.dataSources.query.mockResolvedValue({ results: [page('1')], has_more: false });
+      mockClient.pages.retrieve.mockResolvedValue({ properties: { 'Źródło': { type: 'multi_select', multi_select: [] } } });
+      mockClient.pages.update.mockResolvedValue({});
+
+      await adapter.getBooksForStats(undefined, undefined, { cache: true }); // primes cache
+      await adapter.addTagToMultiSelect('page-1', 'Źródło', 'Biblioteka'); // invalidates
+      await adapter.getBooksForStats(undefined, undefined, { cache: true }); // must refetch
+
+      expect(mockClient.dataSources.query).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not cache a fetch cut short by cancellation', async () => {
+      mockClient.dataSources.retrieve.mockResolvedValue({ id: 'test-db-id' });
+      mockClient.dataSources.query.mockResolvedValue({ results: [page('1')], has_more: false });
+
+      await adapter.getBooksForStats(undefined, () => true, { cache: true }); // cancelled → no cache
+      await adapter.getBooksForStats(undefined, undefined, { cache: true });   // must fetch
+
+      expect(mockClient.dataSources.query).toHaveBeenCalledTimes(1); // first call broke before querying
     });
   });
 
