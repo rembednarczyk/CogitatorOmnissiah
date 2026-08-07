@@ -36,15 +36,29 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
   const [showLogs, setShowLogs] = React.useState(false);
   const { sellersByUrl, isGrouping, groupProgress, groupError, runGrouping, stopGrouping } = useVintedGrouping();
 
+  const [groupSkipped, setGroupSkipped] = React.useState(0);
+  const GROUP_CAP = 150;
+
   // Paczki po sprzedawcy — liczone z map url→sprzedawca dociągniętych on-demand.
   const bundles = React.useMemo(() => groupBySeller(results, sellersByUrl), [results, sellersByUrl]);
 
-  // Grupujemy najtańszą ofertę każdej książki (1 fetch/książkę — mniej ekspozycji na Cloudflare).
-  const handleGroup = () => {
+  // Tryb „najtańsze": po jednej (najtańszej) ofercie z książki — 1 fetch/książkę.
+  const handleGroupCheapest = () => {
+    setGroupSkipped(0);
     const urls = results
       .map(r => sortOffersByPrice(r.vintedItems)[0]?.url)
       .filter((u): u is string => !!u);
-    runGrouping(urls);
+    runGrouping(urls.slice(0, GROUP_CAP));
+  };
+
+  // Tryb „wszystkie oferty": każda oferta każdej książki — ujawnia many-to-many
+  // (dopłać grosze, skonsoliduj przesyłkę). Drożej pod Cloudflare → cap 150 + raport.
+  const handleGroupAll = () => {
+    const urls = results
+      .flatMap(r => r.vintedItems.map(i => i.url))
+      .filter((u): u is string => !!u);
+    setGroupSkipped(Math.max(0, urls.length - GROUP_CAP));
+    runGrouping(urls.slice(0, GROUP_CAP));
   };
 
   return (
@@ -70,19 +84,35 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
             </button>
           )}
 
-          {results.length > 0 && !isChecking && (
+          {results.length > 0 && !isChecking && isGrouping && (
             <button
-              onClick={() => { if (isGrouping) stopGrouping(); else handleGroup(); }}
-              className={`flex items-center gap-2 px-4 py-3 rounded-2xl transition-all text-sm font-bold border ${
-                isGrouping
-                  ? "bg-red-600/90 border-red-500/50 text-white hover:bg-red-500"
-                  : "bg-purple-600/90 border-purple-500/50 text-white hover:bg-purple-500 shadow-lg shadow-purple-500/20"
-              }`}
-              title="Dociągnij sprzedawców i pogrupuj oferty (najtańsza z każdej książki)"
+              onClick={() => stopGrouping()}
+              className="flex items-center gap-2 px-4 py-3 rounded-2xl transition-all text-sm font-bold border bg-red-600/90 border-red-500/50 text-white hover:bg-red-500"
             >
-              {isGrouping ? <Loader2 className="w-4 h-4 animate-spin" /> : <Users className="w-4 h-4" />}
-              <span>{isGrouping ? "Zatrzymaj" : "Grupuj per sprzedawca"}</span>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Zatrzymaj grupowanie</span>
             </button>
+          )}
+
+          {results.length > 0 && !isChecking && !isGrouping && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleGroupCheapest}
+                className="flex items-center gap-2 px-4 py-3 rounded-2xl transition-all text-sm font-bold border bg-purple-600/90 border-purple-500/50 text-white hover:bg-purple-500 shadow-lg shadow-purple-500/20"
+                title="Grupuj po sprzedawcy — po najtańszej ofercie z każdej książki (1 zapytanie/książkę, szybkie)"
+              >
+                <Users className="w-4 h-4" />
+                <span>Najtańsze</span>
+              </button>
+              <button
+                onClick={handleGroupAll}
+                className="flex items-center gap-2 px-4 py-3 rounded-2xl transition-all text-sm font-bold border bg-amber-600/90 border-amber-500/50 text-white hover:bg-amber-500 shadow-lg shadow-amber-500/20"
+                title="Grupuj po sprzedawcy — WSZYSTKIE oferty (ujawnia many-to-many; wolniejsze, cap 150 zapytań)"
+              >
+                <Package className="w-4 h-4" />
+                <span>Wszystkie oferty</span>
+              </button>
+            </div>
           )}
 
           <button
@@ -218,10 +248,15 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
 
       {bundles.length > 0 && (
         <div className="space-y-3">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Package className="w-4 h-4 text-purple-400" />
             <h4 className="text-sm font-bold text-purple-300 uppercase tracking-widest">Paczki od jednego sprzedawcy</h4>
             <span className="px-2 py-0.5 rounded-lg bg-purple-500/10 text-purple-300 text-[10px] font-bold border border-purple-500/20">{bundles.length}</span>
+            {groupSkipped > 0 && (
+              <span className="text-[10px] text-amber-400/80 font-bold" title="Limit 150 zapytań — pominięto nadmiar ofert, by nie prowokować blokady IP">
+                (pominięto {groupSkipped} ofert — limit 150)
+              </span>
+            )}
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             {bundles.map((b) => (
@@ -237,9 +272,16 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
                     <span className="truncate">{b.seller.login}</span>
                     <ExternalLink className="w-3 h-3 opacity-60 shrink-0" />
                   </a>
-                  <span className="px-2.5 py-1 rounded-full bg-purple-500/15 border border-purple-500/25 text-[11px] font-bold text-purple-200 whitespace-nowrap shrink-0">
-                    {b.entries.length} {b.entries.length < 5 ? "książki" : "książek"} · {formatVintedPrice(b.totalValue)}
-                  </span>
+                  <div className="flex flex-col items-end gap-0.5 shrink-0">
+                    <span className="px-2.5 py-1 rounded-full bg-purple-500/15 border border-purple-500/25 text-[11px] font-bold text-purple-200 whitespace-nowrap">
+                      {b.entries.length} {b.entries.length < 5 ? "książki" : "książek"} · {formatVintedPrice(b.totalValue)}
+                    </span>
+                    {b.totalPremium > 0 && (
+                      <span className="text-[9px] font-bold text-amber-400/80 uppercase tracking-wider whitespace-nowrap" title="Dopłata vs kupno każdej książki u najtańszego sprzedawcy — cena za konsolidację przesyłki">
+                        dopłata +{formatVintedPrice(b.totalPremium)}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="flex flex-col gap-1.5">
                   {b.entries.map((e, i) => (
@@ -256,6 +298,11 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
                       </div>
                       <div className="shrink-0 text-right tabular-nums font-bold text-purple-200 text-sm">
                         {e.item.priceValue != null ? formatVintedPrice(e.item.priceValue, e.item.currency) : "—"}
+                        {e.premium > 0 ? (
+                          <div className="text-[8px] text-amber-400/80 uppercase tracking-widest font-bold mt-0.5">+{formatVintedPrice(e.premium)}</div>
+                        ) : e.item.priceValue != null ? (
+                          <div className="text-[8px] text-emerald-400/80 uppercase tracking-widest font-bold mt-0.5">najtańsza</div>
+                        ) : null}
                       </div>
                       <ShoppingCart className="w-3.5 h-3.5 shrink-0 text-purple-400 opacity-50" />
                     </a>

@@ -198,11 +198,12 @@ export const groupVintedBySeller = async (req: Request, res: Response) => {
   if (!raw || raw.length === 0) {
     return res.status(400).json({ error: "Brak ofert do pogrupowania." });
   }
-  // Ufamy tylko URL-om ofert Vinted; cap 100 ogranicza ekspozycję na Cloudflare.
+  // Ufamy tylko URL-om ofert Vinted; cap 150 ogranicza ekspozycję na Cloudflare
+  // (tryb „wszystkie oferty" front też tnie do 150 i raportuje pominięcia).
   const items = raw
     .map((it: any) => ({ url: String(it?.url || "") }))
     .filter((it: { url: string }) => /^https:\/\/www\.vinted\.pl\/items\//.test(it.url))
-    .slice(0, 100);
+    .slice(0, 150);
   if (items.length === 0) {
     return res.status(400).json({ error: "Brak prawidłowych URL-i ofert Vinted." });
   }

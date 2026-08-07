@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.1.0** (źródło prawdy: `metadata.json`; mirror w `package.json`).
+- Wersja aplikacji: **1.2.0** (źródło prawdy: `metadata.json`; mirror w `package.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - Suite: 187+ testów zielonych; `npm run lint` (tsc) czysty.
@@ -59,6 +59,11 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.2.0** — Vinted grupowanie: tryb „Wszystkie oferty" (obok „Najtańsze"). „Wszystkie"
+  dociąga sprzedawcę KAŻDEJ oferty (cap 150 + raport pominięć), ujawnia many-to-many
+  (dopłać grosze, skonsoliduj przesyłkę). `groupBySeller` bierze najtańszą kopię per
+  sprzedawca/książkę i liczy dopłatę vs najtańsza globalnie (`premium`/`totalPremium`),
+  pokazaną w UI. Backend bez zmian (ten sam `resolveSellers`, tylko więcej URL-i).
 - **1.1.0** — Vinted: grupowanie per sprzedawca (on-demand, „low hanging fruit").
   Przycisk „Grupuj per sprzedawca" dociąga sprzedawcę ze strony najtańszej oferty każdej
   książki (`extractVintedSeller`: `/member/{id}` + `data-testid="profile-username"`),
