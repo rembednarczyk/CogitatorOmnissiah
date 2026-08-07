@@ -1,12 +1,21 @@
 import React from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { ShoppingCart, ExternalLink, Loader2, Search, Bug, CheckCircle2, XCircle, AlertCircle, BookImage, Users, Package, Database } from "lucide-react";
+import { ShoppingCart, ExternalLink, Loader2, Search, Bug, CheckCircle2, XCircle, AlertCircle, BookImage, Users, Package, Database, HardDriveDownload, Trash2, Clock } from "lucide-react";
 import { formatETA } from "../../utils/time";
 import { VintedResult, VintedSearchAttempt } from "../../hooks/useVintedCheck";
 import { sortOffersByPrice, offersPriceSummary, formatVintedPrice, cleanOfferTitle, sortResultsByCheapest } from "../../utils/vintedOffers";
 import { useVintedGrouping } from "../../hooks/useVintedGrouping";
 import { useVintedResolveSellers } from "../../hooks/useVintedResolveSellers";
+import { useVintedStored } from "../../hooks/useVintedStored";
 import { groupBySeller } from "../../utils/vintedSellers";
+
+/** Krótka data „DD.MM" ze znacznika ISO (świeżość danych z bazy). */
+function shortDate(iso?: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  return `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
 
 interface VintedCheckItemProps {
   results: VintedResult[];
@@ -37,12 +46,18 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
   const [showLogs, setShowLogs] = React.useState(false);
   const { sellersByUrl, isGrouping, groupProgress, groupError, runGrouping, stopGrouping } = useVintedGrouping();
   const { isResolving, resolveProgress, resolveResult, resolveError, runResolve, stopResolve } = useVintedResolveSellers();
+  const { stored, isLoadingStored, storedError, loadStored, clearStored } = useVintedStored();
+
+  // Źródło danych: baza (jeśli wczytana) lub bieżący skan. Kafelki i paczki renderują to samo UI.
+  const usingStored = !!stored && stored.results.length > 0;
+  const displayResults = usingStored ? stored!.results : results;
+  const displaySellers = usingStored ? stored!.sellersByUrl : sellersByUrl;
 
   const [groupSkipped, setGroupSkipped] = React.useState(0);
   const GROUP_CAP = 150;
 
-  // Paczki po sprzedawcy — liczone z map url→sprzedawca dociągniętych on-demand.
-  const bundles = React.useMemo(() => groupBySeller(results, sellersByUrl), [results, sellersByUrl]);
+  // Paczki po sprzedawcy — z aktywnego źródła (baza lub live scan).
+  const bundles = React.useMemo(() => groupBySeller(displayResults, displaySellers), [displayResults, displaySellers]);
 
   // Tryb „najtańsze": po jednej (najtańszej) ofercie z książki — 1 fetch/książkę.
   const handleGroupCheapest = () => {
@@ -117,7 +132,30 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
             </div>
           )}
 
-          {!isChecking && !isGrouping && (
+          {!isChecking && !isGrouping && !isResolving && (
+            usingStored ? (
+              <button
+                onClick={clearStored}
+                className="flex items-center gap-2 px-4 py-3 rounded-2xl transition-all text-sm font-bold border bg-slate-800/80 border-slate-600/50 text-slate-300 hover:bg-slate-700"
+                title="Wyczyść widok z bazy (wróć do wyników bieżącego skanu)"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Wyczyść bazę</span>
+              </button>
+            ) : (
+              <button
+                onClick={loadStored}
+                disabled={isLoadingStored}
+                className="flex items-center gap-2 px-4 py-3 rounded-2xl transition-all text-sm font-bold border bg-indigo-600/90 border-indigo-500/50 text-white hover:bg-indigo-500 shadow-lg shadow-indigo-500/20 disabled:opacity-60"
+                title="Wczytaj kafelki i paczki ze składowanych danych w Notion (bez skanowania)"
+              >
+                {isLoadingStored ? <Loader2 className="w-4 h-4 animate-spin" /> : <HardDriveDownload className="w-4 h-4" />}
+                <span>Wczytaj z bazy</span>
+              </button>
+            )
+          )}
+
+          {!isChecking && !isGrouping && !usingStored && (
             <button
               onClick={() => { if (isResolving) stopResolve(); else runResolve(); }}
               className={`flex items-center gap-2 px-4 py-3 rounded-2xl transition-all text-sm font-bold border ${
@@ -286,6 +324,21 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
           {resolveResult.message}
         </p>
       )}
+      {storedError && <p className="text-xs text-red-400 italic px-2">{storedError}</p>}
+
+      {usingStored && (
+        <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-[11px] text-indigo-200 font-medium">
+          <Database className="w-3.5 h-3.5 shrink-0 text-indigo-400" />
+          <span className="font-bold uppercase tracking-widest">Dane z bazy</span>
+          <span className="text-indigo-300/70">· {displayResults.length} książek z ofertami</span>
+          {stored!.oldest && (
+            <span className="flex items-center gap-1 text-indigo-300/70">
+              <Clock className="w-3 h-3" />
+              skany {shortDate(stored!.oldest)}{stored!.newest && stored!.newest !== stored!.oldest ? `–${shortDate(stored!.newest)}` : ""}
+            </span>
+          )}
+        </div>
+      )}
 
       {bundles.length > 0 && (
         <div className="space-y-3">
@@ -359,13 +412,13 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
         <p className="text-xs text-slate-500 italic px-2">Żaden sprzedawca nie ma ≥2 książek z listy — brak paczek do złożenia.</p>
       )}
 
-      {results.length > 0 && (
+      {displayResults.length > 0 && (
         <motion.div
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: "auto" }}
           className="grid grid-cols-1 lg:grid-cols-2 gap-4 overflow-hidden"
         >
-          {sortResultsByCheapest(results).map((result) => {
+          {sortResultsByCheapest(displayResults).map((result) => {
             const offers = sortOffersByPrice(result.vintedItems);
             const { min, count } = offersPriceSummary(offers);
             // Indeks pierwszej (najtańszej) oferty ze znaną ceną — do wyróżnienia.
@@ -378,6 +431,11 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
                     {result.title}
                   </div>
                   <div className="text-[10px] text-slate-500 uppercase font-bold tracking-[0.2em]">{result.author}</div>
+                  {result.scannedAt && (
+                    <div className="text-[9px] text-indigo-400/60 font-bold tracking-widest mt-0.5 flex items-center gap-1">
+                      <Clock className="w-2.5 h-2.5" /> skan {shortDate(result.scannedAt)}
+                    </div>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <span className="px-2.5 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-[11px] font-bold text-rose-300 whitespace-nowrap">
@@ -449,8 +507,8 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
         </motion.div>
       )}
       
-      {results.length === 0 && !isChecking && (
-        <p className="text-xs text-slate-500 italic text-center py-4">Brak wyników z Vinted. Uruchom skanowanie.</p>
+      {displayResults.length === 0 && !isChecking && !isLoadingStored && (
+        <p className="text-xs text-slate-500 italic text-center py-4">Brak wyników z Vinted. Uruchom skanowanie albo wczytaj z bazy.</p>
       )}
     </div>
   );

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { groupBySeller, VintedSeller } from "../utils/vintedSellers";
+import { groupBySeller, VintedSeller, storedToView } from "../utils/vintedSellers";
 import { VintedResult } from "../hooks/useVintedCheck";
 
 const seller = (id: string): VintedSeller => ({ id, login: `login-${id}`, url: `https://www.vinted.pl/member/${id}` });
@@ -59,6 +59,17 @@ describe("groupBySeller", () => {
     const entryA = b.entries.find(e => e.bookTitle === "A")!;
     expect(entryA.premium).toBe(1);
     expect(entryA.item.priceValue).toBe(11); // najtańsza kopia A U s1, nie globalna
+  });
+
+  it("feeds groupBySeller from stored data (via storedToView)", () => {
+    const books = [
+      { id: "1", title: "A", author: "X", scannedAt: "", offers: [{ url: "u1", price: 10, currency: "zł", seller: seller("s") }] },
+      { id: "2", title: "B", author: "Y", scannedAt: "", offers: [{ url: "u2", price: 5, currency: "zł", seller: seller("s") }] },
+    ];
+    const view = storedToView(books);
+    const bundles = groupBySeller(view.results, view.sellersByUrl);
+    expect(bundles).toHaveLength(1);
+    expect(bundles[0].entries).toHaveLength(2);
   });
 
   it("does not double-count the same book for one seller and sorts by count", () => {

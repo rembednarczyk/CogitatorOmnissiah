@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.4.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.5.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - Suite: 187+ testów zielonych; `npm run lint` (tsc) czysty.
@@ -59,6 +59,11 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.5.0** — Vinted persystencja ETAP 3 (domknięcie): grupowanie i kafelki Z BAZY bez
+  re-scrape. `getStoredData` (`GET /api/vinted-stored`) czyta bloby wszystkich książek;
+  czysty `storedToView` mapuje na VintedResult[] + sellersByUrl + zakres świeżości.
+  Hook `useVintedStored`, przycisk „Wczytaj z bazy"/„Wyczyść", baner „Dane z bazy" +
+  `scannedAt` na kafelku. Kafelki i paczki reużywają istniejący render.
 - **1.4.0** — Vinted persystencja ETAP 2: przyrostowe dociąganie sprzedawców DO BAZY.
   `resolveSellersToStore` czyta składowane oferty bez sprzedawcy, dociąga (throttled,
   cap 150/przebieg, wznawialne — rozpoznani zostają w blobie), zapisuje raz/książkę.
@@ -101,11 +106,10 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
 
 ## Otwarte pozycje
 
-- **Vinted persystencja ETAP 3** — grupowanie i kafelki Z BAZY (bez re-scrape): endpoint
-  czyta `VintedData` wszystkich książek → buduje wyniki + `sellersByUrl` → `groupBySeller`.
-  Front renderuje kafelki i paczki ze składowanych danych + znacznik świeżości (`scannedAt`).
-- **Świeżość** — oferty Vinted znikają; kafelki z bazy muszą pokazywać „dane z dnia X"
-  i pozwalać odświeżyć. Wbudować od ETAPU 3.
+- (brak) — pipeline persystencji Vinted (ETAP 1–3) kompletny.
+- **Ewentualnie później**: odświeżanie pojedynczej książki/oferty z bazy (re-check
+  świeżości), natywna baza „Vinted Offers" (jeśli blob przestanie wystarczać), proxy
+  rezydencjalne dla ominięcia 403.
 
 ## Zrobione (skrót)
 

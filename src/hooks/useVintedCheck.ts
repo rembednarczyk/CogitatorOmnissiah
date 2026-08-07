@@ -7,6 +7,8 @@ export interface VintedResult {
   title: string;
   author: string;
   searchUrl?: string;
+  /** Znacznik świeżości — kiedy skanowano tę książkę (tylko dla danych z bazy, etap 3). */
+  scannedAt?: string;
   vintedItems: {
     id?: string;
     title: string;
