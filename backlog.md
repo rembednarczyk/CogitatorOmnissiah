@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.9.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.9.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - Suite: 187+ testów zielonych; `npm run lint` (tsc) czysty.
@@ -59,6 +59,13 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.9.1** — Bughunting (3 agenty). NAPRAWIONE: (KRYTYCZNE) re-scan z blokadą/missem parsera
+  kasował składowane oferty i sprzedawców — `looksBlocked` teraz `continue` (nie kasuje,
+  nie stempluje scannedAt → wznowienie ponawia), a „0 ofert bez markera" nie nadpisuje,
+  gdy wcześniej coś było. (UX) skan z widoku bazy chował świeże wyniki → `clearStored` na
+  starcie; start skanu zablokowany w trakcie resolucji (nieanulowalność); pusty odczyt bazy
+  ma notkę. Odrzucone jako nie-bug po weryfikacji na realnym HTML: /member regex (seller to
+  jedyny numeryczny link), aria-label ceny (ochrona na początku, wygrywa węzeł tekstowy).
 - **1.9.0** — Usunięto live-grupowanie (przyciski „Najtańsze"/„Wszystkie oferty" — Rytuały
   Kartelu) zastąpione ścieżką bazodanową (Ustal sprzedawców → Wczytaj z bazy). Wycięty
   martwy kod: hook `useVintedGrouping`, endpoint `/api/vinted-group` (+task, controller),
