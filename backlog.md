@@ -40,6 +40,16 @@
   1.0.2) był ślepy — skan padał WCZEŚNIEJ (26 vs 28), co wykluczyło watchdog.
 - **NIE skracaj timeout/retry scrapera** — #48 to zrobił (30→15 s) i dał zero trafień
   (ucinał wolne, poprawne odpowiedzi Cloudflare). Cofnięte (#49). Timeout zostaje 30 s.
+- **Skan na Render free: ~160 poz./przebieg** — długi skan (~214 poz., 15–20 min) bywa
+  ucinany, gdy klient się rozłączy (tło karty / blip) → serwer `res close` →
+  `stopActiveSync()`, a potem kontener zwija się po idle. To infra (Render free), NIE
+  kod — OOM naprawiony (1.0.4). Trwały fix: odpiąć skan od połączenia SSE (skan leci
+  serwerowo, UI podgląda + wpina się ponownie) + płatny tier/kolejka. ODŁOŻONE — na
+  free i tak brak pełnej gwarancji; na razie dokańczamy w kilku przebiegach.
+- **Sprzedawca NIE jest w HTML katalogu Vinted** — kafelek oferty ma tylko
+  url/tytuł/cena/foto; brak `user_id`/`/member/` w kafelku (zweryfikowane na view-source).
+  Bundling „kilka książek u jednego sprzedawcy" wymaga dociągnięcia sprzedawcy z osobnego
+  źródła (strona `/items/{id}` albo `/api/v2/items/{id}` / catalog API) — czyli backend.
 - **Marker debug `grid` vs `html`** — `html` w logach skanera oznacza, że oferty złapał
   tylko fallback (ścieżka 4), a nie siatka. Po wdrożeniu fixu na stronach z siatką ma
   być `grid`. Jeśli po redeployu dalej `html` na stronie z siatką → deploy serwuje
@@ -70,4 +80,8 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
 
 ## Otwarte pozycje
 
-- (brak)
+- **Seller bundling** (analiza) — grupowanie trafień po sprzedawcy, by kupić kilka książek
+  u jednej osoby („low hanging fruit"). Blokada: sprzedawcy brak w skanie katalogu.
+  Kierunek: dwufazowo, on-demand — faza 2 dociąga sprzedawcę tylko dla dopasowanych
+  ofert (cap: najtańsza/książkę), grupowanie + UI na froncie. Wymaga próbki HTML strony
+  `/items/{id}` LUB sprawdzenia `/api/v2/items/{id}` (JSON, mały) — NIE zgadywać selektora.
