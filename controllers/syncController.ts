@@ -197,31 +197,6 @@ export const checkVintedAvailability = async (req: Request, res: Response) => {
 
 export const stopVintedCheck = makeStopHandler("Zatrzymywanie skanowania Vinted...");
 
-export const groupVintedBySeller = async (req: Request, res: Response) => {
-  const raw = Array.isArray(req.body?.items) ? req.body.items : null;
-  if (!raw || raw.length === 0) {
-    return res.status(400).json({ error: "Brak ofert do pogrupowania." });
-  }
-  // Ufamy tylko URL-om ofert Vinted; cap 150 ogranicza ekspozycję na Cloudflare
-  // (tryb „wszystkie oferty" front też tnie do 150 i raportuje pominięcia).
-  const items = raw
-    .map((it: any) => ({ url: String(it?.url || "") }))
-    .filter((it: { url: string }) => /^https:\/\/www\.vinted\.pl\/items\//.test(it.url))
-    .slice(0, 150);
-  if (items.length === 0) {
-    return res.status(400).json({ error: "Brak prawidłowych URL-i ofert Vinted." });
-  }
-
-  await executeSyncTask(
-    req,
-    res,
-    (sendEvent) => syncManager.run("vinted-group", sendEvent, { items }),
-    "Vinted Group Error:"
-  );
-};
-
-export const stopVintedGroup = makeStopHandler("Zatrzymywanie grupowania per sprzedawca...");
-
 export const resolveVintedSellers = async (req: Request, res: Response) => {
   // Bez capu domyślnie — resolucja jest przyrostowa i wznawialna, więc jeden przebieg
   // ustala wszystkie brakujące, ile zdąży. Opcjonalny `cap` z body ogranicza przebieg.

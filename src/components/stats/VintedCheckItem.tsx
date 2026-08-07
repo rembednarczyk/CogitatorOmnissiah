@@ -4,7 +4,6 @@ import { ShoppingCart, ExternalLink, Loader2, Search, Bug, CheckCircle2, XCircle
 import { formatETA } from "../../utils/time";
 import { VintedResult, VintedSearchAttempt } from "../../hooks/useVintedCheck";
 import { sortOffersByPrice, offersPriceSummary, formatVintedPrice, cleanOfferTitle, sortResultsByCheapest } from "../../utils/vintedOffers";
-import { useVintedGrouping } from "../../hooks/useVintedGrouping";
 import { useVintedResolveSellers } from "../../hooks/useVintedResolveSellers";
 import { useVintedStored } from "../../hooks/useVintedStored";
 import { groupBySeller } from "../../utils/vintedSellers";
@@ -49,39 +48,17 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
   const [showLogs, setShowLogs] = React.useState(false);
   // Wznawianie: domyślnie pomijamy książki skanowane < RESUME_DAYS dni (kontynuuj, nie od zera).
   const [resumeScan, setResumeScan] = React.useState(true);
-  const { sellersByUrl, isGrouping, groupProgress, groupError, runGrouping, stopGrouping } = useVintedGrouping();
   const { isResolving, resolveProgress, resolveResult, resolveError, runResolve, stopResolve } = useVintedResolveSellers();
   const { stored, isLoadingStored, storedError, loadStored, clearStored } = useVintedStored();
 
   // Źródło danych: baza (jeśli wczytana) lub bieżący skan. Kafelki i paczki renderują to samo UI.
   const usingStored = !!stored && stored.results.length > 0;
   const displayResults = usingStored ? stored!.results : results;
-  const displaySellers = usingStored ? stored!.sellersByUrl : sellersByUrl;
+  // Sprzedawcy (do paczek) pochodzą wyłącznie z bazy — live scan pokazuje same kafelki.
+  const displaySellers = usingStored ? stored!.sellersByUrl : {};
 
-  const [groupSkipped, setGroupSkipped] = React.useState(0);
-  const GROUP_CAP = 150;
-
-  // Paczki po sprzedawcy — z aktywnego źródła (baza lub live scan).
+  // Paczki po sprzedawcy — liczone ze składowanych danych (po „Wczytaj z bazy").
   const bundles = React.useMemo(() => groupBySeller(displayResults, displaySellers), [displayResults, displaySellers]);
-
-  // Tryb „najtańsze": po jednej (najtańszej) ofercie z książki — 1 fetch/książkę.
-  const handleGroupCheapest = () => {
-    setGroupSkipped(0);
-    const urls = results
-      .map(r => sortOffersByPrice(r.vintedItems)[0]?.url)
-      .filter((u): u is string => !!u);
-    runGrouping(urls.slice(0, GROUP_CAP));
-  };
-
-  // Tryb „wszystkie oferty": każda oferta każdej książki — ujawnia many-to-many
-  // (dopłać grosze, skonsoliduj przesyłkę). Drożej pod Cloudflare → cap 150 + raport.
-  const handleGroupAll = () => {
-    const urls = results
-      .flatMap(r => r.vintedItems.map(i => i.url))
-      .filter((u): u is string => !!u);
-    setGroupSkipped(Math.max(0, urls.length - GROUP_CAP));
-    runGrouping(urls.slice(0, GROUP_CAP));
-  };
 
   return (
     <div className="space-y-8">
@@ -137,7 +114,7 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
           }}
         />
 
-        {!isChecking && !isGrouping && !usingStored && (
+        {!isChecking && !usingStored && (
           <RitualButton
             color={isResolving ? "rose" : "emerald"}
             icon={isResolving ? Loader2 : Database}
@@ -148,7 +125,7 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
           />
         )}
 
-        {!isChecking && !isGrouping && !isResolving && (
+        {!isChecking && !isResolving && (
           usingStored ? (
             <RitualButton
               color="indigo"
@@ -168,36 +145,6 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
               onClick={loadStored}
             />
           )
-        )}
-
-        {results.length > 0 && !isChecking && isGrouping && (
-          <RitualButton
-            color="rose"
-            icon={Loader2}
-            animate="spin"
-            title="Przerwij Rytuał Kartelu"
-            subtitle="Zatrzymanie grupowania per sprzedawca"
-            onClick={() => stopGrouping()}
-          />
-        )}
-
-        {results.length > 0 && !isChecking && !isGrouping && !isResolving && !usingStored && (
-          <>
-            <RitualButton
-              color="purple"
-              icon={Users}
-              title="Rytuał Kartelu — Najtańsze"
-              subtitle="Grupowanie po najtańszej ofercie z książki"
-              onClick={handleGroupCheapest}
-            />
-            <RitualButton
-              color="amber"
-              icon={Package}
-              title="Rytuał Kartelu — Wszystkie"
-              subtitle="Grupowanie po wszystkich ofertach — many-to-many"
-              onClick={handleGroupAll}
-            />
-          </>
         )}
       </div>
 
@@ -287,25 +234,6 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
         )}
       </AnimatePresence>
       
-      {isGrouping && groupProgress && (
-        <div className="px-2 space-y-1">
-          <div className="flex justify-between text-xs text-purple-300 uppercase font-bold">
-            <span className="break-words">{groupProgress.message}</span>
-            {groupProgress.total > 0 && <span>{groupProgress.current} / {groupProgress.total}</span>}
-          </div>
-          {groupProgress.total > 0 && (
-            <div className="h-1 bg-slate-900 rounded-full overflow-hidden">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${(groupProgress.current / groupProgress.total) * 100}%` }}
-                className="h-full bg-purple-500"
-              />
-            </div>
-          )}
-        </div>
-      )}
-      {groupError && <p className="text-xs text-red-400 italic px-2">{groupError}</p>}
-
       {isResolving && resolveProgress && (
         <div className="px-2 space-y-1">
           <div className="flex justify-between text-xs text-teal-300 uppercase font-bold">
@@ -351,11 +279,6 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
             <Package className="w-4 h-4 text-purple-400" />
             <h4 className="text-sm font-bold text-purple-300 uppercase tracking-widest">Paczki od jednego sprzedawcy</h4>
             <span className="px-2 py-0.5 rounded-lg bg-purple-500/10 text-purple-300 text-[10px] font-bold border border-purple-500/20">{bundles.length}</span>
-            {groupSkipped > 0 && (
-              <span className="text-[10px] text-amber-400/80 font-bold" title="Limit 150 zapytań — pominięto nadmiar ofert, by nie prowokować blokady IP">
-                (pominięto {groupSkipped} ofert — limit 150)
-              </span>
-            )}
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             {bundles.map((b) => (
@@ -413,8 +336,8 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
         </div>
       )}
 
-      {!isGrouping && Object.keys(sellersByUrl).length > 0 && bundles.length === 0 && (
-        <p className="text-xs text-slate-500 italic px-2">Żaden sprzedawca nie ma ≥2 książek z listy — brak paczek do złożenia.</p>
+      {usingStored && bundles.length === 0 && (
+        <p className="text-xs text-slate-500 italic px-2">Żaden sprzedawca nie ma ≥2 książek z listy — brak paczek do złożenia. (Uzupełnij sprzedawców rytuałem „Identyfikacji Handlarzy".)</p>
       )}
 
       {displayResults.length > 0 && (

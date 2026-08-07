@@ -33,8 +33,6 @@ router.post("/sync-integrity", syncController.runIntegrityCheck);
 router.post("/mark-as-read", syncController.markAsRead);
 router.post("/vinted-check", syncController.checkVintedAvailability);
 router.post("/vinted-check/stop", syncController.stopVintedCheck);
-router.post("/vinted-group", syncController.groupVintedBySeller);
-router.post("/vinted-group/stop", syncController.stopVintedGroup);
 router.post("/vinted-resolve-sellers", syncController.resolveVintedSellers);
 router.post("/vinted-resolve-sellers/stop", syncController.stopVintedResolveSellers);
 router.get("/vinted-stored", syncController.getVintedStored);
