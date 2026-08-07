@@ -45,7 +45,10 @@ export function useVintedCheck() {
     setCheckProgress({ current: 0, total: 0, message: "Inicjowanie...", startTime: Date.now() });
     setVintedError(null);
 
-    const watchdog = createStallWatchdog();
+    // Skaner ma z natury długie pauzy (odstępy anty-blokadowe + timeouty na
+    // pojedynczej ofercie), więc dajemy watchdogowi 90 s ciszy zamiast 30 s —
+    // keepalive co 5 s i tak resetuje odliczanie na zdrowym połączeniu.
+    const watchdog = createStallWatchdog(90000);
 
     try {
       watchdog.arm();
@@ -99,7 +102,7 @@ export function useVintedCheck() {
     } catch (err: any) {
       setVintedError(
         watchdog.stalled
-          ? "Połączenie z serwerem zawisło (brak odpowiedzi przez 30 s). Możliwe buforowanie strumienia przez hosting. Odśwież i spróbuj ponownie."
+          ? "Połączenie z serwerem zawisło (brak odpowiedzi przez 90 s). Możliwe buforowanie strumienia przez hosting. Odśwież i spróbuj ponownie."
           : err.message
       );
     } finally {
