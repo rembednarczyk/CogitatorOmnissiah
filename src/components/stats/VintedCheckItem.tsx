@@ -8,6 +8,7 @@ import { useVintedGrouping } from "../../hooks/useVintedGrouping";
 import { useVintedResolveSellers } from "../../hooks/useVintedResolveSellers";
 import { useVintedStored } from "../../hooks/useVintedStored";
 import { groupBySeller } from "../../utils/vintedSellers";
+import { RitualButton } from "./RitualButton";
 
 /** Krótka data „DD.MM" ze znacznika ISO (świeżość danych z bazy). */
 function shortDate(iso?: string | null): string {
@@ -91,89 +92,6 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
         </div>
         
         <div className="flex items-center gap-3">
-          {searchAttempts.length > 0 && (
-            <button
-              onClick={() => setShowLogs(!showLogs)}
-              className={`p-3 rounded-2xl transition-all border ${
-                showLogs 
-                  ? "bg-amber-500/20 border-amber-500/50 text-amber-400" 
-                  : "bg-slate-900/50 border-slate-800 text-slate-500 hover:text-slate-300"
-              }`}
-              title="Pokaż logi skanowania"
-            >
-              <Bug className="w-5 h-5" />
-            </button>
-          )}
-
-          {results.length > 0 && !isChecking && isGrouping && (
-            <button
-              onClick={() => stopGrouping()}
-              className="flex items-center gap-2 px-4 py-3 rounded-2xl transition-all text-sm font-bold border bg-red-600/90 border-red-500/50 text-white hover:bg-red-500"
-            >
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Zatrzymaj grupowanie</span>
-            </button>
-          )}
-
-          {results.length > 0 && !isChecking && !isGrouping && !isResolving && (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleGroupCheapest}
-                className="flex items-center gap-2 px-4 py-3 rounded-2xl transition-all text-sm font-bold border bg-purple-600/90 border-purple-500/50 text-white hover:bg-purple-500 shadow-lg shadow-purple-500/20"
-                title="Grupuj po sprzedawcy — po najtańszej ofercie z każdej książki (1 zapytanie/książkę, szybkie)"
-              >
-                <Users className="w-4 h-4" />
-                <span>Najtańsze</span>
-              </button>
-              <button
-                onClick={handleGroupAll}
-                className="flex items-center gap-2 px-4 py-3 rounded-2xl transition-all text-sm font-bold border bg-amber-600/90 border-amber-500/50 text-white hover:bg-amber-500 shadow-lg shadow-amber-500/20"
-                title="Grupuj po sprzedawcy — WSZYSTKIE oferty (ujawnia many-to-many; wolniejsze, cap 150 zapytań)"
-              >
-                <Package className="w-4 h-4" />
-                <span>Wszystkie oferty</span>
-              </button>
-            </div>
-          )}
-
-          {!isChecking && !isGrouping && !isResolving && (
-            usingStored ? (
-              <button
-                onClick={clearStored}
-                className="flex items-center gap-2 px-4 py-3 rounded-2xl transition-all text-sm font-bold border bg-slate-800/80 border-slate-600/50 text-slate-300 hover:bg-slate-700"
-                title="Wyczyść widok z bazy (wróć do wyników bieżącego skanu)"
-              >
-                <Trash2 className="w-4 h-4" />
-                <span>Wyczyść bazę</span>
-              </button>
-            ) : (
-              <button
-                onClick={loadStored}
-                disabled={isLoadingStored}
-                className="flex items-center gap-2 px-4 py-3 rounded-2xl transition-all text-sm font-bold border bg-indigo-600/90 border-indigo-500/50 text-white hover:bg-indigo-500 shadow-lg shadow-indigo-500/20 disabled:opacity-60"
-                title="Wczytaj kafelki i paczki ze składowanych danych w Notion (bez skanowania)"
-              >
-                {isLoadingStored ? <Loader2 className="w-4 h-4 animate-spin" /> : <HardDriveDownload className="w-4 h-4" />}
-                <span>Wczytaj z bazy</span>
-              </button>
-            )
-          )}
-
-          {!isChecking && !isGrouping && !usingStored && (
-            <button
-              onClick={() => { if (isResolving) stopResolve(); else runResolve(); }}
-              className={`flex items-center gap-2 px-4 py-3 rounded-2xl transition-all text-sm font-bold border ${
-                isResolving
-                  ? "bg-red-600/90 border-red-500/50 text-white hover:bg-red-500"
-                  : "bg-teal-600/90 border-teal-500/50 text-white hover:bg-teal-500 shadow-lg shadow-teal-500/20"
-              }`}
-              title="Dociągnij sprzedawców do składowanych ofert w Notion (przyrostowo i wznawialnie — jeden przebieg ustala wszystkie brakujące, ile zdąży)"
-            >
-              {isResolving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
-              <span>{isResolving ? "Zatrzymaj" : "Ustal sprzedawców (baza)"}</span>
-            </button>
-          )}
-
           {!isChecking && (
             <label
               className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 cursor-pointer select-none"
@@ -188,31 +106,99 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
               Kontynuuj
             </label>
           )}
-
-          <button
-            onClick={() => {
-              if (isChecking) onStop();
-              else onCheck(resumeScan ? { skipScannedWithinDays: RESUME_DAYS } : undefined);
-            }}
-            className={`flex items-center gap-3 px-6 py-3 rounded-2xl transition-all text-sm font-bold text-white shadow-xl ${
-              isChecking
-                ? "bg-red-600 hover:bg-red-500 shadow-red-500/20"
-                : "bg-cyan-600 hover:bg-cyan-500 shadow-cyan-500/20"
-            }`}
-          >
-            {isChecking ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Zatrzymaj Skanowanie</span>
-              </>
-            ) : (
-              <>
-                <Search className="w-4 h-4" />
-                <span>Uruchom Skaner Vinted</span>
-              </>
-            )}
-          </button>
+          {searchAttempts.length > 0 && (
+            <button
+              onClick={() => setShowLogs(!showLogs)}
+              className={`p-3 rounded-2xl transition-all border ${
+                showLogs
+                  ? "bg-amber-500/20 border-amber-500/50 text-amber-400"
+                  : "bg-slate-900/50 border-slate-800 text-slate-500 hover:text-slate-300"
+              }`}
+              title="Pokaż logi skanowania"
+            >
+              <Bug className="w-5 h-5" />
+            </button>
+          )}
         </div>
+      </div>
+
+      {/* Rytuały skanera — w stylu liturgii synchronizacji */}
+      <div className="grid sm:grid-cols-2 gap-3">
+        <RitualButton
+          className="sm:col-span-2"
+          color={isChecking ? "rose" : "cyan"}
+          icon={isChecking ? Loader2 : Search}
+          animate={isChecking ? "spin" : undefined}
+          title={isChecking ? "Przerwij Rytuał Skanowania" : "Rytuał Skanowania Vinted"}
+          subtitle={isChecking ? "Zatrzymanie aktywnego przeszukania katalogu" : "Przeszukanie katalogu Vinted — język polski, od 2 PLN"}
+          onClick={() => {
+            if (isChecking) onStop();
+            else onCheck(resumeScan ? { skipScannedWithinDays: RESUME_DAYS } : undefined);
+          }}
+        />
+
+        {!isChecking && !isGrouping && !usingStored && (
+          <RitualButton
+            color={isResolving ? "rose" : "emerald"}
+            icon={isResolving ? Loader2 : Database}
+            animate={isResolving ? "spin" : undefined}
+            title={isResolving ? "Przerwij Identyfikację" : "Rytuał Identyfikacji Handlarzy"}
+            subtitle={isResolving ? "Zatrzymanie dociągania sprzedawców" : "Dociągnięcie sprzedawców do bazy — wznawialny"}
+            onClick={() => { if (isResolving) stopResolve(); else runResolve(); }}
+          />
+        )}
+
+        {!isChecking && !isGrouping && !isResolving && (
+          usingStored ? (
+            <RitualButton
+              color="indigo"
+              icon={Trash2}
+              title="Rozwiej Przywołanie"
+              subtitle="Powrót do wyników bieżącego skanu"
+              onClick={clearStored}
+            />
+          ) : (
+            <RitualButton
+              color="indigo"
+              icon={isLoadingStored ? Loader2 : HardDriveDownload}
+              animate={isLoadingStored ? "spin" : undefined}
+              disabled={isLoadingStored}
+              title="Rytuał Przywołania z Archiwum"
+              subtitle="Kafelki i paczki ze składowanych danych — bez skanu"
+              onClick={loadStored}
+            />
+          )
+        )}
+
+        {results.length > 0 && !isChecking && isGrouping && (
+          <RitualButton
+            color="rose"
+            icon={Loader2}
+            animate="spin"
+            title="Przerwij Rytuał Kartelu"
+            subtitle="Zatrzymanie grupowania per sprzedawca"
+            onClick={() => stopGrouping()}
+          />
+        )}
+
+        {results.length > 0 && !isChecking && !isGrouping && !isResolving && !usingStored && (
+          <>
+            <RitualButton
+              color="purple"
+              icon={Users}
+              title="Rytuał Kartelu — Najtańsze"
+              subtitle="Grupowanie po najtańszej ofercie z książki"
+              onClick={handleGroupCheapest}
+            />
+            <RitualButton
+              color="amber"
+              icon={Package}
+              title="Rytuał Kartelu — Wszystkie"
+              subtitle="Grupowanie po wszystkich ofertach — many-to-many"
+              onClick={handleGroupAll}
+            />
+          </>
+        )}
       </div>
 
       {isChecking && progress && (

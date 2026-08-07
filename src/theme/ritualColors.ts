@@ -50,6 +50,33 @@ export const ritualTheme: Record<RitualColor, RitualTheme> = {
 export const getRitualTheme = (color?: string | null): RitualTheme =>
   ritualTheme[(color as RitualColor)] ?? ritualTheme.cyan;
 
+/**
+ * Klasy przycisku-rytuału (styl „liturgii synchronizacji": ciemna baza slate-950,
+ * kolorowy akcent border/glow na hover, ikona w boxie). Pełne literały — patrz uwaga
+ * o skanerze JIT Tailwinda na górze pliku. Używane przez komponent `RitualButton`.
+ */
+export interface RitualButtonTheme {
+  hoverBorder: string;
+  hoverShadow: string;
+  iconBg: string;
+  iconText: string;
+  hoverText: string;
+}
+
+export const ritualButtonTheme: Record<RitualColor, RitualButtonTheme> = {
+  cyan:    { hoverBorder: "hover:border-cyan-500/50",    hoverShadow: "hover:shadow-cyan-500/10",    iconBg: "bg-cyan-500/10",    iconText: "text-cyan-400",    hoverText: "group-hover:text-cyan-400" },
+  rose:    { hoverBorder: "hover:border-rose-500/50",    hoverShadow: "hover:shadow-rose-500/10",    iconBg: "bg-rose-500/10",    iconText: "text-rose-400",    hoverText: "group-hover:text-rose-400" },
+  indigo:  { hoverBorder: "hover:border-indigo-500/50",  hoverShadow: "hover:shadow-indigo-500/10",  iconBg: "bg-indigo-500/10",  iconText: "text-indigo-400",  hoverText: "group-hover:text-indigo-400" },
+  blue:    { hoverBorder: "hover:border-blue-500/50",    hoverShadow: "hover:shadow-blue-500/10",    iconBg: "bg-blue-500/10",    iconText: "text-blue-400",    hoverText: "group-hover:text-blue-400" },
+  purple:  { hoverBorder: "hover:border-purple-500/50",  hoverShadow: "hover:shadow-purple-500/10",  iconBg: "bg-purple-500/10",  iconText: "text-purple-400",  hoverText: "group-hover:text-purple-400" },
+  orange:  { hoverBorder: "hover:border-orange-500/50",  hoverShadow: "hover:shadow-orange-500/10",  iconBg: "bg-orange-500/10",  iconText: "text-orange-400",  hoverText: "group-hover:text-orange-400" },
+  amber:   { hoverBorder: "hover:border-amber-500/50",   hoverShadow: "hover:shadow-amber-500/10",   iconBg: "bg-amber-500/10",   iconText: "text-amber-400",   hoverText: "group-hover:text-amber-400" },
+  emerald: { hoverBorder: "hover:border-emerald-500/50", hoverShadow: "hover:shadow-emerald-500/10", iconBg: "bg-emerald-500/10", iconText: "text-emerald-400", hoverText: "group-hover:text-emerald-400" },
+};
+
+export const getRitualButtonTheme = (color?: string | null): RitualButtonTheme =>
+  ritualButtonTheme[(color as RitualColor)] ?? ritualButtonTheme.cyan;
+
 /** Sama kropka kroku (z fallbackiem do cyan). */
 export const getRitualDot = (color?: string | null): string => getRitualTheme(color).dot;
 
