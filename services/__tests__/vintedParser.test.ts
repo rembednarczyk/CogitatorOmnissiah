@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseVintedItems, parseVintedPrice } from "../vintedParser";
+import { parseVintedItems, parseVintedPrice, extractPriceFromText } from "../vintedParser";
 
 // Catalog blob with &quot;-escaped JSON, as in the real page
 const catalogHtml = (json: object) =>
@@ -61,11 +61,31 @@ describe("parseVintedItems", () => {
     expect(items[0].photo).toBe("https://img/1.jpg");
   });
 
-  it("sets priceValue to null when the price is a placeholder", () => {
+  it("recovers the item price from the offer title attribute when structural price is missing", () => {
+    // Realny przypadek: fallback HTML łapie title aukcji z ceną w opisie.
+    const html = `<a href="/items/5" title="Pokrzywa i kość, T. Kingfisher, Stan: Bardzo dobry, 12,00 zł, 18,65 zł"></a>`;
+    const items = parseVintedItems(html, "Pokrzywa i kość", "Kingfisher");
+    expect(items).toHaveLength(1);
+    expect(items[0].priceValue).toBe(12); // niższa z pary = cena przedmiotu
+    expect(items[0].currency).toBe("zł");
+  });
+
+  it("keeps priceValue null when no price is present anywhere", () => {
     const html = `<div class="feed-grid__item"><a href="/items/5" title="Solaris"></a></div>`;
     const items = parseVintedItems(html, "Solaris", "Lem");
-    expect(items[0].price).toBe("Sprawdź");
     expect(items[0].priceValue).toBeNull();
+  });
+});
+
+describe("extractPriceFromText", () => {
+  it("returns the lowest zł/PLN amount found in the text", () => {
+    expect(extractPriceFromText("Stan: Bardzo dobry, 15.00 zł, 18.65 zł")).toBe(15);
+    expect(extractPriceFromText("cena 9,90 PLN")).toBe(9.9);
+  });
+
+  it("returns null when no price token is present", () => {
+    expect(extractPriceFromText("Pokrzywa i kość, T. Kingfisher")).toBeNull();
+    expect(extractPriceFromText("")).toBeNull();
   });
 });
 

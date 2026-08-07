@@ -35,6 +35,23 @@ export function sortOffersByPrice<T extends OfferLike>(items: T[]): T[] {
   });
 }
 
+/**
+ * Czyści tytuł oferty do wyświetlenia: rozkodowuje encje HTML i odcina „ogon"
+ * z opisu Vinted (kondycja „, Stan: …" oraz doklejone kwoty), bo ścieżki HTML
+ * parsera biorą atrybut title aukcji z całym opisem i ceną w środku.
+ */
+export function cleanOfferTitle(title: string): string {
+  let t = (title || "")
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, "&")
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+  t = t.replace(/,\s*Stan:.*$/i, "");                 // odetnij kondycję i wszystko po niej
+  t = t.replace(/,?\s*\d+[.,]\d+\s*(?:zł|PLN).*$/i, ""); // awaryjnie: doklejony ogon cenowy
+  return t.trim();
+}
+
 /** Minimalna cena (lub null, gdy żadna oferta nie ma ceny) i liczba ofert. */
 export function offersPriceSummary(items: OfferLike[]): { min: number | null; count: number } {
   const prices = items

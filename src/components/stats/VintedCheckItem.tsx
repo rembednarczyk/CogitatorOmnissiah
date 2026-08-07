@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { ShoppingCart, ExternalLink, Loader2, Search, Bug, CheckCircle2, XCircle, AlertCircle, BookImage } from "lucide-react";
 import { formatETA } from "../../utils/time";
 import { VintedResult, VintedSearchAttempt } from "../../hooks/useVintedCheck";
-import { sortOffersByPrice, offersPriceSummary, formatVintedPrice } from "../../utils/vintedOffers";
+import { sortOffersByPrice, offersPriceSummary, formatVintedPrice, cleanOfferTitle } from "../../utils/vintedOffers";
 
 interface VintedCheckItemProps {
   results: VintedResult[];
@@ -189,6 +189,8 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
               <div className="flex flex-col gap-1.5 mt-1">
                 {offers.map((item, i) => {
                   const isCheapest = i === cheapestIdx;
+                  const hasPrice = item.priceValue !== null && item.priceValue !== undefined;
+                  const offerTitle = cleanOfferTitle(item.title);
                   return (
                   <a
                     key={i}
@@ -216,18 +218,19 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
                     )}
 
                     <div className="flex-1 min-w-0">
-                      <div className={`text-sm font-bold ${isCheapest ? "text-emerald-300" : "text-rose-300"}`}>
-                        {formatVintedPrice(item.priceValue, item.currency)}
-                      </div>
-                      <div className="text-[10px] text-slate-500 truncate">{item.title}</div>
+                      <div className="text-[11px] text-slate-400 truncate">{offerTitle || item.title}</div>
                     </div>
 
-                    {isCheapest && (
-                      <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 text-[9px] font-bold uppercase tracking-widest shrink-0">
-                        najtańsza
-                      </span>
-                    )}
-                    <ShoppingCart className={`w-3.5 h-3.5 shrink-0 opacity-50 group-hover/item:opacity-100 ${isCheapest ? "text-emerald-400" : "text-rose-400"}`} />
+                    {/* Cena — najmocniej eksponowana, stała szerokość, nie zawija się */}
+                    <div className={`shrink-0 text-right tabular-nums font-bold leading-none ${
+                      hasPrice ? (isCheapest ? "text-emerald-300 text-lg" : "text-rose-300 text-base") : "text-slate-500 text-[11px] font-medium italic"
+                    }`}>
+                      {hasPrice ? formatVintedPrice(item.priceValue, item.currency) : "cena w ofercie"}
+                      {isCheapest && hasPrice && (
+                        <div className="text-[8px] text-emerald-400/80 uppercase tracking-widest font-bold mt-0.5">najtańsza</div>
+                      )}
+                    </div>
+                    <ShoppingCart className={`w-3.5 h-3.5 shrink-0 opacity-40 group-hover/item:opacity-100 ${isCheapest ? "text-emerald-400" : "text-rose-400"}`} />
                   </a>
                 )})}
               </div>
