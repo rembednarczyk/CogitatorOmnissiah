@@ -128,4 +128,29 @@ describe('WikiParser', () => {
     });
   });
 
+  describe('parseAwardTable', () => {
+    it('parses an award wikitable into books with winner labelling', () => {
+      const wikitext = `
+{| class="wikitable"
+|-
+! Rok
+! Autor
+! Tytuł oryginalny
+! Tytuł polski
+|- style="background: #ccffcc"
+| [[1961]] || [[Stanisław Lem]] || ''Solaris'' || Solaris
+|}`;
+      const books = WikiParser.parseAwardTable(wikitext, 'Nagroda Test');
+      expect(books).toHaveLength(1);
+      expect(books[0]).toEqual(expect.objectContaining({
+        year: '1961', author: 'Stanisław Lem', originalTitle: 'Solaris',
+        polishTitle: 'Solaris', award: 'Nagroda Test',
+      }));
+    });
+
+    it('returns [] for empty wikitext', () => {
+      expect(WikiParser.parseAwardTable('', 'Nagroda Hugo')).toEqual([]);
+    });
+  });
+
 });
