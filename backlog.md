@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.2.0** (źródło prawdy: `metadata.json`; mirror w `package.json`).
+- Wersja aplikacji: **1.2.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - Suite: 187+ testów zielonych; `npm run lint` (tsc) czysty.
