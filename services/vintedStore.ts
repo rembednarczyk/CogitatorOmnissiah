@@ -17,11 +17,17 @@ export interface StoredOffer {
   photo?: string | null;
   /** Sprzedawca — null, dopóki nie dociągnięty osobnym krokiem (etap 2). */
   seller?: VintedSeller | null;
+  /** Cena z POPRZEDNIEGO skanu (do wykrycia spadku). Ustawiana dla ofert, które przetrwały. */
+  prevPrice?: number | null;
+  /** ISO — kiedy ten URL oferty pojawił się po raz pierwszy (do znacznika „nowa"). */
+  firstSeenAt?: string;
 }
 
 export interface StoredVintedData {
   /** ISO timestamp ostatniego skanu tej książki (świeżość danych). */
   scannedAt: string;
+  /** ISO — kiedy zestaw ofert OSTATNIO się zmienił (nowa/zniknięta/inna cena). */
+  changedAt?: string;
   offers: StoredOffer[];
 }
 
@@ -31,7 +37,22 @@ export interface StoredBookView {
   title: string;
   author: string;
   scannedAt: string;
+  changedAt?: string;
   offers: StoredOffer[];
+}
+
+/** Podsumowanie zmian jednej książki między poprzednim a świeżym skanem. */
+export interface OfferDiff {
+  added: number;
+  removed: number;
+  priceDropped: number;
+  priceRaised: number;
+}
+
+export const EMPTY_DIFF: OfferDiff = { added: 0, removed: 0, priceDropped: 0, priceRaised: 0 };
+
+export function hasChanges(d: OfferDiff): boolean {
+  return d.added > 0 || d.removed > 0 || d.priceDropped > 0 || d.priceRaised > 0;
 }
 
 /** VintedItem (ze skanu) → StoredOffer (do zapisu). */
@@ -56,7 +77,11 @@ export function parseVintedData(raw: string | null | undefined): StoredVintedDat
   try {
     const d = JSON.parse(raw);
     if (d && typeof d === "object" && Array.isArray(d.offers)) {
-      return { scannedAt: typeof d.scannedAt === "string" ? d.scannedAt : "", offers: d.offers };
+      return {
+        scannedAt: typeof d.scannedAt === "string" ? d.scannedAt : "",
+        changedAt: typeof d.changedAt === "string" ? d.changedAt : undefined,
+        offers: d.offers,
+      };
     }
     return null;
   } catch {
@@ -65,16 +90,36 @@ export function parseVintedData(raw: string | null | undefined): StoredVintedDat
 }
 
 /**
- * Scala świeżo zeskanowane oferty ze składowanymi, ZACHOWUJĄC rozpoznanego sprzedawcę
- * dla ofert, których URL nadal istnieje — dzięki temu re-scan nie kasuje danych
- * sprzedawcy dociągniętych w etapie 2. Oferty zniknięte z Vinted wypadają, nowe wchodzą
- * bez sprzedawcy (do dociągnięcia).
+ * Scala świeżo zeskanowane oferty ze składowanymi ORAZ liczy diff (nowe / zniknięte /
+ * zmiana ceny). ZACHOWUJE rozpoznanego sprzedawcę i `firstSeenAt` dla ofert o niezmienionym
+ * URL (re-scan nie kasuje danych sprzedawcy z etapu 2), ustawia `prevPrice` = cena z
+ * poprzedniego skanu (do wykrycia spadku), a nowym ofertom stempluje `firstSeenAt = scannedAt`.
  */
-export function mergeOffers(fresh: StoredOffer[], prev: StoredOffer[] | undefined): StoredOffer[] {
+export function mergeAndDiff(
+  fresh: StoredOffer[],
+  prev: StoredOffer[] | undefined,
+  scannedAt: string,
+): { offers: StoredOffer[]; diff: OfferDiff } {
   const prevByUrl = new Map((prev ?? []).map(o => [o.url, o]));
-  return fresh.map(o => {
-    if (o.seller) return o;
+  const freshUrls = new Set(fresh.map(o => o.url));
+  let added = 0, priceDropped = 0, priceRaised = 0;
+
+  const offers: StoredOffer[] = fresh.map(o => {
     const old = prevByUrl.get(o.url);
-    return old?.seller ? { ...o, seller: old.seller } : o;
+    if (!old) {
+      added++;
+      return { ...o, seller: o.seller ?? null, firstSeenAt: scannedAt };
+    }
+    // Oferta przetrwała: zachowaj sprzedawcę i firstSeenAt, zapisz cenę poprzednią.
+    const seller = o.seller ?? old.seller ?? null;
+    const firstSeenAt = old.firstSeenAt ?? scannedAt;
+    const prevPrice = typeof old.price === "number" ? old.price : null;
+    if (typeof o.price === "number" && typeof old.price === "number" && o.price !== old.price) {
+      if (o.price < old.price) priceDropped++; else priceRaised++;
+    }
+    return { ...o, seller, firstSeenAt, prevPrice };
   });
+
+  const removed = (prev ?? []).filter(o => !freshUrls.has(o.url)).length;
+  return { offers, diff: { added, removed, priceDropped, priceRaised } };
 }

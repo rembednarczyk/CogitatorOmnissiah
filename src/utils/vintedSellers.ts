@@ -31,7 +31,8 @@ export interface StoredBookPayload {
   title: string;
   author: string;
   scannedAt: string;
-  offers: { url: string; title?: string; price: number | null; currency: string; photo?: string | null; seller?: VintedSeller | null }[];
+  changedAt?: string;
+  offers: { url: string; title?: string; price: number | null; currency: string; photo?: string | null; seller?: VintedSeller | null; prevPrice?: number | null; firstSeenAt?: string }[];
 }
 
 export interface StoredView {
@@ -58,6 +59,7 @@ export function storedToView(books: StoredBookPayload[]): StoredView {
       title: b.title,
       author: b.author,
       scannedAt: b.scannedAt,
+      changedAt: b.changedAt,
       vintedItems: b.offers.map(o => ({
         title: o.title ?? "",
         price: o.price ?? "??",
@@ -65,6 +67,8 @@ export function storedToView(books: StoredBookPayload[]): StoredView {
         currency: o.currency ?? "zł",
         url: o.url,
         photo: o.photo ?? null,
+        prevPrice: o.prevPrice ?? null,
+        firstSeenAt: o.firstSeenAt,
       })),
     });
     for (const o of b.offers) if (o.url) sellersByUrl[o.url] = o.seller ?? null;
