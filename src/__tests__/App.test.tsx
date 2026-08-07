@@ -357,7 +357,7 @@ describe('App Main Flows', () => {
       expect(screen.getByText(/Katalog Beletrystyka/i)).toBeInTheDocument();
     });
     
-    const searchButton = screen.getByText(/Uruchom Skaner Vinted/i);
+    const searchButton = screen.getByText(/Rytuał Skanowania Vinted/i);
     
     await act(async () => {
       fireEvent.click(searchButton);
@@ -365,7 +365,7 @@ describe('App Main Flows', () => {
     
     // Use waitFor because state update might not be immediate
     await waitFor(() => {
-      expect(screen.getByText(/Zatrzymaj Skanowanie/i)).toBeInTheDocument();
+      expect(screen.getByText(/Przerwij Rytuał Skanowania/i)).toBeInTheDocument();
     });
   });
 
