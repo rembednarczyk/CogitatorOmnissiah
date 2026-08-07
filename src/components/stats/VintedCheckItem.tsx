@@ -167,7 +167,7 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
                   ? "bg-red-600/90 border-red-500/50 text-white hover:bg-red-500"
                   : "bg-teal-600/90 border-teal-500/50 text-white hover:bg-teal-500 shadow-lg shadow-teal-500/20"
               }`}
-              title="Dociągnij sprzedawców do składowanych ofert w Notion (przyrostowo, wznawialnie, cap 150/przebieg)"
+              title="Dociągnij sprzedawców do składowanych ofert w Notion (przyrostowo i wznawialnie — jeden przebieg ustala wszystkie brakujące, ile zdąży)"
             >
               {isResolving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
               <span>{isResolving ? "Zatrzymaj" : "Ustal sprzedawców (baza)"}</span>
