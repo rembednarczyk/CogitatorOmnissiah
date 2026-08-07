@@ -6,8 +6,26 @@ export interface VintedItem {
   id?: string | number;
   title: string;
   price: string | number;
+  /** Cena jako liczba (do sortowania). null, gdy nieznana (placeholder „Sprawdź"/„??"). */
+  priceValue: number | null;
   currency: string;
   url: string;
+  /** Miniatura oferty z katalogu Vinted (tylko ścieżka JSON — fallbacki HTML jej nie mają). */
+  photo?: string | null;
+}
+
+/**
+ * Normalizuje surową cenę Vinted do liczby: „15" → 15, „25,00" → 25, „12.90" → 12.9,
+ * liczba → liczba. Placeholdery („??", „Sprawdź", puste) i wartości nieliczbowe → null,
+ * żeby oferty bez ceny dało się posortować na koniec zamiast psuć porównania.
+ */
+export function parseVintedPrice(raw: string | number | null | undefined): number | null {
+  if (raw === null || raw === undefined) return null;
+  if (typeof raw === "number") return Number.isFinite(raw) ? raw : null;
+  const cleaned = raw.replace(/\s/g, "").replace(",", ".").replace(/[^0-9.]/g, "");
+  if (!cleaned) return null;
+  const n = parseFloat(cleaned);
+  return Number.isFinite(n) ? n : null;
 }
 
 /**
@@ -89,12 +107,16 @@ export function parseVintedItems(html: string, title: string, author: string): V
       const hasAuthor = searchAuthor && itemTitle.includes(searchAuthor);
 
       if (hasTitle || hasAuthor) {
+        const rawPrice = item.price?.amount || item.total_item_price?.amount || item.price?.amount_decimal || "??";
+        const photo = item.photo?.url || item.photo?.thumbnails?.[0]?.url || item.photos?.[0]?.url || null;
         items.push({
           id: item.id,
           title: item.title || itemTitle,
-          price: item.price?.amount || item.total_item_price?.amount || item.price?.amount_decimal || "??",
+          price: rawPrice,
+          priceValue: parseVintedPrice(rawPrice),
           currency: item.price?.currency_code || item.currency || "PLN",
-          url: item.url ? (item.url.startsWith('http') ? item.url : `https://www.vinted.pl${item.url}`) : `https://www.vinted.pl/items/${item.id}`
+          url: item.url ? (item.url.startsWith('http') ? item.url : `https://www.vinted.pl${item.url}`) : `https://www.vinted.pl/items/${item.id}`,
+          photo
         });
       }
     }
@@ -115,10 +137,12 @@ export function parseVintedItems(html: string, title: string, author: string): V
         if (urlMatch && titleMatch) {
           const itemTitle = titleMatch[1];
           if (itemTitle.toLowerCase().includes(title.toLowerCase())) {
+            const rawPrice = priceMatch ? priceMatch[1] : "Sprawdź";
             items.push({
               title: itemTitle,
               url: `https://www.vinted.pl${urlMatch[1]}`,
-              price: priceMatch ? priceMatch[1] : "Sprawdź",
+              price: rawPrice,
+              priceValue: parseVintedPrice(rawPrice),
               currency: priceMatch ? priceMatch[2] : "PLN"
             });
           }
@@ -135,7 +159,7 @@ export function parseVintedItems(html: string, title: string, author: string): V
       const itemUrl = `https://www.vinted.pl${match[1]}`;
       const itemTitle = match[2];
       if (itemTitle.toLowerCase().includes(title.toLowerCase())) {
-        items.push({ title: itemTitle, url: itemUrl, price: "Sprawdź", currency: "PLN" });
+        items.push({ title: itemTitle, url: itemUrl, price: "Sprawdź", priceValue: null, currency: "PLN" });
       }
     }
   }

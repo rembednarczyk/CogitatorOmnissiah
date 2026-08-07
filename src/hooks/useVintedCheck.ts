@@ -11,8 +11,10 @@ export interface VintedResult {
     id?: string;
     title: string;
     price: string | number;
+    priceValue?: number | null;
     currency: string;
     url: string;
+    photo?: string | null;
   }[];
 }
 

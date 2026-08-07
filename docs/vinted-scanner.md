@@ -10,7 +10,8 @@ Searches **vinted.pl** for physical, second-hand copies of the tracked books. Th
 - **Result parsing**: the scanner inspects the HTML for status markers and delegates item extraction to the pure `parseVintedItems(html, title, author)` in `services/vintedParser.ts` (unit-tested on captured HTML/JSON).
   - Bot/anti-scrape markers (`cloudflare`, `captcha`, "robot") → reported as `blocked`.
   - "Brak wyników" / "Nie znaleźliśmy żadnych przedmiotów" → `no_results`.
-  - Otherwise `parseVintedItems` extracts up to 5 relevant listing items (title, price, currency, url) via four cascading paths: the `data-component-name="Catalog"` JSON blob, an `"items":[…]` regex with bracket matching, `feed-grid__item` blocks, then a global `href=/items/…` regex.
+  - Otherwise `parseVintedItems` extracts up to 5 relevant listing items via four cascading paths: the `data-component-name="Catalog"` JSON blob, an `"items":[…]` regex with bracket matching, `feed-grid__item` blocks, then a global `href=/items/…` regex.
+  - **Per item**: `title`, `price` (raw string), `priceValue` (numeric, for sorting — `null` when only a placeholder like "Sprawdź"/"??" is available), `currency`, `url`, and `photo` (a catalog thumbnail URL; present only on the JSON path). `parseVintedPrice` normalizes `"25,00"` / `"12.90"` / numbers → a number, placeholders → `null`.
 
 ## 3. Reliability & Anti-Bot Pacing
 - **Timeout**: 45 000 ms per request (via a keep-alive `https.Agent`).
@@ -22,6 +23,7 @@ Searches **vinted.pl** for physical, second-hand copies of the tracked books. Th
 - **Hook**: `useVintedCheck` opens the SSE stream and renders progress, per-book search attempts, and matched listings.
 - **Trigger**: The "Skaner Artefaktów Vinted" section (Vinted tab).
 - **Output**: A `search_attempt` event per book (status + item count) plus `match` events with the found listings.
+- **Offer display** (`VintedCheckItem`): per book the offers are sorted cheapest → dearest via `sortOffersByPrice` (price-less offers sink to the end); the card header shows `od {min} zł · {count}` (`offersPriceSummary`), the cheapest offer is badged "najtańsza", and each row renders the offer thumbnail (falling back to a placeholder icon), the formatted price (`formatVintedPrice`, Polish style), and the offer title. Helpers live in `src/utils/vintedOffers.ts` (pure, unit-tested).
 
 ## 5. Notes
 - Vinted's markup and anti-bot behaviour change over time; treat the HTML parsing as best-effort and expect occasional `blocked` results from a datacenter IP.
