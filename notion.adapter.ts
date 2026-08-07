@@ -261,6 +261,24 @@ export class NotionAdapter {
     this.invalidateBooksCache();
   }
 
+  /**
+   * Zapis blobu składowanych wyników Vinted do pola „VintedData" (rich_text). Tekst
+   * dzielony na segmenty ≤2000 znaków (limit Notion) — mapper skleja je z powrotem
+   * przez `join("")`. NIE używa `buildPropertyValue` (obcina do 2000 i psułoby JSON).
+   */
+  async saveVintedData(pageId: string, text: string): Promise<void> {
+    const chunks: { text: { content: string } }[] = [];
+    for (let i = 0; i < text.length; i += 2000) {
+      chunks.push({ text: { content: text.slice(i, i + 2000) } });
+    }
+    if (chunks.length === 0) chunks.push({ text: { content: "" } });
+    await withRetry(() => this.notion.pages.update({
+      page_id: pageId,
+      properties: { "VintedData": { rich_text: chunks } },
+    }));
+    this.invalidateBooksCache();
+  }
+
   async addRow(properties: any): Promise<any> {
     await this.init();
     const parent = this.isDataSource

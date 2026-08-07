@@ -69,6 +69,9 @@ export function mapPageToBook(page: NotionPage): NotionBook {
   const awards = multiSelectNames(getProp(props, "Nagroda"));
   const zrodlo = multiSelectNames(getProp(props, "Źródło"));
 
+  // Blob składowanych wyników Vinted (rich_text; wiele segmentów jest sklejanych w getPlainText).
+  const vintedData = getPlainText(getProp(props, "VintedData")) || undefined;
+
   return {
     id: page.id,
     plTitle,
@@ -82,6 +85,7 @@ export function mapPageToBook(page: NotionPage): NotionBook {
     awards,
     zrodlo,
     plTitleRichText,
-    origTitleRichText
+    origTitleRichText,
+    vintedData
   };
 }

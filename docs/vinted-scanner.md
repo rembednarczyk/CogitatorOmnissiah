@@ -21,6 +21,13 @@ Second, opt-in phase for finding "low-hanging fruit" — books available from th
 - **Seller extraction**: `extractVintedSeller(html)` reads two stable, unique markers from the offer page — the profile link `href="/member/{id}"` (id) and `data-testid="profile-username"` (login) — returning `{ id, login, url }` (login `detach`-ed, since the offer page is ~2 MB).
 - **Flow**: `POST /api/vinted-group` with `{ items: [{ url }] }` → `VintedSyncService.resolveSellers` streams a `seller_resolved` event (`{ url, seller }`) per offer → the frontend maps `url → seller` and the pure `groupBySeller` returns sellers holding **≥2 distinct books**. Grouping/rendering is entirely client-side.
 
+## 2c. Persistence (Notion blob) — decouples acquisition from analysis
+Scraping is rate-limited and unreliable (Cloudflare); analysis (grouping) is cheap and repeatable. Persisting scan results into Notion separates the two: scrape once, analyse many times, and make the scan **resumable** across runs (the ~160-books-per-run limit stops losing progress).
+- **Store**: a compact JSON blob in a `VintedData` rich_text property on each book row (`services/vintedStore.ts`: `StoredVintedData = { scannedAt, offers[] }`). The adapter chunks it into ≤2000-char rich_text segments (`saveVintedData`); the mapper rejoins them (`getPlainText` → `NotionBook.vintedData`).
+- **Write path** (stage 1): the scan persists per book best-effort (`persistBookOffers`) after each response — matches, or an empty-offers record that still stamps `scannedAt` (scan coverage). `createColumnIfNeeded("VintedData")` ensures the property once per run; a failure disables persistence without failing the scan.
+- **Merge**: `mergeOffers` keeps a previously-resolved **seller** for any offer whose URL still exists, so a re-scan doesn't wipe seller data captured separately; vanished offers drop, new ones enter without a seller.
+- **Stages 2–3** (planned): an incremental job resolves sellers for stored offers lacking one (resumable, capped), then grouping and the tile view read straight from the blob (no re-scrape) with a `scannedAt` freshness marker.
+
 ## 3. Reliability & Anti-Bot Pacing
 - **Timeout**: 45 000 ms per request (via a keep-alive `https.Agent`).
 - **Throttling**: 3–5 s delay (with jitter) between books — applied on **every** path, including the no-results case, to avoid the request bursts that trigger Cloudflare blocks.
