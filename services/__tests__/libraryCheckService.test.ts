@@ -11,22 +11,22 @@ import { NotionAdapter } from '../../notion.adapter';
 
 const mockedGet = axios.get as unknown as ReturnType<typeof vi.fn>;
 
-const OPAC_HIT = `
-<html><body>
-  <div class="record">
-    <dl>
-      <dt>Tytuł:</dt><dd><span>Solaris</span></dd>
-      <dt>Autor:</dt><dd><span>Stanisław Lem</span></dd>
-    </dl>
-  </div>
-</body></html>`;
-
-const OPAC_MISS = `<html><body><p>Brak wyników</p></body></html>`;
+// Odwzorowanie realnej struktury OPAC (Prolib Integro): <article> + <dl> + ikona typu.
+const ICON = { book: 'pdt-p-book', movie: 'pdt-p-movie', audiobook: 'pdt-p-audiobook' } as const;
+const article = (id: string, title: string, author: string, icon: keyof typeof ICON) => `
+<article data-item-id="${id}" data-type="cataloged" class="fixed-height-article">
+  <dl class="dl-horizontal">
+    <dt>Tytuł:</dt><dd><span class="">${title} </span><br /></dd>
+    ${author ? `<dt>Autorzy:</dt><dd><span class=""><a href="#">${author}</a></span><br /></dd>` : ''}
+    <dt>Rok wydania:</dt><dd><span class="">2014</span></dd>
+  </dl>
+  <div class="document-type document-type-result-list "><span class="${ICON[icon]}"></span><div class="document-type-text ">x</div></div>
+</article>`;
+const opacPage = (...articles: string[]) => `<div class="result-box">${articles.join('')}</div>`;
+const OPAC_MISS = `<div class="result-box"></div>`;
 
 function makeNotion(books: any[]) {
-  return {
-    getBooksForStats: vi.fn().mockResolvedValue(books),
-  } as unknown as NotionAdapter;
+  return { getBooksForStats: vi.fn().mockResolvedValue(books) } as unknown as NotionAdapter;
 }
 
 describe('LibraryCheckService', () => {
@@ -46,41 +46,57 @@ describe('LibraryCheckService', () => {
     ]);
     mockedGet.mockResolvedValue({ data: OPAC_MISS });
 
-    const svc = new LibraryCheckService(notion);
-    await svc.runLibraryCheck('LUB01', sendEvent, never);
+    await new LibraryCheckService(notion).runLibraryCheck('48', sendEvent, never);
 
-    // Only book #1 is a valid candidate (2 is read, 3 has empty title)
-    expect(mockedGet).toHaveBeenCalledTimes(1);
+    expect(mockedGet).toHaveBeenCalledTimes(1); // only book #1 is a valid candidate
     const complete = sendEvent.mock.calls.map((c: any) => c[0]).find((e: any) => e.type === 'complete');
     expect(complete?.result.success).toBe(true);
     expect(complete?.result.results).toHaveLength(0);
   });
 
-  it('emits a match when OPAC returns a matching record', async () => {
-    const notion = makeNotion([
-      { id: '1', plTitle: 'Solaris', author: 'Stanisław Lem', zrodlo: [] },
-    ]);
-    mockedGet.mockResolvedValue({ data: OPAC_HIT });
+  it('matches a physical book and ignores the film/audiobook of the same title', async () => {
+    const notion = makeNotion([{ id: '1', plTitle: 'Solaris', author: 'Stanisław Lem', zrodlo: [] }]);
+    mockedGet.mockResolvedValue({
+      data: opacPage(
+        article('a', 'Solaris', '', 'movie'),                     // film — ignorowany
+        article('b', 'Solaris', 'Lem, Stanisław', 'audiobook'),   // audiobook — ignorowany
+        article('c', 'Solaris', 'Lem, Stanisław (1921-2006)', 'book'), // książka — TO trafienie
+      ),
+    });
 
-    const svc = new LibraryCheckService(notion);
-    await svc.runLibraryCheck('LUB01', sendEvent, never);
+    await new LibraryCheckService(notion).runLibraryCheck('48', sendEvent, never);
 
     const match = sendEvent.mock.calls.map((c: any) => c[0]).find((e: any) => e.type === 'match');
     expect(match).toBeDefined();
     expect(match.result.id).toBe('1');
     expect(match.result.extractedTitle).toBe('Solaris');
+    expect(match.result.extractedAuthor).toContain('Lem');
+  });
+
+  it('reports no match when only other media / other titles are held (real "Gra o tron" case)', async () => {
+    const notion = makeNotion([{ id: '1', plTitle: 'Gra o tron', author: 'George R. R. Martin', zrodlo: [] }]);
+    mockedGet.mockResolvedValue({
+      data: opacPage(
+        article('a', 'Gra o tron', 'Martin, George R. R. (1948- )', 'audiobook'), // audiobook — nie liczy się
+        article('b', 'Game of thrones. Sezon 1 = Gra o tron', '', 'movie'),        // film
+        article('c', 'Rycerz Siedmiu Królestw', 'Martin, George R. R. (1948- )', 'book'), // inna książka Martina
+      ),
+    });
+
+    await new LibraryCheckService(notion).runLibraryCheck('48', sendEvent, never);
+
+    const match = sendEvent.mock.calls.map((c: any) => c[0]).find((e: any) => e.type === 'match');
+    expect(match).toBeUndefined();
+    const complete = sendEvent.mock.calls.map((c: any) => c[0]).find((e: any) => e.type === 'complete');
+    expect(complete.result.results).toHaveLength(0);
   });
 
   it('reports cancellation without throwing', async () => {
-    const notion = makeNotion([
-      { id: '1', plTitle: 'Solaris', author: 'Stanisław Lem', zrodlo: [] },
-    ]);
+    const notion = makeNotion([{ id: '1', plTitle: 'Solaris', author: 'Stanisław Lem', zrodlo: [] }]);
     mockedGet.mockResolvedValue({ data: OPAC_MISS });
 
-    const svc = new LibraryCheckService(notion);
-    await svc.runLibraryCheck('LUB01', sendEvent, () => true);
+    await new LibraryCheckService(notion).runLibraryCheck('48', sendEvent, () => true);
 
-    // Cancelled before the first request → no HTTP call, complete reports cancelled
     expect(mockedGet).not.toHaveBeenCalled();
     const complete = sendEvent.mock.calls.map((c: any) => c[0]).find((e: any) => e.type === 'complete');
     expect(complete?.result.cancelled).toBe(true);
