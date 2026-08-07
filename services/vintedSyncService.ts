@@ -9,6 +9,17 @@ import { parseVintedItems, vintedDiagnostics, looksBlocked } from "./vintedParse
 const log = createLogger("VintedScan");
 
 /**
+ * Odczyt pamięci procesu (MB). Strony Vinted to ~7 MB HTML każda — na hostingu z
+ * limitem RAM (Render free = 512 MB) powtarzane piki przy parsowaniu mogą wywołać
+ * OOM-kill procesu, co urywa SSE i „ubija" skan przy w miarę stałej liczbie prób.
+ * Dołączamy `rssMb`/`heapMb` do debug każdej próby, żeby to zobaczyć w panelu logów.
+ */
+function memMb() {
+  const m = process.memoryUsage();
+  return { rssMb: Math.round(m.rss / 1048576), heapMb: Math.round(m.heapUsed / 1048576) };
+}
+
+/**
  * Skaner ofert na Vinted (bezpośredni scraper HTML — NIE AI). Dla każdej książki,
  * której jeszcze nie posiadamy, wyszukuje oferty w katalogu Vinted i emituje
  * trafienia przez SSE. Zob. docs/vinted-scanner.md.
@@ -96,7 +107,7 @@ export class VintedSyncService {
           }, 3, 4000);
 
           const html = response.data;
-          log.info(`Odpowiedź Vinted`, { title, chars: html.length });
+          log.info(`Odpowiedź Vinted`, { title, chars: html.length, ...memMb() });
 
           // Blokada = MAŁA strona challenge, nie samo słowo w wielkim HTML.
           if (looksBlocked(html)) {
@@ -104,7 +115,7 @@ export class VintedSyncService {
             sendEvent({ type: "status", message: `⚠️ Vinted wykrył bota przy "${title}". Próbuję ominąć...` });
             sendEvent({
               type: "search_attempt",
-              result: { id: book.id, title, author: book.author, url, status: "blocked", itemCount: 0, debug: vintedDiagnostics(html, 0) }
+              result: { id: book.id, title, author: book.author, url, status: "blocked", itemCount: 0, debug: { ...vintedDiagnostics(html, 0), ...memMb() } }
             });
           }
 
@@ -114,7 +125,7 @@ export class VintedSyncService {
             log.info(`Brak wyników na Vinted`, { searchText });
             sendEvent({
               type: "search_attempt",
-              result: { id: book.id, title, author: book.author, url, status: "no_results", itemCount: 0, debug: vintedDiagnostics(html, 0) }
+              result: { id: book.id, title, author: book.author, url, status: "no_results", itemCount: 0, debug: { ...vintedDiagnostics(html, 0), ...memMb() } }
             });
             // Odczekaj jak przy każdym innym zapytaniu — pomijanie opóźnienia
             // przy braku wyników (częsty przypadek) to prosta droga do blokady
@@ -123,7 +134,7 @@ export class VintedSyncService {
           }
 
           const items = parseVintedItems(html, title, book.author || "");
-          const debug = vintedDiagnostics(html, items.length);
+          const debug = { ...vintedDiagnostics(html, items.length), ...memMb() };
 
           if (items.length > 0) {
             const matchResult = {
@@ -149,7 +160,7 @@ export class VintedSyncService {
           log.warn(`Błąd sprawdzania Vinted`, { title, error: err.message || "Nieznany błąd" });
           sendEvent({
             type: "search_attempt",
-            result: { id: book.id, title, author: book.author, url, status: "error", itemCount: 0, debug: { error: err.message, code: err.code, httpStatus: err.response?.status } }
+            result: { id: book.id, title, author: book.author, url, status: "error", itemCount: 0, debug: { error: err.message, code: err.code, httpStatus: err.response?.status, ...memMb() } }
           });
           if (err.response?.status === 429) {
             sendEvent({

@@ -25,6 +25,8 @@ function formatDebug(d: NonNullable<VintedSearchAttempt["debug"]>): string {
   if (d.parsed !== undefined) parts.push(`parsed:${d.parsed}`);
   if (d.blockedMarker) parts.push("BLOCK");
   if (d.noResultsMarker) parts.push("noRes");
+  // Pamięć procesu — rosnące rssMb ku limitowi hostingu tuż przed śmiercią = OOM.
+  if (d.rssMb !== undefined) parts.push(`mem:${d.rssMb}MB`);
   return parts.join(" · ");
 }
 

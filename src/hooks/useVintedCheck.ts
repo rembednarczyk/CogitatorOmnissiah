@@ -38,6 +38,10 @@ export interface VintedSearchAttempt {
     error?: string;
     code?: string;
     httpStatus?: number;
+    // Diagnostyka OOM (Krok 2): pamięć procesu po każdej próbie. Rosnące rssMb ku
+    // limitowi hostingu (Render free = 512 MB) tuż przed śmiercią skanu = OOM-kill.
+    rssMb?: number;
+    heapMb?: number;
   };
 }
 
