@@ -1,10 +1,11 @@
 import React from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { ShoppingCart, ExternalLink, Loader2, Search, Bug, CheckCircle2, XCircle, AlertCircle, BookImage, Users, Package } from "lucide-react";
+import { ShoppingCart, ExternalLink, Loader2, Search, Bug, CheckCircle2, XCircle, AlertCircle, BookImage, Users, Package, Database } from "lucide-react";
 import { formatETA } from "../../utils/time";
 import { VintedResult, VintedSearchAttempt } from "../../hooks/useVintedCheck";
 import { sortOffersByPrice, offersPriceSummary, formatVintedPrice, cleanOfferTitle, sortResultsByCheapest } from "../../utils/vintedOffers";
 import { useVintedGrouping } from "../../hooks/useVintedGrouping";
+import { useVintedResolveSellers } from "../../hooks/useVintedResolveSellers";
 import { groupBySeller } from "../../utils/vintedSellers";
 
 interface VintedCheckItemProps {
@@ -35,6 +36,7 @@ function formatDebug(d: NonNullable<VintedSearchAttempt["debug"]>): string {
 export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searchAttempts, onCheck, onStop, isChecking, progress }) => {
   const [showLogs, setShowLogs] = React.useState(false);
   const { sellersByUrl, isGrouping, groupProgress, groupError, runGrouping, stopGrouping } = useVintedGrouping();
+  const { isResolving, resolveProgress, resolveResult, resolveError, runResolve, stopResolve } = useVintedResolveSellers();
 
   const [groupSkipped, setGroupSkipped] = React.useState(0);
   const GROUP_CAP = 150;
@@ -94,7 +96,7 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
             </button>
           )}
 
-          {results.length > 0 && !isChecking && !isGrouping && (
+          {results.length > 0 && !isChecking && !isGrouping && !isResolving && (
             <div className="flex items-center gap-2">
               <button
                 onClick={handleGroupCheapest}
@@ -113,6 +115,21 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
                 <span>Wszystkie oferty</span>
               </button>
             </div>
+          )}
+
+          {!isChecking && !isGrouping && (
+            <button
+              onClick={() => { if (isResolving) stopResolve(); else runResolve(); }}
+              className={`flex items-center gap-2 px-4 py-3 rounded-2xl transition-all text-sm font-bold border ${
+                isResolving
+                  ? "bg-red-600/90 border-red-500/50 text-white hover:bg-red-500"
+                  : "bg-teal-600/90 border-teal-500/50 text-white hover:bg-teal-500 shadow-lg shadow-teal-500/20"
+              }`}
+              title="Dociągnij sprzedawców do składowanych ofert w Notion (przyrostowo, wznawialnie, cap 150/przebieg)"
+            >
+              {isResolving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
+              <span>{isResolving ? "Zatrzymaj" : "Ustal sprzedawców (baza)"}</span>
+            </button>
           )}
 
           <button
@@ -245,6 +262,30 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
         </div>
       )}
       {groupError && <p className="text-xs text-red-400 italic px-2">{groupError}</p>}
+
+      {isResolving && resolveProgress && (
+        <div className="px-2 space-y-1">
+          <div className="flex justify-between text-xs text-teal-300 uppercase font-bold">
+            <span className="break-words">{resolveProgress.message}</span>
+            {resolveProgress.total > 0 && <span>{resolveProgress.current} / {resolveProgress.total}</span>}
+          </div>
+          {resolveProgress.total > 0 && (
+            <div className="h-1 bg-slate-900 rounded-full overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${(resolveProgress.current / resolveProgress.total) * 100}%` }}
+                className="h-full bg-teal-500"
+              />
+            </div>
+          )}
+        </div>
+      )}
+      {resolveError && <p className="text-xs text-red-400 italic px-2">{resolveError}</p>}
+      {!isResolving && resolveResult && (
+        <p className="text-xs text-teal-300/80 px-2">
+          {resolveResult.message}
+        </p>
+      )}
 
       {bundles.length > 0 && (
         <div className="space-y-3">
