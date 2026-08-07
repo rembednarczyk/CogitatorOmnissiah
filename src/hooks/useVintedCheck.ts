@@ -59,7 +59,12 @@ export function useVintedCheck() {
     setCheckProgress({ current: 0, total: 0, message: "Inicjowanie...", startTime: Date.now() });
     setVintedError(null);
 
-    const watchdog = createStallWatchdog();
+    // Skaner Vinted potrafi milczeć długo na jednej książce: withRetry(3, 4000) przy
+    // timeout 30 s daje worst-case ~102 s ciszy (30+4+30+8+30) na wolnej/blokowanej
+    // pozycji, gdy serwer wysyła tylko keepalive (a Render bywa go buforuje). Domyślne
+    // 30 s ucinało wtedy fetch → serwer widział rozłączenie → self-kill całego skanu.
+    // 120 s pokrywa ten worst-case bez ruszania timingu scrapera (nie zmniejsza trafień).
+    const watchdog = createStallWatchdog(120000);
 
     try {
       watchdog.arm();
@@ -113,7 +118,7 @@ export function useVintedCheck() {
     } catch (err: any) {
       setVintedError(
         watchdog.stalled
-          ? "Połączenie z serwerem zawisło (brak odpowiedzi przez 30 s). Możliwe buforowanie strumienia przez hosting. Odśwież i spróbuj ponownie."
+          ? "Połączenie z serwerem zawisło (brak odpowiedzi przez 120 s). Możliwe buforowanie strumienia przez hosting. Odśwież i spróbuj ponownie."
           : err.message
       );
     } finally {
