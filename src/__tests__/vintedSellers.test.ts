@@ -39,6 +39,28 @@ describe("groupBySeller", () => {
     expect(groupBySeller(results, sellers)).toHaveLength(0);
   });
 
+  it("uses the seller's cheapest copy per book and reports premium vs the global cheapest", () => {
+    // Książka A: najtaniej 10 (s2), ale s1 ma A za 11 + B za 8 → paczka s1 z dopłatą 1.
+    const results = [
+      result("1", "A", [item("https://www.vinted.pl/items/a-s2", 10), item("https://www.vinted.pl/items/a-s1", 11)]),
+      result("2", "B", [item("https://www.vinted.pl/items/b-s1", 8)]),
+    ];
+    const sellers = {
+      "https://www.vinted.pl/items/a-s2": seller("s2"),
+      "https://www.vinted.pl/items/a-s1": seller("s1"),
+      "https://www.vinted.pl/items/b-s1": seller("s1"),
+    };
+    const bundles = groupBySeller(results, sellers);
+    expect(bundles).toHaveLength(1);
+    const b = bundles[0];
+    expect(b.seller.id).toBe("s1");
+    expect(b.totalValue).toBe(19); // 11 (A u s1) + 8 (B)
+    expect(b.totalPremium).toBe(1); // A: 11 - 10(min) = 1; B: 0
+    const entryA = b.entries.find(e => e.bookTitle === "A")!;
+    expect(entryA.premium).toBe(1);
+    expect(entryA.item.priceValue).toBe(11); // najtańsza kopia A U s1, nie globalna
+  });
+
   it("does not double-count the same book for one seller and sorts by count", () => {
     const results = [
       result("1", "A", [item("https://www.vinted.pl/items/1", 10), item("https://www.vinted.pl/items/1b", 12)]),
