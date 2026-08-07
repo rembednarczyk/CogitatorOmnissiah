@@ -12,6 +12,17 @@ export interface VintedItem {
   url: string;
   /** Miniatura oferty z katalogu Vinted (tylko ścieżka JSON — fallbacki HTML jej nie mają). */
   photo?: string | null;
+  /** Sprzedawca — dociągany on-demand ze strony oferty (nie ma go w katalogu). */
+  seller?: VintedSeller | null;
+}
+
+export interface VintedSeller {
+  /** Numeryczne ID profilu (`/member/{id}`) — klucz grupowania. */
+  id: string;
+  /** Widoczny login sprzedawcy. */
+  login: string;
+  /** Link do profilu. */
+  url: string;
 }
 
 /**
@@ -259,6 +270,22 @@ export function parseVintedItems(html: string, title: string, author: string): V
   }
 
   return items;
+}
+
+/**
+ * Wyłuskuje sprzedawcę ze strony pojedynczej oferty Vinted (`/items/{id}`).
+ * Sprzedawcy NIE ma w kafelkach katalogu — pojawia się dopiero na stronie oferty.
+ * Dwa stabilne, unikalne uchwyty (zweryfikowane na realnym HTML): link profilu
+ * `/member/{id}` (ID) oraz `data-testid="profile-username"` (login). `detach` na
+ * loginie — strona oferty to ~2 MB, podstring bez kopii pinowałby ją (jak w skanie).
+ */
+export function extractVintedSeller(html: string): VintedSeller | null {
+  const idMatch = html.match(/href="\/member\/(\d+)"/);
+  if (!idMatch) return null;
+  const id = idMatch[1];
+  const loginMatch = html.match(/data-testid="profile-username">\s*([^<]+?)\s*<\/span>/);
+  const login = loginMatch ? detach(loginMatch[1]) : `user-${id}`;
+  return { id, login, url: `https://www.vinted.pl/member/${id}` };
 }
 
 /**

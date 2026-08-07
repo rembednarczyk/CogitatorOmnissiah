@@ -1,9 +1,11 @@
 import React from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { ShoppingCart, ExternalLink, Loader2, Search, Bug, CheckCircle2, XCircle, AlertCircle, BookImage } from "lucide-react";
+import { ShoppingCart, ExternalLink, Loader2, Search, Bug, CheckCircle2, XCircle, AlertCircle, BookImage, Users, Package } from "lucide-react";
 import { formatETA } from "../../utils/time";
 import { VintedResult, VintedSearchAttempt } from "../../hooks/useVintedCheck";
 import { sortOffersByPrice, offersPriceSummary, formatVintedPrice, cleanOfferTitle, sortResultsByCheapest } from "../../utils/vintedOffers";
+import { useVintedGrouping } from "../../hooks/useVintedGrouping";
+import { groupBySeller } from "../../utils/vintedSellers";
 
 interface VintedCheckItemProps {
   results: VintedResult[];
@@ -32,6 +34,18 @@ function formatDebug(d: NonNullable<VintedSearchAttempt["debug"]>): string {
 
 export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searchAttempts, onCheck, onStop, isChecking, progress }) => {
   const [showLogs, setShowLogs] = React.useState(false);
+  const { sellersByUrl, isGrouping, groupProgress, groupError, runGrouping, stopGrouping } = useVintedGrouping();
+
+  // Paczki po sprzedawcy — liczone z map url→sprzedawca dociągniętych on-demand.
+  const bundles = React.useMemo(() => groupBySeller(results, sellersByUrl), [results, sellersByUrl]);
+
+  // Grupujemy najtańszą ofertę każdej książki (1 fetch/książkę — mniej ekspozycji na Cloudflare).
+  const handleGroup = () => {
+    const urls = results
+      .map(r => sortOffersByPrice(r.vintedItems)[0]?.url)
+      .filter((u): u is string => !!u);
+    runGrouping(urls);
+  };
 
   return (
     <div className="space-y-8">
@@ -56,8 +70,23 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
             </button>
           )}
 
+          {results.length > 0 && !isChecking && (
+            <button
+              onClick={() => { if (isGrouping) stopGrouping(); else handleGroup(); }}
+              className={`flex items-center gap-2 px-4 py-3 rounded-2xl transition-all text-sm font-bold border ${
+                isGrouping
+                  ? "bg-red-600/90 border-red-500/50 text-white hover:bg-red-500"
+                  : "bg-purple-600/90 border-purple-500/50 text-white hover:bg-purple-500 shadow-lg shadow-purple-500/20"
+              }`}
+              title="Dociągnij sprzedawców i pogrupuj oferty (najtańsza z każdej książki)"
+            >
+              {isGrouping ? <Loader2 className="w-4 h-4 animate-spin" /> : <Users className="w-4 h-4" />}
+              <span>{isGrouping ? "Zatrzymaj" : "Grupuj per sprzedawca"}</span>
+            </button>
+          )}
+
           <button
-            onClick={() => { 
+            onClick={() => {
               if (isChecking) onStop();
               else onCheck(); 
             }}
@@ -168,8 +197,82 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
         )}
       </AnimatePresence>
       
+      {isGrouping && groupProgress && (
+        <div className="px-2 space-y-1">
+          <div className="flex justify-between text-xs text-purple-300 uppercase font-bold">
+            <span className="break-words">{groupProgress.message}</span>
+            {groupProgress.total > 0 && <span>{groupProgress.current} / {groupProgress.total}</span>}
+          </div>
+          {groupProgress.total > 0 && (
+            <div className="h-1 bg-slate-900 rounded-full overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${(groupProgress.current / groupProgress.total) * 100}%` }}
+                className="h-full bg-purple-500"
+              />
+            </div>
+          )}
+        </div>
+      )}
+      {groupError && <p className="text-xs text-red-400 italic px-2">{groupError}</p>}
+
+      {bundles.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Package className="w-4 h-4 text-purple-400" />
+            <h4 className="text-sm font-bold text-purple-300 uppercase tracking-widest">Paczki od jednego sprzedawcy</h4>
+            <span className="px-2 py-0.5 rounded-lg bg-purple-500/10 text-purple-300 text-[10px] font-bold border border-purple-500/20">{bundles.length}</span>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            {bundles.map((b) => (
+              <div key={b.seller.id} className="p-4 rounded-3xl border border-purple-500/20 bg-purple-500/5 space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <a
+                    href={b.seller.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-sm font-bold text-purple-200 hover:text-purple-100 transition-colors min-w-0"
+                  >
+                    <Users className="w-4 h-4 shrink-0" />
+                    <span className="truncate">{b.seller.login}</span>
+                    <ExternalLink className="w-3 h-3 opacity-60 shrink-0" />
+                  </a>
+                  <span className="px-2.5 py-1 rounded-full bg-purple-500/15 border border-purple-500/25 text-[11px] font-bold text-purple-200 whitespace-nowrap shrink-0">
+                    {b.entries.length} {b.entries.length < 5 ? "książki" : "książek"} · {formatVintedPrice(b.totalValue)}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  {b.entries.map((e, i) => (
+                    <a
+                      key={i}
+                      href={e.item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 px-3 py-2 rounded-xl border border-purple-500/10 bg-slate-900/40 hover:bg-purple-500/10 transition-all"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[12px] text-slate-200 font-semibold truncate">{e.bookTitle}</div>
+                        <div className="text-[9px] text-slate-500 uppercase tracking-widest font-bold truncate">{e.bookAuthor}</div>
+                      </div>
+                      <div className="shrink-0 text-right tabular-nums font-bold text-purple-200 text-sm">
+                        {e.item.priceValue != null ? formatVintedPrice(e.item.priceValue, e.item.currency) : "—"}
+                      </div>
+                      <ShoppingCart className="w-3.5 h-3.5 shrink-0 text-purple-400 opacity-50" />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!isGrouping && Object.keys(sellersByUrl).length > 0 && bundles.length === 0 && (
+        <p className="text-xs text-slate-500 italic px-2">Żaden sprzedawca nie ma ≥2 książek z listy — brak paczek do złożenia.</p>
+      )}
+
       {results.length > 0 && (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: "auto" }}
           className="grid grid-cols-1 lg:grid-cols-2 gap-4 overflow-hidden"

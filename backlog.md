@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.0.4** (źródło prawdy: `metadata.json`; mirror w `package.json`).
+- Wersja aplikacji: **1.1.0** (źródło prawdy: `metadata.json`; mirror w `package.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - Suite: 187+ testów zielonych; `npm run lint` (tsc) czysty.
@@ -40,6 +40,16 @@
   1.0.2) był ślepy — skan padał WCZEŚNIEJ (26 vs 28), co wykluczyło watchdog.
 - **NIE skracaj timeout/retry scrapera** — #48 to zrobił (30→15 s) i dał zero trafień
   (ucinał wolne, poprawne odpowiedzi Cloudflare). Cofnięte (#49). Timeout zostaje 30 s.
+- **Skan na Render free: ~160 poz./przebieg** — długi skan (~214 poz., 15–20 min) bywa
+  ucinany, gdy klient się rozłączy (tło karty / blip) → serwer `res close` →
+  `stopActiveSync()`, a potem kontener zwija się po idle. To infra (Render free), NIE
+  kod — OOM naprawiony (1.0.4). Trwały fix: odpiąć skan od połączenia SSE (skan leci
+  serwerowo, UI podgląda + wpina się ponownie) + płatny tier/kolejka. ODŁOŻONE — na
+  free i tak brak pełnej gwarancji; na razie dokańczamy w kilku przebiegach.
+- **Sprzedawca NIE jest w HTML katalogu Vinted** — kafelek oferty ma tylko
+  url/tytuł/cena/foto; brak `user_id`/`/member/` w kafelku (zweryfikowane na view-source).
+  Bundling „kilka książek u jednego sprzedawcy" wymaga dociągnięcia sprzedawcy z osobnego
+  źródła (strona `/items/{id}` albo `/api/v2/items/{id}` / catalog API) — czyli backend.
 - **Marker debug `grid` vs `html`** — `html` w logach skanera oznacza, że oferty złapał
   tylko fallback (ścieżka 4), a nie siatka. Po wdrożeniu fixu na stronach z siatką ma
   być `grid`. Jeśli po redeployu dalej `html` na stronie z siatką → deploy serwuje
@@ -49,6 +59,11 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.1.0** — Vinted: grupowanie per sprzedawca (on-demand, „low hanging fruit").
+  Przycisk „Grupuj per sprzedawca" dociąga sprzedawcę ze strony najtańszej oferty każdej
+  książki (`extractVintedSeller`: `/member/{id}` + `data-testid="profile-username"`),
+  serwis `resolveSellers` (SSE, throttling jak skan, cap 100, zdarzenie `seller_resolved`),
+  endpoint `POST /api/vinted-group`, czysty `groupBySeller` (≥2 książki) + sekcja UI.
 - **1.0.4** — Skaner Vinted: self-kill NAPRAWIONY (KROK 3). Root cause POTWIERDZONY logami
   Rendera: `JavaScript heap out of memory` przy ~268 MB, heap rósł monotonicznie
   ~10 MB/książkę (pełny GC nie zwalniał). Przyczyna: V8 SlicedString — pola oferty
@@ -71,3 +86,10 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
 ## Otwarte pozycje
 
 - (brak)
+
+## Zrobione (skrót)
+
+- **Seller bundling** (1.1.0) — ZROBIONE. Opcja A (parsowanie strony oferty), on-demand.
+  Sprzedawca ze strony `/items/{id}` (markery zweryfikowane: `href="/member/{id}"` +
+  `data-testid="profile-username"`, oba unikalne 1×). Grupujemy najtańszą/książkę (1
+  fetch/książkę — mniej ekspozycji na Cloudflare). Opcja B (wewn. API) odpadła — brak wjazdu.

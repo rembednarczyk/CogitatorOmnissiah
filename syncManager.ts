@@ -56,7 +56,8 @@ export type SyncTaskName =
   | "cycles"
   | "integrity"
   | "library"
-  | "vinted";
+  | "vinted"
+  | "vinted-group";
 
 type TaskFn = (checkCancellation: () => boolean) => Promise<void>;
 
@@ -79,6 +80,7 @@ const TASK_REGISTRY: Record<SyncTaskName, (sendEvent: (data: SyncEvent) => void,
   integrity:  (s) => (cc) => integrityService.runIntegrityCheck(s, cc),
   library:    (s, p) => (cc) => libraryCheckService.runLibraryCheck(p.libraryCode, s, cc),
   vinted:     (s) => (cc) => vintedSyncService.runVintedCheck(s, cc),
+  "vinted-group": (s, p) => (cc) => vintedSyncService.resolveSellers(p.items, s, cc),
 };
 
 class SyncManager {

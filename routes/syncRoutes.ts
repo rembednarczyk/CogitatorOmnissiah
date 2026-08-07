@@ -33,6 +33,8 @@ router.post("/sync-integrity", syncController.runIntegrityCheck);
 router.post("/mark-as-read", syncController.markAsRead);
 router.post("/vinted-check", syncController.checkVintedAvailability);
 router.post("/vinted-check/stop", syncController.stopVintedCheck);
+router.post("/vinted-group", syncController.groupVintedBySeller);
+router.post("/vinted-group/stop", syncController.stopVintedGroup);
 router.post("/library-check", syncController.checkLibraryAvailability);
 
 export default router;
