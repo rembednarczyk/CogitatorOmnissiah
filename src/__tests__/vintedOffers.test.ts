@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { sortOffersByPrice, offersPriceSummary, formatVintedPrice } from "../utils/vintedOffers";
+import { sortOffersByPrice, offersPriceSummary, formatVintedPrice, cleanOfferTitle } from "../utils/vintedOffers";
 
 describe("sortOffersByPrice", () => {
   it("sorts ascending and pushes price-less offers to the end", () => {
@@ -40,5 +40,20 @@ describe("formatVintedPrice", () => {
   it("falls back to a label when the price is unknown", () => {
     expect(formatVintedPrice(null)).toBe("cena w ofercie");
     expect(formatVintedPrice(undefined)).toBe("cena w ofercie");
+  });
+});
+
+describe("cleanOfferTitle", () => {
+  it("decodes entities and strips the condition/price tail", () => {
+    expect(cleanOfferTitle('&quot;Pokrzywa i Kość&quot;, T. Kingfisher, Stan: Bardzo dobry, 12,00 zł, 18,65 zł'))
+      .toBe('"Pokrzywa i Kość", T. Kingfisher');
+  });
+
+  it("strips a trailing price even without a condition marker", () => {
+    expect(cleanOfferTitle("Solaris - Lem, 15.00 zł")).toBe("Solaris - Lem");
+  });
+
+  it("leaves a clean title untouched", () => {
+    expect(cleanOfferTitle("Pokrzywa i kość")).toBe("Pokrzywa i kość");
   });
 });

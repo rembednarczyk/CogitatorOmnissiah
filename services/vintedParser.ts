@@ -164,5 +164,36 @@ export function parseVintedItems(html: string, title: string, author: string): V
     }
   }
 
+  // Ostatnia deska ratunku dla ceny: ścieżki HTML łapią atrybut title aukcji,
+  // który Vinted buduje jako „Tytuł, Marka, Stan: …, {cena} zł, {cena z ochroną} zł".
+  // Gdy nie mamy ceny strukturalnej, wyłuskujemy ją z tego tekstu (niższa z dwóch
+  // = cena przedmiotu, wyższa = z ochroną kupującego).
+  for (const item of items) {
+    if (item.priceValue === null) {
+      const fromText = extractPriceFromText(item.title);
+      if (fromText !== null) {
+        item.priceValue = fromText;
+        item.currency = "zł";
+      }
+    }
+  }
+
   return items;
+}
+
+/**
+ * Wyłuskuje najniższą kwotę „NN[.,]NN zł/PLN" z tekstu (np. z atrybutu title
+ * oferty). Zwraca cenę przedmiotu (niższą z pary cena/total) albo null.
+ */
+export function extractPriceFromText(text: string): number | null {
+  if (!text) return null;
+  // Uwaga: bez \b po „zł" — „ł" to nie-słowny znak, więc granica słowa nie zachodzi.
+  const re = /(\d+(?:[.,]\d+)?)\s*(?:zł|PLN)/gi;
+  const values: number[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    const v = parseVintedPrice(m[1]);
+    if (v !== null) values.push(v);
+  }
+  return values.length ? Math.min(...values) : null;
 }
