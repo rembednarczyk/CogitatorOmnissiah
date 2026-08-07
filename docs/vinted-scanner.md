@@ -34,6 +34,7 @@ Scraping is rate-limited and unreliable (Cloudflare); analysis (grouping) is che
 - **Throttling**: 3–5 s delay (with jitter) between books — applied on **every** path, including the no-results case, to avoid the request bursts that trigger Cloudflare blocks.
 - **429 handling**: On HTTP 429 waits ~5 s before continuing; 403 is surfaced as a Cloudflare block.
 - **Cancellation**: Cooperative — checks the cancellation token each iteration and reports `cancelled: true` on the `complete` event when stopped.
+- **Resumable scan**: with the `skipScannedWithinDays` param (frontend "Kontynuuj" checkbox, default on → 3 days), candidates whose stored `scannedAt` is within the window are skipped, so an interrupted run (the ~160-books-per-container limit, or a mobile connection drop when the browser is backgrounded) continues from the un-scanned books instead of restarting. Uncheck it to force a full re-scan (which also refreshes offers, keeping resolved sellers via `mergeOffers`).
 
 ## 4. Frontend Integration
 - **Hook**: `useVintedCheck` opens the SSE stream and renders progress, per-book search attempts, and matched listings.
