@@ -36,6 +36,41 @@ export function parseVintedPrice(raw: string | number | null | undefined): numbe
  * `feed-grid__item`, (4) globalny regex `href=/items/…`. Wyodrębnione, by tę
  * kruchą logikę dało się testować jednostkowo na utrwalonym HTML.
  */
+export interface VintedDebug {
+  /** Długość odpowiedzi HTML (znaki). Bardzo mała = możliwy blok/challenge. */
+  chars: number;
+  /** Czy strona zawiera blob JSON katalogu (ścieżka „bogata"). */
+  hasCatalogJson: boolean;
+  /** Czy są bloki feed-grid (ścieżka fallback). */
+  hasFeedGrid: boolean;
+  /** Ile linków /items/ jest w HTML (są oferty, nawet jeśli parser ich nie złapał). */
+  itemLinks: number;
+  /** Markery blokady bota (cloudflare/captcha/robot). */
+  blockedMarker: boolean;
+  /** Markery „brak wyników" Vinted. */
+  noResultsMarker: boolean;
+  /** Ile ofert faktycznie wyłuskał parser. */
+  parsed: number;
+}
+
+/**
+ * Lekka diagnostyka odpowiedzi Vinted (bez I/O) — pomaga odróżnić realny brak
+ * ofert od cichej blokady lub gubienia ofert przez parser. `itemLinks > 0` przy
+ * `parsed === 0` i braku markerów = mocny sygnał, że parser coś przeoczył.
+ */
+export function vintedDiagnostics(html: string, parsed: number): VintedDebug {
+  const h = html || "";
+  return {
+    chars: h.length,
+    hasCatalogJson: h.includes('data-component-name="Catalog"'),
+    hasFeedGrid: h.includes('class="feed-grid__item"'),
+    itemLinks: (h.match(/\/items\//g) || []).length,
+    blockedMarker: /cloudflare|captcha|robot/i.test(h),
+    noResultsMarker: h.includes("Brak wyników") || h.includes("Nie znaleźliśmy żadnych przedmiotów"),
+    parsed,
+  };
+}
+
 export function parseVintedItems(html: string, title: string, author: string): VintedItem[] {
   const items: VintedItem[] = [];
   let rawItems: any[] = [];

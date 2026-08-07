@@ -14,6 +14,20 @@ interface VintedCheckItemProps {
   progress: any;
 }
 
+// Zwięzła jednolinijkowa diagnostyka próby (Krok 2). Kluczowy sygnał:
+// itemLinks>0 przy parsed:0 i bez markerów = parser zgubił oferty.
+function formatDebug(d: NonNullable<VintedSearchAttempt["debug"]>): string {
+  if (d.error) return `⚠ ${d.error}${d.httpStatus ? ` (${d.httpStatus})` : d.code ? ` (${d.code})` : ""}`;
+  const parts: string[] = [];
+  if (d.chars !== undefined) parts.push(`${(d.chars / 1000).toFixed(0)}k`);
+  parts.push(d.hasCatalogJson ? "json" : d.hasFeedGrid ? "grid" : "html");
+  if (d.itemLinks !== undefined) parts.push(`links:${d.itemLinks}`);
+  if (d.parsed !== undefined) parts.push(`parsed:${d.parsed}`);
+  if (d.blockedMarker) parts.push("BLOCK");
+  if (d.noResultsMarker) parts.push("noRes");
+  return parts.join(" · ");
+}
+
 export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searchAttempts, onCheck, onStop, isChecking, progress }) => {
   const [showLogs, setShowLogs] = React.useState(false);
 
@@ -122,6 +136,9 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
                       <div className="flex flex-col min-w-0">
                         <span className="text-slate-200 font-bold truncate group-hover/log:text-slate-100 transition-colors">{attempt.title}</span>
                         <span className="text-slate-500 text-[9px] uppercase tracking-widest font-bold">{attempt.author}</span>
+                        {attempt.debug && (
+                          <span className="text-[9px] font-mono text-slate-500 truncate mt-0.5">{formatDebug(attempt.debug)}</span>
+                        )}
                       </div>
                     </div>
                     
