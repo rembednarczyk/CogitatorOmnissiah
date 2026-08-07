@@ -19,6 +19,18 @@ export interface VintedItem {
  * liczba → liczba. Placeholdery („??", „Sprawdź", puste) i wartości nieliczbowe → null,
  * żeby oferty bez ceny dało się posortować na koniec zamiast psuć porównania.
  */
+/**
+ * Odcina string od rodzica. V8 NIE kopiuje podstringów: `str.match()`/`.split()` na
+ * wielkim HTML (~7 MB) zwraca SlicedString trzymający wskaźnik do CAŁEGO rodzica.
+ * Gdy takie pole trafia do długo żyjącej tablicy (`results` skanera), pinuje cały
+ * HTML — po ~26 stronach to OOM (potwierdzone logami Rendera). `Buffer.from(...)`
+ * tworzy samodzielną kopię bajtów, odcinając referencję do 7 MB rodzica. Pola oferty
+ * są krótkie, więc koszt kopii jest pomijalny.
+ */
+function detach(s: string): string {
+  return Buffer.from(s, "utf8").toString("utf8");
+}
+
 export function parseVintedPrice(raw: string | number | null | undefined): number | null {
   if (raw === null || raw === undefined) return null;
   if (typeof raw === "number") return Number.isFinite(raw) ? raw : null;
@@ -202,13 +214,14 @@ export function parseVintedItems(html: string, title: string, author: string): V
           const hasAuthor = !!searchAuthor && lower.includes(searchAuthor);
           if (hasTitle || hasAuthor) {
             const rawPrice = priceMatch ? priceMatch[1] : "Sprawdź";
+            // detach: wszystkie te pola to podstringi 7 MB HTML — bez kopii pinują rodzica.
             items.push({
-              title: itemTitle,
-              url: `https://www.vinted.pl${urlMatch[1]}`,
-              price: rawPrice,
+              title: detach(itemTitle),
+              url: detach(`https://www.vinted.pl${urlMatch[1]}`),
+              price: detach(rawPrice),
               priceValue: parseVintedPrice(rawPrice),
-              currency: priceMatch ? priceMatch[2] : "PLN",
-              photo: photoMatch ? photoMatch[1] : null
+              currency: priceMatch ? detach(priceMatch[2]) : "PLN",
+              photo: photoMatch ? detach(photoMatch[1]) : null
             });
           }
         }
@@ -224,7 +237,8 @@ export function parseVintedItems(html: string, title: string, author: string): V
       const itemUrl = `https://www.vinted.pl${match[1]}`;
       const itemTitle = match[2];
       if (itemTitle.toLowerCase().includes(title.toLowerCase())) {
-        items.push({ title: itemTitle, url: itemUrl, price: "Sprawdź", priceValue: null, currency: "PLN" });
+        // detach: itemTitle/itemUrl to podstringi HTML — bez kopii pinują 7 MB rodzica.
+        items.push({ title: detach(itemTitle), url: detach(itemUrl), price: "Sprawdź", priceValue: null, currency: "PLN" });
       }
     }
   }

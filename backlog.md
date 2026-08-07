@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.0.3** (źródło prawdy: `metadata.json`; mirror w `package.json`).
+- Wersja aplikacji: **1.0.4** (źródło prawdy: `metadata.json`; mirror w `package.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - Suite: 187+ testów zielonych; `npm run lint` (tsc) czysty.
@@ -30,16 +30,16 @@
   sąsiednie tytuły. Potwierdzone jako słuszne 0: „Dzieci nocy" (Simmons; same „…nocy"),
   „Eden w ogniu" (Simmons). `parsed:0` nie oznacza automatycznie buga parsera —
   weryfikuj po `itemLinks` vs faktyczne tytuły.
-- **Vinted „skaner sam się ubija" (#2) — mechanizm** — brak twardego self-kill timera.
-  Skan pada, gdy jedna wolna/blokowana książka daje >watchdog ciszy `data:` (serwer
-  śle tylko keepalive co 5 s). Worst-case ciszy = ~102 s (`withRetry(3, 4000)` × timeout
-  30 s = 30+4+30+8+30). Front resetuje watchdog na każdym chunku (keepalive też) —
-  więc pada TYLKO gdy Render buforuje keepalive. Watchdog fire → abort fetch → serwer
-  widzi `res close` → `stopActiveSync()` → ubity cały skan.
-- **#48 zbundlował 2 zmiany** — watchdog 30→90 s (BEZPIECZNA) + timeout 30→15 s
-  (SZKODLIWA: ucinała wolne, poprawne odpowiedzi Cloudflare → zero trafień). Oba
-  cofnięte (#49). Debuguj po jednej: KROK 1 = tylko watchdog (1.0.2). NIE skracaj
-  timeout/retry scrapera — to zabija trafienia.
+- **Vinted „skaner sam się ubija" (#2) — ROZWIĄZANE (1.0.4).** Root cause POTWIERDZONY
+  logami Rendera: NIE watchdog, tylko `JavaScript heap out of memory`. Heap rósł
+  monotonicznie ~10 MB/książkę do ~268 MB (pełny GC nie zwalniał → żywa retencja).
+  Przyczyna: V8 **SlicedString** — `str.match()`/`.split()` na 7 MB HTML zwraca podstring
+  trzymający wskaźnik do CAŁEGO rodzica; pola oferty (title/url/price/photo) trafiały do
+  `results` i pinowały 7 MB na każde trafienie. Fix: `detach()` (kopia bajtów przez
+  Buffer) na polach z HTML w `parseVintedItems` ścieżki 3/4. KROK 1 (watchdog 120 s,
+  1.0.2) był ślepy — skan padał WCZEŚNIEJ (26 vs 28), co wykluczyło watchdog.
+- **NIE skracaj timeout/retry scrapera** — #48 to zrobił (30→15 s) i dał zero trafień
+  (ucinał wolne, poprawne odpowiedzi Cloudflare). Cofnięte (#49). Timeout zostaje 30 s.
 - **Marker debug `grid` vs `html`** — `html` w logach skanera oznacza, że oferty złapał
   tylko fallback (ścieżka 4), a nie siatka. Po wdrożeniu fixu na stronach z siatką ma
   być `grid`. Jeśli po redeployu dalej `html` na stronie z siatką → deploy serwuje
@@ -49,6 +49,12 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.0.4** — Skaner Vinted: self-kill NAPRAWIONY (KROK 3). Root cause POTWIERDZONY logami
+  Rendera: `JavaScript heap out of memory` przy ~268 MB, heap rósł monotonicznie
+  ~10 MB/książkę (pełny GC nie zwalniał). Przyczyna: V8 SlicedString — pola oferty
+  wyłuskane regexem z 7 MB HTML trzymały wskaźnik do całego rodzica, a `results` je
+  akumulowało → każde trafienie pinowało 7 MB. Fix: `detach()` (kopia bajtów) na polach
+  z HTML w `parseVintedItems` (ścieżki 3/4). Zero zmian w timingu.
 - **1.0.3** — Skaner Vinted: self-kill debug KROK 2 (obserwowalność pamięci). `rssMb`/
   `heapMb` w debug każdej próby + log serwera. KROK 1 (watchdog 120 s) NIE pomógł —
   skan padł nawet wcześniej (26 vs 28), co wyklucza front-owy watchdog. Nowa hipoteza:

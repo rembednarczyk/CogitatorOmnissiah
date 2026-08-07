@@ -65,6 +65,26 @@ describe("parseVintedItems", () => {
     });
   });
 
+  it("returns standalone (detached) strings so a huge parent HTML is not pinned", () => {
+    // Rodzic ~1 MB otaczający jeden kafelek. Pola oferty muszą być krótkimi kopiami,
+    // nie podstringami rodzica (SlicedString) — inaczej `results` pinuje cały HTML → OOM.
+    const filler = "x".repeat(1_000_000);
+    const tile =
+      `<div class="Grid-module-scss-module__HmDNda__feed-grid__item">` +
+      `<img src="https://images1.vinted.net/t/abc/x.webp" alt="Solaris Lem"/>` +
+      `<a href="/items/77-solaris?referrer=catalog" title="Solaris Lem, Stan: Dobry, 25,00 zł, 30,00 zł"></a>` +
+      `<span>25,00 zł</span></div>`;
+    const html = `<html><body>${filler}${tile}${filler}</body></html>`;
+    const items = parseVintedItems(html, "Solaris", "Lem");
+    expect(items).toHaveLength(1);
+    // Wartości nietknięte...
+    expect(items[0]).toMatchObject({ url: "https://www.vinted.pl/items/77-solaris", currency: "zł" });
+    // ...ale każdy string krótki (kopia), nie ~1 MB rodzic.
+    for (const v of [items[0].title, items[0].url, String(items[0].price), items[0].currency, items[0].photo]) {
+      if (typeof v === "string") expect(v.length).toBeLessThan(1000);
+    }
+  });
+
   it("returns [] when nothing matches any path", () => {
     expect(parseVintedItems("<html><body>nic</body></html>", "Solaris", "Lem")).toEqual([]);
   });
