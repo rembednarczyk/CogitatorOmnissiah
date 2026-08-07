@@ -59,3 +59,19 @@ export function offersPriceSummary(items: OfferLike[]): { min: number | null; co
     .filter((v): v is number => v !== null && v !== undefined && Number.isFinite(v));
   return { min: prices.length ? Math.min(...prices) : null, count: items.length };
 }
+
+/**
+ * Sortuje KARTY wyników po najtańszej ofercie każdej książki (rosnąco). Książki
+ * bez żadnej znanej ceny lądują na końcu. Zwraca NOWĄ tablicę (nie mutuje).
+ * Używane do dynamicznego układania wyników w trakcie skanu.
+ */
+export function sortResultsByCheapest<T extends { vintedItems: OfferLike[] }>(results: T[]): T[] {
+  return [...results].sort((a, b) => {
+    const am = offersPriceSummary(a.vintedItems).min;
+    const bm = offersPriceSummary(b.vintedItems).min;
+    if (am === null && bm === null) return 0;
+    if (am === null) return 1;
+    if (bm === null) return -1;
+    return am - bm;
+  });
+}
