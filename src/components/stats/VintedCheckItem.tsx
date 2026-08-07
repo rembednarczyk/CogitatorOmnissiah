@@ -1,6 +1,6 @@
 import React from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { ShoppingCart, ExternalLink, Loader2, Search, Bug, CheckCircle2, XCircle, AlertCircle, BookImage, Users, Package, Database, HardDriveDownload, Trash2, Clock } from "lucide-react";
+import { ShoppingCart, ExternalLink, Loader2, Search, Bug, CheckCircle2, XCircle, AlertCircle, BookImage, Users, Package, Database, HardDriveDownload, Trash2, Clock, Sparkles, ArrowDown } from "lucide-react";
 import { formatETA } from "../../utils/time";
 import { VintedResult, VintedSearchAttempt } from "../../hooks/useVintedCheck";
 import { sortOffersByPrice, offersPriceSummary, formatVintedPrice, cleanOfferTitle, sortResultsByCheapest } from "../../utils/vintedOffers";
@@ -39,6 +39,16 @@ function formatDebug(d: NonNullable<VintedSearchAttempt["debug"]>): string {
   if (d.noResultsMarker) parts.push("noRes");
   // Pamięć procesu — rosnące rssMb ku limitowi hostingu tuż przed śmiercią = OOM.
   if (d.rssMb !== undefined) parts.push(`mem:${d.rssMb}MB`);
+  // Zmiany względem poprzedniego skanu (nowe/zniknięte/spadek/wzrost ceny).
+  if (d.changes) {
+    const c = d.changes;
+    const delta: string[] = [];
+    if (c.added) delta.push(`+${c.added}`);
+    if (c.removed) delta.push(`−${c.removed}`);
+    if (c.priceDropped) delta.push(`↓${c.priceDropped}`);
+    if (c.priceRaised) delta.push(`↑${c.priceRaised}`);
+    if (delta.length) parts.push(`Δ ${delta.join(" ")}`);
+  }
   return parts.join(" · ");
 }
 
@@ -368,6 +378,9 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
                   {result.scannedAt && (
                     <div className="text-[9px] text-indigo-400/60 font-bold tracking-widest mt-0.5 flex items-center gap-1">
                       <Clock className="w-2.5 h-2.5" /> skan {shortDate(result.scannedAt)}
+                      {result.changedAt && result.changedAt === result.scannedAt && (
+                        <span className="ml-1 flex items-center gap-0.5 text-amber-400"><Sparkles className="w-2.5 h-2.5" /> zmiana</span>
+                      )}
                     </div>
                   )}
                 </div>
@@ -393,6 +406,12 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
                   const isCheapest = i === cheapestIdx;
                   const hasPrice = item.priceValue !== null && item.priceValue !== undefined;
                   const offerTitle = cleanOfferTitle(item.title);
+                  // Znaczniki zmian (dane z bazy): „nowa" = pojawiła się w ostatnim skanie;
+                  // „spadek" = cena niższa niż w poprzednim skanie.
+                  const isNew = !!item.firstSeenAt && item.firstSeenAt === result.scannedAt;
+                  const drop = (item.prevPrice != null && item.priceValue != null && item.priceValue < item.prevPrice)
+                    ? item.prevPrice - item.priceValue
+                    : null;
                   return (
                   <a
                     key={i}
@@ -421,6 +440,20 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
 
                     <div className="flex-1 min-w-0">
                       <div className="text-[11px] text-slate-400 truncate">{offerTitle || item.title}</div>
+                      {(isNew || drop) && (
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          {isNew && (
+                            <span className="flex items-center gap-0.5 text-[8px] uppercase tracking-widest font-bold text-cyan-400">
+                              <Sparkles className="w-2.5 h-2.5" /> nowa
+                            </span>
+                          )}
+                          {drop && (
+                            <span className="flex items-center gap-0.5 text-[8px] uppercase tracking-widest font-bold text-amber-400" title={`Spadek z ${formatVintedPrice(item.prevPrice, item.currency)}`}>
+                              <ArrowDown className="w-2.5 h-2.5" /> −{formatVintedPrice(drop)}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* Cena — najmocniej eksponowana, stała szerokość, nie zawija się */}

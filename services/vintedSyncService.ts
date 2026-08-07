@@ -6,7 +6,7 @@ import { createLogger } from "../logger";
 import { getRandomUserAgent, createScrapingAgent } from "../scrapingClient";
 import { parseVintedItems, vintedDiagnostics, looksBlocked, extractVintedSeller, VintedItem } from "./vintedParser";
 import { NotionBook } from "../src/types";
-import { offerFromItem, parseVintedData, mergeOffers, serializeVintedData, StoredVintedData, StoredOffer, StoredBookView } from "./vintedStore";
+import { offerFromItem, parseVintedData, mergeAndDiff, hasChanges, serializeVintedData, StoredVintedData, StoredOffer, StoredBookView, OfferDiff, EMPTY_DIFF } from "./vintedStore";
 
 const log = createLogger("VintedScan");
 
@@ -57,7 +57,7 @@ export class VintedSyncService {
     for (const b of allBooks) {
       const data = parseVintedData(b.vintedData);
       if (!data || data.offers.length === 0) continue;
-      books.push({ id: b.id, title: b.plTitle, author: b.author || "", scannedAt: data.scannedAt, offers: data.offers });
+      books.push({ id: b.id, title: b.plTitle, author: b.author || "", scannedAt: data.scannedAt, changedAt: data.changedAt, offers: data.offers });
     }
     return { books, generatedAt: new Date().toISOString() };
   }
@@ -67,14 +67,18 @@ export class VintedSyncService {
    * składowanymi — zachowuje rozpoznanego sprzedawcę dla ofert, których URL nadal istnieje.
    * Best-effort: błąd zapisu nie przerywa skanu (dane w bazie to bonus, nie warunek).
    */
-  private async persistBookOffers(book: NotionBook, items: VintedItem[], scannedAt: string): Promise<void> {
+  private async persistBookOffers(book: NotionBook, items: VintedItem[], scannedAt: string): Promise<OfferDiff> {
     try {
       const fresh = items.map(offerFromItem);
-      const prev = parseVintedData(book.vintedData)?.offers;
-      const merged = mergeOffers(fresh, prev);
-      await this.notion.saveVintedData(book.id, serializeVintedData({ scannedAt, offers: merged }));
+      const prevData = parseVintedData(book.vintedData);
+      const { offers, diff } = mergeAndDiff(fresh, prevData?.offers, scannedAt);
+      // changedAt aktualizujemy tylko, gdy faktycznie coś się zmieniło (inaczej zachowaj poprzedni).
+      const changedAt = hasChanges(diff) ? scannedAt : prevData?.changedAt;
+      await this.notion.saveVintedData(book.id, serializeVintedData({ scannedAt, changedAt, offers }));
+      return diff;
     } catch (e: any) {
       log.warn("Nie udało się zapisać VintedData", { title: book.plTitle, error: e?.message });
+      return EMPTY_DIFF;
     }
   }
 
@@ -210,8 +214,8 @@ export class VintedSyncService {
           const debug = { ...vintedDiagnostics(html, items.length), ...memMb() };
 
           if (items.length > 0) {
-            // Utrwal (scala ze składowanymi — zachowuje sprzedawców przy niezmienionym URL).
-            if (persistEnabled) await this.persistBookOffers(book, items, scannedAt);
+            // Utrwal (scala ze składowanymi — zachowuje sprzedawców przy niezmienionym URL) + policz diff.
+            const diff = persistEnabled ? await this.persistBookOffers(book, items, scannedAt) : EMPTY_DIFF;
             const matchResult = {
               id: book.id,
               title: book.plTitle,
@@ -223,7 +227,7 @@ export class VintedSyncService {
             sendEvent({ type: "match", result: matchResult });
             sendEvent({
               type: "search_attempt",
-              result: { id: book.id, title, author: book.author, url, status: "success", itemCount: items.length, debug }
+              result: { id: book.id, title, author: book.author, url, status: "success", itemCount: items.length, debug: { ...debug, changes: diff } }
             });
             // Książka istnieje na Vinted → oznacz źródło tagiem „Vinted" (best-effort).
             // Guard po zrodlo pomija zbędny zapis dla już otagowanych (re-scan).

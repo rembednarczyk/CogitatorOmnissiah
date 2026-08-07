@@ -9,6 +9,8 @@ export interface VintedResult {
   searchUrl?: string;
   /** Znacznik świeżości — kiedy skanowano tę książkę (tylko dla danych z bazy, etap 3). */
   scannedAt?: string;
+  /** Kiedy zestaw ofert ostatnio się zmienił (dane z bazy). Gdy == scannedAt → zmiana w ostatnim skanie. */
+  changedAt?: string;
   vintedItems: {
     id?: string;
     title: string;
@@ -17,6 +19,10 @@ export interface VintedResult {
     currency: string;
     url: string;
     photo?: string | null;
+    /** Cena z poprzedniego skanu (dane z bazy) — spadek, gdy priceValue < prevPrice. */
+    prevPrice?: number | null;
+    /** Kiedy oferta pojawiła się po raz pierwszy (dane z bazy) — „nowa", gdy == scannedAt książki. */
+    firstSeenAt?: string;
   }[];
 }
 
@@ -44,6 +50,8 @@ export interface VintedSearchAttempt {
     // limitowi hostingu (Render free = 512 MB) tuż przed śmiercią skanu = OOM-kill.
     rssMb?: number;
     heapMb?: number;
+    // Diff względem poprzedniego skanu (wykrywanie zmian): nowe/zniknięte/spadek/wzrost ceny.
+    changes?: { added: number; removed: number; priceDropped: number; priceRaised: number };
   };
 }
 

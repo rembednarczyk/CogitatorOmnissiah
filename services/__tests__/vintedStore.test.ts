@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { offerFromItem, serializeVintedData, parseVintedData, mergeOffers, StoredOffer } from "../vintedStore";
+import { offerFromItem, serializeVintedData, parseVintedData, mergeAndDiff, hasChanges, StoredOffer } from "../vintedStore";
 import { VintedItem } from "../vintedParser";
 
 describe("vintedStore", () => {
@@ -25,28 +25,45 @@ describe("vintedStore", () => {
     expect(parseVintedData('{"scannedAt":"x"}')).toBeNull();
   });
 
-  it("mergeOffers preserves resolved seller for surviving URLs, drops gone offers, adds new", () => {
+  it("mergeAndDiff preserves seller/firstSeenAt, drops gone, adds new, and records price change", () => {
     const prev: StoredOffer[] = [
-      { url: "a", price: 10, currency: "zł", seller: { id: "1", login: "s1", url: "m1" } },
+      { url: "a", price: 10, currency: "zł", seller: { id: "1", login: "s1", url: "m1" }, firstSeenAt: "2026-01-01T00:00:00.000Z" },
       { url: "gone", price: 3, currency: "zł", seller: { id: "9", login: "s9", url: "m9" } },
     ];
     const fresh: StoredOffer[] = [
-      { url: "a", price: 11, currency: "zł" }, // survived; price changed; no seller in fresh
+      { url: "a", price: 8, currency: "zł" },  // survived; price dropped 10 -> 8; no seller in fresh
       { url: "b", price: 7, currency: "zł" },  // new
     ];
-    const merged = mergeOffers(fresh, prev);
-    expect(merged).toHaveLength(2);
-    expect(merged.find(o => o.url === "a")!.seller).toEqual({ id: "1", login: "s1", url: "m1" });
-    expect(merged.find(o => o.url === "a")!.price).toBe(11);
-    expect(merged.find(o => o.url === "b")!.seller ?? null).toBeNull();
-    expect(merged.find(o => o.url === "gone")).toBeUndefined();
+    const { offers, diff } = mergeAndDiff(fresh, prev, "2026-02-01T00:00:00.000Z");
+    expect(offers).toHaveLength(2);
+    const a = offers.find(o => o.url === "a")!;
+    expect(a.seller).toEqual({ id: "1", login: "s1", url: "m1" }); // preserved
+    expect(a.price).toBe(8);
+    expect(a.prevPrice).toBe(10);                                   // last-scan price recorded
+    expect(a.firstSeenAt).toBe("2026-01-01T00:00:00.000Z");         // kept, not restamped
+    const b = offers.find(o => o.url === "b")!;
+    expect(b.seller ?? null).toBeNull();
+    expect(b.firstSeenAt).toBe("2026-02-01T00:00:00.000Z");         // new -> stamped now
+    expect(diff).toEqual({ added: 1, removed: 1, priceDropped: 1, priceRaised: 0 });
+    expect(hasChanges(diff)).toBe(true);
   });
 
-  it("mergeOffers keeps the fresh seller when fresh already carries one", () => {
-    const merged = mergeOffers(
+  it("mergeAndDiff keeps the fresh seller when fresh already carries one, and reports no change", () => {
+    const { offers, diff } = mergeAndDiff(
       [{ url: "a", price: 1, currency: "zł", seller: { id: "new", login: "n", url: "m" } }],
-      [{ url: "a", price: 1, currency: "zł", seller: { id: "old", login: "o", url: "m" } }],
+      [{ url: "a", price: 1, currency: "zł", seller: { id: "old", login: "o", url: "m" }, firstSeenAt: "2026-01-01T00:00:00.000Z" }],
+      "2026-02-01T00:00:00.000Z",
     );
-    expect(merged[0].seller!.id).toBe("new");
+    expect(offers[0].seller!.id).toBe("new");
+    expect(hasChanges(diff)).toBe(false); // same url, same price
+  });
+
+  it("mergeAndDiff counts a price rise separately from a drop", () => {
+    const { diff } = mergeAndDiff(
+      [{ url: "a", price: 12, currency: "zł" }],
+      [{ url: "a", price: 10, currency: "zł" }],
+      "2026-02-01T00:00:00.000Z",
+    );
+    expect(diff).toEqual({ added: 0, removed: 0, priceDropped: 0, priceRaised: 1 });
   });
 });
