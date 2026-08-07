@@ -53,6 +53,17 @@ export interface VintedDebug {
   parsed: number;
 }
 
+// Realna strona wyników Vinted to megabajty HTML. Strona challenge/blokady
+// Cloudflare jest MAŁA i niesie konkretny marker. Samo słowo „cloudflare"/
+// „robot" występuje w normalnym HTML (analytics, meta), więc było fałszywym
+// alarmem na każdej stronie — dlatego bramkujemy rozmiarem i frazą challenge.
+const CHALLENGE_RE = /just a moment|attention required|cf-mitigated|checking your browser|verify you are human|enable javascript and cookies|please complete the security check/i;
+
+export function looksBlocked(html: string): boolean {
+  const h = html || "";
+  return h.length < 100_000 && CHALLENGE_RE.test(h);
+}
+
 /**
  * Lekka diagnostyka odpowiedzi Vinted (bez I/O) — pomaga odróżnić realny brak
  * ofert od cichej blokady lub gubienia ofert przez parser. `itemLinks > 0` przy
@@ -65,7 +76,7 @@ export function vintedDiagnostics(html: string, parsed: number): VintedDebug {
     hasCatalogJson: h.includes('data-component-name="Catalog"'),
     hasFeedGrid: h.includes('class="feed-grid__item"'),
     itemLinks: (h.match(/\/items\//g) || []).length,
-    blockedMarker: /cloudflare|captcha|robot/i.test(h),
+    blockedMarker: looksBlocked(h),
     noResultsMarker: h.includes("Brak wyników") || h.includes("Nie znaleźliśmy żadnych przedmiotów"),
     parsed,
   };
