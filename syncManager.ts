@@ -136,8 +136,12 @@ class SyncManager {
     return await this.wiki.fetchLastRevisionDate(pageTitle);
   }
 
-  async markAsRead(pageId: string) {
-    return await this.notion.addTagToMultiSelect(pageId, "Źródło", "Przeczytane");
+  // Dopisuje znacznik „Źródło" na stronie książki. Domyślnie „Przeczytane"
+  // (przycisk w zasobach posiadanych / bibliotecznych statystykach), ale skaner
+  // bibliotek podaje znacznik filii („Biblioteka" = Felin, „Biblioteka 9" =
+  // Bronowice), aby oznaczyć, w której filii pozycja jest dostępna.
+  async markAsRead(pageId: string, tag: string = "Przeczytane") {
+    return await this.notion.addTagToMultiSelect(pageId, "Źródło", tag);
   }
 
   /**

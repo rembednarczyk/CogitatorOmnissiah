@@ -155,15 +155,26 @@ export const stopPurifySync = makeStopHandler("Zatrzymano rytuał puryfikacji.")
 
 export const stopSchemaSync = makeStopHandler("Zatrzymano inicjalizację schematu.");
 
+// Znaczniki „Źródło", które wolno dopisać z tego endpointu. Ograniczone do
+// znanego zbioru — endpoint jedynie oznacza pozycję (przeczytana / dostępna w
+// danej filii), nie może wstrzykiwać dowolnych tagów do bazy Notion.
+const ALLOWED_SOURCE_TAGS = new Set(["Przeczytane", "Biblioteka", "Biblioteka 9"]);
+
 export const markAsRead = async (req: Request, res: Response) => {
   try {
-    const { pageId } = req.body;
+    const { pageId, tag } = req.body;
     if (!pageId) return res.status(400).json({ error: "Missing pageId parameter" });
-    await syncManager.markAsRead(pageId);
+
+    const sourceTag = tag ?? "Przeczytane";
+    if (!ALLOWED_SOURCE_TAGS.has(sourceTag)) {
+      return res.status(400).json({ error: `Niedozwolony znacznik: ${sourceTag}.` });
+    }
+
+    await syncManager.markAsRead(pageId, sourceTag);
     res.json({ success: true });
   } catch (error: any) {
     console.error("Mark as Read Error:", error);
-    res.status(500).json({ error: error.message || "Wystąpił błąd podczas oznaczania jako przeczytane." });
+    res.status(500).json({ error: error.message || "Wystąpił błąd podczas oznaczania pozycji." });
   }
 };
 

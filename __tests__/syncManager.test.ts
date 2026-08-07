@@ -111,6 +111,56 @@ describe("SyncManager lifecycle", () => {
   afterAll(() => closeServer());
 });
 
+describe("POST /api/mark-as-read", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    process.env.NOTION_API_KEY = "test-key";
+    process.env.NOTION_DATABASE_ID = "test-db";
+  });
+
+  it("defaults to the 'Przeczytane' tag when none is provided", async () => {
+    const spy = vi.spyOn(syncManager, "markAsRead").mockResolvedValue(undefined);
+
+    const res = await request(app).post("/api/mark-as-read").send({ pageId: "page-1" });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ success: true });
+    expect(spy).toHaveBeenCalledWith("page-1", "Przeczytane");
+  });
+
+  it("threads a branch source tag through to the sync manager", async () => {
+    const spy = vi.spyOn(syncManager, "markAsRead").mockResolvedValue(undefined);
+
+    await request(app).post("/api/mark-as-read").send({ pageId: "page-2", tag: "Biblioteka" });
+    await request(app).post("/api/mark-as-read").send({ pageId: "page-3", tag: "Biblioteka 9" });
+
+    expect(spy).toHaveBeenNthCalledWith(1, "page-2", "Biblioteka");
+    expect(spy).toHaveBeenNthCalledWith(2, "page-3", "Biblioteka 9");
+  });
+
+  it("rejects an unknown tag with 400 and never touches Notion", async () => {
+    const spy = vi.spyOn(syncManager, "markAsRead").mockResolvedValue(undefined);
+
+    const res = await request(app).post("/api/mark-as-read").send({ pageId: "page-4", tag: "Posiadam" });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/Niedozwolony znacznik/);
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it("requires a pageId", async () => {
+    const spy = vi.spyOn(syncManager, "markAsRead").mockResolvedValue(undefined);
+
+    const res = await request(app).post("/api/mark-as-read").send({ tag: "Biblioteka" });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/Missing pageId/);
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  afterAll(() => closeServer());
+});
+
 describe("SSE event stream (POST /api/sync)", () => {
   beforeEach(() => {
     process.env.NOTION_API_KEY = "test-key";

@@ -28,3 +28,6 @@ Worked example: for "Gra o tron" (G. R. R. Martin) at Filia Felin, the branch ho
 - **Retries/timeout**: `withRetry(2, 1500ms)`, 20 000 ms per request. No fixed inter-request delay; concurrency is the throttle.
 - **Cancellation**: cooperative — each task checks the token before firing; `complete` reports `cancelled: true` when stopped.
 - **Progress**: a shared counter emits `Sprawdzono {done}/{total} (znaleziono {n})` as tasks finish.
+
+## 6. Tagging a hit (`POST /api/mark-as-read`)
+Each identified book carries a button that writes a **branch-specific `Źródło` tag** instead of `Przeczytane`: `Biblioteka` for Filia Felin and `Biblioteka 9` for Filia Bronowice (mapped from `sourceTag` in `src/constants.ts` → `LIBRARY_BRANCHES`). Those two tags are exactly the ones excluded from candidates (§2), so tagging a book also removes it from later scans of that branch. The endpoint (`controllers/syncController.ts` → `syncManager.markAsRead(pageId, tag)`) validates `tag` against an allow-list (`Przeczytane`, `Biblioteka`, `Biblioteka 9`); omitting it defaults to `Przeczytane` (used by the owned-unread / library-stats buttons). The tag is appended via `notion.addTagToMultiSelect("Źródło", …)`, which is idempotent.

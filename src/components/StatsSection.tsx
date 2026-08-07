@@ -15,16 +15,18 @@ export const StatsSection: React.FC = () => {
   const { identifiedBooks, checkingLibrary, checkProgress, libraryError, checkLibrary, checkAllLibraries, stopLibraryCheck } = useLibraryCheck();
   const [markingId, setMarkingId] = useState<string | null>(null);
 
-  const handleMarkAsRead = async (pageId: string) => {
+  // tag domyślnie „Przeczytane" (zasoby posiadane / statystyki biblioteczne);
+  // skaner filii przekazuje znacznik filii („Biblioteka" / „Biblioteka 9").
+  const handleMarkAsRead = async (pageId: string, tag?: string) => {
     if (markingId) return;
     setMarkingId(pageId);
     try {
       const res = await fetch("/api/mark-as-read", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pageId })
+        body: JSON.stringify({ pageId, tag })
       });
-      if (!res.ok) throw new Error("Błąd podczas oznaczania jako przeczytane");
+      if (!res.ok) throw new Error("Błąd podczas oznaczania pozycji");
       await fetchStats();
     } catch (err: any) {
       console.error(err.message);
