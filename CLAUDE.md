@@ -39,3 +39,8 @@ Vitest, organized into `__tests__/` subdirectories: `/__tests__/` (adapters, ser
 - Tailwind CSS only; glassmorphism theme (`slate-950` background, `cyan-400`/`purple-500` accents); `motion/react` for animations; `lucide-react` icons.
 - UI copy and domain naming use Warhammer 40k "Adeptus Mechanicus" flavor (rituals, Machine Spirit, sanctity) — preserve it.
 - After major architectural changes, update `COGITATOR_GUIDELINES.md` and `README.md` to match the implementation (see guidelines §8).
+
+## Workflow rules
+
+- **Version bump (every change)**: `metadata.json` `version` is the single source of truth for the app version — `vite.config.ts` reads it into `__APP_VERSION__` (shown as the UI badge). Bump it on every functional change using semver (patch = fix, minor = feature, major = breaking) and mirror the same value into `package.json` `version`. Do not commit a code change without a version bump.
+- **Persistent memory (`backlog.md`)**: `backlog.md` is the durable findings/state log so the context window can be `/clear`-ed safely. Read it at the start of a session; after every change or finding, update it (record the finding/decision, the new version in its Changelog, and tick off open items) **before** clearing. It must reflect HEAD, not chat history — keep entries one-line and terse; long analyses stay in `docs/`.

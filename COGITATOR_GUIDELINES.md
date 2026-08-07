@@ -75,5 +75,6 @@
 
 ## 8. DOCUMENTATION & MAINTENANCE
 - **Self-Correction**: After every major architectural change or logic fix (e.g., new service, parser update), the AI Agent MUST review and update `COGITATOR_GUIDELINES.md` and `README.md`.
-- **Version Control**: Increment the version in the header if significant changes are made.
+- **App Versioning (every change)**: `metadata.json` `version` is the single source of truth for the app version — `vite.config.ts` reads it into `__APP_VERSION__` (the UI badge). Bump it on every functional change using semver (patch/minor/major) and mirror the value into `package.json` `version`. Increment this guidelines header version only for significant architectural changes.
+- **Persistent Memory**: `backlog.md` (repo root) is the durable findings/state log, kept so the AI's context window can be `/clear`-ed without losing knowledge. Read it at session start; update it (finding/decision + Changelog entry) before clearing. It reflects HEAD, not chat history.
 - **Consistency**: Ensure that `README.md` descriptions match the actual implementation in `services/`.
