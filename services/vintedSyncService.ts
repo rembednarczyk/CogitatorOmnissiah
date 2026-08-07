@@ -22,7 +22,8 @@ export class VintedSyncService {
   ) {
     try {
       sendEvent({ type: "status", message: "Pobieranie listy książek z Notion..." });
-      const allBooks = await this.notion.getBooksForStats(undefined, checkCancellation);
+      // cache: współdziel pobranie z sąsiadującymi skanami (biblioteka/Vinted).
+      const allBooks = await this.notion.getBooksForStats(undefined, checkCancellation, { cache: true });
 
       // Filter books:
       // - Have Polish title

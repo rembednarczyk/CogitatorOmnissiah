@@ -121,11 +121,11 @@ export const IdentifiedLibraryItem: React.FC<IdentifiedLibraryItemProps> = ({
           animate={{ opacity: 1, height: "auto" }}
           className="space-y-3 overflow-hidden"
         >
-          {sortedBooks.map((book: any, idx: number) => {
+          {sortedBooks.map((book: any) => {
             const isExactMatch = book.extractedTitle && book.extractedTitle.toLowerCase() === book.title.toLowerCase();
             const isMarked = markedIds.has(`${library.sourceTag}:${book.id}`);
             return (
-            <div key={idx} className={`flex items-start gap-3 p-3 rounded-xl border transition-colors group/book ${
+            <div key={book.id} className={`flex items-start gap-3 p-3 rounded-xl border transition-colors group/book ${
               isExactMatch 
                 ? "bg-green-500/5 border-green-500/30 hover:border-green-500/50" 
                 : "bg-slate-950/30 border-slate-800/50 hover:border-blue-500/30"
