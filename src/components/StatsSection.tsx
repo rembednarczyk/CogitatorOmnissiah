@@ -14,6 +14,10 @@ export const StatsSection: React.FC = () => {
   const { stats, loading, error, fetchStats } = useStats();
   const { identifiedBooks, checkingLibrary, checkProgress, libraryError, checkLibrary, checkAllLibraries, stopLibraryCheck } = useLibraryCheck();
   const [markingId, setMarkingId] = useState<string | null>(null);
+  // Pozycje oznaczone w tej sesji — klucz „{tag}:{pageId}". Skan biblioteki
+  // wyklucza już otagowane książki, więc pozycja z listy skanera trafia tu
+  // dopiero po kliknięciu; wtedy ma zostać widoczna, lecz z wyłączonym haczykiem.
+  const [markedIds, setMarkedIds] = useState<Set<string>>(new Set());
 
   // tag domyślnie „Przeczytane" (zasoby posiadane / statystyki biblioteczne);
   // skaner filii przekazuje znacznik filii („Biblioteka" / „Biblioteka 9").
@@ -27,6 +31,8 @@ export const StatsSection: React.FC = () => {
         body: JSON.stringify({ pageId, tag })
       });
       if (!res.ok) throw new Error("Błąd podczas oznaczania pozycji");
+      const sourceTag = tag ?? "Przeczytane";
+      setMarkedIds(prev => new Set(prev).add(`${sourceTag}:${pageId}`));
       await fetchStats();
     } catch (err: any) {
       console.error(err.message);
@@ -290,6 +296,7 @@ export const StatsSection: React.FC = () => {
                 onStop={stopLibraryCheck}
                 onMarkAsRead={handleMarkAsRead}
                 markingId={markingId}
+                markedIds={markedIds}
                 isChecking={checkingLibrary === library.id}
                 progress={checkingLibrary === library.id ? checkProgress : null}
               />
