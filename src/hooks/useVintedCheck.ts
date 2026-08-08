@@ -64,7 +64,7 @@ export function useVintedCheck() {
   // Ref zamiast stanu w strażniku — stan w domknięciu bywa nieaktualny
   const isCheckingRef = useRef(false);
 
-  const runVintedCheck = useCallback(async (opts?: { skipScannedWithinDays?: number }) => {
+  const runVintedCheck = useCallback(async (opts?: { skipScannedWithinHours?: number }) => {
     if (isCheckingRef.current) return;
     isCheckingRef.current = true;
     setIsChecking(true);
@@ -85,7 +85,7 @@ export function useVintedCheck() {
       const response = await fetch("/api/vinted-check", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ skipScannedWithinDays: opts?.skipScannedWithinDays }),
+        body: JSON.stringify({ skipScannedWithinHours: opts?.skipScannedWithinHours }),
         signal: watchdog.signal
       });
 

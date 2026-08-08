@@ -20,7 +20,7 @@ function shortDate(iso?: string | null): string {
 interface VintedCheckItemProps {
   results: VintedResult[];
   searchAttempts: VintedSearchAttempt[];
-  onCheck: (opts?: { skipScannedWithinDays?: number }) => void;
+  onCheck: (opts?: { skipScannedWithinHours?: number }) => void;
   onStop: () => void;
   isChecking: boolean;
   progress: any;
@@ -52,11 +52,12 @@ function formatDebug(d: NonNullable<VintedSearchAttempt["debug"]>): string {
   return parts.join(" · ");
 }
 
-const RESUME_DAYS = 3;
+const RESUME_HOURS = 12;
 
 export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searchAttempts, onCheck, onStop, isChecking, progress }) => {
   const [showLogs, setShowLogs] = React.useState(false);
-  // Wznawianie: domyślnie pomijamy książki skanowane < RESUME_DAYS dni (kontynuuj, nie od zera).
+  // Wznawianie: domyślnie pomijamy książki skanowane < RESUME_HOURS h (bieżąca partia),
+  // resztę skanujemy od najstarszych — kontynuacja przerwanego przebiegu, nie od zera.
   const [resumeScan, setResumeScan] = React.useState(true);
   const { isResolving, resolveProgress, resolveResult, resolveError, runResolve, stopResolve } = useVintedResolveSellers();
   const { stored, isLoadingStored, storedError, loadStored, clearStored } = useVintedStored();
@@ -82,7 +83,7 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
           {!isChecking && (
             <label
               className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 cursor-pointer select-none"
-              title={`Pomiń książki skanowane w ostatnich ${RESUME_DAYS} dniach — skan rusza od niezrobionych (kontynuacja po przerwaniu). Odznacz, by skanować wszystko od nowa.`}
+              title={`Pomiń książki skanowane w ostatnich ${RESUME_HOURS} h (bieżąca partia); resztę skanuj OD NAJSTARSZYCH — kontynuuje przerwany przebieg i odświeża najstarsze. Odznacz, by skanować wszystko od nowa (też od najstarszych).`}
             >
               <input
                 type="checkbox"
@@ -123,7 +124,7 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
             if (isChecking) { onStop(); return; }
             // Wyjdź z widoku bazy, żeby świeże wyniki skanu były widoczne (nie pinowane do stored).
             clearStored();
-            onCheck(resumeScan ? { skipScannedWithinDays: RESUME_DAYS } : undefined);
+            onCheck(resumeScan ? { skipScannedWithinHours: RESUME_HOURS } : undefined);
           }}
         />
 

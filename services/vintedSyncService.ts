@@ -86,7 +86,7 @@ export class VintedSyncService {
   async runVintedCheck(
     sendEvent: (data: SyncEvent) => void,
     checkCancellation: () => boolean,
-    params?: { skipScannedWithinDays?: number },
+    params?: { skipScannedWithinHours?: number },
   ) {
     try {
       sendEvent({ type: "status", message: "Pobieranie listy książek z Notion..." });
@@ -96,31 +96,41 @@ export class VintedSyncService {
       // Filter books:
       // - Have Polish title
       // - Exclude from source: Posiadam, Przeczytane, Audioteka, Biblioteka, Biblioteka 9
-      let candidates = allBooks.filter(b => {
+      const baseCandidates = allBooks.filter(b => {
         const zrodlo = b.zrodlo || [];
         const excluded = ["Posiadam", "Przeczytane", "Audioteka", "Biblioteka", "Biblioteka 9"];
         return !zrodlo.some(z => excluded.includes(z)) && b.plTitle && b.plTitle.trim() !== "";
       });
 
-      // Wznawianie: pomiń książki skanowane w ostatnich N dniach — skan rusza od tych
-      // jeszcze niezrobionych (albo starszych niż okno). Dzięki temu przerwany przebieg
-      // (limit ~160/kontener, drop na mobile) kontynuuje się zamiast zaczynać od zera.
-      const skipDays = params?.skipScannedWithinDays;
-      if (skipDays && skipDays > 0) {
-        const cutoff = Date.now() - skipDays * 86_400_000;
-        const before = candidates.length;
-        candidates = candidates.filter(b => {
-          const at = parseVintedData(b.vintedData)?.scannedAt;
-          const t = at ? Date.parse(at) : NaN;
-          return isNaN(t) || t < cutoff; // nigdy nieskanowana lub stara → skanuj
-        });
-        const skipped = before - candidates.length;
+      // Czas ostatniego skanu w ms; nigdy-skanowane = -Infinity (najstarsze → najwyższy priorytet).
+      const scannedMs = (b: NotionBook): number => {
+        const at = parseVintedData(b.vintedData)?.scannedAt;
+        const t = at ? Date.parse(at) : NaN;
+        return isNaN(t) ? -Infinity : t;
+      };
+      let withDates = baseCandidates.map(b => ({ book: b, at: scannedMs(b) }));
+
+      // Wznawianie: pomiń tylko książki skanowane w ostatnich N GODZIN (bieżąca partia),
+      // a nie sztywne dni — inaczej „wczorajsze" (< 3 dni) też wypadały i przebieg nic nie
+      // robił. Resztę (starsze + nigdy-skanowane) skanujemy OD NAJSTARSZYCH, więc przerwany
+      // pełny skan kontynuuje się naturalnie na niezrobionych zamiast zaczynać od zera.
+      const skipHours = params?.skipScannedWithinHours;
+      if (skipHours && skipHours > 0) {
+        const cutoff = Date.now() - skipHours * 3_600_000;
+        const before = withDates.length;
+        withDates = withDates.filter(x => x.at < cutoff); // -Infinity (nigdy) też przechodzi
+        const skipped = before - withDates.length;
         if (skipped > 0) {
-          sendEvent({ type: "status", message: `Wznawianie: pominięto ${skipped} świeżo skanowanych (< ${skipDays} dni). Do sprawdzenia: ${candidates.length}.` });
+          sendEvent({ type: "status", message: `Wznawianie: pominięto ${skipped} skanowanych < ${skipHours} h. Do sprawdzenia: ${withDates.length}.` });
         }
       }
 
-      sendEvent({ type: "status", message: `Znaleziono ${candidates.length} kandydatów do sprawdzenia na Vinted...` });
+      // Od najstarszych (nigdy-skanowane pierwsze) — przerwany przebieg zawsze posuwa
+      // najbardziej nieaktualne dane, a „Kontynuuj" domyka partię zamiast dublować świeże.
+      withDates.sort((a, b) => a.at - b.at);
+      const candidates = withDates.map(x => x.book);
+
+      sendEvent({ type: "status", message: `Znaleziono ${candidates.length} kandydatów do sprawdzenia (od najstarszych) na Vinted...` });
 
       const results: any[] = [];
       const httpsAgent = createScrapingAgent();
