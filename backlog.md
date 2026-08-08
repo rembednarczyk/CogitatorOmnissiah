@@ -17,6 +17,9 @@
 - Wersja aplikacji: **1.11.2** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
+- **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
+  Każde zadanie śledzimy issue i domykamy przez `Fixes #N` w opisie PR (linkowanie +
+  auto-close). Nie tworzymy sztucznych PR-ów/issue bez realnej wartości.
 - Suite: 187+ testów zielonych; `npm run lint` (tsc) czysty.
 
 ## Findings & decyzje (aktualne)
