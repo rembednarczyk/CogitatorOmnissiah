@@ -164,9 +164,32 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
 - **Ewentualnie później**: odświeżanie pojedynczej książki/oferty z bazy (re-check
   świeżości), natywna baza „Vinted Offers" (jeśli blob przestanie wystarczać), proxy
   rezydencjalne dla ominięcia 403.
-- **Cykle: sąsiednie tomy** (pomysł) — dla książek „Część cyklu" pokazywać/szukać
-  wcześniejszych/późniejszych tomów. Tricky: mogą NIE być w bazie (brak nagród/nominacji),
-  więc trzeba by je pozyskać z zewnątrz (Encyklopedia/wiki po serii) — osobny research.
+- **Cykle: sąsiednie tomy** (pomysł, analiza 1.11.1) — dla książek „Część cyklu"
+  pokazywać/szukać wcześniejszych/późniejszych tomów; sąsiednie tomy mogą NIE być w bazie.
+  - **Kluczowy finding**: `cyclesSyncService` już parsuje `|cykl=` / `{{Cykl|…}}` z wikitekstu,
+    ale zapisuje TYLKO boolean „Część cyklu" (linie 41–131) — nazwę cyklu i listę tomów
+    z szablonu `{{Cykl}}` wyrzucamy. Tu jest źródło danych: rozszerzyć ten sam rytuał,
+    nie dokładać nowego fetchu.
+  - **Zasada nadrzędna**: NIE fetchować na żywo w widoku „Wczytaj z bazy" — to łamie
+    „scrapuj raz, analizuj wiele" i wskrzesza rate-limit/Cloudflare + fetch wiki przy renderze.
+  - **Projekt (3 warstwy, każda w istniejącym flow)**:
+    1. Persystencja struktury: `cyclesSyncService` zapisuje nazwę cyklu + uporządkowaną listę
+       tomów do bloba `CycleData` (wzorzec `VintedData`). Wtedy „sąsiednie tomy" = lookup z bazy.
+    2. Render bez scrapowania: kafelek czyta listę z bloba, krzyżuje z wierszami Notion →
+       oznacza tom `masz` / `w bazie` / `brak`. Czysto ze store.
+    3. Dostępność brakujących na Vinted = osobny opt-in rytuał („Skan sąsiednich tomów", jak
+       „Ustal sprzedawców"): traktuje brakujące tomy jak tymczasowe cele, dopisuje oferty do
+       `CycleData` rodzica. NIGDY w ścieżce renderu.
+  - **Otwarta decyzja produktowa — jak trzymać brakujące tomy**:
+    - Wariant B: realne wiersze Notion (tag np. `Cykl-Discovered`) → pełny pipeline
+      (kandydat→skan→kafelek→paczki→dedup), ale baza puchnie + trzeba wykluczyć ze
+      statystyk/nagród + ryzyko dubli.
+    - Wariant C (rekomendowany na start): kontekst w blobie `CycleData` rodzica → zero
+      zaśmiecania bazy, pasuje 1:1 do `VintedData`; koszt: dane Vinted „drugiej kategorii"
+      (poza głównym flow kafelków/paczek), tom wspólny dla 2 cykli zapisany 2× (brak cross-dedup).
+      Furtka: promocja tomu do realnego wiersza (→ wariant B) jednym klikiem, gdy user zdecyduje.
+  - **Kolejność startu**: najpierw sam krok 1 (persystencja struktury cyklu), żeby zobaczyć
+    dane, zanim dołożymy skan dostępności.
 
 ## Zrobione (skrót)
 
