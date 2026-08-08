@@ -57,7 +57,7 @@ export class VintedSyncService {
     for (const b of allBooks) {
       const data = parseVintedData(b.vintedData);
       if (!data || data.offers.length === 0) continue;
-      books.push({ id: b.id, title: b.plTitle, author: b.author || "", scannedAt: data.scannedAt, changedAt: data.changedAt, offers: data.offers });
+      books.push({ id: b.id, title: b.plTitle, author: b.author || "", year: b.year, partOfCycle: b.currentCzesccyklu, scannedAt: data.scannedAt, changedAt: data.changedAt, offers: data.offers });
     }
     return { books, generatedAt: new Date().toISOString() };
   }
