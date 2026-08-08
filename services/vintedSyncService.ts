@@ -72,8 +72,9 @@ export class VintedSyncService {
       const fresh = items.map(offerFromItem);
       const prevData = parseVintedData(book.vintedData);
       const { offers, diff } = mergeAndDiff(fresh, prevData?.offers, scannedAt);
-      // changedAt aktualizujemy tylko, gdy faktycznie coś się zmieniło (inaczej zachowaj poprzedni).
-      const changedAt = hasChanges(diff) ? scannedAt : prevData?.changedAt;
+      // changedAt bumpujemy tylko, gdy JEST poprzedni stan (baseline) I faktycznie coś się
+      // zmieniło — inaczej pierwszy skan fałszywie oznaczałby całą książkę jako „zmiana".
+      const changedAt = prevData && hasChanges(diff) ? scannedAt : prevData?.changedAt;
       await this.notion.saveVintedData(book.id, serializeVintedData({ scannedAt, changedAt, offers }));
       return diff;
     } catch (e: any) {
@@ -202,8 +203,15 @@ export class VintedSyncService {
               type: "search_attempt",
               result: { id: book.id, title, author: book.author, url, status: "no_results", itemCount: 0, debug: { ...vintedDiagnostics(html, 0), ...memMb() } }
             });
-            // Zapisz „przeskanowano, brak ofert" — utrwala pokrycie skanu (wznawialność).
-            if (persistEnabled) await this.persistBookOffers(book, [], scannedAt);
+            // Utrwal pustkę tylko, gdy nic wcześniej nie było — „Brak wyników" to naiwny
+            // substring w ~7 MB markupie i bywa fałszywy na stronie Z ofertami; nie kasujemy
+            // wtedy zapisanych ofert/sprzedawców (zachowanie jak przy cichym missie).
+            const hadStored = (parseVintedData(book.vintedData)?.offers.length ?? 0) > 0;
+            if (persistEnabled && !hadStored) {
+              await this.persistBookOffers(book, [], scannedAt);
+            } else if (hadStored) {
+              log.warn("Marker 'Brak wyników' mimo zapisanych ofert — pomijam zapis (możliwy fałszywy marker)", { title });
+            }
             // Odczekaj jak przy każdym innym zapytaniu — pomijanie opóźnienia
             // przy braku wyników (częsty przypadek) to prosta droga do blokady
             await new Promise(resolve => setTimeout(resolve, 3000 + Math.floor(Math.random() * 2000)));

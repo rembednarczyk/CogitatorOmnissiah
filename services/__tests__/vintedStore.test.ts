@@ -58,6 +58,30 @@ describe("vintedStore", () => {
     expect(hasChanges(diff)).toBe(false); // same url, same price
   });
 
+  it("mergeAndDiff dedupes duplicate URLs in fresh (counts once, stores once)", () => {
+    const { offers, diff } = mergeAndDiff(
+      [
+        { url: "a", price: 5, currency: "zł" },
+        { url: "a", price: 5, currency: "zł" }, // duplikat z parsera
+        { url: "b", price: 6, currency: "zł" },
+      ],
+      undefined,
+      "2026-02-01T00:00:00.000Z",
+    );
+    expect(offers).toHaveLength(2);
+    expect(offers.map(o => o.url)).toEqual(["a", "b"]);
+    expect(diff.added).toBe(2);
+  });
+
+  it("mergeAndDiff leaves a legacy survivor (no firstSeenAt) undefined so it isn't marked 'nowa'", () => {
+    const { offers } = mergeAndDiff(
+      [{ url: "a", price: 10, currency: "zł" }],
+      [{ url: "a", price: 10, currency: "zł" }], // stary blob: brak firstSeenAt
+      "2026-02-01T00:00:00.000Z",
+    );
+    expect(offers[0].firstSeenAt).toBeUndefined();
+  });
+
   it("mergeAndDiff counts a price rise separately from a drop", () => {
     const { diff } = mergeAndDiff(
       [{ url: "a", price: 12, currency: "zł" }],
