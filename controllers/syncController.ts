@@ -183,14 +183,14 @@ export const checkVintedAvailability = async (req: Request, res: Response) => {
     return res.status(400).json({ error: "Brak kluczy API Notion." });
   }
 
-  // Wznawianie: front może poprosić o pominięcie świeżo skanowanych książek.
-  const skipRaw = req.body?.skipScannedWithinDays;
-  const skipScannedWithinDays = typeof skipRaw === "number" && skipRaw > 0 ? Math.min(skipRaw, 365) : undefined;
+  // Wznawianie: front może poprosić o pominięcie książek skanowanych w ostatnich N godzin.
+  const skipRaw = req.body?.skipScannedWithinHours;
+  const skipScannedWithinHours = typeof skipRaw === "number" && skipRaw > 0 ? Math.min(skipRaw, 24 * 365) : undefined;
 
   await executeSyncTask(
     req,
     res,
-    (sendEvent) => syncManager.run("vinted", sendEvent, { skipScannedWithinDays }),
+    (sendEvent) => syncManager.run("vinted", sendEvent, { skipScannedWithinHours }),
     "Vinted Check Error:"
   );
 };
