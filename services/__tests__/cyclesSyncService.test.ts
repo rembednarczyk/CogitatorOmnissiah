@@ -63,4 +63,69 @@ describe('CyclesSyncService', () => {
     });
     expect(mockSendEvent).toHaveBeenCalledWith(expect.objectContaining({ type: 'complete' }));
   });
+
+  const bookOf = (over: Partial<NotionBook>): NotionBook => ({
+    id: 'p', plTitle: 'T', origTitle: 'T', author: 'A', year: '2000',
+    currentCzesccyklu: false, awards: [], zrodlo: [], currentWydawnictwo: '',
+    currentSeria: '', lp: '1', plTitleRichText: [], origTitleRichText: [], ...over,
+  });
+
+  it('marks cycle from real {{Książka}} raw with |cykl= filled (Inny / Childe)', async () => {
+    const raw = `{{Książka\n | tytuł = Inny\n | autor = Gordon R. Dickson\n | seria = Kanon science fiction\n | cykl = Childe\n | poprzednia = Młody Bleys\n | następna = Gildia Orędowników\n}}`;
+    mockNotion.queryAllBooks.mockResolvedValue([bookOf({ id: 'inny', plTitle: 'Inny', origTitle: 'Other', author: 'Gordon R. Dickson' })]);
+    mockWiki.fetchPagesContentBulk.mockResolvedValue({ contents: { 'inny': raw }, failedTitles: [] });
+
+    await service.runCyclesSync(mockSendEvent, () => false);
+
+    expect(mockNotion.updatePage).toHaveBeenCalledWith('inny', { 'Część cyklu': { checkbox: true } });
+  });
+
+  it('does NOT mark cycle when only |seria= is present (publisher imprint, no |cykl=)', async () => {
+    const raw = `{{Książka\n | autor = Jan Kowalski\n | seria = Uczta Wyobraźni\n | cykl = \n}}`;
+    mockNotion.queryAllBooks.mockResolvedValue([bookOf({ id: 'p1', plTitle: 'Solo', author: 'Jan Kowalski' })]);
+    mockWiki.fetchPagesContentBulk.mockResolvedValue({ contents: { 'solo': raw }, failedTitles: [] });
+
+    await service.runCyclesSync(mockSendEvent, () => false);
+
+    expect(mockNotion.updatePage).not.toHaveBeenCalled();
+  });
+
+  it('detects cycle from a bare {{Cykl}} navigation template (no |cykl= field)', async () => {
+    const raw = `{{Książka\n | autor = Anna Nowak\n}}\nTekst.\n{{Cykl nawigacja|Saga X}}`;
+    mockNotion.queryAllBooks.mockResolvedValue([bookOf({ id: 'p2', plTitle: 'Tom I', author: 'Anna Nowak' })]);
+    mockWiki.fetchPagesContentBulk.mockResolvedValue({ contents: { 'tom i': raw }, failedTitles: [] });
+
+    await service.runCyclesSync(mockSendEvent, () => false);
+
+    expect(mockNotion.updatePage).toHaveBeenCalledWith('p2', { 'Część cyklu': { checkbox: true } });
+  });
+
+  it('reports a book as skipped (not silently) when no wiki page is found', async () => {
+    mockNotion.queryAllBooks.mockResolvedValue([bookOf({ id: 'p3', plTitle: 'Widmo', author: 'Zenon Test' })]);
+    mockWiki.fetchPagesContentBulk.mockResolvedValue({ contents: {}, failedTitles: [] });
+    mockWiki.searchPage.mockResolvedValue([]);
+    mockWiki.fetchPageContent.mockResolvedValue('');
+
+    await service.runCyclesSync(mockSendEvent, () => false);
+
+    expect(mockNotion.updatePage).not.toHaveBeenCalled();
+    const complete = mockSendEvent.mock.calls.map((c: any[]) => c[0]).find((e: any) => e.type === 'complete');
+    expect(complete.result.skipped).toBe(1);
+    expect(complete.result.summary.skipped[0]).toContain('Widmo');
+    expect(complete.result.summary.skipped[0]).toContain('nie znaleziono strony');
+  });
+
+  it('reports a book as skipped with author-mismatch reason when the page exists but author differs', async () => {
+    const raw = `{{Książka\n | autor = Zupełnie Inny Autor\n | cykl = Jakiś\n}}`;
+    mockNotion.queryAllBooks.mockResolvedValue([bookOf({ id: 'p4', plTitle: 'Kolizja', author: 'Prawdziwy Pisarz' })]);
+    mockWiki.fetchPagesContentBulk.mockResolvedValue({ contents: { 'kolizja': raw }, failedTitles: [] });
+    mockWiki.searchPage.mockResolvedValue([]);
+    mockWiki.fetchPageContent.mockResolvedValue('');
+
+    await service.runCyclesSync(mockSendEvent, () => false);
+
+    expect(mockNotion.updatePage).not.toHaveBeenCalled();
+    const complete = mockSendEvent.mock.calls.map((c: any[]) => c[0]).find((e: any) => e.type === 'complete');
+    expect(complete.result.summary.skipped[0]).toContain('autor się nie zgadza');
+  });
 });

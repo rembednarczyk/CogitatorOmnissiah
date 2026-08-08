@@ -180,7 +180,7 @@ export const SyncSummaryResult: React.FC<SyncSummaryResultProps> = ({
           </div>
         )}
 
-        {summary && (summary.added?.length > 0 || summary.updated?.length > 0 || summary.duplicates?.length > 0) && (
+        {summary && (summary.added?.length > 0 || summary.updated?.length > 0 || summary.duplicates?.length > 0 || summary.skipped?.length > 0) && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {summary.added?.length > 0 && (
               <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-6">
@@ -204,6 +204,20 @@ export const SyncSummaryResult: React.FC<SyncSummaryResultProps> = ({
                 <div className="max-h-64 overflow-y-auto pr-2 custom-scrollbar space-y-2">
                   {summary.updated.map((item: string, i: number) => (
                     <div key={i} className="text-xs text-slate-300 font-medium border-l-2 border-cyan-500/30 pl-3 py-1 bg-cyan-500/5 rounded-r-lg">
+                      {item}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {summary.skipped?.length > 0 && (
+              <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-6">
+                <h4 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4" /> Pominięte — nie oceniono ({summary.skipped.length})
+                </h4>
+                <div className="max-h-64 overflow-y-auto pr-2 custom-scrollbar space-y-2">
+                  {summary.skipped.map((item: string, i: number) => (
+                    <div key={i} className="text-xs text-slate-400 font-medium border-l-2 border-slate-600/40 pl-3 py-1 bg-slate-500/5 rounded-r-lg">
                       {item}
                     </div>
                   ))}

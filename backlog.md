@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.11.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.11.2** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - Suite: 187+ testów zielonych; `npm run lint` (tsc) czysty.
@@ -59,6 +59,15 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.11.2** — Oznaczanie cykli: naprawa „czasem nie łapie". Root cause = CICHE pominięcia:
+  gdy nie znaleziono strony wiki (niedopasowany tytuł) lub autor się nie zgadza, książka była
+  `return`-owana bez śladu, a `complete` raportował sam sukces. Teraz `syncSummary.skipped`
+  zbiera pominięte z powodem (nie znaleziono strony / autor się nie zgadza), a wynik niesie
+  `cyclesDetected` + `skipped`; `SyncSummaryResult` pokazuje listę „Pominięte — nie oceniono".
+  Regex szablonu poszerzony `\{\{Cykl\s*\|` → `\{\{\s*cykl[\s|}]` (łapie `{{Cykl}}` i
+  `{{Cykl nawigacja|…}}`, wciąż odrzuca `{{Cyklista}}`). Zweryfikowane na realnym rawie
+  „Inny"/Dickson: `|cykl = Childe` JEST łapane (regex pola OK), pusty `|cykl=` = false,
+  `|seria=` świadomie pomijane (imprint wydawcy). +5 testów.
 - **1.11.1** — Metadane (rok + ikonka „cykl") także w PACZKACH sprzedawców, nie tylko na
   kafelkach. `SellerBundleEntry` niesie `bookYear`/`bookPartOfCycle` (z `VintedResult`),
   `groupBySeller` je przepisuje, a wpis paczki pokazuje rok przy autorze i badge „cykl".
@@ -170,6 +179,11 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
     ale zapisuje TYLKO boolean „Część cyklu" (linie 41–131) — nazwę cyklu i listę tomów
     z szablonu `{{Cykl}}` wyrzucamy. Tu jest źródło danych: rozszerzyć ten sam rytuał,
     nie dokładać nowego fetchu.
+  - **NOWY finding (1.11.2, realny raw „Inny"/Dickson)**: infobox `{{Książka}}` ma pola
+    `|poprzednia=` i `|następna=` z tytułami SĄSIEDNICH tomów (np. poprzednia „Młody Bleys",
+    następna „Gildia Orędowników") + `|cykl=` z nazwą cyklu. To gotowy łańcuch prev/next —
+    dużo prostszy niż parsowanie `{{Cykl}}`: krok 1 persystencji może zapisać
+    `{cykl, poprzednia, następna}` wprost z tych pól.
   - **Zasada nadrzędna**: NIE fetchować na żywo w widoku „Wczytaj z bazy" — to łamie
     „scrapuj raz, analizuj wiele" i wskrzesza rate-limit/Cloudflare + fetch wiki przy renderze.
   - **Projekt (3 warstwy, każda w istniejącym flow)**:
