@@ -198,6 +198,9 @@ export const checkVintedAvailability = async (req: Request, res: Response) => {
 export const stopVintedCheck = makeStopHandler("Zatrzymywanie skanowania Vinted...");
 
 export const resolveVintedSellers = async (req: Request, res: Response) => {
+  if (!process.env.NOTION_API_KEY || !process.env.NOTION_DATABASE_ID) {
+    return res.status(400).json({ error: "Brak kluczy API Notion." });
+  }
   // Bez capu domyślnie — resolucja jest przyrostowa i wznawialna, więc jeden przebieg
   // ustala wszystkie brakujące, ile zdąży. Opcjonalny `cap` z body ogranicza przebieg.
   const capRaw = req.body?.cap;
@@ -214,6 +217,9 @@ export const resolveVintedSellers = async (req: Request, res: Response) => {
 export const stopVintedResolveSellers = makeStopHandler("Zatrzymywanie ustalania sprzedawców...");
 
 export const getVintedStored = async (_req: Request, res: Response) => {
+  if (!process.env.NOTION_API_KEY || !process.env.NOTION_DATABASE_ID) {
+    return res.status(400).json({ error: "Brak kluczy API Notion." });
+  }
   try {
     res.json(await syncManager.getVintedStored());
   } catch (error: any) {

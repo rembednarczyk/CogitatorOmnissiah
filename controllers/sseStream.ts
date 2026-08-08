@@ -73,6 +73,13 @@ export const executeSyncTask = async (
     }
   });
 
+  // Zapis do strumienia (sendEvent/keepalive) ma wyścig check-then-write: reset TCP między
+  // guardem `!writableEnded` a `res.write` emituje 'error'. Bez listenera stałby się to
+  // nieobsłużony uncaughtException. Połknij i zaloguj — `res.on('close')` i tak sprząta.
+  res.on("error", (err: any) => {
+    log.warn("Błąd strumienia SSE (klient prawdopodobnie się rozłączył).", { endpoint: req.path, error: err?.message });
+  });
+
   try {
     await task(sendEvent);
     clearInterval(keepAlive);

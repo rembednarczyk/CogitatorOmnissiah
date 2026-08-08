@@ -101,18 +101,29 @@ export function mergeAndDiff(
   scannedAt: string,
 ): { offers: StoredOffer[]; diff: OfferDiff } {
   const prevByUrl = new Map((prev ?? []).map(o => [o.url, o]));
-  const freshUrls = new Set(fresh.map(o => o.url));
-  let added = 0, priceDropped = 0, priceRaised = 0;
 
-  const offers: StoredOffer[] = fresh.map(o => {
+  // Dedupe świeżych po URL — parser potrafi zwrócić tę samą ofertę dwa razy; bez tego
+  // `added` i lista ofert puchną (duplikat renderowany 2× i liczony jako 2 „nowe").
+  const uniqueFresh: StoredOffer[] = [];
+  const freshUrls = new Set<string>();
+  for (const o of fresh) {
+    if (freshUrls.has(o.url)) continue;
+    freshUrls.add(o.url);
+    uniqueFresh.push(o);
+  }
+
+  let added = 0, priceDropped = 0, priceRaised = 0;
+  const offers: StoredOffer[] = uniqueFresh.map(o => {
     const old = prevByUrl.get(o.url);
     if (!old) {
       added++;
       return { ...o, seller: o.seller ?? null, firstSeenAt: scannedAt };
     }
-    // Oferta przetrwała: zachowaj sprzedawcę i firstSeenAt, zapisz cenę poprzednią.
+    // Oferta przetrwała: zachowaj sprzedawcę i ORYGINALNY firstSeenAt (może być undefined
+    // dla starych blobów sprzed tej funkcji — wtedy NIE oznaczamy jej jako „nowa"), zapisz
+    // poprzednią cenę do wykrycia spadku.
     const seller = o.seller ?? old.seller ?? null;
-    const firstSeenAt = old.firstSeenAt ?? scannedAt;
+    const firstSeenAt = old.firstSeenAt;
     const prevPrice = typeof old.price === "number" ? old.price : null;
     if (typeof o.price === "number" && typeof old.price === "number" && o.price !== old.price) {
       if (o.price < old.price) priceDropped++; else priceRaised++;

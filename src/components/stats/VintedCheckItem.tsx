@@ -134,7 +134,7 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
             animate={isResolving ? "spin" : undefined}
             title={isResolving ? "Przerwij Identyfikację" : "Rytuał Identyfikacji Handlarzy"}
             subtitle={isResolving ? "Zatrzymanie dociągania sprzedawców" : "Dociągnięcie sprzedawców do bazy — wznawialny"}
-            onClick={() => { if (isResolving) stopResolve(); else runResolve(); }}
+            onClick={() => { if (isResolving) { stopResolve(); return; } clearStored(); runResolve(); }}
           />
         )}
 
@@ -406,15 +406,18 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
                   const isCheapest = i === cheapestIdx;
                   const hasPrice = item.priceValue !== null && item.priceValue !== undefined;
                   const offerTitle = cleanOfferTitle(item.title);
-                  // Znaczniki zmian (dane z bazy): „nowa" = pojawiła się w ostatnim skanie;
-                  // „spadek" = cena niższa niż w poprzednim skanie.
-                  const isNew = !!item.firstSeenAt && item.firstSeenAt === result.scannedAt;
+                  // Znaczniki zmian (dane z bazy): „nowa" = pojawiła się w ostatnim skanie,
+                  // ale tylko gdy ten skan W OGÓLE wykrył zmianę (changedAt===scannedAt) —
+                  // inaczej pierwszy skan oznaczałby wszystkie oferty jako nowe.
+                  const isNew = !!item.firstSeenAt
+                    && item.firstSeenAt === result.scannedAt
+                    && result.changedAt === result.scannedAt;
                   const drop = (item.prevPrice != null && item.priceValue != null && item.priceValue < item.prevPrice)
                     ? item.prevPrice - item.priceValue
                     : null;
                   return (
                   <a
-                    key={i}
+                    key={item.url ?? i}
                     href={item.url}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -474,7 +477,7 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
         </motion.div>
       )}
       
-      {displayResults.length === 0 && !isChecking && !isLoadingStored && (
+      {displayResults.length === 0 && !isChecking && !isLoadingStored && !stored && (
         <p className="text-xs text-slate-500 italic text-center py-4">Brak wyników z Vinted. Uruchom skanowanie albo wczytaj z bazy.</p>
       )}
     </div>
