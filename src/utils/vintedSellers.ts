@@ -10,6 +10,10 @@ export interface VintedSeller {
 export interface SellerBundleEntry {
   bookTitle: string;
   bookAuthor: string;
+  /** Rok wydania (metadana z Notion). */
+  bookYear?: string;
+  /** Czy książka jest częścią cyklu (metadana z Notion) — ryzyko „kolejny tom". */
+  bookPartOfCycle?: boolean;
   /** Najtańsza kopia tej książki U TEGO sprzedawcy. */
   item: VintedResult["vintedItems"][number];
   /** Dopłata vs najtańsza kopia tej książki globalnie (0, gdy to właśnie najtańsza). */
@@ -122,6 +126,8 @@ export function groupBySeller(
         s.books.set(r.id, {
           bookTitle: r.title,
           bookAuthor: r.author,
+          bookYear: r.year,
+          bookPartOfCycle: r.partOfCycle,
           item,
           premium: item.priceValue != null && gmin != null ? Math.max(0, item.priceValue - gmin) : 0,
         });
