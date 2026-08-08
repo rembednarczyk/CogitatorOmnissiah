@@ -36,6 +36,10 @@ export interface StoredBookView {
   id: string;
   title: string;
   author: string;
+  /** Rok wydania (kolumna „Rok" w Notion) — metadana, prosto z bazy. */
+  year?: string;
+  /** Czy książka jest częścią cyklu (kolumna „Część cyklu", checkbox) — ryzyko „kolejny tom". */
+  partOfCycle?: boolean;
   scannedAt: string;
   changedAt?: string;
   offers: StoredOffer[];

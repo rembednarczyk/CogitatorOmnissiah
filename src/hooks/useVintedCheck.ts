@@ -7,6 +7,10 @@ export interface VintedResult {
   title: string;
   author: string;
   searchUrl?: string;
+  /** Rok wydania (kolumna „Rok"; dane z bazy). */
+  year?: string;
+  /** Część cyklu (kolumna „Część cyklu"; dane z bazy) — ryzyko „kolejny tom". */
+  partOfCycle?: boolean;
   /** Znacznik świeżości — kiedy skanowano tę książkę (tylko dla danych z bazy, etap 3). */
   scannedAt?: string;
   /** Kiedy zestaw ofert ostatnio się zmienił (dane z bazy). Gdy == scannedAt → zmiana w ostatnim skanie. */

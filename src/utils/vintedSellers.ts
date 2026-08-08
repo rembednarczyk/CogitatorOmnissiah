@@ -30,6 +30,8 @@ export interface StoredBookPayload {
   id: string;
   title: string;
   author: string;
+  year?: string;
+  partOfCycle?: boolean;
   scannedAt: string;
   changedAt?: string;
   offers: { url: string; title?: string; price: number | null; currency: string; photo?: string | null; seller?: VintedSeller | null; prevPrice?: number | null; firstSeenAt?: string }[];
@@ -58,6 +60,8 @@ export function storedToView(books: StoredBookPayload[]): StoredView {
       id: b.id,
       title: b.title,
       author: b.author,
+      year: b.year,
+      partOfCycle: b.partOfCycle,
       scannedAt: b.scannedAt,
       changedAt: b.changedAt,
       vintedItems: b.offers.map(o => ({

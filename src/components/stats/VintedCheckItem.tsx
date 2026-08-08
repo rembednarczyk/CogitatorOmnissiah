@@ -1,6 +1,6 @@
 import React from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { ShoppingCart, ExternalLink, Loader2, Search, Bug, CheckCircle2, XCircle, AlertCircle, BookImage, Users, Package, Database, HardDriveDownload, Trash2, Clock, Sparkles, ArrowDown } from "lucide-react";
+import { ShoppingCart, ExternalLink, Loader2, Search, Bug, CheckCircle2, XCircle, AlertCircle, BookImage, Users, Package, Database, HardDriveDownload, Trash2, Clock, Sparkles, ArrowDown, Layers } from "lucide-react";
 import { formatETA } from "../../utils/time";
 import { VintedResult, VintedSearchAttempt } from "../../hooks/useVintedCheck";
 import { sortOffersByPrice, offersPriceSummary, formatVintedPrice, cleanOfferTitle, sortResultsByCheapest } from "../../utils/vintedOffers";
@@ -372,10 +372,22 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
             <motion.div layout key={result.id} transition={{ type: "spring", stiffness: 400, damping: 40 }} className="flex flex-col gap-3 p-5 rounded-3xl border border-rose-500/10 bg-slate-900/40 group/book hover:border-rose-500/30 transition-all hover:shadow-lg hover:shadow-rose-500/5">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
-                  <div className="text-base font-bold text-slate-100 leading-tight mb-1 truncate group-hover/book:text-rose-400 transition-colors">
-                    {result.title}
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <div className="text-base font-bold text-slate-100 leading-tight truncate group-hover/book:text-rose-400 transition-colors">
+                      {result.title}
+                    </div>
+                    {result.partOfCycle && (
+                      <span
+                        className="shrink-0 flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[9px] font-bold uppercase tracking-wider"
+                        title="Część cyklu — może być kolejnym tomem w kolekcji (ryzyko duplikatu/luki w serii)"
+                      >
+                        <Layers className="w-2.5 h-2.5" /> cykl
+                      </span>
+                    )}
                   </div>
-                  <div className="text-[10px] text-slate-500 uppercase font-bold tracking-[0.2em]">{result.author}</div>
+                  <div className="text-[10px] text-slate-500 uppercase font-bold tracking-[0.2em]">
+                    {result.author}{result.year ? ` · ${result.year}` : ""}
+                  </div>
                   {result.scannedAt && (
                     <div className="text-[9px] text-indigo-400/60 font-bold tracking-widest mt-0.5 flex items-center gap-1">
                       <Clock className="w-2.5 h-2.5" /> skan {shortDate(result.scannedAt)}

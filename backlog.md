@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.10.2** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.11.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - Suite: 187+ testów zielonych; `npm run lint` (tsc) czysty.
@@ -59,6 +59,10 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.11.0** — Kafelki z bazy bogatsze o metadane z Notion (bez scrapowania): rok wydania
+  (kolumna „Rok") przy autorze i ikonka „cykl" (kolumna „Część cyklu"=true) — sygnał
+  ryzyka „kolejny tom". `getStoredData` niesie `year`/`partOfCycle`; `storedToView` + kafelek
+  je pokazują.
 - **1.10.2** — „Kontynuuj" naprawione: skan zawsze OD NAJSTARSZYCH (`scannedAt` rosnąco,
   nigdy-skanowane pierwsze), a okno pomijania w GODZINACH (`skipScannedWithinHours`, dom.
   12 h) zamiast dni. Bug: po częściowym pełnym skanie (160 dziś + reszta wczoraj) „Kontynuuj"
@@ -157,6 +161,9 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
 - **Ewentualnie później**: odświeżanie pojedynczej książki/oferty z bazy (re-check
   świeżości), natywna baza „Vinted Offers" (jeśli blob przestanie wystarczać), proxy
   rezydencjalne dla ominięcia 403.
+- **Cykle: sąsiednie tomy** (pomysł) — dla książek „Część cyklu" pokazywać/szukać
+  wcześniejszych/późniejszych tomów. Tricky: mogą NIE być w bazie (brak nagród/nominacji),
+  więc trzeba by je pozyskać z zewnątrz (Encyklopedia/wiki po serii) — osobny research.
 
 ## Zrobione (skrót)
 
