@@ -332,8 +332,18 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
                       className="flex items-center gap-3 px-3 py-2 rounded-xl border border-purple-500/10 bg-slate-900/40 hover:bg-purple-500/10 transition-all"
                     >
                       <div className="flex-1 min-w-0">
-                        <div className="text-[12px] text-slate-200 font-semibold truncate">{e.bookTitle}</div>
-                        <div className="text-[9px] text-slate-500 uppercase tracking-widest font-bold truncate">{e.bookAuthor}</div>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="text-[12px] text-slate-200 font-semibold truncate">{e.bookTitle}</span>
+                          {e.bookPartOfCycle && (
+                            <span
+                              className="shrink-0 flex items-center gap-0.5 px-1 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[8px] font-bold uppercase tracking-wider"
+                              title="Część cyklu — może być kolejnym tomem w kolekcji (ryzyko duplikatu/luki w serii)"
+                            >
+                              <Layers className="w-2 h-2" /> cykl
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[9px] text-slate-500 uppercase tracking-widest font-bold truncate">{e.bookAuthor}{e.bookYear ? ` · ${e.bookYear}` : ""}</div>
                       </div>
                       <div className="shrink-0 text-right tabular-nums font-bold text-purple-200 text-sm">
                         {e.item.priceValue != null ? formatVintedPrice(e.item.priceValue, e.item.currency) : "—"}
