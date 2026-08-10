@@ -195,3 +195,14 @@ export function didYouMean(query: string, vocab: VocabTerm[], limit = 3): string
   }
   return out;
 }
+
+/**
+ * Podmienia OSTATNI token zapytania na `term`, zachowując wcześniejsze słowa —
+ * bo `didYouMean` poprawia właśnie ostatni token. „Greg Vear" + „Bear" →
+ * „Greg Bear". Puste / same spacje → zwraca sam `term`.
+ */
+export function replaceLastToken(query: string, term: string): string {
+  const m = query.match(/^(.*?)(\S+)\s*$/);
+  if (!m) return term;
+  return `${m[1]}${term}`;
+}

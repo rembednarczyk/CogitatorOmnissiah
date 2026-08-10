@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { fold, matchBooks, highlight, buildSearchVocab, didYouMean } from "../utils/bookSearch";
+import { fold, matchBooks, highlight, buildSearchVocab, didYouMean, replaceLastToken } from "../utils/bookSearch";
 import { BookIndexEntry } from "../types";
 
 const mk = (over: Partial<BookIndexEntry>): BookIndexEntry => ({
@@ -99,6 +99,26 @@ describe("bookSearch.didYouMean", () => {
 
   it("ignores too-short queries", () => {
     expect(didYouMean("pe", vocab)).toEqual([]);
+  });
+});
+
+describe("bookSearch.replaceLastToken", () => {
+  it("replaces only the last token, keeping earlier words", () => {
+    expect(replaceLastToken("Greg Vear", "Bear")).toBe("Greg Bear");
+    expect(replaceLastToken("dan simnons", "Simmons")).toBe("dan Simmons");
+  });
+
+  it("replaces a single token wholesale", () => {
+    expect(replaceLastToken("simnons", "Simmons")).toBe("Simmons");
+  });
+
+  it("drops trailing whitespace around the last token", () => {
+    expect(replaceLastToken("Greg Vear  ", "Bear")).toBe("Greg Bear");
+  });
+
+  it("returns the term for an empty / whitespace query", () => {
+    expect(replaceLastToken("", "Bear")).toBe("Bear");
+    expect(replaceLastToken("   ", "Bear")).toBe("Bear");
   });
 });
 
