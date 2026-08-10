@@ -10,7 +10,9 @@ is diacritics-insensitive and spans the Polish title, original title, and author
   returns a slim `BookIndexEntry[]` (`src/types.ts`): `id, plTitle, origTitle, author, year,
   awards[], zrodlo[], series, partOfCycle`. The pure mapper `toSearchIndex`
   (`services/bookSearchIndex.ts`) projects the full `NotionBook[]` down to this — deliberately
-  dropping the heavy `vintedData` blob and `*RichText`, and skipping title-less skeleton rows.
+  dropping the heavy `vintedData` blob and `*RichText`. A record is kept when it has **any**
+  title (Polish **or** original) — untranslated books that only carry an original title are
+  searchable too; only rows with no title at all (skeletons) are dropped.
 - It reuses `getBooksForStats({ cache: true })`, so it rides the existing `booksCache`
   (invalidated on writes) — the endpoint is effectively free.
 - **`useBooks`** (`src/hooks/useBooks.ts`) fetches the index **once** into state. With ~214

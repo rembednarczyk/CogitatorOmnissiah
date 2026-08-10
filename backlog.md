@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.12.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.12.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -62,6 +62,11 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.12.1** — Skryptorium fixy (#80): (1) indeks dopuszcza rekordy z tytułem PL **lub**
+  oryginalnym (nieprzetłumaczone książki wypadały — 684 pokazywało ~389); karta/ranking
+  używają tytułu efektywnego `plTitle || origTitle`. (2) badge nagród i tagi źródła w dwóch
+  osobnych wierszach (ikony `Award`/`Tag`). (3) zakładki równej szerokości (`sm:flex-1` +
+  `items-stretch`, `tracking-wide`, `px-4`). +1 test (origTitle-only).
 - **1.12.0** — „Skryptorium": wyszukiwarka rekordów archiwum (4. zakładka). Nowy
   `GET /api/books` zwraca odchudzony `BookIndexEntry[]` (mapper `services/bookSearchIndex.ts`,
   reużywa `getBooksForStats({cache})`). Front filtruje CAŁOŚĆ client-side (`useBooks` fetch raz,

@@ -76,10 +76,10 @@ export default function App() {
         </motion.header>
 
         {/* Tab Navigation */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8">
+        <div className="flex flex-col sm:flex-row sm:items-stretch justify-center gap-4 mt-8">
           <button
             onClick={() => setActiveTab('stats')}
-            className={`w-full sm:w-auto px-8 py-4 rounded-2xl border font-bold uppercase tracking-widest text-sm transition-all flex items-center justify-center gap-3 ${
+            className={`w-full sm:flex-1 px-4 py-4 rounded-2xl border font-bold uppercase tracking-wide text-sm transition-all flex items-center justify-center gap-3 ${
               activeTab === 'stats' 
                 ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.2)]' 
                 : 'bg-slate-900/50 border-slate-800 text-slate-500 hover:text-slate-300 hover:bg-slate-800/50'
@@ -90,7 +90,7 @@ export default function App() {
           </button>
           <button
             onClick={() => setActiveTab('search')}
-            className={`w-full sm:w-auto px-8 py-4 rounded-2xl border font-bold uppercase tracking-widest text-sm transition-all flex items-center justify-center gap-3 ${
+            className={`w-full sm:flex-1 px-4 py-4 rounded-2xl border font-bold uppercase tracking-wide text-sm transition-all flex items-center justify-center gap-3 ${
               activeTab === 'search'
                 ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.2)]'
                 : 'bg-slate-900/50 border-slate-800 text-slate-500 hover:text-slate-300 hover:bg-slate-800/50'
@@ -101,7 +101,7 @@ export default function App() {
           </button>
           <button
             onClick={() => setActiveTab('config')}
-            className={`w-full sm:w-auto px-8 py-4 rounded-2xl border font-bold uppercase tracking-widest text-sm transition-all flex items-center justify-center gap-3 ${
+            className={`w-full sm:flex-1 px-4 py-4 rounded-2xl border font-bold uppercase tracking-wide text-sm transition-all flex items-center justify-center gap-3 ${
               activeTab === 'config' 
                 ? 'bg-purple-500/20 border-purple-500/50 text-purple-400 shadow-[0_0_20px_rgba(168,85,247,0.2)]' 
                 : 'bg-slate-900/50 border-slate-800 text-slate-500 hover:text-slate-300 hover:bg-slate-800/50'
@@ -112,7 +112,7 @@ export default function App() {
           </button>
           <button
             onClick={() => setActiveTab('vinted')}
-            className={`w-full sm:w-auto px-8 py-4 rounded-2xl border font-bold uppercase tracking-widest text-sm transition-all flex items-center justify-center gap-3 ${
+            className={`w-full sm:flex-1 px-4 py-4 rounded-2xl border font-bold uppercase tracking-wide text-sm transition-all flex items-center justify-center gap-3 ${
               activeTab === 'vinted' 
                 ? 'bg-rose-500/20 border-rose-500/50 text-rose-400 shadow-[0_0_20px_rgba(244,63,94,0.2)]' 
                 : 'bg-slate-900/50 border-slate-800 text-slate-500 hover:text-slate-300 hover:bg-slate-800/50'

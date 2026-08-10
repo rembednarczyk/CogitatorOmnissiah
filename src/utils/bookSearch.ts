@@ -29,13 +29,15 @@ function tokenize(query: string): string[] {
  */
 export function matchBooks(query: string, index: BookIndexEntry[]): BookIndexEntry[] {
   const tokens = tokenize(query);
-  const byTitle = (a: BookIndexEntry, b: BookIndexEntry) => a.plTitle.localeCompare(b.plTitle, "pl");
+  // Tytuł efektywny = polski, a gdy go brak — oryginalny (rekordy nieprzetłumaczone).
+  const displayTitle = (b: BookIndexEntry) => b.plTitle || b.origTitle;
+  const byTitle = (a: BookIndexEntry, b: BookIndexEntry) => displayTitle(a).localeCompare(displayTitle(b), "pl");
 
   if (!tokens.length) return [...index].sort(byTitle);
 
   const scored: { book: BookIndexEntry; score: number }[] = [];
   for (const b of index) {
-    const title = fold(b.plTitle);
+    const title = fold(displayTitle(b));
     const orig = fold(b.origTitle);
     const author = fold(b.author);
     const matchesAll = tokens.every((t) => title.includes(t) || orig.includes(t) || author.includes(t));
