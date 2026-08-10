@@ -6,7 +6,7 @@ import { VintedResult, VintedSearchAttempt } from "../../hooks/useVintedCheck";
 import { sortOffersByPrice, offersPriceSummary, formatVintedPrice, cleanOfferTitle, sortResultsByCheapest } from "../../utils/vintedOffers";
 import { useVintedResolveSellers } from "../../hooks/useVintedResolveSellers";
 import { useVintedStored } from "../../hooks/useVintedStored";
-import { groupBySeller } from "../../utils/vintedSellers";
+import { groupBySeller, sortBundles, BundleSortMode } from "../../utils/vintedSellers";
 import { RitualButton } from "./RitualButton";
 
 /** Krótka data „DD.MM" ze znacznika ISO (świeżość danych z bazy). */
@@ -69,7 +69,9 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
   const displaySellers = usingStored ? stored!.sellersByUrl : {};
 
   // Paczki po sprzedawcy — liczone ze składowanych danych (po „Wczytaj z bazy").
-  const bundles = React.useMemo(() => groupBySeller(displayResults, displaySellers), [displayResults, displaySellers]);
+  const [bundleSort, setBundleSort] = React.useState<BundleSortMode>("count");
+  const rawBundles = React.useMemo(() => groupBySeller(displayResults, displaySellers), [displayResults, displaySellers]);
+  const bundles = React.useMemo(() => sortBundles(rawBundles, bundleSort), [rawBundles, bundleSort]);
 
   return (
     <div className="space-y-8">
@@ -296,6 +298,24 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
             <Package className="w-4 h-4 text-purple-400" />
             <h4 className="text-sm font-bold text-purple-300 uppercase tracking-widest">Paczki od jednego sprzedawcy</h4>
             <span className="px-2 py-0.5 rounded-lg bg-purple-500/10 text-purple-300 text-[10px] font-bold border border-purple-500/20">{bundles.length}</span>
+            <div className="ml-auto flex items-center gap-1 p-0.5 rounded-xl bg-slate-900/60 border border-purple-500/15">
+              {([
+                { mode: "count" as BundleSortMode, label: "Najwięcej książek" },
+                { mode: "price" as BundleSortMode, label: "Najtańsza paczka" },
+              ]).map(({ mode, label }) => (
+                <button
+                  key={mode}
+                  onClick={() => setBundleSort(mode)}
+                  className={`px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-colors ${
+                    bundleSort === mode
+                      ? "bg-purple-500/20 text-purple-200 border border-purple-500/30"
+                      : "text-slate-500 hover:text-slate-300 border border-transparent"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             {bundles.map((b) => (

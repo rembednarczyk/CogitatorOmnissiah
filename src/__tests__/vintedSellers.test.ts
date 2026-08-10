@@ -1,11 +1,44 @@
 import { describe, it, expect } from "vitest";
-import { groupBySeller, VintedSeller, storedToView } from "../utils/vintedSellers";
+import { groupBySeller, sortBundles, VintedSeller, storedToView } from "../utils/vintedSellers";
 import { VintedResult } from "../hooks/useVintedCheck";
 
 const seller = (id: string): VintedSeller => ({ id, login: `login-${id}`, url: `https://www.vinted.pl/member/${id}` });
 const item = (url: string, priceValue: number) => ({ title: "t", price: String(priceValue), priceValue, currency: "zł", url });
 const result = (id: string, title: string, items: ReturnType<typeof item>[]): VintedResult =>
   ({ id, title, author: "Autor", vintedItems: items });
+
+describe("sortBundles", () => {
+  // s1: 3 książki, suma 60 (droższa paczka). s2: 2 książki, suma 20 (tańsza paczka).
+  const results = [
+    result("1", "A", [item("https://www.vinted.pl/items/1", 20)]),
+    result("2", "B", [item("https://www.vinted.pl/items/2", 20)]),
+    result("3", "C", [item("https://www.vinted.pl/items/3", 20)]),
+    result("4", "D", [item("https://www.vinted.pl/items/4", 10)]),
+    result("5", "E", [item("https://www.vinted.pl/items/5", 10)]),
+  ];
+  const sellers = {
+    "https://www.vinted.pl/items/1": seller("s1"),
+    "https://www.vinted.pl/items/2": seller("s1"),
+    "https://www.vinted.pl/items/3": seller("s1"),
+    "https://www.vinted.pl/items/4": seller("s2"),
+    "https://www.vinted.pl/items/5": seller("s2"),
+  };
+  const bundles = groupBySeller(results, sellers);
+
+  it("default (count): most books first — even if pricier", () => {
+    expect(sortBundles(bundles, "count").map((b) => b.seller.id)).toEqual(["s1", "s2"]);
+  });
+
+  it("price: cheapest total first — even with fewer books", () => {
+    expect(sortBundles(bundles, "price").map((b) => b.seller.id)).toEqual(["s2", "s1"]);
+  });
+
+  it("does not mutate the input array", () => {
+    const before = bundles.map((b) => b.seller.id);
+    sortBundles(bundles, "price");
+    expect(bundles.map((b) => b.seller.id)).toEqual(before);
+  });
+});
 
 describe("groupBySeller", () => {
   it("bundles a seller who has >=2 different books and sums their prices", () => {
