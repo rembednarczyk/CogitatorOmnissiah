@@ -15,5 +15,6 @@ Szczegółowe opisy działania poszczególnych rytuałów (jeden dokument na kon
 | [stats-service.md](./stats-service.md) | Agregacja statystyk do dashboardu. |
 | [library-check.md](./library-check.md) | Skan dostępności w OPAC MBP Lublin (scraping HTML). |
 | [vinted-scanner.md](./vinted-scanner.md) | Skan ofert na vinted.pl (scraping HTML — bez AI). |
+| [skryptorium-search.md](./skryptorium-search.md) | Wyszukiwarka rekordów archiwum (client-side, fold diakrytyków, highlight). |
 
 Obserwowalność, diagnostyka (`/api/diagnostics`), wdrożenie i rozwiązywanie problemów opisane są w [README](../README.md).

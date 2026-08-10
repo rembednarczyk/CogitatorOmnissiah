@@ -54,6 +54,23 @@ export interface NotionBook {
   vintedData?: string;
 }
 
+/**
+ * Odchudzony rekord książki dla wyszukiwarki „Skryptorium" (`GET /api/books`).
+ * Świadomie BEZ ciężkich pól (`vintedData` blob, `*RichText`) — to indeks do
+ * filtrowania client-side, nie pełny model. Współdzielony przez serwer i front.
+ */
+export interface BookIndexEntry {
+  id: string;
+  plTitle: string;
+  origTitle: string;
+  author: string;
+  year: string;
+  awards: string[];
+  zrodlo: string[];
+  series: string;
+  partOfCycle: boolean;
+}
+
 export interface SyncState {
   loading: boolean;
   result: any | null;
