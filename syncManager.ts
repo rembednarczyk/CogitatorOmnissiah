@@ -12,6 +12,7 @@ import { SchemaValidationService } from "./services/schemaValidationService";
 import { IntegrityService } from "./services/integrityService";
 import { LibraryCheckService } from "./services/libraryCheckService";
 import { VintedSyncService } from "./services/vintedSyncService";
+import { toSearchIndex } from "./services/bookSearchIndex";
 import { createLogger, classifyHttpError } from "./logger";
 import { SyncEvent } from "./src/types";
 
@@ -98,6 +99,12 @@ class SyncManager {
 
   async getStats() {
     return await statsService.getStats();
+  }
+
+  /** Odchudzony indeks książek dla wyszukiwarki „Skryptorium" (client-side). */
+  async getBooks() {
+    const books = await this.notion.getBooksForStats(undefined, undefined, { cache: true });
+    return toSearchIndex(books);
   }
 
   async getNotionSchema() {

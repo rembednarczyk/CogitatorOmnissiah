@@ -4,6 +4,7 @@ import * as syncController from "../controllers/syncController";
 const router = express.Router();
 
 router.get("/stats", syncController.getStats);
+router.get("/books", syncController.getBooks);
 router.get("/wiki/last-update", syncController.getWikiLastUpdate);
 router.get("/health", syncController.getHealth);
 router.get("/diagnostics", syncController.getDiagnostics);

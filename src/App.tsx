@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { Database, Terminal, ArrowUp, XCircle, AlertTriangle, RefreshCw, Cog, ShoppingCart } from "lucide-react";
+import { Database, Terminal, ArrowUp, XCircle, AlertTriangle, RefreshCw, Cog, ShoppingCart, ScrollText } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { StatsSection } from "./components/StatsSection";
+import { SearchSection } from "./components/SearchSection";
 import { VintedSection } from "./components/VintedSection";
 import { StatusSection } from "./components/StatusSection";
 import { SyncAwards } from "./components/SyncAwards";
@@ -18,7 +19,7 @@ import { IntegrityCheckResult } from "./types";
 
 export default function App() {
   const { configStatus, schema, schemaLoading, schemaError, fetchSchema } = useConfig();
-  const [activeTab, setActiveTab] = useState<'stats' | 'config' | 'vinted'>('stats');
+  const [activeTab, setActiveTab] = useState<'stats' | 'search' | 'config' | 'vinted'>('stats');
   const [showScrollTop, setShowScrollTop] = useState(false);
 
   const {
@@ -86,6 +87,17 @@ export default function App() {
           >
             <Database className="w-5 h-5" />
             Statystyki Archiwum
+          </button>
+          <button
+            onClick={() => setActiveTab('search')}
+            className={`w-full sm:w-auto px-8 py-4 rounded-2xl border font-bold uppercase tracking-widest text-sm transition-all flex items-center justify-center gap-3 ${
+              activeTab === 'search'
+                ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.2)]'
+                : 'bg-slate-900/50 border-slate-800 text-slate-500 hover:text-slate-300 hover:bg-slate-800/50'
+            }`}
+          >
+            <ScrollText className="w-5 h-5" />
+            Skryptorium
           </button>
           <button
             onClick={() => setActiveTab('config')}
@@ -163,6 +175,16 @@ export default function App() {
               transition={{ duration: 0.3 }}
             >
               <StatsSection />
+            </motion.div>
+          ) : activeTab === 'search' ? (
+            <motion.div
+              key="search"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <SearchSection />
             </motion.div>
           ) : activeTab === 'config' ? (
             <motion.div

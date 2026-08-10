@@ -16,6 +16,16 @@ export const getStats = async (req: Request, res: Response) => {
   }
 };
 
+export const getBooks = async (req: Request, res: Response) => {
+  try {
+    const books = await syncManager.getBooks();
+    res.json(books);
+  } catch (error: any) {
+    console.error("Books Error:", error);
+    res.status(500).json({ error: error.message || "Wystąpił błąd podczas pobierania rekordów." });
+  }
+};
+
 export const getWikiLastUpdate = async (req: Request, res: Response) => {
   try {
     const { title } = req.query;
