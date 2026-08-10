@@ -2,7 +2,7 @@ import React, { useState, useMemo, useDeferredValue, useRef, useEffect } from "r
 import { motion, AnimatePresence } from "motion/react";
 import { Search, X, Loader2, ScrollText, AlertCircle } from "lucide-react";
 import { useBooks } from "../hooks/useBooks";
-import { matchBooks, buildSearchVocab, didYouMean } from "../utils/bookSearch";
+import { matchBooks, buildSearchVocab, didYouMean, replaceLastToken } from "../utils/bookSearch";
 import { BookResultCard } from "./search/BookResultCard";
 
 /** Ile kart maksymalnie rysujemy (ochrona DOM przy „pustym" zapytaniu = cały zbiór). */
@@ -111,7 +111,7 @@ export const SearchSection: React.FC = () => {
               {suggestions.map((s, i) => (
                 <React.Fragment key={s}>
                   <button
-                    onClick={() => setQuery(s)}
+                    onClick={() => { setQuery(replaceLastToken(query, s)); inputRef.current?.focus(); }}
                     className="text-cyan-300 hover:text-cyan-200 font-semibold underline decoration-dotted underline-offset-4 decoration-cyan-500/50"
                   >
                     {s}
