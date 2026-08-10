@@ -31,6 +31,12 @@ is diacritics-insensitive and spans the Polish title, original title, and author
 - **`highlight(text, query)`** — splits a string into hit / non-hit segments using the 1:1 fold,
   merging overlapping ranges; falls back to a single non-hit segment if a rare lowercase length
   change would misalign indices.
+- **`buildSearchVocab(index)` + `didYouMean(query, vocab)`** — "Czy chodziło Ci o…". The vocab is
+  the deduped set of folded words from titles (PL + original) and authors (display keeps a
+  capitalized variant), built once per set. `didYouMean` takes the **last** query token (a typo
+  usually sits in one word) and returns up to 3 vocab terms within a length-scaled Levenshtein
+  threshold (≤4→1, ≤7→2, else 3), pre-filtering on `|Δlen|` and skipping exact (distance-0) hits.
+  The UI shows the suggestions only when `matchBooks` returned nothing; clicking one sets the query.
 
 ## 4. UI (`src/components/SearchSection.tsx` + `search/`)
 - Autofocused input (styled like `SchemaEditor`), a live count, and a responsive grid of

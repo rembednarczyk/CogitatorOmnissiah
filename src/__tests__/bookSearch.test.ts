@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { fold, matchBooks, highlight } from "../utils/bookSearch";
+import { fold, matchBooks, highlight, buildSearchVocab, didYouMean } from "../utils/bookSearch";
 import { BookIndexEntry } from "../types";
 
 const mk = (over: Partial<BookIndexEntry>): BookIndexEntry => ({
@@ -71,6 +71,34 @@ describe("bookSearch.matchBooks", () => {
     const r = matchBooks("", INDEX).map((b) => b.plTitle);
     expect(r).toHaveLength(INDEX.length);
     expect(r).toEqual([...r].sort((a, b) => a.localeCompare(b, "pl")));
+  });
+});
+
+describe("bookSearch.didYouMean", () => {
+  const vocab = buildSearchVocab(INDEX);
+
+  it("suggests the closest title word for a one-off typo", () => {
+    expect(didYouMean("perelanda", vocab)).toContain("Perelandra");
+  });
+
+  it("suggests the closest author surname for a typo", () => {
+    expect(didYouMean("simnons", vocab)).toContain("Simmons");
+  });
+
+  it("uses the last token (typo usually sits in one word)", () => {
+    expect(didYouMean("dan simnons", vocab)).toContain("Simmons");
+  });
+
+  it("returns nothing when the query is far from everything", () => {
+    expect(didYouMean("qwerty", vocab)).toEqual([]);
+  });
+
+  it("does not suggest an exact vocabulary hit (distance 0)", () => {
+    expect(didYouMean("hyperion", vocab)).not.toContain("Hyperion");
+  });
+
+  it("ignores too-short queries", () => {
+    expect(didYouMean("pe", vocab)).toEqual([]);
   });
 });
 

@@ -106,3 +106,92 @@ export function highlight(text: string, query: string): HighlightSegment[] {
   if (cur < text.length) segs.push({ text: text.slice(cur), hit: false });
   return segs;
 }
+
+// ── „Czy chodziło Ci o…" — fuzzy podpowiedzi na literówki ──────────────────
+
+export interface VocabTerm {
+  /** Znormalizowane (fold) słowo — po tym liczymy dystans. */
+  folded: string;
+  /** Wariant do pokazania użytkownikowi (oryginalna pisownia). */
+  display: string;
+}
+
+/** Słowa (≥3 znaki) z tekstu, rozbite na granicach nie-liter/cyfr. */
+function wordsOf(s: string): string[] {
+  return s.split(/[^\p{L}\p{N}]+/u).filter((w) => w.length >= 3);
+}
+
+/**
+ * Buduje słownik terminów (słowa tytułów PL+oryg i autorów) do fuzzy-podpowiedzi.
+ * Dedupe po foldzie; jako `display` preferuje wariant z wielką literą. Liczony raz
+ * na zbiór (memoizowany w komponencie), nie na każdy znak.
+ */
+export function buildSearchVocab(index: BookIndexEntry[]): VocabTerm[] {
+  const map = new Map<string, string>();
+  const hasUpper = (w: string) => w !== w.toLowerCase();
+  const add = (s: string) => {
+    for (const w of wordsOf(s)) {
+      const f = fold(w);
+      if (f.length < 3) continue;
+      const prev = map.get(f);
+      if (!prev || (hasUpper(w) && !hasUpper(prev))) map.set(f, w);
+    }
+  };
+  for (const b of index) {
+    add(b.plTitle);
+    add(b.origTitle);
+    add(b.author);
+  }
+  return [...map.entries()].map(([folded, display]) => ({ folded, display }));
+}
+
+/** Dystans Levenshteina (dwa bufory wierszy — O(min·max) pamięci liniowej). */
+function levenshtein(a: string, b: string): number {
+  const m = a.length;
+  const n = b.length;
+  if (!m) return n;
+  if (!n) return m;
+  let prev = Array.from({ length: n + 1 }, (_, i) => i);
+  let cur = new Array<number>(n + 1);
+  for (let i = 1; i <= m; i++) {
+    cur[0] = i;
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost);
+    }
+    [prev, cur] = [cur, prev];
+  }
+  return prev[n];
+}
+
+/**
+ * „Czy chodziło Ci o…" — dla (zwykle zerowego) zapytania zwraca do `limit`
+ * najbliższych terminów ze słownika. Porównuje OSTATNI token zapytania (tam
+ * zwykle siedzi literówka), z progiem zależnym od długości. Odsiew po różnicy
+ * długości (Levenshtein ≥ |Δlen|) tnie koszt. Pomija trafienie dokładne.
+ */
+export function didYouMean(query: string, vocab: VocabTerm[], limit = 3): string[] {
+  const qWord = fold(query).split(/\s+/).filter(Boolean).pop() ?? "";
+  if (qWord.length < 3) return [];
+  const maxDist = qWord.length <= 4 ? 1 : qWord.length <= 7 ? 2 : 3;
+
+  const scored: { display: string; dist: number; len: number; folded: string }[] = [];
+  for (const v of vocab) {
+    if (Math.abs(v.folded.length - qWord.length) > maxDist) continue;
+    if (v.folded === qWord) continue;
+    const d = levenshtein(qWord, v.folded);
+    if (d <= maxDist) scored.push({ display: v.display, dist: d, len: v.folded.length, folded: v.folded });
+  }
+  scored.sort((a, b) => a.dist - b.dist || a.len - b.len || a.display.localeCompare(b.display, "pl"));
+
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const s of scored) {
+    const key = s.display.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(s.display);
+    if (out.length >= limit) break;
+  }
+  return out;
+}
