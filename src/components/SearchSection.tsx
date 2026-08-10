@@ -2,7 +2,7 @@ import React, { useState, useMemo, useDeferredValue, useRef, useEffect } from "r
 import { motion, AnimatePresence } from "motion/react";
 import { Search, X, Loader2, ScrollText, AlertCircle } from "lucide-react";
 import { useBooks } from "../hooks/useBooks";
-import { matchBooks } from "../utils/bookSearch";
+import { matchBooks, buildSearchVocab, didYouMean } from "../utils/bookSearch";
 import { BookResultCard } from "./search/BookResultCard";
 
 /** Ile kart maksymalnie rysujemy (ochrona DOM przy „pustym" zapytaniu = cały zbiór). */
@@ -21,6 +21,13 @@ export const SearchSection: React.FC = () => {
   const results = useMemo(() => matchBooks(deferredQuery, books ?? []), [deferredQuery, books]);
   const shown = results.slice(0, RENDER_CAP);
   const total = books?.length ?? 0;
+
+  // „Czy chodziło Ci o…" — słownik liczony raz na zbiór; podpowiedzi tylko przy 0 trafień.
+  const vocab = useMemo(() => buildSearchVocab(books ?? []), [books]);
+  const suggestions = useMemo(
+    () => (results.length === 0 && deferredQuery.trim() ? didYouMean(deferredQuery, vocab) : []),
+    [results.length, deferredQuery, vocab]
+  );
 
   return (
     <div className="space-y-8">
@@ -94,9 +101,27 @@ export const SearchSection: React.FC = () => {
           </div>
         </div>
       ) : results.length === 0 ? (
-        <p className="text-center text-sm text-slate-600 italic py-16">
-          Archiwum milczy — żaden wolumin nie pasuje do „{query}".
-        </p>
+        <div className="text-center py-16 space-y-4">
+          <p className="text-sm text-slate-600 italic">
+            Archiwum milczy — żaden wolumin nie pasuje do „{query}".
+          </p>
+          {suggestions.length > 0 && (
+            <p className="text-sm text-slate-400">
+              Czy chodziło Ci o:{" "}
+              {suggestions.map((s, i) => (
+                <React.Fragment key={s}>
+                  <button
+                    onClick={() => setQuery(s)}
+                    className="text-cyan-300 hover:text-cyan-200 font-semibold underline decoration-dotted underline-offset-4 decoration-cyan-500/50"
+                  >
+                    {s}
+                  </button>
+                  {i < suggestions.length - 1 ? <span className="text-slate-600">, </span> : <span className="text-slate-500">?</span>}
+                </React.Fragment>
+              ))}
+            </p>
+          )}
+        </div>
       ) : (
         <motion.div layout className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <AnimatePresence mode="popLayout">
