@@ -1,6 +1,6 @@
 import React from "react";
 import { motion } from "motion/react";
-import { Layers, BookMarked } from "lucide-react";
+import { Layers, BookMarked, Award, Tag } from "lucide-react";
 import { BookIndexEntry } from "../../types";
 import { HighlightedText } from "./HighlightedText";
 
@@ -27,7 +27,9 @@ interface Props {
 }
 
 export const BookResultCard: React.FC<Props> = ({ book, query }) => {
-  const showOrig = book.origTitle && book.origTitle.trim() && book.origTitle !== book.plTitle;
+  // Tytuł główny = polski, a gdy go brak — oryginalny (książki nieprzetłumaczone).
+  const primaryTitle = book.plTitle?.trim() ? book.plTitle : book.origTitle;
+  const showOrig = book.origTitle && book.origTitle.trim() && book.origTitle !== primaryTitle;
 
   return (
     <motion.div
@@ -45,7 +47,7 @@ export const BookResultCard: React.FC<Props> = ({ book, query }) => {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <HighlightedText
-              text={book.plTitle}
+              text={primaryTitle}
               query={query}
               className="text-base font-bold text-slate-100 leading-tight"
             />
@@ -73,18 +75,29 @@ export const BookResultCard: React.FC<Props> = ({ book, query }) => {
             {book.series ? <span className="text-slate-600 normal-case tracking-normal italic"> · {book.series}</span> : null}
           </div>
 
-          {(book.awards.length > 0 || book.zrodlo.length > 0) && (
-            <div className="flex flex-wrap gap-1.5 mt-3">
-              {book.awards.map((a, i) => (
-                <span key={`a${i}`} className={`px-2 py-0.5 rounded-full border text-[9px] font-bold uppercase tracking-wider ${awardTheme(a)}`}>
-                  {a}
-                </span>
-              ))}
-              {book.zrodlo.map((z, i) => (
-                <span key={`z${i}`} className={`px-2 py-0.5 rounded-full border text-[9px] font-bold uppercase tracking-wider ${zrodloTheme(z)}`}>
-                  {z}
-                </span>
-              ))}
+          {book.awards.length > 0 && (
+            <div className="flex items-center gap-1.5 mt-3">
+              <Award className="w-3 h-3 text-amber-400/60 shrink-0" />
+              <div className="flex flex-wrap gap-1.5">
+                {book.awards.map((a, i) => (
+                  <span key={`a${i}`} className={`px-2 py-0.5 rounded-full border text-[9px] font-bold uppercase tracking-wider ${awardTheme(a)}`}>
+                    {a}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {book.zrodlo.length > 0 && (
+            <div className="flex items-center gap-1.5 mt-2">
+              <Tag className="w-3 h-3 text-slate-500 shrink-0" />
+              <div className="flex flex-wrap gap-1.5">
+                {book.zrodlo.map((z, i) => (
+                  <span key={`z${i}`} className={`px-2 py-0.5 rounded-full border text-[9px] font-bold uppercase tracking-wider ${zrodloTheme(z)}`}>
+                    {z}
+                  </span>
+                ))}
+              </div>
             </div>
           )}
         </div>

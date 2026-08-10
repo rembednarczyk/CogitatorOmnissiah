@@ -56,6 +56,17 @@ describe("bookSearch.matchBooks", () => {
     expect(r[0]).toBe("Hyperion"); // prefix beats "Upadek Hyperiona"
   });
 
+  it("finds and ranks untranslated books by original title when plTitle is empty", () => {
+    const idx = [
+      mk({ id: "u", plTitle: "", origTitle: "Childe", author: "Gordon Dickson" }),
+      mk({ id: "s", plTitle: "Solaris", origTitle: "Solaris", author: "Stanisław Lem" }),
+    ];
+    const r = matchBooks("childe", idx);
+    expect(r.map((b) => b.id)).toEqual(["u"]);
+    // prefiks tytułu efektywnego (origTitle) rankuje jak prefiks tytułu
+    expect(matchBooks("chi", idx)[0].id).toBe("u");
+  });
+
   it("empty query returns the whole set sorted by title", () => {
     const r = matchBooks("", INDEX).map((b) => b.plTitle);
     expect(r).toHaveLength(INDEX.length);
