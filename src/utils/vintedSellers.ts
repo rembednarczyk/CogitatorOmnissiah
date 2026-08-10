@@ -146,6 +146,22 @@ export function groupBySeller(
       totalPremium: entries.reduce((sum, e) => sum + e.premium, 0),
     });
   }
-  // Najpierw najwięcej książek, potem najtańsza suma.
-  return bundles.sort((a, b) => b.entries.length - a.entries.length || a.totalValue - b.totalValue);
+  // Domyślnie: najpierw najwięcej książek, potem najtańsza suma.
+  return sortBundles(bundles, "count");
+}
+
+/** Kryterium sortowania paczek w UI. */
+export type BundleSortMode = "count" | "price";
+
+/**
+ * Zwraca KOPIĘ paczek posortowaną wg trybu:
+ * - `count`  — najwięcej książek, remis → najtańsza suma (domyślny);
+ * - `price`  — najtańsza suma (`totalValue`), remis → najwięcej książek.
+ */
+export function sortBundles(bundles: SellerBundle[], mode: BundleSortMode): SellerBundle[] {
+  const copy = [...bundles];
+  if (mode === "price") {
+    return copy.sort((a, b) => a.totalValue - b.totalValue || b.entries.length - a.entries.length);
+  }
+  return copy.sort((a, b) => b.entries.length - a.entries.length || a.totalValue - b.totalValue);
 }

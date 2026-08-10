@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.13.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.14.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -62,6 +62,10 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.14.0** — Paczki Vinted: przełącznik sortowania „Najwięcej książek" / „Najtańsza paczka".
+  Czysta `sortBundles(bundles, mode)` (`count`: najwięcej książek → remis najtańsza suma;
+  `price`: najtańsza `totalValue` → remis najwięcej książek), zwraca kopię (bez mutacji).
+  `groupBySeller` deleguje do `sortBundles(..,"count")`. Toggle w nagłówku paczek. +3 testy.
 - **1.13.1** — Skryptorium (#84): klik podpowiedzi podmienia TYLKO ostatni token (czysta
   `replaceLastToken`), nie całe pole. „Greg Vear" + „Bear" → „Greg Bear" (nie samo „Bear").
   Fokus wraca do inputu. +4 testy.
