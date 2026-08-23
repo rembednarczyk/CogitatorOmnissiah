@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useSync } from "./useSync";
 import { PREDEFINED_AWARDS } from "../constants";
 
@@ -45,8 +45,9 @@ export function useSyncManager() {
     return await syncService.startSync(params, undefined, statusMessage);
   };
 
-  const handleAwardChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedName = e.target.value;
+  // Przyjmuje samą NAZWĘ nagrody (nie zdarzenie DOM) — manager pozostaje
+  // niezależny od prezentacji (parsowanie <select> zostaje w komponencie).
+  const handleAwardChange = (selectedName: string) => {
     const predefined = PREDEFINED_AWARDS.find(a => a.name === selectedName);
 
     sync.setState(prev => ({
@@ -72,54 +73,32 @@ export function useSyncManager() {
     });
   };
 
+  // „Wielki Rytuał" — sekwencja kroków opisana danymi (nie 7× copy-paste).
+  // Kroki `abortOnFail` przerywają całość przy błędzie i porzucają wyniki; ostatni
+  // (Lp) tylko dopisuje wynik, jeśli jest, i zawsze domyka podsumowanie.
+  const FULL_SYNC_STEPS: { sync: any; name: string; color: string; label: string; params?: any; abortOnFail: boolean }[] = [
+    { sync: schemaSync, name: "Schemat", color: "emerald", label: "Krok 1/7: Rytuał Inicjacji Schematu...", abortOnFail: true },
+    { sync: purifySync, name: "Puryfikacja", color: "amber", label: "Krok 2/7: Rytuał Puryfikacji...", abortOnFail: true },
+    { sync, name: "Nagrody", color: "cyan", label: "Krok 3/7: Synchronizacja Nagród...", params: { awardName: "Wszystkie Nagrody", syncAll: true }, abortOnFail: true },
+    { sync: cyclesSync, name: "Cykle", color: "blue", label: "Krok 4/7: Rytuał Oznaczania Cykli...", abortOnFail: true },
+    { sync: publisherSync, name: "Wydawcy", color: "rose", label: "Krok 5/7: Rytuał Wydania...", abortOnFail: true },
+    { sync: seriesSync, name: "Serie", color: "indigo", label: "Krok 6/7: Rytuał Seryjny...", abortOnFail: true },
+    { sync: lpSync, name: "Lubimy Czytać", color: "purple", label: "Krok 7/7: Rytuał Rekonstrukcji Liczb...", abortOnFail: false },
+  ];
+
   const handleFullSync = async () => {
     setFullSyncResults(null);
     const results: any[] = [];
 
-    // 1. Schema Initiation
-    clearOthers(schemaSync);
-    const res1 = await schemaSync.startSync({}, undefined, "Krok 1/7: Rytuał Inicjacji Schematu...");
-    if (!res1 || res1.success === false) return;
-    results.push({ name: "Schemat", result: res1, color: "emerald" });
-
-    // 2. Purification
-    clearOthers(purifySync);
-    const res2 = await purifySync.startSync({}, undefined, "Krok 2/7: Rytuał Puryfikacji...");
-    if (!res2 || res2.success === false) return;
-    results.push({ name: "Puryfikacja", result: res2, color: "amber" });
-
-    // 3. Sync Awards (Wszystkie)
-    clearOthers(sync);
-    const res3 = await sync.startSync({
-      awardName: "Wszystkie Nagrody",
-      syncAll: true
-    }, undefined, "Krok 3/7: Synchronizacja Nagród...");
-    if (!res3 || res3.success === false) return;
-    results.push({ name: "Nagrody", result: res3, color: "cyan" });
-
-    // 4. Cycles Marking
-    clearOthers(cyclesSync);
-    const res4 = await cyclesSync.startSync({}, undefined, "Krok 4/7: Rytuał Oznaczania Cykli...");
-    if (!res4 || res4.success === false) return;
-    results.push({ name: "Cykle", result: res4, color: "blue" });
-
-    // 5. Publisher Sync
-    clearOthers(publisherSync);
-    const res5 = await publisherSync.startSync({}, undefined, "Krok 5/7: Rytuał Wydania...");
-    if (!res5 || res5.success === false) return;
-    results.push({ name: "Wydawcy", result: res5, color: "rose" });
-
-    // 6. Series Sync
-    clearOthers(seriesSync);
-    const res6 = await seriesSync.startSync({}, undefined, "Krok 6/7: Rytuał Seryjny...");
-    if (!res6 || res6.success === false) return;
-    results.push({ name: "Serie", result: res6, color: "indigo" });
-
-    // 7. Numbers Reconstruction (Lp)
-    clearOthers(lpSync);
-    const res7 = await lpSync.startSync({}, undefined, "Krok 7/7: Rytuał Rekonstrukcji Liczb...");
-    if (res7) {
-      results.push({ name: "Lubimy Czytać", result: res7, color: "purple" });
+    for (const step of FULL_SYNC_STEPS) {
+      clearOthers(step.sync);
+      const res = await step.sync.startSync(step.params ?? {}, undefined, step.label);
+      if (step.abortOnFail) {
+        if (!res || res.success === false) return; // przerwij i porzuć częściowe wyniki
+        results.push({ name: step.name, result: res, color: step.color });
+      } else if (res) {
+        results.push({ name: step.name, result: res, color: step.color });
+      }
     }
 
     setFullSyncResults(results);
