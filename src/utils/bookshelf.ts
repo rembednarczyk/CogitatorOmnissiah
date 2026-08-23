@@ -74,26 +74,48 @@ export const MAX_LEAN_DEG = 6;
  * Planuje sloty dla posortowanej listy woluminów. Decyzja per książka jest
  * deterministyczna (hasz tytułu); kupkę tworzy kilka KOLEJNYCH prawdziwych
  * książek (starter „pożera" następne). ~80 % stoi prosto, ~12 % lekko przechylone,
- * reszta ląduje w kupkach po 2–4 realne woluminy.
+ * reszta ląduje w kupkach po 4–7 realnych woluminów.
+ *
+ * Reguły ułożenia:
+ * - **dwie kupki nigdy nie sąsiadują** (po kupce następny slot to zawsze grzbiet),
+ * - **grzbiety sąsiadujące z kupką przechylają się w jej stronę** (`LEAN_TOWARD`).
  */
+export const LEAN_TOWARD = 5;
+
 export function planShelf(books: BookIndexEntry[]): ShelfSlot[] {
   const slots: ShelfSlot[] = [];
+  let prevWasStack = false;
   for (let i = 0; i < books.length; ) {
     const b = books[i];
     const x = seed(b);
     const sel = x % 100;
-    if (sel < 80 || books.length - i < 2) {
-      slots.push({ kind: "spine", book: b, lean: 0 });
-      i += 1;
-    } else if (sel < 92) {
-      const mag = 3 + ((x >>> 13) % (MAX_LEAN_DEG - 2)); // 3–6°
-      slots.push({ kind: "spine", book: b, lean: (x >>> 3) & 1 ? mag : -mag });
-      i += 1;
-    } else {
+    // Kupka tylko gdy: los trafił, są ≥2 książki i poprzedni slot NIE był kupką.
+    if (sel >= 92 && books.length - i >= 2 && !prevWasStack) {
       const size = Math.min(4 + ((x >>> 17) % 4), books.length - i); // 4–7 realnych książek
       slots.push({ kind: "stack", books: books.slice(i, i + size) });
       i += size;
+      prevWasStack = true;
+    } else if (sel >= 80 && sel < 92) {
+      const mag = 3 + ((x >>> 13) % (MAX_LEAN_DEG - 2)); // 3–6°
+      slots.push({ kind: "spine", book: b, lean: (x >>> 3) & 1 ? mag : -mag });
+      i += 1;
+      prevWasStack = false;
+    } else {
+      // prosto (także zablokowana kupka spada tutaj)
+      slots.push({ kind: "spine", book: b, lean: 0 });
+      i += 1;
+      prevWasStack = false;
     }
+  }
+
+  // Grzbiety tuż obok kupki przechylają się w jej stronę (nadpisuje losową pozę).
+  // Sąsiad kupki jest zawsze grzbitem (dwie kupki nie sąsiadują). Wierzch grzbietu
+  // pochyla się do środka: lewy sąsiad w prawo (+), prawy sąsiad w lewo (−).
+  for (let k = 0; k < slots.length; k++) {
+    if (slots[k].kind !== "stack") continue;
+    const left = slots[k - 1], right = slots[k + 1];
+    if (left && left.kind === "spine") left.lean = LEAN_TOWARD;
+    if (right && right.kind === "spine") right.lean = -LEAN_TOWARD;
   }
   return slots;
 }
