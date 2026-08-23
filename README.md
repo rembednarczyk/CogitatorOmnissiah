@@ -59,11 +59,12 @@ Hybryda **Vite + Express** serwowana z jednego procesu Node. Kod jest ułożony 
 ```mermaid
 flowchart TB
     subgraph FE["Frontend — React 19 SPA (src/)"]
-        App["App.tsx (prezentacja)"]
+        App["App.tsx — 5 zakładek<br/>(Statystyki · Regał · Skryptorium · Liturgie · Vinted)"]
         USM["hooks/useSyncManager<br/>(orkiestracja rytuałów)"]
-        Hooks["useSync · useStats · useConfig<br/>useLibraryCheck · useVintedCheck"]
+        Hooks["useSync · useVintedCheck · useLibraryCheck<br/>useStats · useConfig · useBooks · useMarkRead"]
+        Stream["hooks/useSSEStream<br/>(wspólny transport: fetch + watchdog + SSE)"]
         SSEc["utils/ consumeSSE · stallWatchdog"]
-        App --> USM --> Hooks --> SSEc
+        App --> USM --> Hooks --> Stream --> SSEc
     end
 
     subgraph EP["Entrypoint"]
@@ -94,7 +95,8 @@ flowchart TB
     subgraph PURE["Czyste helpery (bez I/O)"]
         WP["wiki.parser<br/>parseAwardTable · extractAuthor"]
         BD["bookDiff<br/>buildBookUpdates · buildAuthorTags"]
-        VP["vintedParser · dataNormalizer · diffEngine"]
+        VP["vintedParser · vintedStore<br/>vintedScanPlanner · vintedHttp"]
+        BSI["bookSearchIndex · dataNormalizer · diffEngine"]
     end
 
     subgraph ADP["Adaptery — czyste wrappery API"]
@@ -131,9 +133,9 @@ flowchart TB
 - **Warstwa HTTP** — `routes/` mapuje endpointy na `controllers/syncController.ts` (parsowanie żądań, walidacja); transport długich zadań SSE żyje osobno w `controllers/sseStream.ts` (nagłówki, hardening pod proxy, keepalive, anulowanie przy rozłączeniu klienta).
 - **Composition root domeny** — `syncManager.ts`: `SyncManager` buduje adaptery i serwisy oraz orkiestruje rytuały — jedno aktywne zadanie z własnym tokenem anulowania, rejestr `TASK_REGISTRY` (nazwa → serwis) i jedno generyczne `run(taskName, sendEvent, params?)`. Współbieżność wewnątrz zadań przez `p-limit`.
 - **Serwisy** (`/services/`) — po jednym na koncern; orkiestratory (np. `bookSyncService`, `integrityService`) delegują logikę do czystych helperów.
-- **Czyste helpery** — `wiki.parser` (`parseAwardTable`), `bookDiff` (`buildBookUpdates`/`buildAuthorTags`/`buildNewBookProperties`), `vintedParser`, `dataNormalizer`, `diffEngine`: bez I/O, w pełni testowalne.
+- **Czyste helpery** — `wiki.parser` (`parseAwardTable`), `bookDiff` (`buildBookUpdates`/`buildAuthorTags`/`buildNewBookProperties`), `vintedParser`, `vintedStore` (merge/diff/`computeChangedAt`), `vintedScanPlanner` (`selectAndOrderCandidates`), `vintedHttp` (nagłówki/throttle/klasyfikacja błędu), `bookSearchIndex`, `dataNormalizer`, `diffEngine`: bez I/O, w pełni testowalne.
 - **Adaptery** — `NotionAdapter`, `WikiAdapter`: czyste wrappery API bez logiki biznesowej. Mapowanie strona Notion → domena wyniesione do `notionMapper`; skanery HTML (biblioteka/Vinted) dzielą `scrapingClient` (rotacja User-Agent + keep-alive). Adaptery rozróżniają „brak danych" od „awarii infrastruktury" (patrz [Obserwowalność](#obserwowalność-i-diagnostyka)).
-- **Frontend** — React 19 SPA (Tailwind CSS, `motion/react`, `lucide-react`). Cała orkiestracja rytuałów w hooku `useSyncManager`; pojedynczy strumień obsługuje `useSync` na współdzielonym prymitywie `consumeSSE` + watchdogu `stallWatchdog`. W dev serwowany przez Vite (middleware), w produkcji jako statyczny build z `dist/`.
+- **Frontend** — React 19 SPA (Tailwind CSS, `motion/react`, `lucide-react`), 5 zakładek: Statystyki, **Regał** (wizualizacja półek + drag&drop), **Skryptorium** (wyszukiwarka), Liturgie (rytuały), Vinted. Cała orkiestracja rytuałów w `useSyncManager`. Transport SSE (fetch → `res.ok` → `consumeSSE` + stall watchdog + komunikat błędu) żyje raz w **`useSSEStream`**; hooki strumieniowe (`useSync`, `useVintedCheck`, `useLibraryCheck`) budują na nim i różnią się tylko routingiem zdarzeń. Duży komponent skanera Vinted rozbity na `components/stats/vinted/*`. W dev serwowany przez Vite (middleware), w produkcji jako statyczny build z `dist/`.
 
 Szczegóły zasad architektonicznych: **[`COGITATOR_GUIDELINES.md`](./COGITATOR_GUIDELINES.md)**.
 
@@ -168,13 +170,17 @@ Szczegóły zasad architektonicznych: **[`COGITATOR_GUIDELINES.md`](./COGITATOR_
 ├── services/                # logika biznesowa (jeden serwis = jeden rytuał) + czyste helpery
 │   ├── bookSyncService.ts   bookDiff.ts          dataNormalizer.ts   diffEngine.ts
 │   ├── duplicateSyncService.ts   wikiFieldSyncService.ts  publisherSyncService.ts  seriesSyncService.ts
-│   ├── cyclesSyncService.ts      lpSyncService.ts          statsService.ts
+│   ├── cyclesSyncService.ts      lpSyncService.ts          statsService.ts       bookSearchIndex.ts
 │   ├── purificationService.ts    schemaValidationService.ts  integrityService.ts
 │   ├── libraryCheckService.ts    vintedSyncService.ts       vintedParser.ts
+│   ├── vintedStore.ts            vintedScanPlanner.ts       vintedHttp.ts
 ├── src/                     # frontend React
-│   ├── App.tsx  components/  types.ts  constants.ts
-│   ├── hooks/               # useSyncManager (orkiestracja), useSync, useStats, useConfig, …
-│   ├── utils/               # sse (consumeSSE), stallWatchdog, time
+│   ├── App.tsx  types.ts  constants.ts
+│   ├── components/          # + stats/vinted/ (skaner), search/ (Skryptorium), shelf/ (Regał)
+│   ├── hooks/               # useSyncManager, useSSEStream (transport), useSync, useVintedCheck,
+│   │                        #   useLibraryCheck, useStats, useConfig, useBooks, useMarkRead, …
+│   ├── utils/               # sse (consumeSSE), stallWatchdog, time, bookSearch, bookshelf,
+│   │                        #   vintedOffers, vintedSellers, vintedFormat
 │   └── theme/               # ritualColors (motyw kolorów rytuałów)
 ├── docs/                    # szczegółowa dokumentacja algorytmów (per serwis)
 ├── render.yaml              # blueprint wdrożenia na Render
