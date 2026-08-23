@@ -1,59 +1,22 @@
-import React, { useState } from "react";
+import React from "react";
 import { motion } from "motion/react";
-import { Book, BarChart3, Award, User, Calendar, Package, RefreshCw, Library, Search, CheckCircle2, Loader2 } from "lucide-react";
+import { Book, BarChart3, Award, User, Calendar, Package, RefreshCw, Library, Search } from "lucide-react";
 import { useStats } from "../hooks/useStats";
 import { useLibraryCheck } from "../hooks/useLibraryCheck";
+import { useMarkAsRead } from "../hooks/useMarkAsRead";
 import { ProgressBar } from "./stats/ProgressBar";
 import { YearlyProgressItem } from "./stats/YearlyProgressItem";
 import { LibraryProgressItem } from "./stats/LibraryProgressItem";
 import { AuthorProgressItem } from "./stats/AuthorProgressItem";
 import { IdentifiedLibraryItem } from "./stats/IdentifiedLibraryItem";
+import { OwnedUnreadItem } from "./stats/OwnedUnreadItem";
+import { AwardCoverageGrid } from "./stats/AwardCoverageGrid";
 import { LIBRARY_BRANCHES } from "../constants";
 
 export const StatsSection: React.FC = () => {
   const { stats, loading, error, fetchStats, addBookToLibrarySection } = useStats();
   const { identifiedBooks, checkingLibrary, checkProgress, libraryError, checkLibrary, checkAllLibraries, stopLibraryCheck } = useLibraryCheck();
-
-  const LIBRARY_TAGS = ["Biblioteka", "Biblioteka 9"];
-  const [markingId, setMarkingId] = useState<string | null>(null);
-  // Pozycje oznaczone w tej sesji — klucz „{tag}:{pageId}". Skan biblioteki
-  // wyklucza już otagowane książki, więc pozycja z listy skanera trafia tu
-  // dopiero po kliknięciu; wtedy ma zostać widoczna, lecz z wyłączonym haczykiem.
-  const [markedIds, setMarkedIds] = useState<Set<string>>(new Set());
-
-  // tag domyślnie „Przeczytane" (zasoby posiadane / statystyki biblioteczne);
-  // skaner filii przekazuje znacznik filii („Biblioteka" / „Biblioteka 9").
-  const handleMarkAsRead = async (pageId: string, tag?: string) => {
-    if (markingId) return;
-    setMarkingId(pageId);
-    try {
-      const res = await fetch("/api/mark-as-read", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pageId, tag })
-      });
-      if (!res.ok) throw new Error("Błąd podczas oznaczania pozycji");
-      const sourceTag = tag ?? "Przeczytane";
-      setMarkedIds(prev => new Set(prev).add(`${sourceTag}:${pageId}`));
-
-      // Tag filii dopisuje pozycję wyłącznie do sekcji „Książki dostępne w
-      // bibliotekach" — aktualizujemy ją optymistycznie (natychmiast, odporne na
-      // opóźnienie odczytu Notiona). „Przeczytane" zmienia wiele przekrojów
-      // (autorzy, chronologia, posiadane), więc tam robimy pełny refetch.
-      if (LIBRARY_TAGS.includes(sourceTag)) {
-        const book = Object.values(identifiedBooks).flat().find(b => b.id === pageId);
-        if (book) addBookToLibrarySection(sourceTag, book);
-        else await fetchStats();
-      } else {
-        await fetchStats();
-      }
-    } catch (err: any) {
-      console.error(err.message);
-      alert(`Błąd: ${err.message}`);
-    } finally {
-      setMarkingId(null);
-    }
-  };
+  const { markingId, markedIds, markAsRead } = useMarkAsRead({ identifiedBooks, addBookToLibrarySection, fetchStats });
 
   if (loading && !stats) {
     return (
@@ -160,19 +123,7 @@ export const StatsSection: React.FC = () => {
               color="emerald"
             />
             
-            <div className="pt-4 space-y-3">
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Pokrycie Poszczególnych Nagród</p>
-              <div className="grid grid-cols-2 gap-3">
-                {stats.awardCoverage.map((award, idx) => (
-                  <div key={idx} className="bg-slate-950/50 border border-slate-800 p-2 rounded-xl">
-                    <div className="text-xs font-bold text-slate-400 uppercase truncate">{award.name}</div>
-                    <div className="text-lg font-bold font-display text-purple-400">
-                      {Math.round((award.count / award.total) * 100)}%
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <AwardCoverageGrid coverage={stats.awardCoverage} />
           </div>
         </motion.div>
 
@@ -210,32 +161,13 @@ export const StatsSection: React.FC = () => {
               <p className="text-slate-400 text-sm italic text-center py-8">Wszystkie posiadane zasoby zostały przyswojone.</p>
             ) : (
               stats.ownedUnread.map((book, idx) => (
-                <div key={idx} className="flex items-start gap-3 p-3 bg-slate-950/30 rounded-xl border border-slate-800/50 group/book">
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="text-sm font-bold text-slate-200 leading-tight">{book.title}</div>
-                      {book.year && <div className="text-xs font-mono text-slate-400">{book.year}</div>}
-                    </div>
-                    <div className="text-xs text-slate-400 uppercase font-bold tracking-tighter">{book.author}</div>
-                  </div>
-                  
-                  <button
-                    onClick={() => handleMarkAsRead(book.id)}
-                    disabled={markingId !== null}
-                    className={`p-2 rounded-lg border transition-all opacity-40 group-hover/book:opacity-100 ${
-                      markingId === book.id 
-                        ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400' 
-                        : 'bg-slate-900 border-slate-800 text-slate-500 hover:text-emerald-400 hover:border-emerald-500/30'
-                    }`}
-                    title="Oznacz jako przeczytane"
-                  >
-                    {markingId === book.id ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <CheckCircle2 className="w-4 h-4" />
-                    )}
-                  </button>
-                </div>
+                <OwnedUnreadItem
+                  key={idx}
+                  book={book}
+                  marking={markingId === book.id}
+                  disabled={markingId !== null}
+                  onMarkAsRead={markAsRead}
+                />
               ))
             )}
           </div>
@@ -257,7 +189,7 @@ export const StatsSection: React.FC = () => {
               <LibraryProgressItem 
                 key={library.id} 
                 library={library} 
-                onMarkAsRead={handleMarkAsRead}
+                onMarkAsRead={markAsRead}
                 markingId={markingId}
               />
             ))}
@@ -307,7 +239,7 @@ export const StatsSection: React.FC = () => {
                 books={identifiedBooks[library.id] || []}
                 onCheck={() => checkLibrary(library.id, library.code)}
                 onStop={stopLibraryCheck}
-                onMarkAsRead={handleMarkAsRead}
+                onMarkAsRead={markAsRead}
                 markingId={markingId}
                 markedIds={markedIds}
                 isChecking={checkingLibrary === library.id}

@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.15.10** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.15.11** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -62,6 +62,11 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.15.11** — Audyt #2 krok 4/4 (#102): `StatsSection` (NIE god — spójny dashboard, ale
+  pod-wyekstrahowany). Logika oznaczania → hook `useMarkAsRead` (stan `markingId`/`markedIds`
+  + optymistyczny update filii / pełny refetch „Przeczytane"); wiersz posiadane-nieprzeczytane
+  → `stats/OwnedUnreadItem`; siatka pokrycia nagród (`Math.round(count/total)`) → `stats/AwardCoverageGrid`.
+  Zachowanie 1:1, 270 testów. **Audyt #2 zamknięty (kroki 1–4).**
 - **1.15.10** — Audyt #2 krok 3/4 (#102): `SchemaEditor` (mild God-Component) **296 → 88 linii**
   (cienki orkiestrator). Inline PATCH ×2 + walidacja duplikatu → hook `useSchemaMutations`
   (`patchOptions` wspólny, `addOption`/`deleteOption`); inline modal usuwania → generyczny
