@@ -5,53 +5,50 @@ import { StatsSection } from "./components/StatsSection";
 import { SearchSection } from "./components/SearchSection";
 import { BookshelfSection } from "./components/BookshelfSection";
 import { VintedSection } from "./components/VintedSection";
-import { StatusSection } from "./components/StatusSection";
-import { SyncAwards } from "./components/SyncAwards";
-import { OtherToolsCard } from "./components/OtherToolsCard";
-import { ProgressAndResults } from "./components/ProgressAndResults";
-import { SyncSummaryResult } from "./components/SyncSummaryResult";
-import { SchemaSection } from "./components/SchemaSection";
-import { SanctityDebugger } from "./components/SanctityDebugger";
+import { LiturgySection } from "./components/LiturgySection";
+import { TabNav, TabDef } from "./components/TabNav";
 import { ParticleBackground } from "./components/ParticleBackground";
-import { useConfig } from "./hooks/useConfig";
 import { useSyncManager } from "./hooks/useSyncManager";
-import { formatETA } from "./utils/time";
-import { IntegrityCheckResult } from "./types";
+
+type TabId = 'stats' | 'shelf' | 'search' | 'config' | 'vinted';
+
+const tabTransition = { initial: { opacity: 0, y: 20 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -20 }, transition: { duration: 0.3 } };
 
 export default function App() {
-  const { configStatus, schema, schemaLoading, schemaError, fetchSchema } = useConfig();
-  const [activeTab, setActiveTab] = useState<'stats' | 'shelf' | 'search' | 'config' | 'vinted'>('stats');
+  const [activeTab, setActiveTab] = useState<TabId>('stats');
   const [showScrollTop, setShowScrollTop] = useState(false);
 
-  const {
-    sync, publisherSync, seriesSync, cyclesSync, lpSync, integritySync, duplicatesSync, purifySync, schemaSync,
-    syncs, anyError, isAnySyncLoading,
-    fullSyncResults, clearFullSyncResults,
-    handleAwardChange, handleSync, handleFullSync, handleResetSync,
-    handleSyncSchema, handleSyncPurify, handleSyncPublisher, handleSyncSeries,
-    handleCyclesSync, handleSyncLp, handleSyncDuplicates,
-  } = useSyncManager();
+  // Jedna instancja managera — jej `anyError` zasila globalną kartę błędu (widoczną
+  // na każdej zakładce), a ten sam egzemplarz idzie do LiturgySection propem `sm`.
+  const sm = useSyncManager();
+  const { anyError, isAnySyncLoading, handleResetSync } = sm;
 
   useEffect(() => {
-    const handleScroll = () => {
-      setShowScrollTop(window.scrollY > 300);
-    };
+    const handleScroll = () => setShowScrollTop(window.scrollY > 300);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const tabs: TabDef[] = [
+    { id: 'stats', label: 'Statystyki Archiwum', icon: <Database className="w-5 h-5" />, activeClass: 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.2)]' },
+    { id: 'shelf', label: 'Regał', icon: <Library className="w-5 h-5" />, activeClass: 'bg-amber-500/20 border-amber-500/50 text-amber-300 shadow-[0_0_20px_rgba(251,191,36,0.2)]' },
+    { id: 'search', label: 'Skryptorium', icon: <ScrollText className="w-5 h-5" />, activeClass: 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.2)]' },
+    { id: 'config', label: 'Liturgie Synchronizacji', icon: <Cog className={`w-5 h-5 ${isAnySyncLoading ? 'animate-spin text-purple-400' : ''}`} />, activeClass: 'bg-purple-500/20 border-purple-500/50 text-purple-400 shadow-[0_0_20px_rgba(168,85,247,0.2)]' },
+    { id: 'vinted', label: 'Skaner Vinted', icon: <ShoppingCart className="w-5 h-5" />, activeClass: 'bg-rose-500/20 border-rose-500/50 text-rose-400 shadow-[0_0_20px_rgba(244,63,94,0.2)]' },
+  ];
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-cyan-500/30 selection:text-white relative overflow-hidden">
       <ParticleBackground />
-      
+
       <div className="relative z-10 max-w-5xl mx-auto px-6 py-16 space-y-12">
         {/* Header */}
-        <motion.header 
+        <motion.header
           initial={{ opacity: 0, y: -30 }}
           animate={{ opacity: 1, y: 0 }}
           className="flex flex-col md:flex-row items-center gap-8 text-center md:text-left"
         >
-          <motion.div 
+          <motion.div
             whileHover={{ scale: 1.05, rotate: 5 }}
             className="p-5 bg-slate-900/80 rounded-2xl border border-cyan-500/30 shadow-2xl shadow-cyan-500/20 backdrop-blur-xl"
           >
@@ -62,10 +59,7 @@ export default function App() {
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 drop-shadow-[0_0_20px_rgba(34,211,238,0.3)]">
                 COGITATOR OMNISSIAH
               </span>
-              <span
-                className="text-[10px] font-mono font-bold tracking-widest text-cyan-400/70 bg-cyan-500/10 border border-cyan-500/20 rounded-full px-2 py-0.5 self-center"
-                title="Wersja rytuału"
-              >
+              <span className="text-[10px] font-mono font-bold tracking-widest text-cyan-400/70 bg-cyan-500/10 border border-cyan-500/20 rounded-full px-2 py-0.5 self-center" title="Wersja rytuału">
                 v{__APP_VERSION__}
               </span>
             </h1>
@@ -76,64 +70,7 @@ export default function App() {
           </div>
         </motion.header>
 
-        {/* Tab Navigation */}
-        <div className="flex flex-col sm:flex-row sm:items-stretch justify-center gap-4 mt-8">
-          <button
-            onClick={() => setActiveTab('stats')}
-            className={`w-full sm:flex-1 px-4 py-4 rounded-2xl border font-bold uppercase tracking-wide text-sm transition-all flex items-center justify-center gap-3 ${
-              activeTab === 'stats' 
-                ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.2)]' 
-                : 'bg-slate-900/50 border-slate-800 text-slate-500 hover:text-slate-300 hover:bg-slate-800/50'
-            }`}
-          >
-            <Database className="w-5 h-5" />
-            Statystyki Archiwum
-          </button>
-          <button
-            onClick={() => setActiveTab('shelf')}
-            className={`w-full sm:flex-1 px-4 py-4 rounded-2xl border font-bold uppercase tracking-wide text-sm transition-all flex items-center justify-center gap-3 ${
-              activeTab === 'shelf'
-                ? 'bg-amber-500/20 border-amber-500/50 text-amber-300 shadow-[0_0_20px_rgba(251,191,36,0.2)]'
-                : 'bg-slate-900/50 border-slate-800 text-slate-500 hover:text-slate-300 hover:bg-slate-800/50'
-            }`}
-          >
-            <Library className="w-5 h-5" />
-            Regał
-          </button>
-          <button
-            onClick={() => setActiveTab('search')}
-            className={`w-full sm:flex-1 px-4 py-4 rounded-2xl border font-bold uppercase tracking-wide text-sm transition-all flex items-center justify-center gap-3 ${
-              activeTab === 'search'
-                ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.2)]'
-                : 'bg-slate-900/50 border-slate-800 text-slate-500 hover:text-slate-300 hover:bg-slate-800/50'
-            }`}
-          >
-            <ScrollText className="w-5 h-5" />
-            Skryptorium
-          </button>
-          <button
-            onClick={() => setActiveTab('config')}
-            className={`w-full sm:flex-1 px-4 py-4 rounded-2xl border font-bold uppercase tracking-wide text-sm transition-all flex items-center justify-center gap-3 ${
-              activeTab === 'config' 
-                ? 'bg-purple-500/20 border-purple-500/50 text-purple-400 shadow-[0_0_20px_rgba(168,85,247,0.2)]' 
-                : 'bg-slate-900/50 border-slate-800 text-slate-500 hover:text-slate-300 hover:bg-slate-800/50'
-            }`}
-          >
-            <Cog className={`w-5 h-5 ${isAnySyncLoading ? 'animate-spin text-purple-400' : ''}`} />
-            Liturgie Synchronizacji
-          </button>
-          <button
-            onClick={() => setActiveTab('vinted')}
-            className={`w-full sm:flex-1 px-4 py-4 rounded-2xl border font-bold uppercase tracking-wide text-sm transition-all flex items-center justify-center gap-3 ${
-              activeTab === 'vinted' 
-                ? 'bg-rose-500/20 border-rose-500/50 text-rose-400 shadow-[0_0_20px_rgba(244,63,94,0.2)]' 
-                : 'bg-slate-900/50 border-slate-800 text-slate-500 hover:text-slate-300 hover:bg-slate-800/50'
-            }`}
-          >
-            <ShoppingCart className="w-5 h-5" />
-            Skaner Vinted
-          </button>
-        </div>
+        <TabNav tabs={tabs} active={activeTab} onSelect={(id) => setActiveTab(id as TabId)} />
 
         {/* Global Error Display */}
         <AnimatePresence>
@@ -152,17 +89,14 @@ export default function App() {
                   <h3 className="text-lg font-bold text-red-200 uppercase tracking-widest mb-1">Błąd Synchronizacji</h3>
                   <p className="text-red-400/80 text-sm font-medium">{anyError.state.error}</p>
                 </div>
-                <button 
-                  onClick={() => anyError.reset()}
-                  className="p-2 hover:bg-red-500/10 rounded-xl text-red-400 transition-colors"
-                >
+                <button onClick={() => anyError.reset()} className="p-2 hover:bg-red-500/10 rounded-xl text-red-400 transition-colors">
                   <XCircle className="w-5 h-5" />
                 </button>
               </div>
-              
+
               {anyError.state.error?.includes("Inna synchronizacja") && (
                 <div className="pt-2">
-                  <button 
+                  <button
                     onClick={handleResetSync}
                     className="flex items-center gap-2 px-6 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 rounded-xl text-red-200 text-xs font-bold uppercase tracking-widest transition-all"
                   >
@@ -179,132 +113,15 @@ export default function App() {
         {/* Main Content Area */}
         <AnimatePresence mode="wait">
           {activeTab === 'stats' ? (
-            <motion.div
-              key="stats"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              <StatsSection />
-            </motion.div>
+            <motion.div key="stats" {...tabTransition}><StatsSection /></motion.div>
           ) : activeTab === 'shelf' ? (
-            <motion.div
-              key="shelf"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              <BookshelfSection />
-            </motion.div>
+            <motion.div key="shelf" {...tabTransition}><BookshelfSection /></motion.div>
           ) : activeTab === 'search' ? (
-            <motion.div
-              key="search"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              <SearchSection />
-            </motion.div>
+            <motion.div key="search" {...tabTransition}><SearchSection /></motion.div>
           ) : activeTab === 'config' ? (
-            <motion.div
-              key="config"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-              className="space-y-12"
-            >
-              <div className="flex items-center gap-6 mb-12">
-                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-purple-500/20 to-transparent"></div>
-                <div className="flex items-center gap-4">
-                  <Cog className="w-6 h-6 text-purple-400" />
-                  <h2 className="text-xl font-bold font-display uppercase tracking-[0.4em] text-purple-100/90 whitespace-nowrap">
-                    Liturgie Synchronizacji
-                  </h2>
-                </div>
-                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-purple-500/20 to-transparent"></div>
-              </div>
-
-              {/* Status Section */}
-              <StatusSection configStatus={configStatus} />
-              
-              {/* Main Actions Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Sync Awards Card */}
-                <SyncAwards 
-                  sync={sync}
-                  integritySync={integritySync}
-                  handleAwardChange={handleAwardChange}
-                  handleSync={handleSync}
-                  handleFullSync={handleFullSync}
-                  isAnySyncLoading={isAnySyncLoading}
-                />
-
-                {/* Other Tools Card */}
-                <OtherToolsCard 
-                  schemaSync={schemaSync}
-                  purifySync={purifySync}
-                  publisherSync={publisherSync}
-                  seriesSync={seriesSync}
-                  cyclesSync={cyclesSync}
-                  duplicatesSync={duplicatesSync}
-                  lpSync={lpSync}
-                  handleSyncSchema={handleSyncSchema}
-                  handleSyncPurify={handleSyncPurify}
-                  handleSyncPublisher={handleSyncPublisher}
-                  handleSyncSeries={handleSyncSeries}
-                  handleCyclesSync={handleCyclesSync}
-                  handleSyncDuplicates={handleSyncDuplicates}
-                  handleSyncLp={handleSyncLp}
-                  handleResetSync={handleResetSync}
-                  isAnySyncLoading={isAnySyncLoading}
-                />
-              </div>
-
-              {/* Progress and Results */}
-              <AnimatePresence>
-                <ProgressAndResults 
-                  syncs={syncs}
-                  formatETA={formatETA}
-                />
-              </AnimatePresence>
-
-              {/* Sync Summary Result */}
-              <AnimatePresence>
-                <SyncSummaryResult
-                  syncs={syncs}
-                  fullSyncResults={fullSyncResults}
-                  onClearFullResults={clearFullSyncResults}
-                />
-              </AnimatePresence>
-
-              {/* Sanctity Debugger */}
-              <SanctityDebugger 
-                result={integritySync.state.result as IntegrityCheckResult | null} 
-              />
-
-              {/* Schema Section */}
-              <SchemaSection 
-                schema={schema}
-                schemaLoading={schemaLoading}
-                schemaError={schemaError}
-                configStatus={configStatus}
-                fetchSchema={fetchSchema}
-              />
-            </motion.div>
+            <motion.div key="config" {...tabTransition} className="space-y-12"><LiturgySection sm={sm} /></motion.div>
           ) : (
-            <motion.div
-              key="vinted"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              <VintedSection />
-            </motion.div>
+            <motion.div key="vinted" {...tabTransition}><VintedSection /></motion.div>
           )}
         </AnimatePresence>
       </div>
