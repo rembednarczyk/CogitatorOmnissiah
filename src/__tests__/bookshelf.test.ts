@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { BookIndexEntry } from "../types";
-import { isRead, spineStyle, planShelf, leanLayout, MAX_LEAN_DEG, spineFontSize, flatBookLayout, splitShelves, featuredReads, CLOTH_PALETTE, READ_TAG, shelfPlankBackground, SHELF_ROW_H, SHELF_PLANK_H, SHELF_ROW_GAP } from "../utils/bookshelf";
+import { isRead, spineStyle, planShelf, leanLayout, MAX_LEAN_DEG, spineFontSize, flatBookLayout, FLAT_MAX_W, splitShelves, featuredReads, CLOTH_PALETTE, READ_TAG, shelfPlankBackground, SHELF_ROW_H, SHELF_PLANK_H, SHELF_ROW_GAP } from "../utils/bookshelf";
 
 const mk = (over: Partial<BookIndexEntry>): BookIndexEntry => ({
   id: over.id ?? over.plTitle ?? "x", plTitle: "", origTitle: "", author: "", year: "",
@@ -115,15 +115,25 @@ describe("bookshelf.title sizing (pełne nazwy)", () => {
       expect(f).toBeLessThanOrEqual(11);
     }
   });
-  it("flatBookLayout reserves enough width for the full title (no clipping)", () => {
-    for (const title of ["Ubik", "Diuna", "Hyperion i jego długa, rozwlekła kontynuacja opowieści"]) {
-      const { width, fontSize, thickness } = flatBookLayout({ ...mk({ plTitle: title }) }, style);
-      // szerokość mieści oszacowany tekst (0.6·len·font) + margines:
-      expect(width).toBeGreaterThanOrEqual(Math.ceil(title.length * 0.6 * fontSize));
-      expect(fontSize).toBeGreaterThanOrEqual(7);
-      expect(fontSize).toBeLessThanOrEqual(11);
-      expect(thickness).toBeGreaterThanOrEqual(15);
-      expect(thickness).toBeLessThanOrEqual(24);
+  it("flatBookLayout wraps long titles to 2 lines instead of widening past the cap", () => {
+    const short = flatBookLayout(mk({ plTitle: "Ubik" }), style);
+    expect(short.lines).toBe(1);
+    expect(short.width).toBeLessThanOrEqual(FLAT_MAX_W);
+
+    const long = flatBookLayout(mk({ plTitle: "Hyperion i jego długa, rozwlekła kontynuacja opowieści" }), style);
+    expect(long.lines).toBe(2);                 // zawija, nie poszerza
+    expect(long.width).toBe(FLAT_MAX_W);        // szerokość zaczepiona na limicie
+    expect(long.thickness).toBeGreaterThan(short.thickness); // 2 linie → trochę grubsza
+
+    for (const l of [short, long]) {
+      expect(l.width).toBeLessThanOrEqual(FLAT_MAX_W);
+      expect(l.fontSize).toBeGreaterThanOrEqual(7);
+      expect(l.fontSize).toBeLessThanOrEqual(10);
+      expect(l.thickness).toBeGreaterThanOrEqual(15);
+      expect(l.thickness).toBeLessThanOrEqual(24);
+      // 2 linie muszą wystarczyć na pełny tytuł: połowa tekstu mieści się w linii
+      const availW = FLAT_MAX_W - 20;
+      expect(Math.ceil((l === long ? "Hyperion i jego długa, rozwlekła kontynuacja opowieści".length : 4) * 0.6 * l.fontSize / l.lines)).toBeLessThanOrEqual(availW);
     }
   });
 });

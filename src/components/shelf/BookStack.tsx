@@ -24,14 +24,14 @@ function jitter(book: BookIndexEntry): number {
 export const BookStack: React.FC<Props> = ({ books, onDragStart, onDragEnd }) => {
   const layers = books.map((b) => {
     const style = spineStyle(b);
-    const { width, fontSize, thickness } = flatBookLayout(b, style);
-    return { book: b, width, fontSize, thickness, color: style.color, dx: jitter(b) };
+    const { width, fontSize, thickness, lines } = flatBookLayout(b, style);
+    return { book: b, width, fontSize, thickness, lines, color: style.color, dx: jitter(b) };
   });
   const cellW = Math.max(...layers.map((l) => l.width + l.dx));
 
   return (
     <div className="relative shrink-0 flex flex-col-reverse items-start" style={{ width: cellW }}>
-      {layers.map(({ book, width, fontSize, thickness, color, dx }, i) => (
+      {layers.map(({ book, width, fontSize, thickness, lines, color, dx }, i) => (
         <div
           key={book.id}
           draggable
@@ -50,12 +50,24 @@ export const BookStack: React.FC<Props> = ({ books, onDragStart, onDragEnd }) =>
         >
           {/* Krawędź kartek (fore-edge) po prawej */}
           <span className="absolute top-[2px] bottom-[2px] right-[2px] w-[3px] rounded-[1px] bg-gradient-to-b from-amber-50/70 via-amber-100/40 to-amber-50/70" aria-hidden />
-          {/* PEŁNY tytuł wzdłuż grzbietu (bez ucinania) */}
+          {/* PEŁNY tytuł wzdłuż grzbietu — zawijany do max 2 linii zamiast poszerzania */}
           <span
-            className={`absolute inset-y-0 right-3 flex items-center font-bold text-white/90 whitespace-nowrap ${hasAward(book) ? "left-3.5" : "left-2"}`}
-            style={{ fontSize, textShadow: "0 1px 2px rgba(0,0,0,.55)" }}
+            className={`absolute inset-y-0 right-3 flex items-center font-bold text-white/90 ${hasAward(book) ? "left-3.5" : "left-2"}`}
           >
-            {displayTitle(book)}
+            <span
+              style={{
+                fontSize,
+                lineHeight: 1.08,
+                display: "-webkit-box",
+                WebkitBoxOrient: "vertical",
+                WebkitLineClamp: lines,
+                overflow: "hidden",
+                whiteSpace: lines === 1 ? "nowrap" : "normal",
+                textShadow: "0 1px 2px rgba(0,0,0,.55)",
+              }}
+            >
+              {displayTitle(book)}
+            </span>
           </span>
           {hasAward(book) && (
             <span className="absolute top-1/2 -translate-y-1/2 left-1 w-[7px] h-[7px] rounded-full bg-amber-400 shadow-[0_0_5px_rgba(251,191,36,.85)]" title="Nagroda / nominacja" />
