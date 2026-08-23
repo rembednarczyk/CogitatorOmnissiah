@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.16.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.16.2** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -62,6 +62,11 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.16.2** — Pozy: więcej książek w stosiku (`flat` layers **3–5**, było 1–3) + **reguła: żadna
+  książka nie nachodzi na drugą**. Nowy helper `spineLayout(style, pose)` — komórka rezerwuje
+  szerokość obróconego grzbietu (`cellW = W·cosθ + H·sinθ`) i przesuwa go (`shiftX`), by bbox był
+  wyśrodkowany; przechylony wolumin zostaje w swoim torze (między komórkami `column-gap`). +2 testy
+  (containment 4 narożników, footprint prosto/flat). Weryfikacja screenshotem. `docs/bookshelf.md` upd.
 - **1.16.1** — Dynamika póz na półce: `spinePose(book)` (deterministyczna, avalanche-mix hasza →
   równomierny rozkład niezależny od korpusu): ~66% stoi prosto, ~27% przechylone (`lean`, 4–11°,
   pivot u podstawy — oparte o sąsiada), ~7% leży na płask jako mały stosik (`flat`, 1–3 książki,

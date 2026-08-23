@@ -76,8 +76,32 @@ export function spinePose(book: BookIndexEntry): SpinePose {
   return {
     kind: "flat",
     w: 74 + ((x >>> 17) % 46),                 // 74–119 px (szerokość leżącej książki)
-    layers: 1 + ((x >>> 23) % 3),              // 1–3 książki w stosiku
+    layers: 3 + ((x >>> 23) % 3),              // 3–5 książek w stosiku
   };
+}
+
+/**
+ * Layout komórki grzbietu na półce. Reguła: **żadna książka nie nachodzi na drugą** —
+ * komórka rezerwuje dokładnie tyle szerokości, ile zajmuje obrócony grzbiet
+ * (`cellW`), a `shiftX` przesuwa go tak, by obrócony prostokąt był wyśrodkowany
+ * w komórce. Dzięki temu przechylony wolumin mieści się w swoim torze i nie
+ * dotyka sąsiadów (między komórkami zostaje `column-gap`).
+ */
+export interface SpineLayout {
+  cellW: number;   // szerokość komórki (flex-item), px
+  shiftX: number;  // przesunięcie poziome grzbietu, px (centrowanie obróconego bboxa)
+  rotate: number;  // kąt obrotu, ° (0 = prosto)
+}
+
+export function spineLayout(style: SpineStyle, pose: SpinePose): SpineLayout {
+  if (pose.kind === "flat") return { cellW: pose.w, shiftX: 0, rotate: 0 };
+  if (pose.kind === "lean") {
+    const rad = (Math.abs(pose.deg) * Math.PI) / 180;
+    const cellW = Math.ceil(style.width * Math.cos(rad) + style.height * Math.sin(rad)) + 1;
+    const shiftX = -Math.sign(pose.deg) * (style.height * Math.sin(rad)) / 2;
+    return { cellW, shiftX, rotate: pose.deg };
+  }
+  return { cellW: style.width, shiftX: 0, rotate: 0 };
 }
 
 /** Tytuł do pokazania (polski, a gdy brak — oryginalny). */
