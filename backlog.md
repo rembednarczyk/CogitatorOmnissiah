@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.15.5** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.15.6** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -62,7 +62,14 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
-- **1.15.5** — God-object krok 5/5 (#91, DOMKNIĘTE): `notion.adapter` — dedup
+- **1.15.6** — `useSSEStream` (deferred z audytu god-object): wspólny transport SSE
+  (POST → `res.ok` → `consumeSSE` + watchdog + derywacja komunikatu błędu/stall). Trzy hooki
+  streamowe zbudowane na nim, różnią się tylko routingiem zdarzeń: `useSync` 154→100 (koniec
+  inline-watchdoga — teraz `createStallWatchdog` przez primitive), `useVintedCheck` 168→145,
+  `useLibraryCheck` 121→89 (usunięty antywzorzec `new Promise(async…)` — `checkLibrary` to
+  zwykły async). +4 testy. Drobna zmiana: błąd HTTP biblioteki pokazuje realny komunikat
+  serwera zamiast hardkodu. Zachowanie poza tym 1:1 (komunikaty stall zachowane, useSync ma
+  swój dłuższy wariant). CLAUDE.md zaktualizowany. `notion.adapter` — dedup
   `add`/`removeTagFromMultiSelect` → prywatny `mutateMultiSelect(pageId, prop, transform)`
   (retrieve→mutate→update w jednym miejscu; `transform` zwraca `null` = no-op). Zachowanie 1:1.
   DEFERRED (opcjonalne, medium): pełny split adaptera na Source/SchemaAdmin/BookRepository,
