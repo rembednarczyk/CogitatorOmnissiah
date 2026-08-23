@@ -30,17 +30,20 @@ title, dark back-panel with vertical planks, brass corner brackets and a hanging
   every row. Rows use fixed-height cells (`SHELF_ROW_H` > tallest spine), so every wrapped line
   advances by exactly `SHELF_ROW_H + SHELF_ROW_GAP`; the gradient period matches, so a plank lands
   directly beneath each row regardless of viewport width or how many spines fit per line.
-- **`spinePose(book)`** — deterministic pose for a bit of shelf dynamism: **straight** (~66%),
-  **lean** (~27%, tilt 4–11° pivoting at the base) or **flat** (~7%, a small **3–5**-book pile lying
-  down, rendered by `FlatBook`). The title hash is avalanche-mixed (`mix32`) before slicing so the
-  split stays even across any title corpus (a raw rolling hash of near-identical titles is skewed).
-  The pose is a `transform`/markup change **inside** the fixed-height cell, so it never disturbs the
-  plank alignment; drag&drop is unchanged.
-- **`spineLayout(style, pose)`** — enforces the **no-overlap rule**: each cell reserves the width of
-  the *rotated* spine (`cellW = W·cosθ + H·sinθ`) and offsets it (`shiftX`) so the rotated bounding
-  box is centred in the cell. A leaning volume therefore stays inside its own track and never crosses
-  into a neighbour (the `column-gap` between cells is preserved). Straight/flat cells reserve exactly
-  their footprint. Unit-tested by checking all four rotated corners fall within `±cellW/2`.
+- **`planShelf(books)`** — turns the sorted shelf into deterministic **slots**, each holding one or
+  more volumes: **`spine`** (upright, `lean === 0`, ~80%) or slightly tilted (`lean` up to
+  `MAX_LEAN_DEG` = 6°, ~12%), or **`stack`** — a lying pile where **each layer is a separate real
+  volume** (2–4 consecutive books, their own title/colour/award/drag), not one spine faking a pile.
+  The per-book decision uses the avalanche-mixed (`mix32`) title hash so the split stays even across
+  any corpus; every book lands in exactly one slot. Poses are `transform`/markup **inside** the
+  fixed-height cell, so plank alignment and drag&drop are untouched.
+- **`leanLayout(style, deg)`** — enforces the **no-overlap rule** for a tilted spine: the cell
+  reserves the *rotated* width (`cellW = W·cosθ + H·sinθ`) and offsets it (`shiftX`) so the rotated
+  box is centred, keeping the volume inside its own track (the `column-gap` between cells is
+  preserved). `deg === 0` → plain spine width. Unit-tested by checking all four rotated corners fall
+  within `±cellW/2`.
+- **`BookStack`** (`shelf/BookStack.tsx`) — renders a `stack` slot: each real volume as its own
+  lying book (colour from its title, title along the spine, award marker, individually draggable).
 
 ## 4. Drag & drop + persistence
 - Native HTML5 DnD: each `BookSpine` is `draggable` and puts its id on the dataTransfer; each `Shelf`

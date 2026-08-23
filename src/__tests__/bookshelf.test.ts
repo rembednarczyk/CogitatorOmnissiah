@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { BookIndexEntry } from "../types";
-import { isRead, spineStyle, spinePose, spineLayout, splitShelves, featuredReads, CLOTH_PALETTE, READ_TAG, shelfPlankBackground, SHELF_ROW_H, SHELF_PLANK_H, SHELF_ROW_GAP } from "../utils/bookshelf";
+import { isRead, spineStyle, planShelf, leanLayout, MAX_LEAN_DEG, splitShelves, featuredReads, CLOTH_PALETTE, READ_TAG, shelfPlankBackground, SHELF_ROW_H, SHELF_PLANK_H, SHELF_ROW_GAP } from "../utils/bookshelf";
 
 const mk = (over: Partial<BookIndexEntry>): BookIndexEntry => ({
   id: over.id ?? over.plTitle ?? "x", plTitle: "", origTitle: "", author: "", year: "",
@@ -38,68 +38,69 @@ describe("bookshelf.spineStyle", () => {
   });
 });
 
-describe("bookshelf.spinePose", () => {
-  it("is deterministic for the same title", () => {
-    const a = spinePose(mk({ plTitle: "Diuna" }));
-    const b = spinePose(mk({ plTitle: "Diuna", id: "other" }));
+describe("bookshelf.planShelf", () => {
+  const shelf = Array.from({ length: 600 }, (_, i) => mk({ id: `b${i}`, plTitle: `Vol ${i}` }));
+
+  it("is deterministic and assigns every book to exactly one slot", () => {
+    const a = planShelf(shelf);
+    const b = planShelf(shelf);
     expect(a).toEqual(b);
+    const ids = a.flatMap((s) => (s.kind === "stack" ? s.books.map((x) => x.id) : [s.book.id]));
+    expect(ids).toEqual(shelf.map((x) => x.id));           // każda książka raz, w kolejności
+    expect(new Set(ids).size).toBe(shelf.length);          // bez duplikatów
   });
-  it("produces only valid poses within bounds", () => {
-    for (let i = 0; i < 400; i++) {
-      const p = spinePose(mk({ plTitle: `Tytuł ${i}` }));
-      if (p.kind === "lean") {
-        expect(Math.abs(p.deg)).toBeGreaterThanOrEqual(4);
-        expect(Math.abs(p.deg)).toBeLessThanOrEqual(11);
-      } else if (p.kind === "flat") {
-        expect(p.w).toBeGreaterThanOrEqual(74);
-        expect(p.w).toBeLessThanOrEqual(119);
-        expect(p.layers).toBeGreaterThanOrEqual(3);
-        expect(p.layers).toBeLessThanOrEqual(5);
-      } else {
-        expect(p.kind).toBe("straight");
+
+  it("keeps most books upright, with a minority leaning/stacked", () => {
+    const slots = planShelf(shelf);
+    const straight = slots.filter((s) => s.kind === "spine" && s.lean === 0).length;
+    const lean = slots.filter((s) => s.kind === "spine" && s.lean !== 0).length;
+    const stacks = slots.filter((s) => s.kind === "stack").length;
+    expect(straight).toBeGreaterThan(lean + stacks);        // zdecydowana większość prosto
+    expect(lean).toBeGreaterThan(0);
+    expect(stacks).toBeGreaterThan(0);
+  });
+
+  it("every layer of a stack is a separate real book (≥2, distinct ids)", () => {
+    for (const s of planShelf(shelf)) {
+      if (s.kind === "stack") {
+        expect(s.books.length).toBeGreaterThanOrEqual(2);
+        expect(s.books.length).toBeLessThanOrEqual(4);
+        expect(new Set(s.books.map((b) => b.id)).size).toBe(s.books.length);
       }
     }
   });
-  it("keeps most books upright, with a minority leaning/flat", () => {
-    const counts = { straight: 0, lean: 0, flat: 0 } as Record<string, number>;
-    for (let i = 0; i < 600; i++) counts[spinePose(mk({ plTitle: `Vol ${i}` })).kind]++;
-    expect(counts.straight).toBeGreaterThan(counts.lean + counts.flat); // większość stoi prosto
-    expect(counts.lean).toBeGreaterThan(0);
-    expect(counts.flat).toBeGreaterThan(0);
+
+  it("caps lean at MAX_LEAN_DEG and never leans below 3°", () => {
+    for (const s of planShelf(shelf)) {
+      if (s.kind === "spine" && s.lean !== 0) {
+        expect(Math.abs(s.lean)).toBeGreaterThanOrEqual(3);
+        expect(Math.abs(s.lean)).toBeLessThanOrEqual(MAX_LEAN_DEG);
+      }
+    }
   });
 });
 
-describe("bookshelf.spineLayout (reguła: brak nachodzenia)", () => {
-  // Obrócony prostokąt W×H o kąt θ ma bbox szerokości W·cosθ + H·sinθ; komórka
-  // musi go w całości mieścić, wyśrodkowanego (shiftX), by nie wchodził na sąsiada.
-  it("reserves at least the rotated bounding box and centers it", () => {
+describe("bookshelf.leanLayout (reguła: brak nachodzenia)", () => {
+  it("straight cell reserves exactly the spine width", () => {
+    const style = spineStyle(mk({ plTitle: "Prosto" }));
+    expect(leanLayout(style, 0)).toEqual({ cellW: style.width, shiftX: 0 });
+  });
+  it("reserves the rotated bounding box and centers it (corners within ±cellW/2)", () => {
     for (let i = 0; i < 400; i++) {
-      const b = mk({ plTitle: `Tom ${i}` });
-      const style = spineStyle(b);
-      const pose = spinePose(b);
-      const { cellW, shiftX, rotate } = spineLayout(style, pose);
-      if (pose.kind === "lean") {
-        const a = (rotate * Math.PI) / 180;
+      const style = spineStyle(mk({ plTitle: `Tom ${i}` }));
+      for (const deg of [-6, -3, 3, 6]) {
+        const { cellW, shiftX } = leanLayout(style, deg);
+        const a = (deg * Math.PI) / 180;
         const bbox = style.width * Math.abs(Math.cos(a)) + style.height * Math.abs(Math.sin(a));
-        expect(cellW).toBeGreaterThanOrEqual(bbox);      // komórka mieści cały obrót
-        // Cztery narożniki grzbietu obrócone jak w CSS (pivot u dołu, wierzch w y=−H),
-        // przesunięte o shiftX — wszystkie muszą zostać w [−cellW/2, cellW/2].
+        expect(cellW).toBeGreaterThanOrEqual(bbox);
         const W = style.width, H = style.height;
         const corners = [[-W / 2, 0], [W / 2, 0], [-W / 2, -H], [W / 2, -H]]
           .map(([x, y]) => x * Math.cos(a) - y * Math.sin(a) + shiftX);
         expect(Math.max(...corners)).toBeLessThanOrEqual(cellW / 2 + 1e-6);
         expect(Math.min(...corners)).toBeGreaterThanOrEqual(-cellW / 2 - 1e-6);
-        expect(Math.sign(shiftX)).toBe(-Math.sign(rotate)); // przesuw w stronę przeciwną do przechyłu
-      } else {
-        expect(shiftX).toBe(0);
-        expect(rotate).toBe(0);
+        expect(Math.sign(shiftX)).toBe(-Math.sign(deg));
       }
     }
-  });
-  it("straight/flat cells reserve exactly their footprint", () => {
-    const straight = mk({ plTitle: "Prosto stojąca" });
-    const sp = spinePose(straight);
-    if (sp.kind === "straight") expect(spineLayout(spineStyle(straight), sp).cellW).toBe(spineStyle(straight).width);
   });
 });
 

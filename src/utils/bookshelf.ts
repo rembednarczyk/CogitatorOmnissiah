@@ -43,18 +43,6 @@ export function spineStyle(book: BookIndexEntry): SpineStyle {
   };
 }
 
-/**
- * Poza grzbietu na półce — deterministyczna (z hasza tytułu), by regał miał
- * trochę dynamiki, ale nie migotał przy re-renderze / zawijaniu wierszy.
- * - `straight` — stoi prosto (większość),
- * - `lean` — przechylony o `deg` stopni, jakby oparty o sąsiada (pivot u podstawy),
- * - `flat` — leży na płask jako mały stosik (`layers` książek, szerokość `w`).
- */
-export type SpinePose =
-  | { kind: "straight" }
-  | { kind: "lean"; deg: number }
-  | { kind: "flat"; w: number; layers: number };
-
 /** Avalanche-mix (xxHash-style) — rozprasza bity, by rozkład póz był równomierny
  *  niezależnie od korpusu tytułów (goły rolling-hash sąsiednich napisów jest skośny). */
 function mix32(n: number): number {
@@ -65,43 +53,75 @@ function mix32(n: number): number {
   return x >>> 0;
 }
 
-export function spinePose(book: BookIndexEntry): SpinePose {
-  const x = mix32(hash(book.plTitle || book.origTitle || book.id));
-  const sel = x % 100;                          // ~66% prosto, ~27% przechył, ~7% leżą
-  if (sel < 66) return { kind: "straight" };
-  if (sel < 93) {
-    const mag = 4 + ((x >>> 13) % 8);          // 4–11°
-    return { kind: "lean", deg: (x >>> 3) & 1 ? mag : -mag };
-  }
-  return {
-    kind: "flat",
-    w: 74 + ((x >>> 17) % 46),                 // 74–119 px (szerokość leżącej książki)
-    layers: 3 + ((x >>> 23) % 3),              // 3–5 książek w stosiku
-  };
+function seed(book: BookIndexEntry): number {
+  return mix32(hash(book.plTitle || book.origTitle || book.id));
 }
 
 /**
- * Layout komórki grzbietu na półce. Reguła: **żadna książka nie nachodzi na drugą** —
- * komórka rezerwuje dokładnie tyle szerokości, ile zajmuje obrócony grzbiet
- * (`cellW`), a `shiftX` przesuwa go tak, by obrócony prostokąt był wyśrodkowany
- * w komórce. Dzięki temu przechylony wolumin mieści się w swoim torze i nie
- * dotyka sąsiadów (między komórkami zostaje `column-gap`).
+ * Slot na półce — deterministyczny plan ułożenia. Każdy wolumin trafia dokładnie
+ * do jednego slotu:
+ * - `spine` — grzbiet stojący (prosto, `lean === 0`) lub lekko przechylony (`lean` °),
+ * - `stack` — kupka LEŻĄCYCH książek; **każda warstwa to osobny, prawdziwy wolumin**
+ *   (własny tytuł/kolor/nagroda/drag), a nie jeden grzbiet udający stos.
  */
-export interface SpineLayout {
-  cellW: number;   // szerokość komórki (flex-item), px
-  shiftX: number;  // przesunięcie poziome grzbietu, px (centrowanie obróconego bboxa)
-  rotate: number;  // kąt obrotu, ° (0 = prosto)
+export type ShelfSlot =
+  | { kind: "spine"; book: BookIndexEntry; lean: number }
+  | { kind: "stack"; books: BookIndexEntry[] };
+
+export const MAX_LEAN_DEG = 6;
+
+/**
+ * Planuje sloty dla posortowanej listy woluminów. Decyzja per książka jest
+ * deterministyczna (hasz tytułu); kupkę tworzy kilka KOLEJNYCH prawdziwych
+ * książek (starter „pożera" następne). ~80 % stoi prosto, ~12 % lekko przechylone,
+ * reszta ląduje w kupkach po 2–4 realne woluminy.
+ */
+export function planShelf(books: BookIndexEntry[]): ShelfSlot[] {
+  const slots: ShelfSlot[] = [];
+  for (let i = 0; i < books.length; ) {
+    const b = books[i];
+    const x = seed(b);
+    const sel = x % 100;
+    if (sel < 80 || books.length - i < 2) {
+      slots.push({ kind: "spine", book: b, lean: 0 });
+      i += 1;
+    } else if (sel < 92) {
+      const mag = 3 + ((x >>> 13) % (MAX_LEAN_DEG - 2)); // 3–6°
+      slots.push({ kind: "spine", book: b, lean: (x >>> 3) & 1 ? mag : -mag });
+      i += 1;
+    } else {
+      const size = Math.min(2 + ((x >>> 17) % 3), books.length - i); // 2–4 realne książki
+      slots.push({ kind: "stack", books: books.slice(i, i + size) });
+      i += size;
+    }
+  }
+  return slots;
 }
 
-export function spineLayout(style: SpineStyle, pose: SpinePose): SpineLayout {
-  if (pose.kind === "flat") return { cellW: pose.w, shiftX: 0, rotate: 0 };
-  if (pose.kind === "lean") {
-    const rad = (Math.abs(pose.deg) * Math.PI) / 180;
-    const cellW = Math.ceil(style.width * Math.cos(rad) + style.height * Math.sin(rad)) + 1;
-    const shiftX = -Math.sign(pose.deg) * (style.height * Math.sin(rad)) / 2;
-    return { cellW, shiftX, rotate: pose.deg };
-  }
-  return { cellW: style.width, shiftX: 0, rotate: 0 };
+/**
+ * Layout przechylonego grzbietu. Reguła: **żadna książka nie nachodzi na drugą** —
+ * komórka rezerwuje szerokość OBRÓCONEGO grzbietu (`cellW`), a `shiftX` przesuwa go,
+ * by obrócony prostokąt był wyśrodkowany w komórce (inaczej wierzchołek wychodzi
+ * jedną stroną poza tor). Dla `deg === 0` → zwykła szerokość, bez przesunięcia.
+ */
+export interface LeanLayout { cellW: number; shiftX: number; }
+
+export function leanLayout(style: SpineStyle, deg: number): LeanLayout {
+  if (!deg) return { cellW: style.width, shiftX: 0 };
+  const rad = (Math.abs(deg) * Math.PI) / 180;
+  const cellW = Math.ceil(style.width * Math.cos(rad) + style.height * Math.sin(rad)) + 1;
+  const shiftX = -Math.sign(deg) * (style.height * Math.sin(rad)) / 2;
+  return { cellW, shiftX };
+}
+
+/** Szerokość leżącej książki (spine-out, pozioma) — deterministyczna z tytułu. */
+export function flatBookWidth(book: BookIndexEntry): number {
+  return 84 + (seed(book) % 28); // 84–111 px
+}
+
+/** Grubość leżącej książki (widoczna krawędź grzbietu) — z grubości stojącego grzbietu. */
+export function flatBookThickness(style: SpineStyle): number {
+  return Math.max(13, Math.min(20, style.width));
 }
 
 /** Tytuł do pokazania (polski, a gdy brak — oryginalny). */
