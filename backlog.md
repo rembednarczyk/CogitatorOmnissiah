@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.15.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.15.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -62,6 +62,13 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.15.1** — God-object audyt + krok 1/5 (#91): ekstrakcja czystych helperów z God-Component
+  `VintedCheckItem` (528 l.) do `src/utils/vintedFormat.ts` (`shortDate`, `formatDebug`,
+  `isBookChanged`, `offerBadges`) — ~40 linii logiki-w-JSX out, +8 testów. Audyt SRP wykazał
+  4 winowajców: VintedCheckItem (God-Component), `useSyncManager` (God-Hook: rejestr+polityka+
+  7-krokowa saga+parsing DOM), `vintedSyncService` (`runVintedCheck` god-metoda 225 l. + 3
+  concerny/klasa), `notion.adapter` (God-Adapter: literały domeny + dup metody). Oczyszczone:
+  `syncController` (płaski), `useSync` (wzorzec). Dekompozycja w krokach 2–5.
 - **1.15.0** — „Regał Archiwum" (#89): zakładka z wizualizacją księgozbioru jako fizyczne
   półki (koncept A grzbiety + B półka okładek „Wyróżnione"=read+nagroda). Dwa regały „Do
   przeczytania"/„Przeczytane" z **drag&drop** (HTML5 DnD); upuszczenie zapisuje/usuwa tag

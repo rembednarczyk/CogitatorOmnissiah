@@ -7,15 +7,8 @@ import { sortOffersByPrice, offersPriceSummary, formatVintedPrice, cleanOfferTit
 import { useVintedResolveSellers } from "../../hooks/useVintedResolveSellers";
 import { useVintedStored } from "../../hooks/useVintedStored";
 import { groupBySeller, sortBundles, BundleSortMode } from "../../utils/vintedSellers";
+import { shortDate, formatDebug, isBookChanged, offerBadges } from "../../utils/vintedFormat";
 import { RitualButton } from "./RitualButton";
-
-/** Krótka data „DD.MM" ze znacznika ISO (świeżość danych z bazy). */
-function shortDate(iso?: string | null): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return "";
-  return `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
 
 interface VintedCheckItemProps {
   results: VintedResult[];
@@ -24,32 +17,6 @@ interface VintedCheckItemProps {
   onStop: () => void;
   isChecking: boolean;
   progress: any;
-}
-
-// Zwięzła jednolinijkowa diagnostyka próby (Krok 2). Kluczowy sygnał:
-// itemLinks>0 przy parsed:0 i bez markerów = parser zgubił oferty.
-function formatDebug(d: NonNullable<VintedSearchAttempt["debug"]>): string {
-  if (d.error) return `⚠ ${d.error}${d.httpStatus ? ` (${d.httpStatus})` : d.code ? ` (${d.code})` : ""}`;
-  const parts: string[] = [];
-  if (d.chars !== undefined) parts.push(`${(d.chars / 1000).toFixed(0)}k`);
-  parts.push(d.hasCatalogJson ? "json" : d.hasFeedGrid ? "grid" : "html");
-  if (d.itemLinks !== undefined) parts.push(`links:${d.itemLinks}`);
-  if (d.parsed !== undefined) parts.push(`parsed:${d.parsed}`);
-  if (d.blockedMarker) parts.push("BLOCK");
-  if (d.noResultsMarker) parts.push("noRes");
-  // Pamięć procesu — rosnące rssMb ku limitowi hostingu tuż przed śmiercią = OOM.
-  if (d.rssMb !== undefined) parts.push(`mem:${d.rssMb}MB`);
-  // Zmiany względem poprzedniego skanu (nowe/zniknięte/spadek/wzrost ceny).
-  if (d.changes) {
-    const c = d.changes;
-    const delta: string[] = [];
-    if (c.added) delta.push(`+${c.added}`);
-    if (c.removed) delta.push(`−${c.removed}`);
-    if (c.priceDropped) delta.push(`↓${c.priceDropped}`);
-    if (c.priceRaised) delta.push(`↑${c.priceRaised}`);
-    if (delta.length) parts.push(`Δ ${delta.join(" ")}`);
-  }
-  return parts.join(" · ");
 }
 
 const RESUME_HOURS = 12;
@@ -421,7 +388,7 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
                   {result.scannedAt && (
                     <div className="text-[9px] text-indigo-400/60 font-bold tracking-widest mt-0.5 flex items-center gap-1">
                       <Clock className="w-2.5 h-2.5" /> skan {shortDate(result.scannedAt)}
-                      {result.changedAt && result.changedAt === result.scannedAt && (
+                      {isBookChanged(result) && (
                         <span className="ml-1 flex items-center gap-0.5 text-amber-400"><Sparkles className="w-2.5 h-2.5" /> zmiana</span>
                       )}
                     </div>
@@ -449,15 +416,7 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
                   const isCheapest = i === cheapestIdx;
                   const hasPrice = item.priceValue !== null && item.priceValue !== undefined;
                   const offerTitle = cleanOfferTitle(item.title);
-                  // Znaczniki zmian (dane z bazy): „nowa" = pojawiła się w ostatnim skanie,
-                  // ale tylko gdy ten skan W OGÓLE wykrył zmianę (changedAt===scannedAt) —
-                  // inaczej pierwszy skan oznaczałby wszystkie oferty jako nowe.
-                  const isNew = !!item.firstSeenAt
-                    && item.firstSeenAt === result.scannedAt
-                    && result.changedAt === result.scannedAt;
-                  const drop = (item.prevPrice != null && item.priceValue != null && item.priceValue < item.prevPrice)
-                    ? item.prevPrice - item.priceValue
-                    : null;
+                  const { isNew, drop } = offerBadges(item, result);
                   return (
                   <a
                     key={item.url ?? i}
