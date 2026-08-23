@@ -43,6 +43,43 @@ export function spineStyle(book: BookIndexEntry): SpineStyle {
   };
 }
 
+/**
+ * Poza grzbietu na półce — deterministyczna (z hasza tytułu), by regał miał
+ * trochę dynamiki, ale nie migotał przy re-renderze / zawijaniu wierszy.
+ * - `straight` — stoi prosto (większość),
+ * - `lean` — przechylony o `deg` stopni, jakby oparty o sąsiada (pivot u podstawy),
+ * - `flat` — leży na płask jako mały stosik (`layers` książek, szerokość `w`).
+ */
+export type SpinePose =
+  | { kind: "straight" }
+  | { kind: "lean"; deg: number }
+  | { kind: "flat"; w: number; layers: number };
+
+/** Avalanche-mix (xxHash-style) — rozprasza bity, by rozkład póz był równomierny
+ *  niezależnie od korpusu tytułów (goły rolling-hash sąsiednich napisów jest skośny). */
+function mix32(n: number): number {
+  let x = n >>> 0;
+  x ^= x >>> 16; x = Math.imul(x, 0x7feb352d);
+  x ^= x >>> 15; x = Math.imul(x, 0x846ca68b);
+  x ^= x >>> 16;
+  return x >>> 0;
+}
+
+export function spinePose(book: BookIndexEntry): SpinePose {
+  const x = mix32(hash(book.plTitle || book.origTitle || book.id));
+  const sel = x % 100;                          // ~66% prosto, ~27% przechył, ~7% leżą
+  if (sel < 66) return { kind: "straight" };
+  if (sel < 93) {
+    const mag = 4 + ((x >>> 13) % 8);          // 4–11°
+    return { kind: "lean", deg: (x >>> 3) & 1 ? mag : -mag };
+  }
+  return {
+    kind: "flat",
+    w: 74 + ((x >>> 17) % 46),                 // 74–119 px (szerokość leżącej książki)
+    layers: 1 + ((x >>> 23) % 3),              // 1–3 książki w stosiku
+  };
+}
+
 /** Tytuł do pokazania (polski, a gdy brak — oryginalny). */
 export function displayTitle(book: BookIndexEntry): string {
   return book.plTitle || book.origTitle;

@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { BookIndexEntry } from "../../types";
-import { ShelfId, spineStyle, shelfPlankBackground, SHELF_ROW_H, SHELF_ROW_GAP } from "../../utils/bookshelf";
+import { ShelfId, spineStyle, spinePose, shelfPlankBackground, SHELF_ROW_H, SHELF_ROW_GAP } from "../../utils/bookshelf";
 import { BookSpine } from "./BookSpine";
+import { FlatBook } from "./FlatBook";
 import { ShelfFrame, ShelfAccent } from "./ShelfFrame";
 
 interface Props {
@@ -45,13 +46,26 @@ export const Shelf: React.FC<Props> = ({ shelfId, title, icon, accent, books, on
           className="flex flex-wrap items-end justify-start"
           style={{ ...PLANK_BG, rowGap: `${SHELF_ROW_GAP}px`, columnGap: "5px" }}
         >
-          {books.map((b) => (
+          {books.map((b) => {
+            const pose = spinePose(b);
             // Komórka o stałej wysokości toru → wszystkie zawinięte rzędy równe,
-            // więc deska (tło) trafia dokładnie pod spód każdego z nich.
-            <div key={b.id} className="flex items-end shrink-0" style={{ height: SHELF_ROW_H }}>
-              <BookSpine book={b} style={spineStyle(b)} onDragStart={onDragStart} onDragEnd={onDragEnd} />
-            </div>
-          ))}
+            // więc deska (tło) trafia dokładnie pod spód każdego z nich. Poza
+            // (przechył / leżenie) to tylko transform / inny render — nie rusza
+            // layoutu komórki, więc deski dalej się zgadzają.
+            return (
+              <div key={b.id} className="flex items-end shrink-0" style={{ height: SHELF_ROW_H }}>
+                {pose.kind === "flat" ? (
+                  <FlatBook book={b} style={spineStyle(b)} pose={pose} onDragStart={onDragStart} onDragEnd={onDragEnd} />
+                ) : (
+                  <div
+                    style={pose.kind === "lean" ? { transform: `rotate(${pose.deg}deg)`, transformOrigin: "bottom center" } : undefined}
+                  >
+                    <BookSpine book={b} style={spineStyle(b)} onDragStart={onDragStart} onDragEnd={onDragEnd} />
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </ShelfFrame>

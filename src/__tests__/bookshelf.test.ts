@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { BookIndexEntry } from "../types";
-import { isRead, spineStyle, splitShelves, featuredReads, CLOTH_PALETTE, READ_TAG, shelfPlankBackground, SHELF_ROW_H, SHELF_PLANK_H, SHELF_ROW_GAP } from "../utils/bookshelf";
+import { isRead, spineStyle, spinePose, splitShelves, featuredReads, CLOTH_PALETTE, READ_TAG, shelfPlankBackground, SHELF_ROW_H, SHELF_PLANK_H, SHELF_ROW_GAP } from "../utils/bookshelf";
 
 const mk = (over: Partial<BookIndexEntry>): BookIndexEntry => ({
   id: over.id ?? over.plTitle ?? "x", plTitle: "", origTitle: "", author: "", year: "",
@@ -35,6 +35,37 @@ describe("bookshelf.spineStyle", () => {
       expect(s.height).toBeGreaterThanOrEqual(124);
       expect(s.height).toBeLessThanOrEqual(171);
     }
+  });
+});
+
+describe("bookshelf.spinePose", () => {
+  it("is deterministic for the same title", () => {
+    const a = spinePose(mk({ plTitle: "Diuna" }));
+    const b = spinePose(mk({ plTitle: "Diuna", id: "other" }));
+    expect(a).toEqual(b);
+  });
+  it("produces only valid poses within bounds", () => {
+    for (let i = 0; i < 400; i++) {
+      const p = spinePose(mk({ plTitle: `Tytuł ${i}` }));
+      if (p.kind === "lean") {
+        expect(Math.abs(p.deg)).toBeGreaterThanOrEqual(4);
+        expect(Math.abs(p.deg)).toBeLessThanOrEqual(11);
+      } else if (p.kind === "flat") {
+        expect(p.w).toBeGreaterThanOrEqual(74);
+        expect(p.w).toBeLessThanOrEqual(119);
+        expect(p.layers).toBeGreaterThanOrEqual(1);
+        expect(p.layers).toBeLessThanOrEqual(3);
+      } else {
+        expect(p.kind).toBe("straight");
+      }
+    }
+  });
+  it("keeps most books upright, with a minority leaning/flat", () => {
+    const counts = { straight: 0, lean: 0, flat: 0 } as Record<string, number>;
+    for (let i = 0; i < 600; i++) counts[spinePose(mk({ plTitle: `Vol ${i}` })).kind]++;
+    expect(counts.straight).toBeGreaterThan(counts.lean + counts.flat); // większość stoi prosto
+    expect(counts.lean).toBeGreaterThan(0);
+    expect(counts.flat).toBeGreaterThan(0);
   });
 });
 
