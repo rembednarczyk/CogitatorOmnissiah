@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { BookIndexEntry } from "../../types";
-import { ShelfId, spineStyle, spinePose, spineLayout, shelfPlankBackground, SHELF_ROW_H, SHELF_ROW_GAP } from "../../utils/bookshelf";
+import { ShelfId, spineStyle, planShelf, leanLayout, shelfPlankBackground, SHELF_ROW_H, SHELF_ROW_GAP } from "../../utils/bookshelf";
 import { BookSpine } from "./BookSpine";
-import { FlatBook } from "./FlatBook";
+import { BookStack } from "./BookStack";
 import { ShelfFrame, ShelfAccent } from "./ShelfFrame";
 
 interface Props {
@@ -20,7 +20,7 @@ interface Props {
 
 const PLANK_BG = shelfPlankBackground();
 
-/** Jeden regał = drewniany korpus + drop-target z grzbietami na deskach (wszystkie, bez przewijania). */
+/** Jeden regał = drewniany korpus + drop-target z grzbietami/kupkami na deskach (wszystkie, bez przewijania). */
 export const Shelf: React.FC<Props> = ({ shelfId, title, icon, accent, books, onDragStart, onDragEnd, onDropBook, dragging }) => {
   const [over, setOver] = useState(false);
 
@@ -29,6 +29,8 @@ export const Shelf: React.FC<Props> = ({ shelfId, title, icon, accent, books, on
     onDragLeave: (e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOver(false); },
     onDrop: (e) => { e.preventDefault(); setOver(false); onDropBook(shelfId); },
   };
+
+  const slots = planShelf(books);
 
   return (
     <ShelfFrame
@@ -46,26 +48,25 @@ export const Shelf: React.FC<Props> = ({ shelfId, title, icon, accent, books, on
           className="flex flex-wrap items-end justify-start"
           style={{ ...PLANK_BG, rowGap: `${SHELF_ROW_GAP}px`, columnGap: "5px" }}
         >
-          {books.map((b) => {
-            const style = spineStyle(b);
-            const pose = spinePose(b);
-            const layout = spineLayout(style, pose);
-            // Komórka ma stałą wysokość toru (deski się zgadzają) i szerokość
-            // `cellW` = szerokość obróconego grzbietu, więc przechylona książka
-            // mieści się w swoim torze i NIE nachodzi na sąsiada.
+          {slots.map((slot) => {
+            // Komórka o stałej wysokości toru → wszystkie zawinięte rzędy równe,
+            // więc deska (tło) trafia dokładnie pod spód każdego z nich.
+            if (slot.kind === "stack") {
+              return (
+                <div key={`stack:${slot.books[0].id}`} className="flex items-end justify-center shrink-0" style={{ height: SHELF_ROW_H }}>
+                  <BookStack books={slot.books} onDragStart={onDragStart} onDragEnd={onDragEnd} />
+                </div>
+              );
+            }
+            const style = spineStyle(slot.book);
+            const { cellW, shiftX } = leanLayout(style, slot.lean);
             return (
-              <div key={b.id} className="flex items-end justify-center shrink-0" style={{ height: SHELF_ROW_H, width: layout.cellW }}>
-                {pose.kind === "flat" ? (
-                  <FlatBook book={b} style={style} pose={pose} onDragStart={onDragStart} onDragEnd={onDragEnd} />
-                ) : (
-                  <div
-                    style={pose.kind === "lean"
-                      ? { transform: `translateX(${layout.shiftX}px) rotate(${layout.rotate}deg)`, transformOrigin: "bottom center" }
-                      : undefined}
-                  >
-                    <BookSpine book={b} style={style} onDragStart={onDragStart} onDragEnd={onDragEnd} />
-                  </div>
-                )}
+              <div key={slot.book.id} className="flex items-end justify-center shrink-0" style={{ height: SHELF_ROW_H, width: cellW }}>
+                <div
+                  style={slot.lean ? { transform: `translateX(${shiftX}px) rotate(${slot.lean}deg)`, transformOrigin: "bottom center" } : undefined}
+                >
+                  <BookSpine book={slot.book} style={style} onDragStart={onDragStart} onDragEnd={onDragEnd} />
+                </div>
               </div>
             );
           })}

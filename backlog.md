@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.16.2** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.16.3** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -62,6 +62,12 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.16.3** — Pozy dostrojone: **mniejszy przechył** (max 6°, `MAX_LEAN_DEG`; było 4–11 → teraz 3–6),
+  **więcej stojących prosto** (~80% vs 66%), a **każda książka w kupce to OSOBNY prawdziwy wolumin**
+  (własny tytuł/kolor/nagroda/drag), nie jeden grzbiet udający stos. Model przebudowany: `spinePose`+
+  `FlatBook` → `planShelf(books)` zwraca sloty `spine|stack` (kupka = 2–4 kolejne realne książki);
+  `leanLayout` (dawne `spineLayout`) trzyma regułę braku nachodzenia; nowy `BookStack` renderuje
+  warstwy jako osobne książki. +testy (każda książka w 1 slocie, kupka ≥2 różne id, kąt ≤6). Screenshot OK.
 - **1.16.2** — Pozy: więcej książek w stosiku (`flat` layers **3–5**, było 1–3) + **reguła: żadna
   książka nie nachodzi na drugą**. Nowy helper `spineLayout(style, pose)` — komórka rezerwuje
   szerokość obróconego grzbietu (`cellW = W·cosθ + H·sinθ`) i przesuwa go (`shiftX`), by bbox był
