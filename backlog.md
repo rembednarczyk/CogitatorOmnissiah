@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.15.9** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.15.10** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -62,6 +62,11 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.15.10** — Audyt #2 krok 3/4 (#102): `SchemaEditor` (mild God-Component) **296 → 88 linii**
+  (cienki orkiestrator). Inline PATCH ×2 + walidacja duplikatu → hook `useSchemaMutations`
+  (`patchOptions` wspólny, `addOption`/`deleteOption`); inline modal usuwania → generyczny
+  `ConfirmDialog`; wielka karta kolumny → `SchemaColumnCard` (`key!=='Autor'` skonsolidowane w
+  `isEditable`). Zachowanie 1:1, 270 testów.
 - **1.15.9** — Audyt #2 krok 2/4 (#102): App.tsx (God-Component) **332 → 149 linii** (czysta
   powłoka). Wyciągnięte `LiturgySection` (blok zakładki config + własny `useConfig`, `useSyncManager`
   propem `sm`) i `TabNav` (5× copy-paste przycisków → mapa). Error-card ZOSTAJE w App (globalny,
