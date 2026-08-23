@@ -202,61 +202,48 @@ export class NotionAdapter {
     this.invalidateBooksCache();
   }
 
-  async addTagToMultiSelect(pageId: string, propertyName: string, tag: string): Promise<void> {
+  /**
+   * Wspólny rdzeń mutacji pola multi_select: pobiera aktualne tagi, przepuszcza je
+   * przez `transform` i zapisuje wynik. `transform` zwraca nową listę tagów albo
+   * `null` = brak zmiany (pomiń zapis i inwalidację cache). Add/remove to cienkie
+   * przypadki na tym rdzeniu — jedno miejsce na retrieve→mutate→update.
+   */
+  private async mutateMultiSelect(
+    pageId: string,
+    propertyName: string,
+    transform: (current: { name: string }[]) => { name: string }[] | null,
+  ): Promise<void> {
     await this.init();
-    
-    // 1. Get current tags
+
     const page = await withRetry(() => this.notion.pages.retrieve({ page_id: pageId })) as any;
     const prop = page.properties[propertyName];
-    
     if (!prop || prop.type !== "multi_select") {
       throw new Error(`Property ${propertyName} is not a multi_select`);
     }
-    
-    const currentTags = prop.multi_select.map((t: any) => ({ name: t.name }));
-    
-    // 2. Check if tag already exists
-    if (currentTags.some((t: any) => t.name === tag)) {
-      return; // Already has the tag
-    }
-    
-    // 3. Add new tag
-    currentTags.push({ name: tag });
 
-    // 4. Update page
+    const currentTags = prop.multi_select.map((t: any) => ({ name: t.name }));
+    const nextTags = transform(currentTags);
+    if (nextTags === null) return; // no-op: tag już jest / nie było
+
     await withRetry(() => this.notion.pages.update({
       page_id: pageId,
-      properties: {
-        [propertyName]: { multi_select: currentTags }
-      }
+      properties: { [propertyName]: { multi_select: nextTags } },
     }));
     this.invalidateBooksCache();
   }
 
+  /** Dopisuje znacznik do pola multi_select (pomija, jeśli już jest). */
+  async addTagToMultiSelect(pageId: string, propertyName: string, tag: string): Promise<void> {
+    return this.mutateMultiSelect(pageId, propertyName, (tags) =>
+      tags.some((t) => t.name === tag) ? null : [...tags, { name: tag }]);
+  }
+
   /** Usuwa znacznik z pola multi_select (odwrotność `addTagToMultiSelect`). */
   async removeTagFromMultiSelect(pageId: string, propertyName: string, tag: string): Promise<void> {
-    await this.init();
-
-    const page = await withRetry(() => this.notion.pages.retrieve({ page_id: pageId })) as any;
-    const prop = page.properties[propertyName];
-
-    if (!prop || prop.type !== "multi_select") {
-      throw new Error(`Property ${propertyName} is not a multi_select`);
-    }
-
-    const currentTags = prop.multi_select.map((t: any) => ({ name: t.name }));
-    const nextTags = currentTags.filter((t: any) => t.name !== tag);
-    if (nextTags.length === currentTags.length) {
-      return; // Nie było tagu — nic do zrobienia
-    }
-
-    await withRetry(() => this.notion.pages.update({
-      page_id: pageId,
-      properties: {
-        [propertyName]: { multi_select: nextTags }
-      }
-    }));
-    this.invalidateBooksCache();
+    return this.mutateMultiSelect(pageId, propertyName, (tags) => {
+      const next = tags.filter((t) => t.name !== tag);
+      return next.length === tags.length ? null : next;
+    });
   }
 
   async resolveDataSourceId(databaseId: string): Promise<string> {
