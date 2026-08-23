@@ -87,6 +87,16 @@ export function looksBlocked(html: string): boolean {
   return h.length < 100_000 && CHALLENGE_RE.test(h);
 }
 
+/**
+ * Marker „brak wyników" na stronie katalogu. UWAGA: to naiwny substring w ~7 MB
+ * markupie i bywa fałszywy na stronie Z ofertami — wołający NIE kasuje wtedy
+ * zapisanych danych (patrz vintedSyncService: persist tylko gdy nic nie było).
+ */
+export function looksEmpty(html: string): boolean {
+  const h = html || "";
+  return h.includes("Brak wyników") || h.includes("Nie znaleźliśmy żadnych przedmiotów");
+}
+
 // Kafelek oferty w siatce katalogu. Vinted hashuje nazwy klas CSS-modules
 // (`Grid-module-scss-module__HmDNda__feed-grid__item`), więc celujemy w stabilny
 // suffiks `feed-grid__item"`. Trailing `"` odcina wariant `feed-grid__item-content`.

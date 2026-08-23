@@ -1,4 +1,5 @@
 import { VintedItem, VintedSeller } from "./vintedParser";
+import { NotionBook } from "../src/types";
 
 /**
  * Trwałe składowanie wyników Vinted w Notion (blob JSON w polu tekstowym książki).
@@ -57,6 +58,29 @@ export const EMPTY_DIFF: OfferDiff = { added: 0, removed: 0, priceDropped: 0, pr
 
 export function hasChanges(d: OfferDiff): boolean {
   return d.added > 0 || d.removed > 0 || d.priceDropped > 0 || d.priceRaised > 0;
+}
+
+/**
+ * Polityka znacznika `changedAt`: bump do `scannedAt` TYLKO gdy istnieje poprzedni
+ * stan (baseline) I faktycznie coś się zmieniło — inaczej pierwszy skan fałszywie
+ * oznaczałby całą książkę jako „zmiana". Bez baseline / bez zmian: zachowaj stary.
+ */
+export function computeChangedAt(prevData: StoredVintedData | null, diff: OfferDiff, scannedAt: string): string | undefined {
+  return prevData && hasChanges(diff) ? scannedAt : prevData?.changedAt;
+}
+
+/** Projekcja wiersza Notion + składowanych danych → widok kafelka/paczki (etap 3). */
+export function toStoredBookView(book: NotionBook, data: StoredVintedData): StoredBookView {
+  return {
+    id: book.id,
+    title: book.plTitle,
+    author: book.author || "",
+    year: book.year,
+    partOfCycle: book.currentCzesccyklu,
+    scannedAt: data.scannedAt,
+    changedAt: data.changedAt,
+    offers: data.offers,
+  };
 }
 
 /** VintedItem (ze skanu) → StoredOffer (do zapisu). */
