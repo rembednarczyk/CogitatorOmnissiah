@@ -8,7 +8,7 @@ import { IntegrityCheckCard } from "./IntegrityCheckCard";
 interface SyncAwardsProps {
   sync: ReturnType<typeof useSync>;
   integritySync: ReturnType<typeof useSync>;
-  handleAwardChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  handleAwardChange: (name: string) => void;
   handleSync: () => void;
   handleFullSync: () => void;
   isAnySyncLoading: boolean;
@@ -42,7 +42,7 @@ export const SyncAwards: React.FC<SyncAwardsProps> = ({
           <select 
             id="award-select"
             value={syncState.awardName || ""} 
-            onChange={handleAwardChange}
+            onChange={(e) => handleAwardChange(e.target.value)}
             disabled={syncState.loading}
             className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3 text-slate-200 focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 outline-none transition-all disabled:opacity-50 font-medium"
           >
