@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.15.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.15.2** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -62,6 +62,10 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.15.2** — God-object krok 2/5 (#91): rozbicie God-Component `VintedCheckItem` **528 → 75
+  linii**. 6 komponentów w `src/components/stats/vinted/`: `VintedScanControls`, `VintedScanProgress`,
+  `VintedDebugLog`, `VintedResolveStatus`, `VintedBundleList` (własny `bundleSort`), `VintedBookResultList`
+  (+ wewn. `OfferRow`). Parent = kompozycja + wybór źródła danych + handlery cross-domain. Zachowanie bez zmian, 253 testy.
 - **1.15.1** — God-object audyt + krok 1/5 (#91): ekstrakcja czystych helperów z God-Component
   `VintedCheckItem` (528 l.) do `src/utils/vintedFormat.ts` (`shortDate`, `formatDebug`,
   `isBookChanged`, `offerBadges`) — ~40 linii logiki-w-JSX out, +8 testów. Audyt SRP wykazał
