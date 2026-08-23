@@ -8,7 +8,9 @@ import { BookIndexEntry } from "../types";
  */
 export function useBooks() {
   const [books, setBooks] = useState<BookIndexEntry[] | null>(null);
-  const [loading, setLoading] = useState(false);
+  // Startujemy w stanie ładowania — fetch leci od razu w useEffect (po paint), więc
+  // bez tego pierwsza klatka pokazywałaby pusty stan zamiast spinnera.
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchBooks = useCallback(async () => {
