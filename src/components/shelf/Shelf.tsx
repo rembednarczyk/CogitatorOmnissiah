@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { BookIndexEntry } from "../../types";
-import { ShelfId, spineStyle, spinePose, shelfPlankBackground, SHELF_ROW_H, SHELF_ROW_GAP } from "../../utils/bookshelf";
+import { ShelfId, spineStyle, spinePose, spineLayout, shelfPlankBackground, SHELF_ROW_H, SHELF_ROW_GAP } from "../../utils/bookshelf";
 import { BookSpine } from "./BookSpine";
 import { FlatBook } from "./FlatBook";
 import { ShelfFrame, ShelfAccent } from "./ShelfFrame";
@@ -47,20 +47,23 @@ export const Shelf: React.FC<Props> = ({ shelfId, title, icon, accent, books, on
           style={{ ...PLANK_BG, rowGap: `${SHELF_ROW_GAP}px`, columnGap: "5px" }}
         >
           {books.map((b) => {
+            const style = spineStyle(b);
             const pose = spinePose(b);
-            // Komórka o stałej wysokości toru → wszystkie zawinięte rzędy równe,
-            // więc deska (tło) trafia dokładnie pod spód każdego z nich. Poza
-            // (przechył / leżenie) to tylko transform / inny render — nie rusza
-            // layoutu komórki, więc deski dalej się zgadzają.
+            const layout = spineLayout(style, pose);
+            // Komórka ma stałą wysokość toru (deski się zgadzają) i szerokość
+            // `cellW` = szerokość obróconego grzbietu, więc przechylona książka
+            // mieści się w swoim torze i NIE nachodzi na sąsiada.
             return (
-              <div key={b.id} className="flex items-end shrink-0" style={{ height: SHELF_ROW_H }}>
+              <div key={b.id} className="flex items-end justify-center shrink-0" style={{ height: SHELF_ROW_H, width: layout.cellW }}>
                 {pose.kind === "flat" ? (
-                  <FlatBook book={b} style={spineStyle(b)} pose={pose} onDragStart={onDragStart} onDragEnd={onDragEnd} />
+                  <FlatBook book={b} style={style} pose={pose} onDragStart={onDragStart} onDragEnd={onDragEnd} />
                 ) : (
                   <div
-                    style={pose.kind === "lean" ? { transform: `rotate(${pose.deg}deg)`, transformOrigin: "bottom center" } : undefined}
+                    style={pose.kind === "lean"
+                      ? { transform: `translateX(${layout.shiftX}px) rotate(${layout.rotate}deg)`, transformOrigin: "bottom center" }
+                      : undefined}
                   >
-                    <BookSpine book={b} style={spineStyle(b)} onDragStart={onDragStart} onDragEnd={onDragEnd} />
+                    <BookSpine book={b} style={style} onDragStart={onDragStart} onDragEnd={onDragEnd} />
                   </div>
                 )}
               </div>

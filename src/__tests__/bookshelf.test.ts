@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { BookIndexEntry } from "../types";
-import { isRead, spineStyle, spinePose, splitShelves, featuredReads, CLOTH_PALETTE, READ_TAG, shelfPlankBackground, SHELF_ROW_H, SHELF_PLANK_H, SHELF_ROW_GAP } from "../utils/bookshelf";
+import { isRead, spineStyle, spinePose, spineLayout, splitShelves, featuredReads, CLOTH_PALETTE, READ_TAG, shelfPlankBackground, SHELF_ROW_H, SHELF_PLANK_H, SHELF_ROW_GAP } from "../utils/bookshelf";
 
 const mk = (over: Partial<BookIndexEntry>): BookIndexEntry => ({
   id: over.id ?? over.plTitle ?? "x", plTitle: "", origTitle: "", author: "", year: "",
@@ -53,8 +53,8 @@ describe("bookshelf.spinePose", () => {
       } else if (p.kind === "flat") {
         expect(p.w).toBeGreaterThanOrEqual(74);
         expect(p.w).toBeLessThanOrEqual(119);
-        expect(p.layers).toBeGreaterThanOrEqual(1);
-        expect(p.layers).toBeLessThanOrEqual(3);
+        expect(p.layers).toBeGreaterThanOrEqual(3);
+        expect(p.layers).toBeLessThanOrEqual(5);
       } else {
         expect(p.kind).toBe("straight");
       }
@@ -66,6 +66,40 @@ describe("bookshelf.spinePose", () => {
     expect(counts.straight).toBeGreaterThan(counts.lean + counts.flat); // większość stoi prosto
     expect(counts.lean).toBeGreaterThan(0);
     expect(counts.flat).toBeGreaterThan(0);
+  });
+});
+
+describe("bookshelf.spineLayout (reguła: brak nachodzenia)", () => {
+  // Obrócony prostokąt W×H o kąt θ ma bbox szerokości W·cosθ + H·sinθ; komórka
+  // musi go w całości mieścić, wyśrodkowanego (shiftX), by nie wchodził na sąsiada.
+  it("reserves at least the rotated bounding box and centers it", () => {
+    for (let i = 0; i < 400; i++) {
+      const b = mk({ plTitle: `Tom ${i}` });
+      const style = spineStyle(b);
+      const pose = spinePose(b);
+      const { cellW, shiftX, rotate } = spineLayout(style, pose);
+      if (pose.kind === "lean") {
+        const a = (rotate * Math.PI) / 180;
+        const bbox = style.width * Math.abs(Math.cos(a)) + style.height * Math.abs(Math.sin(a));
+        expect(cellW).toBeGreaterThanOrEqual(bbox);      // komórka mieści cały obrót
+        // Cztery narożniki grzbietu obrócone jak w CSS (pivot u dołu, wierzch w y=−H),
+        // przesunięte o shiftX — wszystkie muszą zostać w [−cellW/2, cellW/2].
+        const W = style.width, H = style.height;
+        const corners = [[-W / 2, 0], [W / 2, 0], [-W / 2, -H], [W / 2, -H]]
+          .map(([x, y]) => x * Math.cos(a) - y * Math.sin(a) + shiftX);
+        expect(Math.max(...corners)).toBeLessThanOrEqual(cellW / 2 + 1e-6);
+        expect(Math.min(...corners)).toBeGreaterThanOrEqual(-cellW / 2 - 1e-6);
+        expect(Math.sign(shiftX)).toBe(-Math.sign(rotate)); // przesuw w stronę przeciwną do przechyłu
+      } else {
+        expect(shiftX).toBe(0);
+        expect(rotate).toBe(0);
+      }
+    }
+  });
+  it("straight/flat cells reserve exactly their footprint", () => {
+    const straight = mk({ plTitle: "Prosto stojąca" });
+    const sp = spinePose(straight);
+    if (sp.kind === "straight") expect(spineLayout(spineStyle(straight), sp).cellW).toBe(spineStyle(straight).width);
   });
 });
 
