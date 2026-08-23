@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { BookIndexEntry } from "../types";
-import { isRead, spineStyle, planShelf, leanLayout, MAX_LEAN_DEG, splitShelves, featuredReads, CLOTH_PALETTE, READ_TAG, shelfPlankBackground, SHELF_ROW_H, SHELF_PLANK_H, SHELF_ROW_GAP } from "../utils/bookshelf";
+import { isRead, spineStyle, planShelf, leanLayout, MAX_LEAN_DEG, spineFontSize, flatBookLayout, splitShelves, featuredReads, CLOTH_PALETTE, READ_TAG, shelfPlankBackground, SHELF_ROW_H, SHELF_PLANK_H, SHELF_ROW_GAP } from "../utils/bookshelf";
 
 const mk = (over: Partial<BookIndexEntry>): BookIndexEntry => ({
   id: over.id ?? over.plTitle ?? "x", plTitle: "", origTitle: "", author: "", year: "",
@@ -60,11 +60,11 @@ describe("bookshelf.planShelf", () => {
     expect(stacks).toBeGreaterThan(0);
   });
 
-  it("every layer of a stack is a separate real book (≥2, distinct ids)", () => {
+  it("every layer of a stack is a separate real book (4–7, distinct ids)", () => {
     for (const s of planShelf(shelf)) {
       if (s.kind === "stack") {
-        expect(s.books.length).toBeGreaterThanOrEqual(2);
-        expect(s.books.length).toBeLessThanOrEqual(4);
+        expect(s.books.length).toBeGreaterThanOrEqual(4);
+        expect(s.books.length).toBeLessThanOrEqual(7);
         expect(new Set(s.books.map((b) => b.id)).size).toBe(s.books.length);
       }
     }
@@ -100,6 +100,30 @@ describe("bookshelf.leanLayout (reguła: brak nachodzenia)", () => {
         expect(Math.min(...corners)).toBeGreaterThanOrEqual(-cellW / 2 - 1e-6);
         expect(Math.sign(shiftX)).toBe(-Math.sign(deg));
       }
+    }
+  });
+});
+
+describe("bookshelf.title sizing (pełne nazwy)", () => {
+  const style = { color: "#000", width: 20, height: 160 };
+  it("spineFontSize shrinks for longer titles, within 6–11 px", () => {
+    const short = spineFontSize(style, "Ubik");
+    const long = spineFontSize(style, "Opowieści z meekhańskiego pogranicza. Północ-Południe");
+    expect(short).toBeGreaterThanOrEqual(long);
+    for (const f of [short, long]) {
+      expect(f).toBeGreaterThanOrEqual(6);
+      expect(f).toBeLessThanOrEqual(11);
+    }
+  });
+  it("flatBookLayout reserves enough width for the full title (no clipping)", () => {
+    for (const title of ["Ubik", "Diuna", "Hyperion i jego długa, rozwlekła kontynuacja opowieści"]) {
+      const { width, fontSize, thickness } = flatBookLayout({ ...mk({ plTitle: title }) }, style);
+      // szerokość mieści oszacowany tekst (0.6·len·font) + margines:
+      expect(width).toBeGreaterThanOrEqual(Math.ceil(title.length * 0.6 * fontSize));
+      expect(fontSize).toBeGreaterThanOrEqual(7);
+      expect(fontSize).toBeLessThanOrEqual(11);
+      expect(thickness).toBeGreaterThanOrEqual(15);
+      expect(thickness).toBeLessThanOrEqual(24);
     }
   });
 });

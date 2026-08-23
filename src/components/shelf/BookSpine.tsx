@@ -1,6 +1,6 @@
 import React from "react";
 import { BookIndexEntry } from "../../types";
-import { SpineStyle, displayTitle, hasAward } from "../../utils/bookshelf";
+import { SpineStyle, displayTitle, hasAward, spineFontSize } from "../../utils/bookshelf";
 
 interface Props {
   book: BookIndexEntry;
@@ -26,8 +26,8 @@ export const BookSpine: React.FC<Props> = ({ book, style, onDragStart, onDragEnd
   >
     <span className="absolute left-0 right-0 h-[10px] top-[9px] bg-black/25" aria-hidden />
     <span
-      className="font-bold text-[10px] text-white/85 whitespace-nowrap overflow-hidden max-h-[80%] py-1.5"
-      style={{ writingMode: "vertical-rl", transform: "rotate(180deg)", textShadow: "0 1px 2px rgba(0,0,0,.5)" }}
+      className="font-bold text-white/85 whitespace-nowrap overflow-hidden max-h-[94%] py-1"
+      style={{ fontSize: spineFontSize(style, displayTitle(book)), writingMode: "vertical-rl", transform: "rotate(180deg)", textShadow: "0 1px 2px rgba(0,0,0,.5)" }}
     >
       {displayTitle(book)}
     </span>

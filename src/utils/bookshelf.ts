@@ -90,7 +90,7 @@ export function planShelf(books: BookIndexEntry[]): ShelfSlot[] {
       slots.push({ kind: "spine", book: b, lean: (x >>> 3) & 1 ? mag : -mag });
       i += 1;
     } else {
-      const size = Math.min(2 + ((x >>> 17) % 3), books.length - i); // 2–4 realne książki
+      const size = Math.min(4 + ((x >>> 17) % 4), books.length - i); // 4–7 realnych książek
       slots.push({ kind: "stack", books: books.slice(i, i + size) });
       i += size;
     }
@@ -114,14 +114,40 @@ export function leanLayout(style: SpineStyle, deg: number): LeanLayout {
   return { cellW, shiftX };
 }
 
-/** Szerokość leżącej książki (spine-out, pozioma) — deterministyczna z tytułu. */
-export function flatBookWidth(book: BookIndexEntry): number {
-  return 84 + (seed(book) % 28); // 84–111 px
+// Przybliżona szerokość znaku względem rozmiaru czcionki (font bold) — celowo
+// zawyżona, by CAŁY tytuł na pewno się zmieścił (bez ucinania / wielokropka).
+const CHAR_W = 0.6;
+
+/**
+ * Rozmiar czcionki tytułu na STOJĄCYM grzbiecie. Tekst biegnie wzdłuż wysokości
+ * grzbietu, więc dłuższy tytuł dostaje mniejszą czcionkę, tak by pełna nazwa
+ * zmieściła się na całej wysokości (bez ucinania). Zakres 6–11 px.
+ */
+export function spineFontSize(style: SpineStyle, title: string): number {
+  const len = Math.max(1, title.length);
+  const f = Math.floor((style.height * 0.92) / (len * CHAR_W));
+  return Math.max(6, Math.min(11, f));
 }
 
-/** Grubość leżącej książki (widoczna krawędź grzbietu) — z grubości stojącego grzbietu. */
-export function flatBookThickness(style: SpineStyle): number {
-  return Math.max(13, Math.min(20, style.width));
+/** Wymiary LEŻĄCEJ książki tak, by cała nazwa się zmieściła (pozioma, wzdłuż grzbietu). */
+export interface FlatBookLayout { width: number; fontSize: number; thickness: number; }
+
+/**
+ * Dobiera szerokość, czcionkę i grubość leżącej książki tak, by zmieścić PEŁNY
+ * tytuł: najpierw próbuje dużej czcionki, przy długich tytułach schodzi do 7 px
+ * (i wtedy poszerza), a grubość rośnie lekko z czcionką (grubsza książka mieści
+ * większy napis). Nic nie jest ucinane.
+ */
+export function flatBookLayout(book: BookIndexEntry, style: SpineStyle): FlatBookLayout {
+  const len = Math.max(1, displayTitle(book).length);
+  const PAD = 22;        // lewy margines tekstu + prawa krawędź kartek/nagroda
+  const MAX_W = 240;     // powyżej tej szerokości wolimy zmniejszyć czcionkę
+  const textW = (f: number) => Math.ceil(len * CHAR_W * f);
+  let fontSize = 11;
+  while (fontSize > 7 && textW(fontSize) + PAD > MAX_W) fontSize--;
+  const width = Math.max(72, textW(fontSize) + PAD);
+  const thickness = Math.min(24, Math.max(15, fontSize + 7));
+  return { width, fontSize, thickness };
 }
 
 /** Tytuł do pokazania (polski, a gdy brak — oryginalny). */
