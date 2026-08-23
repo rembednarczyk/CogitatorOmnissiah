@@ -103,9 +103,11 @@ export const SearchSection: React.FC = () => {
       ) : results.length === 0 ? (
         <div className="text-center py-16 space-y-4">
           <p className="text-sm text-slate-600 italic">
-            Archiwum milczy — żaden wolumin nie pasuje do „{query}".
+            {query.trim()
+              ? `Archiwum milczy — żaden wolumin nie pasuje do „${query}".`
+              : "Archiwum jest puste — brak rekordów do przeszukania."}
           </p>
-          {suggestions.length > 0 && (
+          {query.trim() && suggestions.length > 0 && (
             <p className="text-sm text-slate-400">
               Czy chodziło Ci o:{" "}
               {suggestions.map((s, i) => (

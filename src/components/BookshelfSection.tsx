@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useRef } from "react";
 import { Library, BookOpen, CheckCircle2, Sparkles, Loader2, AlertCircle, X } from "lucide-react";
 import { BookIndexEntry } from "../types";
 import { useBooks } from "../hooks/useBooks";
@@ -15,6 +15,13 @@ export const BookshelfSection: React.FC = () => {
   const [dragging, setDragging] = useState<BookIndexEntry | null>(null);
   const [moveError, setMoveError] = useState<string | null>(null);
 
+  // Zapis stanu „przeczytane" jest SERIALIZOWANY per książka (latest-wins). Backend
+  // `mutateMultiSelect` to nieatomowy retrieve→modify→update, więc dwa nakładające się
+  // zapisy tej samej książki mogłyby przeczytać ten sam stan i rozjechać Notion z UI.
+  // `pendingRef` trzyma najświeższy żądany stan, `runningRef` — książki z aktywnym runnerem.
+  const pendingRef = useRef<Record<string, boolean>>({});
+  const runningRef = useRef<Set<string>>(new Set());
+
   const all = books ?? [];
   const { read, toRead } = useMemo(() => splitShelves(all, overrides), [all, overrides]);
   const featured = useMemo(() => featuredReads(all, overrides), [all, overrides]);
@@ -28,13 +35,30 @@ export const BookshelfSection: React.FC = () => {
     const wasRead = isRead(book, overrides);
     if (wasRead === targetRead) return; // upuszczono na tę samą półkę — nic
 
-    // Optymistyczny ruch, potem zapis; przy błędzie cofnij i pokaż komunikat.
+    // Optymistyczny ruch od razu.
     setOverrides((prev) => ({ ...prev, [book.id]: targetRead }));
     setMoveError(null);
-    setRead(book.id, targetRead).catch((e: any) => {
-      setOverrides((prev) => ({ ...prev, [book.id]: wasRead }));
-      setMoveError(`Nie udało się zapisać „${book.plTitle || book.origTitle}": ${e.message}`);
-    });
+
+    // Zapisz najświeższy żądany stan; jeśli runner tej książki już działa, weźmie go sam.
+    pendingRef.current[book.id] = targetRead;
+    if (runningRef.current.has(book.id)) return;
+    runningRef.current.add(book.id);
+    void (async () => {
+      try {
+        while (book.id in pendingRef.current) {
+          const desired = pendingRef.current[book.id];
+          delete pendingRef.current[book.id];
+          await setRead(book.id, desired);
+        }
+      } catch (e: any) {
+        // Zapis nie doszedł — wróć do stanu z bazy i pokaż błąd.
+        delete pendingRef.current[book.id];
+        setOverrides((prev) => { const next = { ...prev }; delete next[book.id]; return next; });
+        setMoveError(`Nie udało się zapisać „${book.plTitle || book.origTitle}": ${e.message}`);
+      } finally {
+        runningRef.current.delete(book.id);
+      }
+    })();
   }, [dragging, overrides, setRead]);
 
   return (

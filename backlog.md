@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.15.6** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.15.7** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -62,6 +62,13 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.15.7** — Bughunt po zmianach (#100). 4 audyty (useSSEStream, vintedSyncService, rozbicie
+  VintedCheckItem = FAITHFUL/czyste). 2 realne bugi w nowych featurach naprawione:
+  (1) Regał: wyścig drag&drop — zapisy per-książka SERIALIZOWANE (latest-wins, `pendingRef`/
+  `runningRef`), koniec nakładających się nieatomowych RMW rozjeżdżających Notion z UI.
+  (2) Skryptorium/Regał: `useBooks` startuje `loading=true` (fetch w useEffect po paint dawał
+  mignięcie pustego stanu); SearchSection rozróżnia pusty-query („Archiwum jest puste") od braku
+  trafień. Minor „overrides nie czyszczone" — poprawne przy single-fetch, zostawione.
 - **1.15.6** — `useSSEStream` (deferred z audytu god-object): wspólny transport SSE
   (POST → `res.ok` → `consumeSSE` + watchdog + derywacja komunikatu błędu/stall). Trzy hooki
   streamowe zbudowane na nim, różnią się tylko routingiem zdarzeń: `useSync` 154→100 (koniec
