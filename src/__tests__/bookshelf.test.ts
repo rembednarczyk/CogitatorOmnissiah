@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { BookIndexEntry } from "../types";
-import { isRead, spineStyle, planShelf, leanLayout, MAX_LEAN_DEG, spineFontSize, flatBookLayout, FLAT_MAX_W, splitShelves, featuredReads, CLOTH_PALETTE, READ_TAG, shelfPlankBackground, SHELF_ROW_H, SHELF_PLANK_H, SHELF_ROW_GAP } from "../utils/bookshelf";
+import { isRead, spineStyle, planShelf, leanLayout, MAX_LEAN_DEG, LEAN_TOWARD, spineFontSize, flatBookLayout, FLAT_MAX_W, splitShelves, featuredReads, CLOTH_PALETTE, READ_TAG, shelfPlankBackground, SHELF_ROW_H, SHELF_PLANK_H, SHELF_ROW_GAP } from "../utils/bookshelf";
 
 const mk = (over: Partial<BookIndexEntry>): BookIndexEntry => ({
   id: over.id ?? over.plTitle ?? "x", plTitle: "", origTitle: "", author: "", year: "",
@@ -77,6 +77,33 @@ describe("bookshelf.planShelf", () => {
         expect(Math.abs(s.lean)).toBeLessThanOrEqual(MAX_LEAN_DEG);
       }
     }
+  });
+
+  it("never places two stacks next to each other", () => {
+    const slots = planShelf(shelf);
+    for (let k = 1; k < slots.length; k++) {
+      expect(slots[k].kind === "stack" && slots[k - 1].kind === "stack").toBe(false);
+    }
+    expect(slots.some((s) => s.kind === "stack")).toBe(true); // a jakieś kupki są
+  });
+
+  it("leans a stack's neighbours toward the stack (left → +, right → −)", () => {
+    const slots = planShelf(shelf);
+    let checked = 0;
+    for (let k = 0; k < slots.length; k++) {
+      if (slots[k].kind !== "stack") continue;
+      const left = slots[k - 1], right = slots[k + 1];
+      if (left && left.kind === "spine") {
+        expect(Math.abs(left.lean)).toBe(LEAN_TOWARD); checked++;
+        // kierunek pewny tylko gdy grzbiet nie jest wciśnięty między dwie kupki
+        if (slots[k - 2]?.kind !== "stack") expect(left.lean).toBe(LEAN_TOWARD);
+      }
+      if (right && right.kind === "spine") {
+        expect(Math.abs(right.lean)).toBe(LEAN_TOWARD); checked++;
+        if (slots[k + 2]?.kind !== "stack") expect(right.lean).toBe(-LEAN_TOWARD);
+      }
+    }
+    expect(checked).toBeGreaterThan(0);
   });
 });
 

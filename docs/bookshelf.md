@@ -37,6 +37,10 @@ title, dark back-panel with vertical planks, brass corner brackets and a hanging
   A stack holds **4–7** consecutive volumes. The per-book decision uses the avalanche-mixed (`mix32`)
   title hash so the split stays even across any corpus; every book lands in exactly one slot. Poses
   are `transform`/markup **inside** the fixed-height cell, so plank alignment and drag&drop are untouched.
+  Two stack rules: **no two stacks are ever adjacent** (a stack is always followed by a spine), and a
+  stack's neighbouring spines **lean toward the stack** (`LEAN_TOWARD` — left neighbour tilts right,
+  right neighbour tilts left). Inside a stack, `BookStack` sorts layers **largest at the bottom,
+  smallest at the top** (a centred pyramid).
 - **`spineFontSize(style, title)` / `flatBookLayout(book, style)`** — size every book to show its
   **full name** (no truncation). A standing spine picks a font (6–11 px) so the whole title fits along
   its height. A lying book is capped at `FLAT_MAX_W` (150 px): a short title stays one line, a longer

@@ -8,41 +8,38 @@ interface Props {
   onDragEnd: () => void;
 }
 
-/** Deterministyczny drobny „luz" ułożenia warstwy (0–4 px), z tytułu. */
-function jitter(book: BookIndexEntry): number {
-  let h = 0;
-  const s = displayTitle(book) || book.id;
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
-  return (h >>> 9) % 5;
-}
-
 /**
- * Kupka leżących książek — każda warstwa to osobny wolumin z PEŁNĄ nazwą wzdłuż
- * grzbietu (dobrany rozmiar czcionki / szerokość / grubość, bez ucinania),
- * własnym kolorem, znacznikiem nagrody i przeciąganiem. Renderowane od dołu do góry.
+ * Kupka leżących książek — każda warstwa to osobny wolumin z PEŁNĄ nazwą (max 2
+ * linie). Posortowana **od największej na dole do najmniejszej na górze**
+ * (piramidka), wyśrodkowana. Każda warstwa ma własny kolor, znacznik nagrody
+ * i przeciąganie.
  */
 export const BookStack: React.FC<Props> = ({ books, onDragStart, onDragEnd }) => {
-  const layers = books.map((b) => {
-    const style = spineStyle(b);
-    const { width, fontSize, thickness, lines } = flatBookLayout(b, style);
-    return { book: b, width, fontSize, thickness, lines, color: style.color, dx: jitter(b) };
-  });
-  const cellW = Math.max(...layers.map((l) => l.width + l.dx));
+  const layers = books
+    .map((b) => {
+      const style = spineStyle(b);
+      const { width, fontSize, thickness, lines } = flatBookLayout(b, style);
+      return { book: b, width, fontSize, thickness, lines, color: style.color };
+    })
+    // największa (najszersza, przy remisie grubsza) na SPÓD; `flex-col-reverse`
+    // renderuje pierwszy element na dole → sortujemy malejąco.
+    .sort((a, b) => b.width - a.width || b.thickness - a.thickness || a.book.id.localeCompare(b.book.id));
+
+  const cellW = Math.max(...layers.map((l) => l.width));
 
   return (
-    <div className="relative shrink-0 flex flex-col-reverse items-start" style={{ width: cellW }}>
-      {layers.map(({ book, width, fontSize, thickness, lines, color, dx }, i) => (
+    <div className="relative shrink-0 flex flex-col-reverse items-center" style={{ width: cellW }}>
+      {layers.map(({ book, width, fontSize, thickness, lines, color }, i) => (
         <div
           key={book.id}
           draggable
           onDragStart={(e) => { e.dataTransfer.setData("text/plain", book.id); e.dataTransfer.effectAllowed = "move"; onDragStart(book); }}
           onDragEnd={onDragEnd}
           title={`${displayTitle(book)}${book.author ? " — " + book.author : ""}${book.year ? " (" + book.year + ")" : ""}`}
-          className="group/layer relative rounded-[2px] cursor-grab active:cursor-grabbing select-none transition-transform duration-150 hover:-translate-x-1"
+          className="group/layer relative rounded-[2px] cursor-grab active:cursor-grabbing select-none transition-transform duration-150 hover:-translate-y-0.5"
           style={{
             height: thickness,
             width,
-            marginLeft: dx,
             marginBottom: i === 0 ? 0 : 1,
             background: `linear-gradient(0deg, rgba(0,0,0,.42) 0, ${color} 26%, ${color} 74%, rgba(255,255,255,.12) 100%)`,
             boxShadow: "inset 0 1.5px 0 rgba(255,255,255,.12), 0 2px 4px -1px rgba(0,0,0,.5)",

@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.16.5** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.16.6** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -62,6 +62,12 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.16.6** — Kupki dopracowane (3 reguły): (1) **sortowanie od największej na dole do najmniejszej
+  na górze** — `BookStack` sortuje warstwy malejąco po szerokości (piramidka, wyśrodkowana, bez
+  jittera); (2) **grzbiety sąsiadujące z kupką przechylają się w jej stronę** — `planShelf` nadpisuje
+  pozę sąsiadów (`LEAN_TOWARD=5`; lewy w prawo, prawy w lewo); (3) **dwie kupki nigdy nie sąsiadują**
+  — po kupce następny slot to zawsze grzbiet (zablokowana kupka → prosto). +2 testy (brak sąsiednich
+  kupek, sąsiedzi pochyleni ku kupce). Screenshot OK. `docs/bookshelf.md` upd.
 - **1.16.5** — Leżące książki: **zawijanie tytułu do 2 linii zamiast poszerzania**. `flatBookLayout`
   ma limit szerokości `FLAT_MAX_W=150`: krótki tytuł → 1 linia (książka na tekst), dłuższy → 2 linie
   (książka trochę grubsza, nie szersza; `lines` w zwrotce). Bardzo długi → dodatkowo mniejsza czcionka,
