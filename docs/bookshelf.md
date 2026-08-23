@@ -34,9 +34,13 @@ title, dark back-panel with vertical planks, brass corner brackets and a hanging
   more volumes: **`spine`** (upright, `lean === 0`, ~80%) or slightly tilted (`lean` up to
   `MAX_LEAN_DEG` = 6°, ~12%), or **`stack`** — a lying pile where **each layer is a separate real
   volume** (2–4 consecutive books, their own title/colour/award/drag), not one spine faking a pile.
-  The per-book decision uses the avalanche-mixed (`mix32`) title hash so the split stays even across
-  any corpus; every book lands in exactly one slot. Poses are `transform`/markup **inside** the
-  fixed-height cell, so plank alignment and drag&drop are untouched.
+  A stack holds **4–7** consecutive volumes. The per-book decision uses the avalanche-mixed (`mix32`)
+  title hash so the split stays even across any corpus; every book lands in exactly one slot. Poses
+  are `transform`/markup **inside** the fixed-height cell, so plank alignment and drag&drop are untouched.
+- **`spineFontSize(style, title)` / `flatBookLayout(book, style)`** — size every book to show its
+  **full name** (no truncation). A standing spine picks a font (6–11 px) so the whole title fits along
+  its height; a lying book picks font + width + thickness so the full title fits horizontally (wider
+  book for a longer title, smaller font only when very long; thickness 15–18 px).
 - **`leanLayout(style, deg)`** — enforces the **no-overlap rule** for a tilted spine: the cell
   reserves the *rotated* width (`cellW = W·cosθ + H·sinθ`) and offsets it (`shiftX`) so the rotated
   box is centred, keeping the volume inside its own track (the `column-gap` between cells is

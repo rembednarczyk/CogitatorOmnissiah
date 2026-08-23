@@ -1,6 +1,6 @@
 import React from "react";
 import { BookIndexEntry } from "../../types";
-import { spineStyle, flatBookWidth, flatBookThickness, displayTitle, hasAward } from "../../utils/bookshelf";
+import { spineStyle, flatBookLayout, displayTitle, hasAward } from "../../utils/bookshelf";
 
 interface Props {
   books: BookIndexEntry[];          // każda warstwa to OSOBNA prawdziwa książka
@@ -17,22 +17,21 @@ function jitter(book: BookIndexEntry): number {
 }
 
 /**
- * Kupka leżących książek — każda warstwa to osobny wolumin (własny kolor, tytuł
- * wzdłuż grzbietu, znacznik nagrody, przeciąganie). Renderowane od dołu do góry.
+ * Kupka leżących książek — każda warstwa to osobny wolumin z PEŁNĄ nazwą wzdłuż
+ * grzbietu (dobrany rozmiar czcionki / szerokość / grubość, bez ucinania),
+ * własnym kolorem, znacznikiem nagrody i przeciąganiem. Renderowane od dołu do góry.
  */
 export const BookStack: React.FC<Props> = ({ books, onDragStart, onDragEnd }) => {
-  const layers = books.map((b) => ({
-    book: b,
-    w: flatBookWidth(b),
-    h: flatBookThickness(spineStyle(b)),
-    color: spineStyle(b).color,
-    dx: jitter(b),
-  }));
-  const cellW = Math.max(...layers.map((l) => l.w + l.dx));
+  const layers = books.map((b) => {
+    const style = spineStyle(b);
+    const { width, fontSize, thickness } = flatBookLayout(b, style);
+    return { book: b, width, fontSize, thickness, color: style.color, dx: jitter(b) };
+  });
+  const cellW = Math.max(...layers.map((l) => l.width + l.dx));
 
   return (
     <div className="relative shrink-0 flex flex-col-reverse items-start" style={{ width: cellW }}>
-      {layers.map(({ book, w, h, color, dx }, i) => (
+      {layers.map(({ book, width, fontSize, thickness, color, dx }, i) => (
         <div
           key={book.id}
           draggable
@@ -41,8 +40,8 @@ export const BookStack: React.FC<Props> = ({ books, onDragStart, onDragEnd }) =>
           title={`${displayTitle(book)}${book.author ? " — " + book.author : ""}${book.year ? " (" + book.year + ")" : ""}`}
           className="group/layer relative rounded-[2px] cursor-grab active:cursor-grabbing select-none transition-transform duration-150 hover:-translate-x-1"
           style={{
-            height: h,
-            width: w,
+            height: thickness,
+            width,
             marginLeft: dx,
             marginBottom: i === 0 ? 0 : 1,
             background: `linear-gradient(0deg, rgba(0,0,0,.42) 0, ${color} 26%, ${color} 74%, rgba(255,255,255,.12) 100%)`,
@@ -51,8 +50,11 @@ export const BookStack: React.FC<Props> = ({ books, onDragStart, onDragEnd }) =>
         >
           {/* Krawędź kartek (fore-edge) po prawej */}
           <span className="absolute top-[2px] bottom-[2px] right-[2px] w-[3px] rounded-[1px] bg-gradient-to-b from-amber-50/70 via-amber-100/40 to-amber-50/70" aria-hidden />
-          {/* Tytuł wzdłuż grzbietu leżącej książki */}
-          <span className="absolute inset-y-0 left-2 right-3 flex items-center text-[9px] font-bold text-white/85 truncate" style={{ textShadow: "0 1px 2px rgba(0,0,0,.5)" }}>
+          {/* PEŁNY tytuł wzdłuż grzbietu (bez ucinania) */}
+          <span
+            className={`absolute inset-y-0 right-3 flex items-center font-bold text-white/90 whitespace-nowrap ${hasAward(book) ? "left-3.5" : "left-2"}`}
+            style={{ fontSize, textShadow: "0 1px 2px rgba(0,0,0,.55)" }}
+          >
             {displayTitle(book)}
           </span>
           {hasAward(book) && (

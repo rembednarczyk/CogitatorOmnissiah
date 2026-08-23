@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.16.3** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.16.4** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -62,6 +62,12 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.16.4** — Większe kupki (`planShelf` stack **4–7** realnych książek, było 2–4) + **pełne nazwy
+  na każdej książce** (bez ucinania). `spineFontSize(style,title)` dobiera czcionkę stojącego
+  grzbietu (6–11 px) tak, by cały tytuł zmieścił się na wysokości; `flatBookLayout(book,style)` dobiera
+  szerokość+czcionkę+grubość leżącej książki pod pełny tytuł (grubość 15–18, książka szersza dla
+  dłuższego tytułu, mniejsza czcionka gdy bardzo długi). `BookStack`/`BookSpine` usuwają `truncate`/
+  `max-h-80%`. +2 testy (skalowanie czcionki, szerokość mieści tytuł). Screenshot OK. `docs` upd.
 - **1.16.3** — Pozy dostrojone: **mniejszy przechył** (max 6°, `MAX_LEAN_DEG`; było 4–11 → teraz 3–6),
   **więcej stojących prosto** (~80% vs 66%), a **każda książka w kupce to OSOBNY prawdziwy wolumin**
   (własny tytuł/kolor/nagroda/drag), nie jeden grzbiet udający stos. Model przebudowany: `spinePose`+
