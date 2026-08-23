@@ -1,6 +1,5 @@
 import { useState, useCallback, useRef } from "react";
-import { consumeSSE } from "../utils/sse";
-import { createStallWatchdog } from "../utils/stallWatchdog";
+import { useSSEStream } from "./useSSEStream";
 
 export interface VintedResult {
   id: string;
@@ -68,6 +67,12 @@ export function useVintedCheck() {
   // Ref zamiast stanu w strażniku — stan w domknięciu bywa nieaktualny
   const isCheckingRef = useRef(false);
 
+  // Skaner Vinted potrafi milczeć długo na jednej książce: withRetry(3, 4000) przy
+  // timeout 30 s daje worst-case ~102 s ciszy na wolnej/blokowanej pozycji (serwer
+  // śle tylko keepalive, a Render go buforuje). 120 s pokrywa ten worst-case bez
+  // ruszania timingu scrapera (nie zmniejsza trafień).
+  const { run } = useSSEStream("/api/vinted-check", { timeoutMs: 120000 });
+
   const runVintedCheck = useCallback(async (opts?: { skipScannedWithinHours?: number }) => {
     if (isCheckingRef.current) return;
     isCheckingRef.current = true;
@@ -77,76 +82,48 @@ export function useVintedCheck() {
     setCheckProgress({ current: 0, total: 0, message: "Inicjowanie...", startTime: Date.now() });
     setVintedError(null);
 
-    // Skaner Vinted potrafi milczeć długo na jednej książce: withRetry(3, 4000) przy
-    // timeout 30 s daje worst-case ~102 s ciszy (30+4+30+8+30) na wolnej/blokowanej
-    // pozycji, gdy serwer wysyła tylko keepalive (a Render bywa go buforuje). Domyślne
-    // 30 s ucinało wtedy fetch → serwer widział rozłączenie → self-kill całego skanu.
-    // 120 s pokrywa ten worst-case bez ruszania timingu scrapera (nie zmniejsza trafień).
-    const watchdog = createStallWatchdog(120000);
-
-    try {
-      watchdog.arm();
-      const response = await fetch("/api/vinted-check", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ skipScannedWithinHours: opts?.skipScannedWithinHours }),
-        signal: watchdog.signal
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Błąd serwera: ${response.status}`);
+    const result = await run({ skipScannedWithinHours: opts?.skipScannedWithinHours }, (data) => {
+      if (data.type === "progress") {
+        setCheckProgress(prev => ({
+          current: data.current ?? 0,
+          total: data.total ?? 0,
+          message: data.message ?? "",
+          startTime: prev?.startTime || Date.now()
+        }));
+      } else if (data.type === "status") {
+        setCheckProgress(prev => ({
+          current: prev?.current || 0,
+          total: prev?.total || 0,
+          message: data.message ?? "",
+          startTime: prev?.startTime || Date.now()
+        }));
+      } else if (data.type === "match") {
+        setVintedResults(prev => {
+          if (prev.some(r => r.id === data.result.id)) return prev;
+          return [...prev, data.result];
+        });
+      } else if (data.type === "search_attempt") {
+        setSearchAttempts(prev => {
+          const existing = prev.findIndex(a => a.id === data.result.id);
+          if (existing !== -1) {
+            const next = [...prev];
+            next[existing] = data.result;
+            return next;
+          }
+          return [...prev, data.result];
+        });
+      } else if (data.type === "complete") {
+        setVintedResults(data.result.results);
+      } else if (data.type === "error") {
+        throw new Error(data.error);
       }
+    });
 
-      await consumeSSE(response.body, (data) => {
-        if (data.type === "progress") {
-          setCheckProgress(prev => ({
-            current: data.current ?? 0,
-            total: data.total ?? 0,
-            message: data.message ?? "",
-            startTime: prev?.startTime || Date.now()
-          }));
-        } else if (data.type === "status") {
-          setCheckProgress(prev => ({
-            current: prev?.current || 0,
-            total: prev?.total || 0,
-            message: data.message ?? "",
-            startTime: prev?.startTime || Date.now()
-          }));
-        } else if (data.type === "match") {
-          setVintedResults(prev => {
-            if (prev.some(r => r.id === data.result.id)) return prev;
-            return [...prev, data.result];
-          });
-        } else if (data.type === "search_attempt") {
-          setSearchAttempts(prev => {
-            const existing = prev.findIndex(a => a.id === data.result.id);
-            if (existing !== -1) {
-              const next = [...prev];
-              next[existing] = data.result;
-              return next;
-            }
-            return [...prev, data.result];
-          });
-        } else if (data.type === "complete") {
-          setVintedResults(data.result.results);
-        } else if (data.type === "error") {
-          throw new Error(data.error);
-        }
-      }, watchdog.arm);
-    } catch (err: any) {
-      setVintedError(
-        watchdog.stalled
-          ? "Połączenie z serwerem zawisło (brak odpowiedzi przez 120 s). Możliwe buforowanie strumienia przez hosting. Odśwież i spróbuj ponownie."
-          : err.message
-      );
-    } finally {
-      watchdog.clear();
-      isCheckingRef.current = false;
-      setIsChecking(false);
-      setCheckProgress(null);
-    }
-  }, []);
+    if (!result.ok && result.error) setVintedError(result.error);
+    isCheckingRef.current = false;
+    setIsChecking(false);
+    setCheckProgress(null);
+  }, [run]);
 
   const stopVintedCheck = useCallback(async () => {
     try {

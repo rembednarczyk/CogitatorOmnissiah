@@ -1,7 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { IdentifiedBooks } from "./useStats";
-import { consumeSSE } from "../utils/sse";
-import { createStallWatchdog } from "../utils/stallWatchdog";
+import { useSSEStream } from "./useSSEStream";
 
 export type { IdentifiedBooks };
 
@@ -13,6 +12,7 @@ export function useLibraryCheck() {
   // Ref zamiast stanu w strażniku — stan w domknięciu bywa nieaktualny
   // (dwa kliknięcia w tym samym ticku uruchamiały dwa równoległe skany)
   const isCheckingRef = useRef(false);
+  const { run } = useSSEStream("/api/library-check");
 
   const checkLibrary = useCallback(async (libraryId: string, libraryCode: string) => {
     if (isCheckingRef.current) return;
@@ -21,71 +21,41 @@ export function useLibraryCheck() {
     setIdentifiedBooks(prev => ({ ...prev, [libraryId]: [] }));
     setCheckProgress({ current: 0, total: 0, message: "Inicjowanie...", startTime: Date.now() });
     setLibraryError(null);
-    
-    const watchdog = createStallWatchdog();
 
-    return new Promise<void>(async (resolve) => {
-      try {
-        watchdog.arm();
-        const response = await fetch("/api/library-check", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ libraryCode }),
-          signal: watchdog.signal
+    const result = await run({ libraryCode }, (data) => {
+      if (data.type === "progress") {
+        setCheckProgress(prev => ({
+          current: data.current ?? 0,
+          total: data.total ?? 0,
+          message: data.message ?? "",
+          startTime: prev?.startTime || Date.now()
+        }));
+      } else if (data.type === "status") {
+        setCheckProgress(prev => ({
+          current: prev?.current || 0,
+          total: prev?.total || 0,
+          message: data.message ?? "",
+          startTime: prev?.startTime || Date.now()
+        }));
+      } else if (data.type === "match") {
+        setIdentifiedBooks(prev => {
+          const currentLibraryBooks = prev[libraryId] || [];
+          if (currentLibraryBooks.some(b => b.id === data.result.id)) return prev;
+          return { ...prev, [libraryId]: [...currentLibraryBooks, data.result] };
         });
-
-        if (!response.ok) throw new Error("Błąd podczas sprawdzania biblioteki");
-
-        await consumeSSE(response.body, (data) => {
-          if (data.type === "progress") {
-            setCheckProgress(prev => ({
-              current: data.current ?? 0,
-              total: data.total ?? 0,
-              message: data.message ?? "",
-              startTime: prev?.startTime || Date.now()
-            }));
-          } else if (data.type === "status") {
-            setCheckProgress(prev => ({
-              current: prev?.current || 0,
-              total: prev?.total || 0,
-              message: data.message ?? "",
-              startTime: prev?.startTime || Date.now()
-            }));
-          } else if (data.type === "match") {
-            setIdentifiedBooks(prev => {
-              const currentLibraryBooks = prev[libraryId] || [];
-              // Check if already exists to avoid duplicates (though server shouldn't send them)
-              if (currentLibraryBooks.some(b => b.id === data.result.id)) return prev;
-              return {
-                ...prev,
-                [libraryId]: [...currentLibraryBooks, data.result]
-              };
-            });
-          } else if (data.type === "complete") {
-            setIdentifiedBooks(prev => ({
-              ...prev,
-              [libraryId]: data.result.results
-            }));
-          } else if (data.type === "error") {
-            throw new Error(data.error);
-          }
-        }, watchdog.arm);
-        resolve();
-      } catch (err: any) {
-        setLibraryError(
-          watchdog.stalled
-            ? "Połączenie z serwerem zawisło (brak odpowiedzi przez 30 s). Możliwe buforowanie strumienia przez hosting. Odśwież i spróbuj ponownie."
-            : err.message
-        );
-        resolve(); // Resolve anyway so the next library can be checked
-      } finally {
-        watchdog.clear();
-        isCheckingRef.current = false;
-        setCheckingLibrary(null);
-        setCheckProgress(null);
+      } else if (data.type === "complete") {
+        setIdentifiedBooks(prev => ({ ...prev, [libraryId]: data.result.results }));
+      } else if (data.type === "error") {
+        throw new Error(data.error);
       }
     });
-  }, []);
+
+    // Błąd nie przerywa całości — `checkAllLibraries` leci dalej do kolejnej filii.
+    if (!result.ok && result.error) setLibraryError(result.error);
+    isCheckingRef.current = false;
+    setCheckingLibrary(null);
+    setCheckProgress(null);
+  }, [run]);
 
   const stopLibraryCheck = useCallback(async () => {
     try {
@@ -99,12 +69,10 @@ export function useLibraryCheck() {
     if (isCheckingRef.current) return;
 
     for (const branch of branches) {
-      // Need to await the completion of each check.
-      // Since checkLibrary sets state and doesn't return a promise that resolves on completion,
-      // we need to wrap the fetch logic or modify checkLibrary to return a promise.
-      // For simplicity, we'll implement the sequential check here or modify checkLibrary.
+      // checkLibrary jest teraz zwykłym async i rozwiązuje się po zakończeniu strumienia
+      // (bez ręcznego opakowania w Promise) — czekamy na każdą filię po kolei.
       await checkLibrary(branch.id, branch.code);
-      // Wait a moment between libraries
+      // Krótka przerwa między filiami.
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
   }, [checkLibrary]);
