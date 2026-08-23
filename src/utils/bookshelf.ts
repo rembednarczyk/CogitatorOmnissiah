@@ -48,6 +48,38 @@ export function displayTitle(book: BookIndexEntry): string {
   return book.plTitle || book.origTitle;
 }
 
+// ─── Geometria regału (deski) ─────────────────────────────────────────────
+// Rzędy grzbietów mają STAŁĄ wysokość, dzięki czemu każdy zawinięty wiersz
+// zaczyna się na tej samej wysokości i można pod nim narysować drewnianą deskę
+// jednym powtarzalnym gradientem — niezależnie od szerokości ekranu i liczby
+// książek w wierszu. `ROW_H` > najwyższy grzbiet (171 px), `GAP` mieści deskę.
+export const SHELF_ROW_H = 178;   // px — wysokość toru jednego rzędu
+export const SHELF_PLANK_H = 15;  // px — grubość widocznej deski
+export const SHELF_ROW_GAP = 30;  // px — prześwit pod rzędem (deska + cień + luz)
+
+/**
+ * Tło powtarzalne rysujące drewnianą deskę tuż pod spodem każdego rzędu grzbietów.
+ * Grzbiety są wyrównane do dołu toru `SHELF_ROW_H`, więc deska ląduje dokładnie
+ * pod nimi (w prześwicie `SHELF_ROW_GAP`). Zwraca gotowy `background` (CSS).
+ */
+export function shelfPlankBackground(): { backgroundImage: string } {
+  const top = SHELF_ROW_H;                        // górna krawędź deski (linia książek)
+  const bot = SHELF_ROW_H + SHELF_PLANK_H;        // dolna krawędź deski
+  const period = SHELF_ROW_H + SHELF_ROW_GAP;     // skok pionowy na jeden rząd
+  const backgroundImage =
+    `repeating-linear-gradient(180deg,` +
+    ` rgba(0,0,0,0) 0px,` +
+    ` rgba(0,0,0,0) ${top}px,` +
+    ` rgba(255,214,160,0.45) ${top}px,` +          // rozświetlona krawędź (blat)
+    ` #5a3a1e ${top + 1}px,` +                      // drewno — góra
+    ` #3a2413 ${top + Math.round(SHELF_PLANK_H * 0.55)}px,` +
+    ` #1c1108 ${bot - 1}px,` +                      // drewno — dół
+    ` rgba(0,0,0,0.85) ${bot}px,` +                 // cień rzucany pod deską
+    ` rgba(0,0,0,0) ${bot + 6}px,` +
+    ` rgba(0,0,0,0) ${period}px)`;
+  return { backgroundImage };
+}
+
 /** Czy pozycja ma nagrodę/nominację (do pieczęci na grzbiecie i półki „Wyróżnione"). */
 export function hasAward(book: BookIndexEntry): boolean {
   return book.awards.length > 0;

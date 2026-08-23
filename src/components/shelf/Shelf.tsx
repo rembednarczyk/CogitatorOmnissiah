@@ -1,13 +1,14 @@
 import React, { useState } from "react";
 import { BookIndexEntry } from "../../types";
-import { ShelfId, spineStyle } from "../../utils/bookshelf";
+import { ShelfId, spineStyle, shelfPlankBackground, SHELF_ROW_H, SHELF_ROW_GAP } from "../../utils/bookshelf";
 import { BookSpine } from "./BookSpine";
+import { ShelfFrame, ShelfAccent } from "./ShelfFrame";
 
 interface Props {
   shelfId: ShelfId;
   title: string;
   icon: React.ReactNode;
-  accent: "emerald" | "cyan";
+  accent: Extract<ShelfAccent, "emerald" | "cyan">;
   books: BookIndexEntry[];
   onDragStart: (book: BookIndexEntry) => void;
   onDragEnd: () => void;
@@ -16,45 +17,43 @@ interface Props {
   dragging: boolean;
 }
 
-const ACCENT = {
-  emerald: { text: "text-emerald-300", ring: "border-emerald-500/40", glow: "shadow-[0_0_24px_rgba(52,211,153,.18)]", chip: "bg-emerald-500/10 border-emerald-500/25 text-emerald-300" },
-  cyan: { text: "text-cyan-300", ring: "border-cyan-500/40", glow: "shadow-[0_0_24px_rgba(34,211,238,.18)]", chip: "bg-cyan-500/10 border-cyan-500/25 text-cyan-300" },
-};
+const PLANK_BG = shelfPlankBackground();
 
-/** Jeden regał = drop-target z półkami grzbietów (zawijanymi w rzędy). */
+/** Jeden regał = drewniany korpus + drop-target z grzbietami na deskach (wszystkie, bez przewijania). */
 export const Shelf: React.FC<Props> = ({ shelfId, title, icon, accent, books, onDragStart, onDragEnd, onDropBook, dragging }) => {
   const [over, setOver] = useState(false);
-  const a = ACCENT[accent];
+
+  const rootProps: React.HTMLAttributes<HTMLDivElement> = {
+    onDragOver: (e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; if (!over) setOver(true); },
+    onDragLeave: (e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOver(false); },
+    onDrop: (e) => { e.preventDefault(); setOver(false); onDropBook(shelfId); },
+  };
 
   return (
-    <div
-      onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; if (!over) setOver(true); }}
-      onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOver(false); }}
-      onDrop={(e) => { e.preventDefault(); setOver(false); onDropBook(shelfId); }}
-      className={`rounded-3xl border p-4 sm:p-5 bg-gradient-to-b from-amber-950/30 to-black/40 transition-colors ${
-        over ? `${a.ring} ${a.glow}` : dragging ? "border-white/15 border-dashed" : "border-amber-900/40"
-      }`}
+    <ShelfFrame
+      title={title} icon={icon} accent={accent} count={books.length}
+      highlight={over ? "target" : dragging ? "dragging" : "idle"}
+      headerExtra={dragging ? <span className="text-[10px] uppercase tracking-widest text-amber-200/70 font-bold">upuść tutaj</span> : null}
+      rootProps={rootProps}
     >
-      <div className="flex items-center gap-2 mb-4">
-        <span className={a.text}>{icon}</span>
-        <h3 className="text-sm font-bold uppercase tracking-widest text-slate-200">{title}</h3>
-        <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border ${a.chip}`}>{books.length}</span>
-        {dragging && <span className="ml-auto text-[10px] uppercase tracking-widest text-slate-500 font-bold">upuść tutaj</span>}
-      </div>
-
       {books.length === 0 ? (
-        <div className="min-h-[120px] flex items-center justify-center text-xs text-slate-600 italic">
+        <div className="min-h-[140px] flex items-center justify-center text-xs text-slate-500 italic">
           {dragging ? "Upuść wolumin, aby przenieść" : "Pusto na tej półce"}
         </div>
       ) : (
-        <div className="flex flex-wrap items-end gap-[5px] content-end max-h-[520px] overflow-y-auto pr-1 custom-scrollbar">
+        <div
+          className="flex flex-wrap items-end justify-start"
+          style={{ ...PLANK_BG, rowGap: `${SHELF_ROW_GAP}px`, columnGap: "5px" }}
+        >
           {books.map((b) => (
-            <BookSpine key={b.id} book={b} style={spineStyle(b)} onDragStart={onDragStart} onDragEnd={onDragEnd} />
+            // Komórka o stałej wysokości toru → wszystkie zawinięte rzędy równe,
+            // więc deska (tło) trafia dokładnie pod spód każdego z nich.
+            <div key={b.id} className="flex items-end shrink-0" style={{ height: SHELF_ROW_H }}>
+              <BookSpine book={b} style={spineStyle(b)} onDragStart={onDragStart} onDragEnd={onDragEnd} />
+            </div>
           ))}
         </div>
       )}
-      {/* Deska półki */}
-      <div className="h-4 rounded-[3px] mt-1 bg-gradient-to-b from-amber-800/70 via-amber-950/80 to-black shadow-[0_10px_16px_-6px_rgba(0,0,0,.7),inset_0_1px_0_rgba(255,220,170,.15)]" />
-    </div>
+    </ShelfFrame>
   );
 };

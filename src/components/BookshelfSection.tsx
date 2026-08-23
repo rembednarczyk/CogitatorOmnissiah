@@ -6,6 +6,7 @@ import { useMarkRead } from "../hooks/useMarkRead";
 import { ShelfId, ReadOverrides, isRead, splitShelves, featuredReads } from "../utils/bookshelf";
 import { Shelf } from "./shelf/Shelf";
 import { CoverCard } from "./shelf/CoverCard";
+import { ShelfFrame } from "./shelf/ShelfFrame";
 
 export const BookshelfSection: React.FC = () => {
   const { books, loading, error, fetchBooks } = useBooks();
@@ -103,17 +104,19 @@ export const BookshelfSection: React.FC = () => {
         <>
           {/* Półka „Wyróżnione" (okładki twarzą) */}
           {featured.length > 0 && (
-            <div className="rounded-3xl border border-purple-500/20 bg-gradient-to-b from-purple-950/20 to-black/40 p-4 sm:p-5">
-              <div className="flex items-center gap-2 mb-4">
-                <Sparkles className="w-4 h-4 text-purple-300" />
-                <h3 className="text-sm font-bold uppercase tracking-widest text-purple-200">Wyróżnione — nagrodzone, przeczytane</h3>
-                <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold border bg-purple-500/10 border-purple-500/25 text-purple-300">{featured.length}</span>
-              </div>
-              <div className="flex gap-3.5 overflow-x-auto pb-1 custom-scrollbar">
+            <ShelfFrame
+              title="Wyróżnione — nagrodzone, przeczytane"
+              icon={<Sparkles className="w-4 h-4" />}
+              accent="purple" count={featured.length}
+            >
+              <div className="flex items-end gap-3.5 overflow-x-auto pb-1 pt-1 custom-scrollbar">
                 {featured.map((b) => <CoverCard key={b.id} book={b} />)}
               </div>
-              <div className="h-4 rounded-[3px] mt-1 bg-gradient-to-b from-amber-800/70 via-amber-950/80 to-black shadow-[0_10px_16px_-6px_rgba(0,0,0,.7),inset_0_1px_0_rgba(255,220,170,.12)]" />
-            </div>
+              <div
+                className="h-[15px] mt-[2px] rounded-[2px]"
+                style={{ background: "linear-gradient(180deg, rgba(255,214,160,.45) 0, #5a3a1e 1px, #3a2413 55%, #1c1108 100%)", boxShadow: "0 8px 14px -6px rgba(0,0,0,.75)" }}
+              />
+            </ShelfFrame>
           )}
 
           {/* Dwa regały */}

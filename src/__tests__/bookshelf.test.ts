@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { BookIndexEntry } from "../types";
-import { isRead, spineStyle, splitShelves, featuredReads, CLOTH_PALETTE, READ_TAG } from "../utils/bookshelf";
+import { isRead, spineStyle, splitShelves, featuredReads, CLOTH_PALETTE, READ_TAG, shelfPlankBackground, SHELF_ROW_H, SHELF_PLANK_H, SHELF_ROW_GAP } from "../utils/bookshelf";
 
 const mk = (over: Partial<BookIndexEntry>): BookIndexEntry => ({
   id: over.id ?? over.plTitle ?? "x", plTitle: "", origTitle: "", author: "", year: "",
@@ -35,6 +35,23 @@ describe("bookshelf.spineStyle", () => {
       expect(s.height).toBeGreaterThanOrEqual(124);
       expect(s.height).toBeLessThanOrEqual(171);
     }
+  });
+});
+
+describe("bookshelf.shelfPlankBackground", () => {
+  it("draws a plank starting at the row baseline and repeats per row advance", () => {
+    const { backgroundImage } = shelfPlankBackground();
+    expect(backgroundImage.startsWith("repeating-linear-gradient(180deg,")).toBe(true);
+    // Deska zaczyna się dokładnie pod spodem rzędu (SHELF_ROW_H) …
+    expect(backgroundImage).toContain(`${SHELF_ROW_H}px`);
+    // … kończy po SHELF_PLANK_H …
+    expect(backgroundImage).toContain(`${SHELF_ROW_H + SHELF_PLANK_H}px`);
+    // … a okres powtórzenia = skok jednego rzędu (ROW_H + GAP).
+    expect(backgroundImage).toContain(`${SHELF_ROW_H + SHELF_ROW_GAP}px`);
+  });
+
+  it("keeps the plank thinner than the row gap (mieści się w prześwicie)", () => {
+    expect(SHELF_PLANK_H).toBeLessThan(SHELF_ROW_GAP);
   });
 });
 
