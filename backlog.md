@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.14.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.15.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -62,6 +62,14 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.15.0** — „Regał Archiwum" (#89): zakładka z wizualizacją księgozbioru jako fizyczne
+  półki (koncept A grzbiety + B półka okładek „Wyróżnione"=read+nagroda). Dwa regały „Do
+  przeczytania"/„Przeczytane" z **drag&drop** (HTML5 DnD); upuszczenie zapisuje/usuwa tag
+  „Przeczytane" w „Źródło" (optymistyczny stan `overrides` + revert przy błędzie). Backend:
+  `removeTagFromMultiSelect` + `syncManager.unmarkRead` + `POST /api/unmark-as-read` (guard
+  `ALLOWED_SOURCE_TAGS`), symetryczne do `markAsRead`; cache książek inwalidowany. Czyste
+  `src/utils/bookshelf.ts` (`spineStyle` deterministyczny, `splitShelves`, `featuredReads`).
+  BUG złapany testem: `h >> 3` (znakowe) → ujemne dla hashów >2^31 → `>>> 3`. +9 testów.
 - **1.14.0** — Paczki Vinted: przełącznik sortowania „Najwięcej książek" / „Najtańsza paczka".
   Czysta `sortBundles(bundles, mode)` (`count`: najwięcej książek → remis najtańsza suma;
   `price`: najtańsza `totalValue` → remis najwięcej książek), zwraca kopię (bez mutacji).

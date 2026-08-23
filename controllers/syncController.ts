@@ -188,6 +188,24 @@ export const markAsRead = async (req: Request, res: Response) => {
   }
 };
 
+export const unmarkAsRead = async (req: Request, res: Response) => {
+  try {
+    const { pageId, tag } = req.body;
+    if (!pageId) return res.status(400).json({ error: "Missing pageId parameter" });
+
+    const sourceTag = tag ?? "Przeczytane";
+    if (!ALLOWED_SOURCE_TAGS.has(sourceTag)) {
+      return res.status(400).json({ error: `Niedozwolony znacznik: ${sourceTag}.` });
+    }
+
+    await syncManager.unmarkRead(pageId, sourceTag);
+    res.json({ success: true });
+  } catch (error: any) {
+    console.error("Unmark as Read Error:", error);
+    res.status(500).json({ error: error.message || "Wystąpił błąd podczas usuwania znacznika." });
+  }
+};
+
 export const checkVintedAvailability = async (req: Request, res: Response) => {
   if (!process.env.NOTION_API_KEY || !process.env.NOTION_DATABASE_ID) {
     return res.status(400).json({ error: "Brak kluczy API Notion." });

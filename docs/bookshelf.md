@@ -1,0 +1,42 @@
+# Regał Archiwum (Bookshelf)
+
+## 1. Overview
+The **Regał** tab renders the tracked library as physical shelves instead of a list: read books
+stand as coloured **spines** (concept A), awarded reads also appear face-out on a **"Wyróżnione"**
+cover row (concept B). Two shelves — **Do przeczytania** and **Przeczytane** — sit side by side, and
+a book is dragged between them; the drop writes the read state back to Notion. **No AI/LLM.**
+
+## 2. Data
+- Reuses **`GET /api/books`** (`BookIndexEntry[]`, see [skryptorium-search.md](./skryptorium-search.md)) —
+  the same slim index the search uses. Read state is derived from the `zrodlo` (Źródło) tag
+  `Przeczytane`; nothing extra is fetched.
+
+## 3. Pure helpers (`src/utils/bookshelf.ts`, unit-tested)
+- **`isRead(book, overrides)`** — read state with optimistic overrides layered over the base tag.
+- **`spineStyle(book)`** — deterministic spine colour (a muted book-cloth palette), width and height
+  from a hash of the title, so a spine looks identical across re-renders. The hash is unsigned
+  (`>>> 0`); the height derivation uses an **unsigned** shift (`>>> 3`) — a signed `>> 3` goes
+  negative for hashes above 2³¹ and produced out-of-range heights (caught by a bounds test).
+- **`splitShelves(books, overrides)`** — partitions into `{ read, toRead }`, each sorted by author
+  then title.
+- **`featuredReads(books, overrides, limit)`** — the cover row: read **and** awarded, newest year
+  first (no read-date exists in the data), capped at `limit`.
+
+## 4. Drag & drop + persistence
+- Native HTML5 DnD: each `BookSpine` is `draggable` and puts its id on the dataTransfer; each `Shelf`
+  is a drop target that highlights while a drag is in progress.
+- On drop onto the opposite shelf, `BookshelfSection` moves the book **optimistically** (sets a
+  `ReadOverrides` entry so `splitShelves` re-partitions immediately) and then persists:
+  - drop on **Przeczytane** → `POST /api/mark-as-read` (adds the `Przeczytane` tag);
+  - drop on **Do przeczytania** → `POST /api/unmark-as-read` (removes it).
+  If the write fails, the override is reverted and an error banner names the book. Dropping onto the
+  same shelf is a no-op.
+- **Backend** mirrors the existing mark path: `NotionAdapter.removeTagFromMultiSelect` (inverse of
+  `addTagToMultiSelect`, both invalidate the books cache) → `SyncManager.unmarkRead` →
+  `POST /api/unmark-as-read`, guarded by the same `ALLOWED_SOURCE_TAGS` allow-list as `mark-as-read`
+  so only known Źródło tags can be written.
+
+## 5. Scope notes
+Concept A (spines) + B (featured covers) shipped; the alternate 40k "Krypta Danych" neon skin (C)
+was a rejected mock. Out of scope for now: virtualization for extreme counts, per-shelf sort/filter,
+and a write-in-progress animation on the dragged spine.

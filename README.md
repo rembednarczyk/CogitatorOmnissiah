@@ -44,6 +44,7 @@ Każda operacja to osobne, anulowalne zadanie strumieniowane do UI przez SSE.
 | **Sanctity (Integralność)** | `POST /api/sync-integrity` | Porównuje bazę Notion z wiki: liczby per rok/nagroda, unikalność Lp/tytułów. |
 | **Statystyki** | `GET /api/stats` | Agregaty do dashboardu (postęp autorów, roczników, pokrycie nagród, biblioteki). |
 | **Skryptorium** (wyszukiwarka) | `GET /api/books` | Odchudzony indeks rekordów; front filtruje client-side po tytule (PL+oryg) i autorze, diakrytyki-agnostycznie, na żywo („per" → wiele, „pere" → Perelandra). |
+| **Regał** (wizualizacja) | `POST /api/mark-as-read`, `POST /api/unmark-as-read` | Księgozbiór jako fizyczne półki (grzbiety + okładki „Wyróżnione"); dwa regały „Do przeczytania"/„Przeczytane" z drag&drop, który zapisuje/usuwa tag „Przeczytane" w kolumnie „Źródło". |
 | **Skan Biblioteki** | `POST /api/library-check` | Sprawdza dostępność w OPAC MBP Lublin (scraping HTML). |
 | **Skan Vinted** | `POST /api/vinted-check` | Szuka fizycznych egzemplarzy na vinted.pl (scraping HTML). |
 

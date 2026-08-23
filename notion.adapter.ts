@@ -233,6 +233,32 @@ export class NotionAdapter {
     this.invalidateBooksCache();
   }
 
+  /** Usuwa znacznik z pola multi_select (odwrotność `addTagToMultiSelect`). */
+  async removeTagFromMultiSelect(pageId: string, propertyName: string, tag: string): Promise<void> {
+    await this.init();
+
+    const page = await withRetry(() => this.notion.pages.retrieve({ page_id: pageId })) as any;
+    const prop = page.properties[propertyName];
+
+    if (!prop || prop.type !== "multi_select") {
+      throw new Error(`Property ${propertyName} is not a multi_select`);
+    }
+
+    const currentTags = prop.multi_select.map((t: any) => ({ name: t.name }));
+    const nextTags = currentTags.filter((t: any) => t.name !== tag);
+    if (nextTags.length === currentTags.length) {
+      return; // Nie było tagu — nic do zrobienia
+    }
+
+    await withRetry(() => this.notion.pages.update({
+      page_id: pageId,
+      properties: {
+        [propertyName]: { multi_select: nextTags }
+      }
+    }));
+    this.invalidateBooksCache();
+  }
+
   async resolveDataSourceId(databaseId: string): Promise<string> {
     await this.init();
     return this.actualDataSourceId!;
