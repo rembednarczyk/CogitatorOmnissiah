@@ -30,6 +30,12 @@ title, dark back-panel with vertical planks, brass corner brackets and a hanging
   every row. Rows use fixed-height cells (`SHELF_ROW_H` > tallest spine), so every wrapped line
   advances by exactly `SHELF_ROW_H + SHELF_ROW_GAP`; the gradient period matches, so a plank lands
   directly beneath each row regardless of viewport width or how many spines fit per line.
+- **`spinePose(book)`** — deterministic pose for a bit of shelf dynamism: **straight** (~66%),
+  **lean** (~27%, tilt 4–11° pivoting at the base, as if resting on a neighbour) or **flat** (~7%,
+  a small 1–3-book pile lying down, rendered by `FlatBook`). The title hash is avalanche-mixed
+  (`mix32`) before slicing so the split stays even across any title corpus (a raw rolling hash of
+  near-identical titles is skewed). The pose is a `transform`/markup change **inside** the
+  fixed-height cell, so it never disturbs the plank alignment; drag&drop is unchanged.
 
 ## 4. Drag & drop + persistence
 - Native HTML5 DnD: each `BookSpine` is `draggable` and puts its id on the dataTransfer; each `Shelf`
