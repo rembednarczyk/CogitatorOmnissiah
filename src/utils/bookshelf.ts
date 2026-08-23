@@ -130,24 +130,37 @@ export function spineFontSize(style: SpineStyle, title: string): number {
 }
 
 /** Wymiary LEŻĄCEJ książki tak, by cała nazwa się zmieściła (pozioma, wzdłuż grzbietu). */
-export interface FlatBookLayout { width: number; fontSize: number; thickness: number; }
+export interface FlatBookLayout { width: number; fontSize: number; thickness: number; lines: 1 | 2 }
+
+/** Górny limit szerokości leżącej książki — powyżej niego tytuł ZAWIJAMY do 2 linii. */
+export const FLAT_MAX_W = 150;
 
 /**
- * Dobiera szerokość, czcionkę i grubość leżącej książki tak, by zmieścić PEŁNY
- * tytuł: najpierw próbuje dużej czcionki, przy długich tytułach schodzi do 7 px
- * (i wtedy poszerza), a grubość rośnie lekko z czcionką (grubsza książka mieści
- * większy napis). Nic nie jest ucinane.
+ * Dobiera szerokość, czcionkę, grubość i liczbę linii leżącej książki tak, by
+ * zmieścić PEŁNY tytuł BEZ poszerzania ponad `FLAT_MAX_W`: krótki tytuł → 1 linia
+ * (książka dokładnie na tekst), dłuższy → 2 linie (książka trochę grubsza, nie
+ * szersza). Bardzo długi tytuł dodatkowo zmniejsza czcionkę, aż połowa zmieści
+ * się w jednej linii (2 linie zawsze wystarczą). Nic nie jest ucinane.
  */
-export function flatBookLayout(book: BookIndexEntry, style: SpineStyle): FlatBookLayout {
+export function flatBookLayout(book: BookIndexEntry, _style: SpineStyle): FlatBookLayout {
   const len = Math.max(1, displayTitle(book).length);
-  const PAD = 22;        // lewy margines tekstu + prawa krawędź kartek/nagroda
-  const MAX_W = 240;     // powyżej tej szerokości wolimy zmniejszyć czcionkę
-  const textW = (f: number) => Math.ceil(len * CHAR_W * f);
-  let fontSize = 11;
-  while (fontSize > 7 && textW(fontSize) + PAD > MAX_W) fontSize--;
-  const width = Math.max(72, textW(fontSize) + PAD);
-  const thickness = Math.min(24, Math.max(15, fontSize + 7));
-  return { width, fontSize, thickness };
+  const PAD_X = 20;                       // lewy margines tekstu + prawa krawędź kartek
+  const availW = FLAT_MAX_W - PAD_X;
+  const oneLine = (f: number) => len * CHAR_W * f;
+
+  let fontSize = 10;
+  let lines: 1 | 2 = 1;
+  let width: number;
+  if (oneLine(fontSize) <= availW) {
+    width = Math.max(72, Math.ceil(oneLine(fontSize)) + PAD_X);
+  } else {
+    lines = 2;
+    width = FLAT_MAX_W;
+    while (fontSize > 7 && Math.ceil(oneLine(fontSize) / 2) > availW) fontSize--;
+  }
+  const lineH = fontSize + 1;
+  const thickness = Math.min(24, Math.max(15, lines * lineH + 4));
+  return { width, fontSize, thickness, lines };
 }
 
 /** Tytuł do pokazania (polski, a gdy brak — oryginalny). */

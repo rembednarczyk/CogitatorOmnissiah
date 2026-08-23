@@ -39,8 +39,10 @@ title, dark back-panel with vertical planks, brass corner brackets and a hanging
   are `transform`/markup **inside** the fixed-height cell, so plank alignment and drag&drop are untouched.
 - **`spineFontSize(style, title)` / `flatBookLayout(book, style)`** — size every book to show its
   **full name** (no truncation). A standing spine picks a font (6–11 px) so the whole title fits along
-  its height; a lying book picks font + width + thickness so the full title fits horizontally (wider
-  book for a longer title, smaller font only when very long; thickness 15–18 px).
+  its height. A lying book is capped at `FLAT_MAX_W` (150 px): a short title stays one line, a longer
+  one **wraps to two lines** (the book gets a touch thicker, not wider — `lines` in the return);
+  a very long title also shrinks the font until half fits on a line (two lines always suffice).
+  `BookStack` renders the title with `-webkit-line-clamp`.
 - **`leanLayout(style, deg)`** — enforces the **no-overlap rule** for a tilted spine: the cell
   reserves the *rotated* width (`cellW = W·cosθ + H·sinθ`) and offsets it (`shiftX`) so the rotated
   box is centred, keeping the volume inside its own track (the `column-gap` between cells is

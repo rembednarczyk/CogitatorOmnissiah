@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.16.4** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.16.5** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -62,6 +62,11 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.16.5** — Leżące książki: **zawijanie tytułu do 2 linii zamiast poszerzania**. `flatBookLayout`
+  ma limit szerokości `FLAT_MAX_W=150`: krótki tytuł → 1 linia (książka na tekst), dłuższy → 2 linie
+  (książka trochę grubsza, nie szersza; `lines` w zwrotce). Bardzo długi → dodatkowo mniejsza czcionka,
+  aż połowa mieści się w linii (2 linie zawsze wystarczą, brak ucinania). `BookStack` renderuje tytuł
+  przez `-webkit-line-clamp`. +test (short=1 linia, long=2 linie i width=cap, grubszy). Screenshot OK.
 - **1.16.4** — Większe kupki (`planShelf` stack **4–7** realnych książek, było 2–4) + **pełne nazwy
   na każdej książce** (bez ucinania). `spineFontSize(style,title)` dobiera czcionkę stojącego
   grzbietu (6–11 px) tak, by cały tytuł zmieścił się na wysokości; `flatBookLayout(book,style)` dobiera
