@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.15.3** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.15.4** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -62,6 +62,14 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.15.4** — God-object krok 4/5 (#91): `vintedSyncService` 409 → 283 linii. Pure logic
+  wyjęta do testowalnych helperów: `vintedScanPlanner` (`selectAndOrderCandidates`/`scannedMs` —
+  filtr kandydatów + okno „Kontynuuj" + sort od najstarszych, `now` wstrzykiwalny), `vintedHttp`
+  (`vintedRequestHeaders`/`memMb`/`throttle`/`classifyVintedError` — dedup 4× jitter-sleep i
+  gałęzi 429/403), `looksEmpty` w parserze (obok `looksBlocked`), `computeChangedAt`+`toStoredBookView`
+  w store. Dedup 2× guard „persist empty tylko gdy nic nie było" → prywatny `persistEmptyIfNew`.
+  Zachowanie (SSE, kolejność, guardy) 1:1, +13 testów. Klasy NIE rozdzielałem (ryzyko DI/registry) —
+  opcjonalny split scan/seller/store-view zostaje jako deferred.
 - **1.15.3** — God-object krok 3/5 (#91): `useSyncManager` (God-Hook). „Wielki Rytuał" opisany
   DANYMI (`FULL_SYNC_STEPS[]` + pętla; 7× copy-paste → 1 pętla, `abortOnFail` per krok).
   `handleAwardChange` przyjmuje `string` (nie `ChangeEvent`) — parsowanie `<select>` zostaje w

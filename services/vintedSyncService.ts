@@ -3,46 +3,21 @@ import { NotionAdapter } from "../notion.adapter";
 import { SyncEvent } from "../src/types";
 import { withRetry } from "../retry";
 import { createLogger } from "../logger";
-import { getRandomUserAgent, createScrapingAgent } from "../scrapingClient";
-import { parseVintedItems, vintedDiagnostics, looksBlocked, extractVintedSeller, VintedItem } from "./vintedParser";
+import { createScrapingAgent } from "../scrapingClient";
+import { parseVintedItems, vintedDiagnostics, looksBlocked, looksEmpty, extractVintedSeller, VintedItem } from "./vintedParser";
 import { NotionBook } from "../src/types";
-import { offerFromItem, parseVintedData, mergeAndDiff, hasChanges, serializeVintedData, StoredVintedData, StoredOffer, StoredBookView, OfferDiff, EMPTY_DIFF } from "./vintedStore";
+import { offerFromItem, parseVintedData, mergeAndDiff, serializeVintedData, computeChangedAt, toStoredBookView, StoredVintedData, StoredOffer, StoredBookView, OfferDiff, EMPTY_DIFF } from "./vintedStore";
+import { selectAndOrderCandidates } from "./vintedScanPlanner";
+import { vintedRequestHeaders, memMb, throttle, classifyVintedError } from "./vintedHttp";
 
 const log = createLogger("VintedScan");
-
-/** Nagłówki żądania Vinted (świeży User-Agent na wywołanie). Wspólne dla skanu i grupowania. */
-function vintedRequestHeaders() {
-  return {
-    'User-Agent': getRandomUserAgent(),
-    'Accept-Language': 'pl-PL,pl;q=0.9,en-US;q=0.8,en;q=0.7',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-    'Referer': 'https://www.vinted.pl/',
-    'Upgrade-Insecure-Requests': '1',
-    'Sec-Fetch-Dest': 'document',
-    'Sec-Fetch-Mode': 'navigate',
-    'Sec-Fetch-Site': 'none',
-    'Sec-Fetch-User': '?1',
-    'Accept-Encoding': 'gzip, deflate, br',
-    'Connection': 'keep-alive',
-    'Cache-Control': 'max-age=0',
-  };
-}
-
-/**
- * Odczyt pamięci procesu (MB). Strony Vinted to ~7 MB HTML każda — na hostingu z
- * limitem RAM (Render free = 512 MB) powtarzane piki przy parsowaniu mogą wywołać
- * OOM-kill procesu, co urywa SSE i „ubija" skan przy w miarę stałej liczbie prób.
- * Dołączamy `rssMb`/`heapMb` do debug każdej próby, żeby to zobaczyć w panelu logów.
- */
-function memMb() {
-  const m = process.memoryUsage();
-  return { rssMb: Math.round(m.rss / 1048576), heapMb: Math.round(m.heapUsed / 1048576) };
-}
 
 /**
  * Skaner ofert na Vinted (bezpośredni scraper HTML — NIE AI). Dla każdej książki,
  * której jeszcze nie posiadamy, wyszukuje oferty w katalogu Vinted i emituje
- * trafienia przez SSE. Zob. docs/vinted-scanner.md.
+ * trafienia przez SSE. Cienki orkiestrator — plan skanu (`vintedScanPlanner`),
+ * HTTP/throttling (`vintedHttp`), parsowanie (`vintedParser`) i merge/diff
+ * (`vintedStore`) żyją w czystych helperach. Zob. docs/vinted-scanner.md.
  */
 export class VintedSyncService {
   constructor(private notion: NotionAdapter) {}
@@ -57,7 +32,7 @@ export class VintedSyncService {
     for (const b of allBooks) {
       const data = parseVintedData(b.vintedData);
       if (!data || data.offers.length === 0) continue;
-      books.push({ id: b.id, title: b.plTitle, author: b.author || "", year: b.year, partOfCycle: b.currentCzesccyklu, scannedAt: data.scannedAt, changedAt: data.changedAt, offers: data.offers });
+      books.push(toStoredBookView(b, data));
     }
     return { books, generatedAt: new Date().toISOString() };
   }
@@ -72,14 +47,26 @@ export class VintedSyncService {
       const fresh = items.map(offerFromItem);
       const prevData = parseVintedData(book.vintedData);
       const { offers, diff } = mergeAndDiff(fresh, prevData?.offers, scannedAt);
-      // changedAt bumpujemy tylko, gdy JEST poprzedni stan (baseline) I faktycznie coś się
-      // zmieniło — inaczej pierwszy skan fałszywie oznaczałby całą książkę jako „zmiana".
-      const changedAt = prevData && hasChanges(diff) ? scannedAt : prevData?.changedAt;
+      const changedAt = computeChangedAt(prevData, diff, scannedAt);
       await this.notion.saveVintedData(book.id, serializeVintedData({ scannedAt, changedAt, offers }));
       return diff;
     } catch (e: any) {
       log.warn("Nie udało się zapisać VintedData", { title: book.plTitle, error: e?.message });
       return EMPTY_DIFF;
+    }
+  }
+
+  /**
+   * Utrwala PUSTY rekord tylko dla pierwszego skanu tej książki. Gdy coś już było
+   * zapisane, NIE kasuje ofert/sprzedawców (marker „brak wyników"/0 ofert bywa fałszywy
+   * na stronie z ofertami — zachowanie jak przy cichym missie).
+   */
+  private async persistEmptyIfNew(book: NotionBook, scannedAt: string, persistEnabled: boolean, warnMsg: string): Promise<void> {
+    const hadStored = (parseVintedData(book.vintedData)?.offers.length ?? 0) > 0;
+    if (persistEnabled && !hadStored) {
+      await this.persistBookOffers(book, [], scannedAt);
+    } else if (hadStored) {
+      log.warn(warnMsg, { title: book.plTitle });
     }
   }
 
@@ -93,43 +80,11 @@ export class VintedSyncService {
       // cache: współdziel pobranie z sąsiadującymi skanami (biblioteka/Vinted).
       const allBooks = await this.notion.getBooksForStats(undefined, checkCancellation, { cache: true });
 
-      // Filter books:
-      // - Have Polish title
-      // - Exclude from source: Posiadam, Przeczytane, Audioteka, Biblioteka, Biblioteka 9
-      const baseCandidates = allBooks.filter(b => {
-        const zrodlo = b.zrodlo || [];
-        const excluded = ["Posiadam", "Przeczytane", "Audioteka", "Biblioteka", "Biblioteka 9"];
-        return !zrodlo.some(z => excluded.includes(z)) && b.plTitle && b.plTitle.trim() !== "";
-      });
-
-      // Czas ostatniego skanu w ms; nigdy-skanowane = -Infinity (najstarsze → najwyższy priorytet).
-      const scannedMs = (b: NotionBook): number => {
-        const at = parseVintedData(b.vintedData)?.scannedAt;
-        const t = at ? Date.parse(at) : NaN;
-        return isNaN(t) ? -Infinity : t;
-      };
-      let withDates = baseCandidates.map(b => ({ book: b, at: scannedMs(b) }));
-
-      // Wznawianie: pomiń tylko książki skanowane w ostatnich N GODZIN (bieżąca partia),
-      // a nie sztywne dni — inaczej „wczorajsze" (< 3 dni) też wypadały i przebieg nic nie
-      // robił. Resztę (starsze + nigdy-skanowane) skanujemy OD NAJSTARSZYCH, więc przerwany
-      // pełny skan kontynuuje się naturalnie na niezrobionych zamiast zaczynać od zera.
       const skipHours = params?.skipScannedWithinHours;
-      if (skipHours && skipHours > 0) {
-        const cutoff = Date.now() - skipHours * 3_600_000;
-        const before = withDates.length;
-        withDates = withDates.filter(x => x.at < cutoff); // -Infinity (nigdy) też przechodzi
-        const skipped = before - withDates.length;
-        if (skipped > 0) {
-          sendEvent({ type: "status", message: `Wznawianie: pominięto ${skipped} skanowanych < ${skipHours} h. Do sprawdzenia: ${withDates.length}.` });
-        }
+      const { candidates, skipped } = selectAndOrderCandidates(allBooks, skipHours);
+      if (skipHours && skipHours > 0 && skipped > 0) {
+        sendEvent({ type: "status", message: `Wznawianie: pominięto ${skipped} skanowanych < ${skipHours} h. Do sprawdzenia: ${candidates.length}.` });
       }
-
-      // Od najstarszych (nigdy-skanowane pierwsze) — przerwany przebieg zawsze posuwa
-      // najbardziej nieaktualne dane, a „Kontynuuj" domyka partię zamiast dublować świeże.
-      withDates.sort((a, b) => a.at - b.at);
-      const candidates = withDates.map(x => x.book);
-
       sendEvent({ type: "status", message: `Znaleziono ${candidates.length} kandydatów do sprawdzenia (od najstarszych) na Vinted...` });
 
       const results: any[] = [];
@@ -154,39 +109,19 @@ export class VintedSyncService {
         const searchText = `${title} ${book.author || ""}`.trim();
         const scannedAt = new Date().toISOString();
 
-        const headers = vintedRequestHeaders();
-
         sendEvent({
           type: "progress",
           message: `Sprawdzanie Vinted: ${searchText} (${i + 1}/${candidates.length})`,
           current: i + 1,
-          total: candidates.length
+          total: candidates.length,
         });
 
-        // Vinted Search URL
         const url = `https://www.vinted.pl/catalog?catalog[]=2319&language_book_ids[]=6440&page=1&order=price_low_to_high&price_from=2&currency=PLN&search_text=${encodeURIComponent(searchText)}`;
 
-        // Initial search attempt event
-        sendEvent({
-          type: "search_attempt",
-          result: {
-            id: book.id,
-            title: book.plTitle,
-            author: book.author,
-            url,
-            status: "pending",
-            itemCount: 0
-          }
-        });
+        sendEvent({ type: "search_attempt", result: { id: book.id, title: book.plTitle, author: book.author, url, status: "pending", itemCount: 0 } });
 
         try {
-          const response = await withRetry(async () => {
-            return await axios.get(url, {
-              httpsAgent,
-              headers,
-              timeout: 30000
-            });
-          }, 3, 4000);
+          const response = await withRetry(async () => axios.get(url, { httpsAgent, headers: vintedRequestHeaders(), timeout: 30000 }), 3, 4000);
 
           const html = response.data;
           log.info(`Odpowiedź Vinted`, { title, chars: html.length, ...memMb() });
@@ -195,36 +130,17 @@ export class VintedSyncService {
           if (looksBlocked(html)) {
             log.warn(`Vinted zablokował żądanie (wykrycie bota)`, { title });
             sendEvent({ type: "status", message: `⚠️ Vinted wykrył bota przy "${title}". Próbuję ominąć...` });
-            sendEvent({
-              type: "search_attempt",
-              result: { id: book.id, title, author: book.author, url, status: "blocked", itemCount: 0, debug: { ...vintedDiagnostics(html, 0), ...memMb() } }
-            });
-            // Blok to NIE „brak ofert": NIE zapisujemy pustki (zachowaj składowane oferty
-            // i ustalonych sprzedawców) ani `scannedAt`, by wznowienie ponowiło tę książkę.
-            await new Promise(resolve => setTimeout(resolve, 3000 + Math.floor(Math.random() * 2000)));
+            sendEvent({ type: "search_attempt", result: { id: book.id, title, author: book.author, url, status: "blocked", itemCount: 0, debug: { ...vintedDiagnostics(html, 0), ...memMb() } } });
+            // Blok to NIE „brak ofert": nie zapisujemy pustki ani scannedAt, by wznowienie ponowiło tę książkę.
+            await throttle();
             continue;
           }
 
-          if (html.includes("Brak wyników") || html.includes("Nie znaleźliśmy żadnych przedmiotów")) {
-            // If "Title Author" failed, maybe try just "Title" in a real app,
-            // but for now let's just log it.
+          if (looksEmpty(html)) {
             log.info(`Brak wyników na Vinted`, { searchText });
-            sendEvent({
-              type: "search_attempt",
-              result: { id: book.id, title, author: book.author, url, status: "no_results", itemCount: 0, debug: { ...vintedDiagnostics(html, 0), ...memMb() } }
-            });
-            // Utrwal pustkę tylko, gdy nic wcześniej nie było — „Brak wyników" to naiwny
-            // substring w ~7 MB markupie i bywa fałszywy na stronie Z ofertami; nie kasujemy
-            // wtedy zapisanych ofert/sprzedawców (zachowanie jak przy cichym missie).
-            const hadStored = (parseVintedData(book.vintedData)?.offers.length ?? 0) > 0;
-            if (persistEnabled && !hadStored) {
-              await this.persistBookOffers(book, [], scannedAt);
-            } else if (hadStored) {
-              log.warn("Marker 'Brak wyników' mimo zapisanych ofert — pomijam zapis (możliwy fałszywy marker)", { title });
-            }
-            // Odczekaj jak przy każdym innym zapytaniu — pomijanie opóźnienia
-            // przy braku wyników (częsty przypadek) to prosta droga do blokady
-            await new Promise(resolve => setTimeout(resolve, 3000 + Math.floor(Math.random() * 2000)));
+            sendEvent({ type: "search_attempt", result: { id: book.id, title, author: book.author, url, status: "no_results", itemCount: 0, debug: { ...vintedDiagnostics(html, 0), ...memMb() } } });
+            await this.persistEmptyIfNew(book, scannedAt, persistEnabled, "Marker 'Brak wyników' mimo zapisanych ofert — pomijam zapis (możliwy fałszywy marker)");
+            await throttle();
             continue;
           }
 
@@ -234,21 +150,11 @@ export class VintedSyncService {
           if (items.length > 0) {
             // Utrwal (scala ze składowanymi — zachowuje sprzedawców przy niezmienionym URL) + policz diff.
             const diff = persistEnabled ? await this.persistBookOffers(book, items, scannedAt) : EMPTY_DIFF;
-            const matchResult = {
-              id: book.id,
-              title: book.plTitle,
-              author: book.author,
-              searchUrl: url,
-              vintedItems: items
-            };
+            const matchResult = { id: book.id, title: book.plTitle, author: book.author, searchUrl: url, vintedItems: items };
             results.push(matchResult);
             sendEvent({ type: "match", result: matchResult });
-            sendEvent({
-              type: "search_attempt",
-              result: { id: book.id, title, author: book.author, url, status: "success", itemCount: items.length, debug: { ...debug, changes: diff } }
-            });
-            // Książka istnieje na Vinted → oznacz źródło tagiem „Vinted" (best-effort).
-            // Guard po zrodlo pomija zbędny zapis dla już otagowanych (re-scan).
+            sendEvent({ type: "search_attempt", result: { id: book.id, title, author: book.author, url, status: "success", itemCount: items.length, debug: { ...debug, changes: diff } } });
+            // Książka istnieje na Vinted → oznacz źródło tagiem „Vinted" (best-effort, pomiń jeśli już jest).
             if (!(book.zrodlo || []).includes("Vinted")) {
               try {
                 await this.notion.addTagToMultiSelect(book.id, "Źródło", "Vinted");
@@ -257,49 +163,20 @@ export class VintedSyncService {
               }
             }
           } else {
-            // 0 ofert BEZ markera „brak wyników" i bez blokady: realnie pusto ALBO cichy
-            // miss parsera. Nie kasuj wcześniej zapisanych ofert/sprzedawców — utrwal pustkę
-            // tylko, gdy nic wcześniej nie było (pierwszy skan tej książki).
-            const hadStored = (parseVintedData(book.vintedData)?.offers.length ?? 0) > 0;
-            if (persistEnabled && !hadStored) {
-              await this.persistBookOffers(book, [], scannedAt);
-            } else if (hadStored) {
-              log.warn("0 ofert mimo zapisanych wcześniej — pomijam zapis (możliwy miss/blok), zachowuję dane", { title });
-            }
-            sendEvent({
-              type: "search_attempt",
-              result: { id: book.id, title, author: book.author, url, status: "no_results", itemCount: 0, debug }
-            });
+            // 0 ofert BEZ markera i bez blokady: realnie pusto ALBO cichy miss parsera.
+            await this.persistEmptyIfNew(book, scannedAt, persistEnabled, "0 ofert mimo zapisanych wcześniej — pomijam zapis (możliwy miss/blok), zachowuję dane");
+            sendEvent({ type: "search_attempt", result: { id: book.id, title, author: book.author, url, status: "no_results", itemCount: 0, debug } });
           }
         } catch (err: any) {
           log.warn(`Błąd sprawdzania Vinted`, { title, error: err.message || "Nieznany błąd" });
-          sendEvent({
-            type: "search_attempt",
-            result: { id: book.id, title, author: book.author, url, status: "error", itemCount: 0, debug: { error: err.message, code: err.code, httpStatus: err.response?.status, ...memMb() } }
-          });
-          if (err.response?.status === 429) {
-            sendEvent({
-              type: "status",
-              message: `🛑 Vinted zablokował zapytania (429). Odczekaj chwilę...`
-            });
-            // Wait longer if blocked
-            await new Promise(resolve => setTimeout(resolve, 5000));
-          } else if (err.response?.status === 403) {
-            sendEvent({
-              type: "status",
-              message: `🛡️ Vinted zablokował dostęp (403 - Cloudflare). Próbuję dalej...`
-            });
-          } else {
-            sendEvent({
-              type: "status",
-              message: `⚠️ Błąd Vinted dla "${title}": ${err.message || "Timeout"}. Kontynuuję...`
-            });
-          }
+          sendEvent({ type: "search_attempt", result: { id: book.id, title, author: book.author, url, status: "error", itemCount: 0, debug: { error: err.message, code: err.code, httpStatus: err.response?.status, ...memMb() } } });
+          const { message, waitMs } = classifyVintedError(err, title);
+          sendEvent({ type: "status", message });
+          if (waitMs) await new Promise((resolve) => setTimeout(resolve, waitMs));
         }
 
-        // Delay to avoid being blocked (with jitter)
-        const jitter = Math.floor(Math.random() * 2000);
-        await new Promise(resolve => setTimeout(resolve, 3000 + jitter));
+        // Odstęp między żądaniami (z jitterem) — na KAŻDEJ ścieżce, by nie wywołać bloku.
+        await throttle();
       }
 
       const wasCancelled = checkCancellation();
@@ -314,9 +191,8 @@ export class VintedSyncService {
    * Etap 2 (przyrostowo, wznawialnie): dociąga sprzedawcę do SKŁADOWANYCH ofert bez
    * sprzedawcy i zapisuje z powrotem do Notion. Rozpoznani zostają w blobie, więc kolejny
    * przebieg bierze tylko wciąż-`null`. Bez capu domyślnie: przebieg ustala WSZYSTKIE
-   * brakujące (praca jest skończona — ilość nulli w bazie), ile zdąży zanim padnie; że
-   * zapis idzie raz na książkę, przerwany przebieg i tak utrwala postęp. Rate chroni
-   * throttling, nie liczba total. Opcjonalny `cap` ogranicza przebieg (np. z UI).
+   * brakujące, ile zdąży zanim padnie (zapis raz na książkę utrwala postęp). Opcjonalny
+   * `cap` ogranicza przebieg (np. z UI).
    */
   async resolveSellersToStore(
     sendEvent: (data: SyncEvent) => void,
@@ -334,7 +210,7 @@ export class VintedSyncService {
       for (const book of allBooks) {
         const data = parseVintedData(book.vintedData);
         if (!data) continue;
-        const nulls = data.offers.filter(o => o.seller == null && /\/items\//.test(o.url));
+        const nulls = data.offers.filter((o) => o.seller == null && /\/items\//.test(o.url));
         if (nulls.length) { pending.push({ book, data, offers: nulls }); totalPending += nulls.length; }
       }
 
@@ -362,9 +238,7 @@ export class VintedSyncService {
           fetched++;
           sendEvent({ type: "progress", message: `Sprzedawca: ${p.book.plTitle} (${fetched}/${target})`, current: fetched, total: target });
           try {
-            const response = await withRetry(async () => {
-              return await axios.get(offer.url, { httpsAgent, headers: vintedRequestHeaders(), timeout: 30000 });
-            }, 3, 4000);
+            const response = await withRetry(async () => axios.get(offer.url, { httpsAgent, headers: vintedRequestHeaders(), timeout: 30000 }), 3, 4000);
             const html = response.data;
             if (looksBlocked(html)) {
               log.warn("Vinted zablokował stronę oferty (sprzedawca, baza)", { url: offer.url });
@@ -380,7 +254,7 @@ export class VintedSyncService {
           } catch (err: any) {
             log.warn("Błąd ustalania sprzedawcy (baza)", { url: offer.url, error: err.message });
           }
-          await new Promise(resolve => setTimeout(resolve, 3000 + Math.floor(Math.random() * 2000)));
+          await throttle();
         }
         // Zapisz książkę raz, po ustaleniu jej ofert (mniej zapisów do Notion).
         if (dirty) {
