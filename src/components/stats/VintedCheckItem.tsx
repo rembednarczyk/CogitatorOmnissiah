@@ -1,14 +1,13 @@
 import React from "react";
-import { motion, AnimatePresence } from "motion/react";
-import { ShoppingCart, ExternalLink, Loader2, Search, Bug, CheckCircle2, XCircle, AlertCircle, BookImage, Users, Package, Database, HardDriveDownload, Trash2, Clock, Sparkles, ArrowDown, Layers } from "lucide-react";
-import { formatETA } from "../../utils/time";
 import { VintedResult, VintedSearchAttempt } from "../../hooks/useVintedCheck";
-import { sortOffersByPrice, offersPriceSummary, formatVintedPrice, cleanOfferTitle, sortResultsByCheapest } from "../../utils/vintedOffers";
 import { useVintedResolveSellers } from "../../hooks/useVintedResolveSellers";
 import { useVintedStored } from "../../hooks/useVintedStored";
-import { groupBySeller, sortBundles, BundleSortMode } from "../../utils/vintedSellers";
-import { shortDate, formatDebug, isBookChanged, offerBadges } from "../../utils/vintedFormat";
-import { RitualButton } from "./RitualButton";
+import { VintedScanControls } from "./vinted/VintedScanControls";
+import { VintedScanProgress } from "./vinted/VintedScanProgress";
+import { VintedDebugLog } from "./vinted/VintedDebugLog";
+import { VintedResolveStatus } from "./vinted/VintedResolveStatus";
+import { VintedBundleList } from "./vinted/VintedBundleList";
+import { VintedBookResultList } from "./vinted/VintedBookResultList";
 
 interface VintedCheckItemProps {
   results: VintedResult[];
@@ -35,450 +34,39 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
   // Sprzedawcy (do paczek) pochodzą wyłącznie z bazy — live scan pokazuje same kafelki.
   const displaySellers = usingStored ? stored!.sellersByUrl : {};
 
-  // Paczki po sprzedawcy — liczone ze składowanych danych (po „Wczytaj z bazy").
-  const [bundleSort, setBundleSort] = React.useState<BundleSortMode>("count");
-  const rawBundles = React.useMemo(() => groupBySeller(displayResults, displaySellers), [displayResults, displaySellers]);
-  const bundles = React.useMemo(() => sortBundles(rawBundles, bundleSort), [rawBundles, bundleSort]);
+  const onScanToggle = () => {
+    if (isChecking) { onStop(); return; }
+    // Wyjdź z widoku bazy, żeby świeże wyniki skanu były widoczne (nie pinowane do stored).
+    clearStored();
+    onCheck(resumeScan ? { skipScannedWithinHours: RESUME_HOURS } : undefined);
+  };
+  const onResolveToggle = () => { if (isResolving) { stopResolve(); return; } clearStored(); runResolve(); };
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div className="flex flex-col">
-          <h3 className="text-lg font-bold text-slate-200 uppercase tracking-widest">Katalog Beletrystyka</h3>
-          <p className="text-xs text-slate-500 font-medium">Skanowanie ofert Vinted (język polski, od 2 PLN)</p>
-        </div>
-        
-        <div className="flex items-center gap-3">
-          {!isChecking && (
-            <label
-              className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 cursor-pointer select-none"
-              title={`Pomiń książki skanowane w ostatnich ${RESUME_HOURS} h (bieżąca partia); resztę skanuj OD NAJSTARSZYCH — kontynuuje przerwany przebieg i odświeża najstarsze. Odznacz, by skanować wszystko od nowa (też od najstarszych).`}
-            >
-              <input
-                type="checkbox"
-                checked={resumeScan}
-                onChange={(e) => setResumeScan(e.target.checked)}
-                className="accent-cyan-500 w-3.5 h-3.5"
-              />
-              Kontynuuj
-            </label>
-          )}
-          {searchAttempts.length > 0 && (
-            <button
-              onClick={() => setShowLogs(!showLogs)}
-              className={`p-3 rounded-2xl transition-all border ${
-                showLogs
-                  ? "bg-amber-500/20 border-amber-500/50 text-amber-400"
-                  : "bg-slate-900/50 border-slate-800 text-slate-500 hover:text-slate-300"
-              }`}
-              title="Pokaż logi skanowania"
-            >
-              <Bug className="w-5 h-5" />
-            </button>
-          )}
-        </div>
-      </div>
+      <VintedScanControls
+        isChecking={isChecking} isResolving={isResolving} isLoadingStored={isLoadingStored}
+        usingStored={usingStored} hasAttempts={searchAttempts.length > 0}
+        resumeScan={resumeScan} setResumeScan={setResumeScan}
+        showLogs={showLogs} setShowLogs={setShowLogs}
+        onScanToggle={onScanToggle} onResolveToggle={onResolveToggle}
+        onLoadStored={loadStored} onClearStored={clearStored}
+      />
 
-      {/* Rytuały skanera — w stylu liturgii synchronizacji */}
-      <div className="grid sm:grid-cols-2 gap-3">
-        <RitualButton
-          className="sm:col-span-2"
-          color={isChecking ? "rose" : "cyan"}
-          icon={isChecking ? Loader2 : Search}
-          animate={isChecking ? "spin" : undefined}
-          disabled={!isChecking && isResolving}
-          title={isChecking ? "Przerwij Rytuał Skanowania" : "Rytuał Skanowania Vinted"}
-          subtitle={isChecking ? "Zatrzymanie aktywnego przeszukania katalogu" : "Przeszukanie katalogu Vinted — język polski, od 2 PLN"}
-          onClick={() => {
-            if (isChecking) { onStop(); return; }
-            // Wyjdź z widoku bazy, żeby świeże wyniki skanu były widoczne (nie pinowane do stored).
-            clearStored();
-            onCheck(resumeScan ? { skipScannedWithinHours: RESUME_HOURS } : undefined);
-          }}
-        />
+      {isChecking && <VintedScanProgress progress={progress} />}
 
-        {!isChecking && !usingStored && (
-          <RitualButton
-            color={isResolving ? "rose" : "emerald"}
-            icon={isResolving ? Loader2 : Database}
-            animate={isResolving ? "spin" : undefined}
-            title={isResolving ? "Przerwij Identyfikację" : "Rytuał Identyfikacji Handlarzy"}
-            subtitle={isResolving ? "Zatrzymanie dociągania sprzedawców" : "Dociągnięcie sprzedawców do bazy — wznawialny"}
-            onClick={() => { if (isResolving) { stopResolve(); return; } clearStored(); runResolve(); }}
-          />
-        )}
+      <VintedDebugLog searchAttempts={searchAttempts} show={showLogs} />
 
-        {!isChecking && !isResolving && (
-          usingStored ? (
-            <RitualButton
-              color="indigo"
-              icon={Trash2}
-              title="Rozwiej Przywołanie"
-              subtitle="Powrót do wyników bieżącego skanu"
-              onClick={clearStored}
-            />
-          ) : (
-            <RitualButton
-              color="indigo"
-              icon={isLoadingStored ? Loader2 : HardDriveDownload}
-              animate={isLoadingStored ? "spin" : undefined}
-              disabled={isLoadingStored}
-              title="Rytuał Przywołania z Archiwum"
-              subtitle="Kafelki i paczki ze składowanych danych — bez skanu"
-              onClick={loadStored}
-            />
-          )
-        )}
-      </div>
+      <VintedResolveStatus
+        isResolving={isResolving} resolveProgress={resolveProgress} resolveError={resolveError} resolveResult={resolveResult}
+        storedError={storedError} stored={stored} isLoadingStored={isLoadingStored}
+        usingStored={usingStored} displayCount={displayResults.length}
+      />
 
-      {isChecking && progress && (
-        <div className="px-2 space-y-1">
-          <div className="flex justify-between text-xs text-slate-400 uppercase font-bold">
-            <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-              <span className="break-words">{progress.message}</span>
-              {progress.startTime && (
-                <span className="text-[10px] text-slate-500 lowercase font-medium">
-                  {formatETA(progress.current, progress.total, progress.startTime)}
-                </span>
-              )}
-            </div>
-            {progress.total > 0 && <span>{progress.current} / {progress.total}</span>}
-          </div>
-          {progress.total > 0 && (
-            <div className="h-1 bg-slate-900 rounded-full overflow-hidden">
-              <motion.div 
-                initial={{ width: 0 }}
-                animate={{ width: `${(progress.current / progress.total) * 100}%` }}
-                className="h-full bg-cyan-500"
-              />
-            </div>
-          )}
-        </div>
-      )}
+      <VintedBundleList results={displayResults} sellers={displaySellers} usingStored={usingStored} />
 
-      <AnimatePresence>
-        {showLogs && searchAttempts.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="overflow-hidden"
-          >
-            <div className="p-6 rounded-3xl bg-slate-950/50 border border-amber-500/10 space-y-4">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="text-xs font-bold text-amber-500 uppercase tracking-widest flex items-center gap-2">
-                  <Bug className="w-3 h-3" />
-                  Logi Skanowania (Debug)
-                </h4>
-                <span className="text-[10px] text-slate-500 uppercase font-bold">{searchAttempts.length} prób</span>
-              </div>
-              <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                {searchAttempts.map((attempt, i) => (
-                  <div key={i} className="flex items-center justify-between gap-4 p-3 rounded-2xl bg-slate-900/50 border border-slate-800/50 text-[11px] group/log hover:border-amber-500/20 transition-colors">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="shrink-0">
-                        {attempt.status === "success" && <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
-                        {attempt.status === "no_results" && <XCircle className="w-4 h-4 text-slate-600" />}
-                        {attempt.status === "blocked" && <AlertCircle className="w-4 h-4 text-amber-500" />}
-                        {attempt.status === "error" && <AlertCircle className="w-4 h-4 text-red-500" />}
-                        {attempt.status === "pending" && <Loader2 className="w-4 h-4 text-cyan-500 animate-spin" />}
-                      </div>
-                      
-                      <div className="flex flex-col min-w-0">
-                        <span className="text-slate-200 font-bold truncate group-hover/log:text-slate-100 transition-colors">{attempt.title}</span>
-                        <span className="text-slate-500 text-[9px] uppercase tracking-widest font-bold">{attempt.author}</span>
-                        {attempt.debug && (
-                          <span className="text-[9px] font-mono text-slate-500 truncate mt-0.5">{formatDebug(attempt.debug)}</span>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-3 shrink-0">
-                      {attempt.itemCount > 0 && (
-                        <span className="px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-500 font-bold border border-emerald-500/20">
-                          {attempt.itemCount}
-                        </span>
-                      )}
-                      <a 
-                        href={attempt.url} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="p-2 rounded-xl bg-slate-800/50 hover:bg-amber-500/10 text-slate-500 hover:text-amber-400 transition-all"
-                        title="Zobacz zapytanie"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-      
-      {isResolving && resolveProgress && (
-        <div className="px-2 space-y-1">
-          <div className="flex justify-between text-xs text-teal-300 uppercase font-bold">
-            <span className="break-words">{resolveProgress.message}</span>
-            {resolveProgress.total > 0 && <span>{resolveProgress.current} / {resolveProgress.total}</span>}
-          </div>
-          {resolveProgress.total > 0 && (
-            <div className="h-1 bg-slate-900 rounded-full overflow-hidden">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${(resolveProgress.current / resolveProgress.total) * 100}%` }}
-                className="h-full bg-teal-500"
-              />
-            </div>
-          )}
-        </div>
-      )}
-      {resolveError && <p className="text-xs text-red-400 italic px-2">{resolveError}</p>}
-      {!isResolving && resolveResult && (
-        <p className="text-xs text-teal-300/80 px-2">
-          {resolveResult.message}
-        </p>
-      )}
-      {storedError && <p className="text-xs text-red-400 italic px-2">{storedError}</p>}
-      {stored && stored.results.length === 0 && !isLoadingStored && (
-        <p className="text-xs text-slate-500 italic px-2">Baza Vinted jest pusta — najpierw uruchom skan (i „Ustal sprzedawców (baza)").</p>
-      )}
+      {displayResults.length > 0 && <VintedBookResultList results={displayResults} />}
 
-      {usingStored && (
-        <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-[11px] text-indigo-200 font-medium">
-          <Database className="w-3.5 h-3.5 shrink-0 text-indigo-400" />
-          <span className="font-bold uppercase tracking-widest">Dane z bazy</span>
-          <span className="text-indigo-300/70">· {displayResults.length} książek z ofertami</span>
-          {stored!.oldest && (
-            <span className="flex items-center gap-1 text-indigo-300/70">
-              <Clock className="w-3 h-3" />
-              skany {shortDate(stored!.oldest)}{stored!.newest && stored!.newest !== stored!.oldest ? `–${shortDate(stored!.newest)}` : ""}
-            </span>
-          )}
-        </div>
-      )}
-
-      {bundles.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 flex-wrap">
-            <Package className="w-4 h-4 text-purple-400" />
-            <h4 className="text-sm font-bold text-purple-300 uppercase tracking-widest">Paczki od jednego sprzedawcy</h4>
-            <span className="px-2 py-0.5 rounded-lg bg-purple-500/10 text-purple-300 text-[10px] font-bold border border-purple-500/20">{bundles.length}</span>
-            <div className="ml-auto flex items-center gap-1 p-0.5 rounded-xl bg-slate-900/60 border border-purple-500/15">
-              {([
-                { mode: "count" as BundleSortMode, label: "Najwięcej książek" },
-                { mode: "price" as BundleSortMode, label: "Najtańsza paczka" },
-              ]).map(({ mode, label }) => (
-                <button
-                  key={mode}
-                  onClick={() => setBundleSort(mode)}
-                  className={`px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-colors ${
-                    bundleSort === mode
-                      ? "bg-purple-500/20 text-purple-200 border border-purple-500/30"
-                      : "text-slate-500 hover:text-slate-300 border border-transparent"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-            {bundles.map((b) => (
-              <div key={b.seller.id} className="p-4 rounded-3xl border border-purple-500/20 bg-purple-500/5 space-y-3">
-                <div className="flex items-center justify-between gap-3">
-                  <a
-                    href={b.seller.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-sm font-bold text-purple-200 hover:text-purple-100 transition-colors min-w-0"
-                  >
-                    <Users className="w-4 h-4 shrink-0" />
-                    <span className="truncate">{b.seller.login}</span>
-                    <ExternalLink className="w-3 h-3 opacity-60 shrink-0" />
-                  </a>
-                  <div className="flex flex-col items-end gap-0.5 shrink-0">
-                    <span className="px-2.5 py-1 rounded-full bg-purple-500/15 border border-purple-500/25 text-[11px] font-bold text-purple-200 whitespace-nowrap">
-                      {b.entries.length} {b.entries.length < 5 ? "książki" : "książek"} · {formatVintedPrice(b.totalValue)}
-                    </span>
-                    {b.totalPremium > 0 && (
-                      <span className="text-[9px] font-bold text-amber-400/80 uppercase tracking-wider whitespace-nowrap" title="Dopłata vs kupno każdej książki u najtańszego sprzedawcy — cena za konsolidację przesyłki">
-                        dopłata +{formatVintedPrice(b.totalPremium)}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  {b.entries.map((e, i) => (
-                    <a
-                      key={i}
-                      href={e.item.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-3 px-3 py-2 rounded-xl border border-purple-500/10 bg-slate-900/40 hover:bg-purple-500/10 transition-all"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <span className="text-[12px] text-slate-200 font-semibold truncate">{e.bookTitle}</span>
-                          {e.bookPartOfCycle && (
-                            <span
-                              className="shrink-0 flex items-center gap-0.5 px-1 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[8px] font-bold uppercase tracking-wider"
-                              title="Część cyklu — może być kolejnym tomem w kolekcji (ryzyko duplikatu/luki w serii)"
-                            >
-                              <Layers className="w-2 h-2" /> cykl
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-[9px] text-slate-500 uppercase tracking-widest font-bold truncate">{e.bookAuthor}{e.bookYear ? ` · ${e.bookYear}` : ""}</div>
-                      </div>
-                      <div className="shrink-0 text-right tabular-nums font-bold text-purple-200 text-sm">
-                        {e.item.priceValue != null ? formatVintedPrice(e.item.priceValue, e.item.currency) : "—"}
-                        {e.premium > 0 ? (
-                          <div className="text-[8px] text-amber-400/80 uppercase tracking-widest font-bold mt-0.5">+{formatVintedPrice(e.premium)}</div>
-                        ) : e.item.priceValue != null ? (
-                          <div className="text-[8px] text-emerald-400/80 uppercase tracking-widest font-bold mt-0.5">najtańsza</div>
-                        ) : null}
-                      </div>
-                      <ShoppingCart className="w-3.5 h-3.5 shrink-0 text-purple-400 opacity-50" />
-                    </a>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {usingStored && bundles.length === 0 && (
-        <p className="text-xs text-slate-500 italic px-2">Żaden sprzedawca nie ma ≥2 książek z listy — brak paczek do złożenia. (Uzupełnij sprzedawców rytuałem „Identyfikacji Handlarzy".)</p>
-      )}
-
-      {displayResults.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: "auto" }}
-          className="grid grid-cols-1 lg:grid-cols-2 gap-4 overflow-hidden"
-        >
-          {sortResultsByCheapest(displayResults).map((result) => {
-            const offers = sortOffersByPrice(result.vintedItems);
-            const { min, count } = offersPriceSummary(offers);
-            // Indeks pierwszej (najtańszej) oferty ze znaną ceną — do wyróżnienia.
-            const cheapestIdx = offers.findIndex((o) => o.priceValue !== null && o.priceValue !== undefined);
-            return (
-            <motion.div layout key={result.id} transition={{ type: "spring", stiffness: 400, damping: 40 }} className="flex flex-col gap-3 p-5 rounded-3xl border border-rose-500/10 bg-slate-900/40 group/book hover:border-rose-500/30 transition-all hover:shadow-lg hover:shadow-rose-500/5">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <div className="text-base font-bold text-slate-100 leading-tight truncate group-hover/book:text-rose-400 transition-colors">
-                      {result.title}
-                    </div>
-                    {result.partOfCycle && (
-                      <span
-                        className="shrink-0 flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[9px] font-bold uppercase tracking-wider"
-                        title="Część cyklu — może być kolejnym tomem w kolekcji (ryzyko duplikatu/luki w serii)"
-                      >
-                        <Layers className="w-2.5 h-2.5" /> cykl
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-[10px] text-slate-500 uppercase font-bold tracking-[0.2em]">
-                    {result.author}{result.year ? ` · ${result.year}` : ""}
-                  </div>
-                  {result.scannedAt && (
-                    <div className="text-[9px] text-indigo-400/60 font-bold tracking-widest mt-0.5 flex items-center gap-1">
-                      <Clock className="w-2.5 h-2.5" /> skan {shortDate(result.scannedAt)}
-                      {isBookChanged(result) && (
-                        <span className="ml-1 flex items-center gap-0.5 text-amber-400"><Sparkles className="w-2.5 h-2.5" /> zmiana</span>
-                      )}
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="px-2.5 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-[11px] font-bold text-rose-300 whitespace-nowrap">
-                    {min !== null ? `od ${formatVintedPrice(min)}` : `${count} ${count === 1 ? "oferta" : "ofert"}`}
-                    {min !== null && <span className="text-rose-400/50"> · {count}</span>}
-                  </span>
-                  <a
-                    href={result.searchUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-2 rounded-xl bg-slate-800/50 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-all"
-                    title="Otwórz wyszukiwanie Vinted"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </a>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1.5 mt-1">
-                {offers.map((item, i) => {
-                  const isCheapest = i === cheapestIdx;
-                  const hasPrice = item.priceValue !== null && item.priceValue !== undefined;
-                  const offerTitle = cleanOfferTitle(item.title);
-                  const { isNew, drop } = offerBadges(item, result);
-                  return (
-                  <a
-                    key={item.url ?? i}
-                    href={item.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`flex items-center gap-3 px-3 py-2 rounded-xl border transition-all group/item ${
-                      isCheapest
-                        ? "bg-emerald-500/10 border-emerald-500/30 hover:bg-emerald-500/15"
-                        : "bg-rose-500/5 border-rose-500/10 hover:bg-rose-500/15 hover:border-rose-500/30"
-                    }`}
-                  >
-                    {item.photo ? (
-                      <img
-                        src={item.photo}
-                        alt=""
-                        loading="lazy"
-                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-                        className="w-9 h-9 rounded-lg object-cover border border-slate-700/50 shrink-0"
-                      />
-                    ) : (
-                      <div className="w-9 h-9 rounded-lg bg-slate-800/50 border border-slate-700/40 flex items-center justify-center shrink-0">
-                        <BookImage className="w-4 h-4 text-slate-600" />
-                      </div>
-                    )}
-
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[11px] text-slate-400 truncate">{offerTitle || item.title}</div>
-                      {(isNew || drop) && (
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          {isNew && (
-                            <span className="flex items-center gap-0.5 text-[8px] uppercase tracking-widest font-bold text-cyan-400">
-                              <Sparkles className="w-2.5 h-2.5" /> nowa
-                            </span>
-                          )}
-                          {drop && (
-                            <span className="flex items-center gap-0.5 text-[8px] uppercase tracking-widest font-bold text-amber-400" title={`Spadek z ${formatVintedPrice(item.prevPrice, item.currency)}`}>
-                              <ArrowDown className="w-2.5 h-2.5" /> −{formatVintedPrice(drop)}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Cena — najmocniej eksponowana, stała szerokość, nie zawija się */}
-                    <div className={`shrink-0 text-right tabular-nums font-bold leading-none ${
-                      hasPrice ? (isCheapest ? "text-emerald-300 text-lg" : "text-rose-300 text-base") : "text-slate-500 text-[11px] font-medium italic"
-                    }`}>
-                      {hasPrice ? formatVintedPrice(item.priceValue, item.currency) : "cena w ofercie"}
-                      {isCheapest && hasPrice && (
-                        <div className="text-[8px] text-emerald-400/80 uppercase tracking-widest font-bold mt-0.5">najtańsza</div>
-                      )}
-                    </div>
-                    <ShoppingCart className={`w-3.5 h-3.5 shrink-0 opacity-40 group-hover/item:opacity-100 ${isCheapest ? "text-emerald-400" : "text-rose-400"}`} />
-                  </a>
-                )})}
-              </div>
-            </motion.div>
-          )})}
-        </motion.div>
-      )}
-      
       {displayResults.length === 0 && !isChecking && !isLoadingStored && !stored && (
         <p className="text-xs text-slate-500 italic text-center py-4">Brak wyników z Vinted. Uruchom skanowanie albo wczytaj z bazy.</p>
       )}
