@@ -153,6 +153,11 @@ class SyncManager {
     return await this.notion.addTagToMultiSelect(pageId, "Źródło", tag);
   }
 
+  /** Usuwa znacznik „Źródło" (odwrotność `markAsRead`) — drag&drop na regale. */
+  async unmarkRead(pageId: string, tag: string = "Przeczytane") {
+    return await this.notion.removeTagFromMultiSelect(pageId, "Źródło", tag);
+  }
+
   /** Odczyt składowanych wyników Vinted (kafelki/paczki z bazy — bez re-scrape). */
   async getVintedStored() {
     return await vintedSyncService.getStoredData();
