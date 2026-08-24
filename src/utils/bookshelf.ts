@@ -17,15 +17,25 @@ export function isRead(book: BookIndexEntry, overrides: ReadOverrides = {}): boo
 
 /** Deterministyczny wygląd grzbietu — stały dla danego tytułu (bez migotania przy re-renderze). */
 export interface SpineStyle {
-  color: string;
-  width: number;  // px
-  height: number; // px
+  color: string;   // stonowany kolor „płótna" (skóra Relikwiarz)
+  app: string;     // akcent z palety aplikacji (skóra Holo+) — hex
+  appRgb: string;  // ten sam akcent jako „r,g,b" (do rgba(var(...), a))
+  width: number;   // px
+  height: number;  // px
 }
 
-/** Paleta „płótna introligatorskiego" — stonowana, autentyczna. */
+/** Paleta „płótna introligatorskiego" — stonowana, autentyczna (Relikwiarz). */
 export const CLOTH_PALETTE = [
   "#7f1d2e", "#0f5132", "#1e3a5f", "#7c5410", "#3f2d52", "#2b2b2b",
   "#5a2a1e", "#14504f", "#4a3b16", "#5b1f3a", "#243b53", "#6b2737",
+];
+
+/** Paleta akcentów aplikacji (cyan/niebieski/indygo/fiolet/purpura) — Holo+.
+ *  Równoległa do `CLOTH_PALETTE` (ten sam indeks = ta sama książka). */
+export const APP_PALETTE: readonly (readonly [string, string])[] = [
+  ["#06b6d4", "6,182,212"], ["#3b82f6", "59,130,246"], ["#6366f1", "99,102,241"], ["#8b5cf6", "139,92,246"],
+  ["#a855f7", "168,85,247"], ["#14b8a6", "20,184,166"], ["#0ea5e9", "14,165,233"], ["#4f46e5", "79,70,229"],
+  ["#7c3aed", "124,58,237"], ["#0891b2", "8,145,178"], ["#2563eb", "37,99,235"], ["#9333ea", "147,51,234"],
 ];
 
 function hash(s: string): number {
@@ -36,8 +46,11 @@ function hash(s: string): number {
 
 export function spineStyle(book: BookIndexEntry): SpineStyle {
   const h = hash(book.plTitle || book.origTitle || book.id);
+  const idx = h % CLOTH_PALETTE.length;
+  const [app, appRgb] = APP_PALETTE[idx];
   return {
-    color: CLOTH_PALETTE[h % CLOTH_PALETTE.length],
+    color: CLOTH_PALETTE[idx],
+    app, appRgb,
     width: 16 + (h % 12),          // 16–27 px
     height: 124 + ((h >>> 3) % 48), // 124–171 px (unsigned shift — h bywa >2^31)
   };
