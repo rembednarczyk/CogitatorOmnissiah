@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.16.6** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.16.7** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -62,6 +62,12 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.16.7** — Kupki: **mniej ich** (próg `planShelf` 92→95 → ~5%) + **zmienne ułożenie**. Nowy pure
+  `layoutStack(books)` (+`stackAlign`/`stackChaos`/`layerJitter`): wyrównanie kupki często do lewej,
+  często do prawej, **bardzo rzadko symetryczna piramida** (center ~10%), plus opcjonalny „chaos"
+  (~⅓ kupek: 3–7 px poziomego rozjazdu warstw). Sortowanie największa-na-dole zachowane. `flatBookLayout`
+  bez zbędnego arg `style`. `BookStack` używa `layoutStack` (offset `x` per warstwa). Gwarancja
+  `0≤x≤cellW−width` (brak wystawania). +4 testy (sort, containment, rozkład align, chaos). Screenshot OK.
 - **1.16.6** — Kupki dopracowane (3 reguły): (1) **sortowanie od największej na dole do najmniejszej
   na górze** — `BookStack` sortuje warstwy malejąco po szerokości (piramidka, wyśrodkowana, bez
   jittera); (2) **grzbiety sąsiadujące z kupką przechylają się w jej stronę** — `planShelf` nadpisuje
