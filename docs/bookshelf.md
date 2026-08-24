@@ -11,11 +11,20 @@ skin** (v1.21.0): a cornice with a cog sigil + title and a scrolling **data tick
 crest** with a slowly rotating halo and pulsing glow (`NoosphericCrest`), pulsing teal **HUD corner
 brackets** (`HudCorner`), a faint noosphere grid + a sweeping **scanline** in the well (`HoloField`),
 and a hanging purity seal with an `IX-774` sigil — all in `ShelfOrnaments` (decorative, `aria-hidden`).
-Spines carry a teal rim-light and a deterministic **holo catalog signature** (`M####`); award sigils
-get a teal ring. All motion is CSS (`.noo-*` in `index.css`) and is disabled under
+Spines carry a rim-light and a deterministic **holo catalog signature** (`M####`); award sigils
+get a glow ring. All motion is CSS (`.noo-*` in `index.css`) and is disabled under
 `prefers-reduced-motion`. The skin is **purely visual** — packing physics, drag&drop and the award
 colour-code are untouched. Rows of spines each rest on a real **plank**, and the **Do przeczytania**
 shelf holds **every** volume (no scroll cap) so the whole backlog is visible at once.
+
+**Two skins, switchable (v1.22.0).** The whole look is driven **only by CSS variables** — a `.skin-holo`
+or `.skin-noospheric` class on the wrapper sets every `--sk-*` gradient/colour plus `--noo-glow` /
+`--noo-accent2` (RGB triplets used by the keyframes and by `rgba(var(--noo-glow), a)` inline), so
+switching is a class swap with no prop-drilling. **Holo+** (default) uses the app palette — cyan
+`#22d3ee` + purple `#a855f7` on an adamant/slate cabinet; **Relikwiarz** is the warm brass + teal
+look. The segmented toggle lives in the Regał header; the choice persists in `localStorage`
+(`shelfSkin`, default `holo`) via `src/utils/shelfSkin.ts` (`loadSkin`/`saveSkin`/`skinClass`).
+Every shelf component reads `var(--sk-*)`; `CogSigil` fills come from `--sk-cog-*`.
 
 ## 1a. Operating rules (the "physical shelf" contract)
 These are the invariants the layout obeys — the whole visual design, built up across `1.16.0 → 1.17.2`,

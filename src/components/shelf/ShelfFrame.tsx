@@ -41,8 +41,8 @@ export const ShelfFrame: React.FC<Props> = ({ title, icon, accent, count, highli
       {...rootProps}
       className={`relative rounded-[18px] border-2 transition-all duration-200 ${stateRing}`}
       style={{
-        background: "linear-gradient(150deg, #3b2817 0%, #2a1c0f 45%, #1a1109 100%)",
-        boxShadow: "0 24px 40px -22px rgba(0,0,0,.85), inset 0 1px 0 rgba(255,210,150,.10)",
+        background: "var(--sk-cab-bg)",
+        boxShadow: "0 24px 40px -22px rgba(0,0,0,.85), inset 0 1px 0 rgba(var(--noo-glow),.10)",
       }}
     >
       {/* Boczne słupki + cokół tworzy padding; gzyms nakładamy górnym paddingiem */}
@@ -51,8 +51,8 @@ export const ShelfFrame: React.FC<Props> = ({ title, icon, accent, count, highli
         <div
           className="absolute top-0 inset-x-0 h-[46px] rounded-t-[16px] flex items-center gap-3 px-4 overflow-hidden"
           style={{
-            background: "linear-gradient(180deg, #4a3220 0%, #2f2012 60%, #1e140b 100%)",
-            boxShadow: "inset 0 -2px 5px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,214,160,.18)",
+            background: "var(--sk-cornice-bg)",
+            boxShadow: "inset 0 -2px 5px rgba(0,0,0,.6), inset 0 1px 0 rgba(var(--noo-glow),.14)",
           }}
         >
           {/* Sygil koła zębatego */}
@@ -73,8 +73,7 @@ export const ShelfFrame: React.FC<Props> = ({ title, icon, accent, count, highli
         <div
           className="relative rounded-lg p-3 pt-4 overflow-hidden"
           style={{
-            background:
-              "repeating-linear-gradient(90deg, #140d07 0px, #140d07 26px, #0d0904 27px, #140d07 28px), radial-gradient(120% 80% at 50% 0%, rgba(0,0,0,.15), rgba(0,0,0,.6))",
+            background: "var(--sk-well-bg)",
             boxShadow: "inset 0 3px 12px rgba(0,0,0,.75), inset 0 -2px 6px rgba(0,0,0,.5)",
           }}
         >
@@ -90,7 +89,7 @@ export const ShelfFrame: React.FC<Props> = ({ title, icon, accent, count, highli
       <HudCorner corner="bl" />
       <HudCorner corner="br" />
       <PuritySeal className="top-[40px] right-6 z-20" rotate={-9} />
-      <span className="absolute top-[88px] right-[18px] z-20 font-mono text-[8px] tracking-[0.12em] text-red-300/70 pointer-events-none" style={{ textShadow: "0 0 6px rgba(255,60,60,.5)" }} aria-hidden>IX-774</span>
+      <span className="absolute top-[88px] right-[18px] z-20 font-mono text-[8px] tracking-[0.12em] pointer-events-none" style={{ color: "rgba(var(--noo-glow),.75)", textShadow: "0 0 6px rgba(var(--noo-glow),.5)" }} aria-hidden>IX-774</span>
     </div>
   );
 };
