@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { BookIndexEntry } from "../types";
-import { isRead, spineStyle, planShelf, leanLayout, MAX_LEAN_DEG, LEAN_TOWARD, spineFontSize, flatBookLayout, FLAT_MAX_W, layoutStack, stackAlign, stackChaos, splitShelves, featuredReads, CLOTH_PALETTE, READ_TAG, shelfPlankBackground, SHELF_ROW_H, SHELF_PLANK_H, SHELF_ROW_GAP } from "../utils/bookshelf";
+import { isRead, spineStyle, planShelf, MAX_LEAN_DEG, LEAN_TOWARD, spineFontSize, flatBookLayout, FLAT_MAX_W, layoutStack, stackAlign, stackChaos, splitShelves, featuredReads, CLOTH_PALETTE, READ_TAG, shelfPlankBackground, SHELF_ROW_H, SHELF_PLANK_H, SHELF_ROW_GAP } from "../utils/bookshelf";
 
 const mk = (over: Partial<BookIndexEntry>): BookIndexEntry => ({
   id: over.id ?? over.plTitle ?? "x", plTitle: "", origTitle: "", author: "", year: "",
@@ -104,30 +104,6 @@ describe("bookshelf.planShelf", () => {
       }
     }
     expect(checked).toBeGreaterThan(0);
-  });
-});
-
-describe("bookshelf.leanLayout (reguła: brak nachodzenia)", () => {
-  it("straight cell reserves exactly the spine width", () => {
-    const style = spineStyle(mk({ plTitle: "Prosto" }));
-    expect(leanLayout(style, 0)).toEqual({ cellW: style.width, shiftX: 0 });
-  });
-  it("reserves the rotated bounding box and centers it (corners within ±cellW/2)", () => {
-    for (let i = 0; i < 400; i++) {
-      const style = spineStyle(mk({ plTitle: `Tom ${i}` }));
-      for (const deg of [-6, -3, 3, 6]) {
-        const { cellW, shiftX } = leanLayout(style, deg);
-        const a = (deg * Math.PI) / 180;
-        const bbox = style.width * Math.abs(Math.cos(a)) + style.height * Math.abs(Math.sin(a));
-        expect(cellW).toBeGreaterThanOrEqual(bbox);
-        const W = style.width, H = style.height;
-        const corners = [[-W / 2, 0], [W / 2, 0], [-W / 2, -H], [W / 2, -H]]
-          .map(([x, y]) => x * Math.cos(a) - y * Math.sin(a) + shiftX);
-        expect(Math.max(...corners)).toBeLessThanOrEqual(cellW / 2 + 1e-6);
-        expect(Math.min(...corners)).toBeGreaterThanOrEqual(-cellW / 2 - 1e-6);
-        expect(Math.sign(shiftX)).toBe(-Math.sign(deg));
-      }
-    }
   });
 });
 
