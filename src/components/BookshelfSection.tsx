@@ -75,7 +75,7 @@ export const BookshelfSection: React.FC = () => {
         <div className="h-px flex-1 bg-gradient-to-r from-transparent via-amber-500/20 to-transparent" />
       </div>
       <p className="text-center text-[11px] text-slate-500 uppercase tracking-widest font-bold -mt-4">
-        Przeciągnij wolumin między regałami · strzałkami przełączasz segmenty „Regał I/N"
+        Przeciągnij wolumin między regałami · strzałkami przełączasz segmenty „Regał N"
       </p>
 
       {moveError && (
@@ -126,13 +126,13 @@ export const BookshelfSection: React.FC = () => {
               „Przeczytane" — drag&drop między nimi. Każdy paginowany (Regał N/M). */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Shelf
-              shelfId="toRead" title="Do przeczytania" accent="cyan" pageSize={3}
+              shelfId="toRead" title="Do przeczytania" accent="cyan" pageSize={5}
               icon={<BookOpen className="w-4 h-4" />}
               books={toRead} dragging={!!dragging}
               onDragStart={setDragging} onDragEnd={() => setDragging(null)} onDropBook={handleDrop}
             />
             <Shelf
-              shelfId="read" title="Przeczytane" accent="emerald" pageSize={3}
+              shelfId="read" title="Przeczytane" accent="emerald" pageSize={5}
               icon={<CheckCircle2 className="w-4 h-4" />}
               books={read} dragging={!!dragging}
               onDragStart={setDragging} onDragEnd={() => setDragging(null)} onDropBook={handleDrop}
