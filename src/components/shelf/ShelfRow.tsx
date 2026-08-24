@@ -9,7 +9,7 @@ import { ShelfDivider } from "./ShelfDivider";
 
 export const PLANK_STYLE: React.CSSProperties = {
   height: SHELF_PLANK_H,
-  background: "linear-gradient(180deg, rgba(255,214,160,.45) 0, #5a3a1e 1px, #3a2413 55%, #1c1108 100%)",
+  background: "var(--sk-plank-bg)",
   boxShadow: "0 8px 14px -6px rgba(0,0,0,.75)",
   borderRadius: 2,
 };

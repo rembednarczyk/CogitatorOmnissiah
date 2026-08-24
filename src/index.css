@@ -39,10 +39,46 @@ body {
 }
 
 /* ===== Regał — warstwa „noosferyczna" (Adeptus Mechanicus / cyfrowa) ===== */
+/* Dwie skóry sterowane wyłącznie zmiennymi CSS — przełącznik zmienia tylko klasę.
+   `--noo-glow`/`--noo-accent2` = triplet RGB (do rgba(var(--noo-glow), .x)). */
+:root { --noo-glow: 63, 224, 208; --noo-accent2: 63, 224, 208; }
+
+/* Relikwiarz — mosiądz + teal (dotychczasowy). */
+.skin-noospheric {
+  --noo-glow: 63, 224, 208; --noo-accent2: 63, 224, 208;
+  --sk-cab-bg: linear-gradient(150deg, #3b2817 0%, #2a1c0f 45%, #1a1109 100%);
+  --sk-cornice-bg: linear-gradient(180deg, #4a3220 0%, #2f2012 60%, #1e140b 100%);
+  --sk-well-bg: repeating-linear-gradient(90deg, #140d07 0px, #140d07 26px, #0d0904 27px, #140d07 28px), radial-gradient(120% 80% at 50% 0%, rgba(0,0,0,.15), rgba(0,0,0,.6));
+  --sk-plank-bg: linear-gradient(180deg, rgba(255,214,160,.45) 0, #5a3a1e 1px, #3a2413 55%, #1c1108 100%);
+  --sk-plate-bg: linear-gradient(180deg, #d8b877 0%, #b8860b 58%, #8a6413 100%);
+  --sk-plate-text: #1c1206; --sk-plate-edge: #5e4108;
+  --sk-board-bg: linear-gradient(90deg, #8a6b34, #4a3315 45%, #6b4e22 55%, #2a1c0a);
+  --sk-cog-ring: #c8961f; --sk-cog-skull: #d9c9a8; --sk-cog-disc: #241706;
+  --sk-seal-wax: radial-gradient(circle at 35% 30%, #a83246, #6d1526 65%, #3f0a15);
+  --sk-plinth: linear-gradient(180deg, #3a2915, #1c1108);
+  --sk-foot: linear-gradient(180deg, #2a1c0f, #120b06);
+}
+
+/* Holo+ — kolorystyka aplikacji (cyan/purpura na adamancie), mocne holo. */
+.skin-holo {
+  --noo-glow: 34, 211, 238; --noo-accent2: 168, 85, 247;
+  --sk-cab-bg: linear-gradient(150deg, #0f1b2e 0%, #0a1220 45%, #05090f 100%);
+  --sk-cornice-bg: linear-gradient(180deg, #123047 0%, #0b1a2b 60%, #060d17 100%);
+  --sk-well-bg: repeating-linear-gradient(90deg, #0a1422 0px, #0a1422 26px, #07101c 27px, #0a1422 28px), radial-gradient(120% 80% at 50% 0%, rgba(0,0,0,.1), rgba(0,0,0,.55));
+  --sk-plank-bg: linear-gradient(180deg, rgba(120,240,255,.40) 0, #1c5a72 1px, #0e3a4c 55%, #04101a 100%);
+  --sk-plate-bg: linear-gradient(180deg, rgba(12,40,54,.94), rgba(6,20,30,.94));
+  --sk-plate-text: #bdf2ff; --sk-plate-edge: #1e8fa8;
+  --sk-board-bg: linear-gradient(180deg, #7fe8ff, #22b8d8 40%, #0a5a68);
+  --sk-cog-ring: #5fdcff; --sk-cog-skull: #04141c; --sk-cog-disc: #061620;
+  --sk-seal-wax: radial-gradient(circle at 35% 30%, #7fe8ff, #1fa8c8 65%, #0a4a58);
+  --sk-plinth: linear-gradient(180deg, #123047, #060d17);
+  --sk-foot: linear-gradient(180deg, #0c1e30, #05090f);
+}
+
 @keyframes noo-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 @keyframes noo-pulse {
-  0%, 100% { opacity: .5; filter: drop-shadow(0 0 3px rgba(63, 224, 208, .5)); }
-  50%      { opacity: .95; filter: drop-shadow(0 0 9px rgba(63, 224, 208, .95)); }
+  0%, 100% { opacity: .5; filter: drop-shadow(0 0 3px rgba(var(--noo-glow), .5)); }
+  50%      { opacity: .95; filter: drop-shadow(0 0 9px rgba(var(--noo-glow), .95)); }
 }
 @keyframes noo-spin { to { transform: rotate(360deg); } }
 @keyframes noo-data { 0%, 100% { opacity: .5; } 50% { opacity: 1; } }

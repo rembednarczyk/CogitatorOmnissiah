@@ -103,9 +103,9 @@ export const Shelf: React.FC<Props> = ({ shelfId, title, icon, accent, books, on
       </ShelfFrame>
 
       {/* Cokół / nóżki — regał „stoi na podłodze" */}
-      <div className="mx-2 h-[10px] rounded-b-[6px]" style={{ background: "linear-gradient(180deg,#3a2915,#1c1108)", boxShadow: "0 10px 16px -6px rgba(0,0,0,.7)" }} aria-hidden />
+      <div className="mx-2 h-[10px] rounded-b-[6px]" style={{ background: "var(--sk-plinth)", boxShadow: "0 10px 16px -6px rgba(0,0,0,.7)" }} aria-hidden />
       <div className="flex justify-between px-6" aria-hidden>
-        {[0, 1].map((i) => <div key={i} className="w-8 h-[9px] rounded-b-[4px]" style={{ background: "linear-gradient(180deg,#2a1c0f,#120b06)" }} />)}
+        {[0, 1].map((i) => <div key={i} className="w-8 h-[9px] rounded-b-[4px]" style={{ background: "var(--sk-foot)" }} />)}
       </div>
     </div>
   );

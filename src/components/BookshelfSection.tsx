@@ -1,9 +1,10 @@
-import React, { useState, useMemo, useCallback, useRef } from "react";
+import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { Library, BookOpen, CheckCircle2, Sparkles, Loader2, AlertCircle, X } from "lucide-react";
 import { BookIndexEntry } from "../types";
 import { useBooks } from "../hooks/useBooks";
 import { useMarkRead } from "../hooks/useMarkRead";
 import { ShelfId, ReadOverrides, isRead, splitShelves, featuredReads } from "../utils/bookshelf";
+import { ShelfSkin, SHELF_SKINS, skinClass, loadSkin, saveSkin } from "../utils/shelfSkin";
 import { Shelf } from "./shelf/Shelf";
 import { CoverCard } from "./shelf/CoverCard";
 import { ShelfFrame } from "./shelf/ShelfFrame";
@@ -16,6 +17,8 @@ export const BookshelfSection: React.FC = () => {
   const [overrides, setOverrides] = useState<ReadOverrides>({});
   const [dragging, setDragging] = useState<BookIndexEntry | null>(null);
   const [moveError, setMoveError] = useState<string | null>(null);
+  const [skin, setSkin] = useState<ShelfSkin>(loadSkin);
+  useEffect(() => { saveSkin(skin); }, [skin]);
 
   // Zapis stanu „przeczytane" jest SERIALIZOWANY per książka (latest-wins). Backend
   // `mutateMultiSelect` to nieatomowy retrieve→modify→update, więc dwa nakładające się
@@ -78,6 +81,23 @@ export const BookshelfSection: React.FC = () => {
         Przeciągnij wolumin między regałami · strzałkami przełączasz segmenty „Regał N"
       </p>
 
+      {/* Przełącznik skóry regału (Holo+ / Relikwiarz) — wybór trwa w localStorage */}
+      <div className="flex items-center justify-center gap-2 -mt-3">
+        <span className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Skóra</span>
+        <div className="inline-flex rounded-lg border border-white/10 overflow-hidden">
+          {SHELF_SKINS.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => setSkin(s.id)}
+              aria-pressed={skin === s.id}
+              className={`px-3 py-1 text-[11px] font-bold uppercase tracking-wider font-display transition-colors ${skin === s.id ? "bg-cyan-500/20 text-cyan-200" : "text-slate-400 hover:text-slate-200 hover:bg-white/5"}`}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {moveError && (
         <div className="glass-card p-4 rounded-2xl border-red-500/30 bg-red-500/5 max-w-2xl mx-auto flex items-center gap-3">
           <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
@@ -102,6 +122,7 @@ export const BookshelfSection: React.FC = () => {
           </div>
         </div>
       ) : (
+        <div className={skinClass(skin)}>
         <RoomDecor>
           {/* Półka „Wyróżnione" (okładki twarzą) */}
           {featured.length > 0 && (
@@ -116,7 +137,7 @@ export const BookshelfSection: React.FC = () => {
                 </div>
                 <div
                   className="h-[15px] mt-[2px] rounded-[2px]"
-                  style={{ background: "linear-gradient(180deg, rgba(255,214,160,.45) 0, #5a3a1e 1px, #3a2413 55%, #1c1108 100%)", boxShadow: "0 8px 14px -6px rgba(0,0,0,.75)" }}
+                  style={{ background: "var(--sk-plank-bg)", boxShadow: "0 8px 14px -6px rgba(0,0,0,.75)" }}
                 />
               </ShelfFrame>
             </div>
@@ -143,6 +164,7 @@ export const BookshelfSection: React.FC = () => {
             {all.length} woluminów · <span className="text-amber-400/70">●</span> = nagroda · najedź, by wysunąć grzbiet
           </p>
         </RoomDecor>
+        </div>
       )}
     </div>
   );

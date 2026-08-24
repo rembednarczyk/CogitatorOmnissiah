@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.21.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.22.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -62,6 +62,16 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.22.0** — **Dwie skóry regału + przełącznik (Holo+ domyślnie).** Skóry sterowane WYŁĄCZNIE
+  zmiennymi CSS (`.skin-holo` / `.skin-noospheric` w `index.css`: `--sk-*` gradienty/kolory +
+  `--noo-glow`/`--noo-accent2` triplety RGB używane przez keyframes i inline `rgba(var(--noo-glow),a)`),
+  więc przełączenie to tylko podmiana klasy na wrapperze — zero prop-drillingu. **Holo+** = kolorystyka
+  aplikacji (cyan `#22d3ee` + purpura `#a855f7` na adamancie/slate), **Relikwiarz** = dotychczasowy
+  mosiądz+teal. Przełącznik w nagłówku „Regał" (segmentowy, cyan active); wybór trwa w localStorage
+  (`shelfSkin`, domyślnie `holo`) — `src/utils/shelfSkin.ts`. Komponenty (`ShelfFrame`, `ShelfOrnaments`
+  z `CogSigil` var-driven, `ShelfDivider`, `BookSpine`, `ShelfRow` plank, `Shelf` cokół/nóżki,
+  `BookshelfSection` featured plank) czytają `var(--sk-*)`. Fizyka/color-code NIETKNIĘTE. Obie skóry
+  zweryfikowane realnym renderem (Vite).
 - **1.21.0** — **Regał w stylistyce „noosferycznej" Adeptus Mechanicus (cyfrowy relikwiarz).**
   Warstwa holo na mosiężnym korpusie: animowany **ticker danych** (marquee) w gzymsie, **godło
   cog-skull** z wolno obracającą się aureolą + pulsujący glow (`NoosphericCrest`), **narożniki HUD**
