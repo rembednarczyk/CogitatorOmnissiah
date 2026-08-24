@@ -6,10 +6,16 @@ stand as coloured **spines** (concept A), awarded reads also appear face-out on 
 cover row (concept B). Two shelves — **Do przeczytania** and **Przeczytane** — sit side by side, and
 a book is dragged between them; the drop writes the read state back to Notion. **No AI/LLM.**
 
-Each shelf is drawn as a **wooden cabinet** (`ShelfFrame`): a cornice with a Mechanicus cog sigil +
-title, dark back-panel with vertical planks, brass corner brackets and a hanging purity seal
-(`ShelfOrnaments` — decorative, `aria-hidden`). Rows of spines each rest on a real **plank**, and the
-**Do przeczytania** shelf holds **every** volume (no scroll cap) so the whole backlog is visible at once.
+Each shelf is drawn as a brass **cabinet** (`ShelfFrame`) wearing a **noospheric Adeptus Mechanicus
+skin** (v1.21.0): a cornice with a cog sigil + title and a scrolling **data ticker**, a **cog-skull
+crest** with a slowly rotating halo and pulsing glow (`NoosphericCrest`), pulsing teal **HUD corner
+brackets** (`HudCorner`), a faint noosphere grid + a sweeping **scanline** in the well (`HoloField`),
+and a hanging purity seal with an `IX-774` sigil — all in `ShelfOrnaments` (decorative, `aria-hidden`).
+Spines carry a teal rim-light and a deterministic **holo catalog signature** (`M####`); award sigils
+get a teal ring. All motion is CSS (`.noo-*` in `index.css`) and is disabled under
+`prefers-reduced-motion`. The skin is **purely visual** — packing physics, drag&drop and the award
+colour-code are untouched. Rows of spines each rest on a real **plank**, and the **Do przeczytania**
+shelf holds **every** volume (no scroll cap) so the whole backlog is visible at once.
 
 ## 1a. Operating rules (the "physical shelf" contract)
 These are the invariants the layout obeys — the whole visual design, built up across `1.16.0 → 1.17.2`,

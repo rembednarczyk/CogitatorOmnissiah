@@ -1,5 +1,5 @@
 import React from "react";
-import { CornerBracket, CogSigil, PuritySeal } from "./ShelfOrnaments";
+import { CogSigil, PuritySeal, NoosphericCrest, DataTicker, HoloField, HudCorner } from "./ShelfOrnaments";
 
 export type ShelfAccent = "emerald" | "cyan" | "purple" | "amber";
 
@@ -62,30 +62,35 @@ export const ShelfFrame: React.FC<Props> = ({ title, icon, accent, count, highli
             {title}
           </h3>
           <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border ${a.chip}`}>{count}</span>
+          {/* Ticker danych (przewijany) — wypełnia wolną przestrzeń gzymsu */}
+          <DataTicker className="ml-3 hidden sm:flex flex-1 min-w-0 max-w-[280px]" text="++ NOOSPHERA·SYNC ++ 01001101·01000001·01010011 ++ AVE·OMNISSIAH ++" />
           <div className="ml-auto flex items-center gap-3">{headerExtra}</div>
           {/* Delikatna listwa świetlna pod gzymsem */}
           <div className="absolute bottom-0 inset-x-6 h-px bg-gradient-to-r from-transparent via-amber-300/25 to-transparent" />
         </div>
 
-        {/* Wnętrze regału — ciemne „plecy" z pionowymi deskami */}
+        {/* Wnętrze regału — ciemne „plecy" z pionowymi deskami + warstwa holo */}
         <div
-          className="relative rounded-lg p-3 pt-4"
+          className="relative rounded-lg p-3 pt-4 overflow-hidden"
           style={{
             background:
               "repeating-linear-gradient(90deg, #140d07 0px, #140d07 26px, #0d0904 27px, #140d07 28px), radial-gradient(120% 80% at 50% 0%, rgba(0,0,0,.15), rgba(0,0,0,.6))",
             boxShadow: "inset 0 3px 12px rgba(0,0,0,.75), inset 0 -2px 6px rgba(0,0,0,.5)",
           }}
         >
-          {children}
+          <HoloField />
+          <div className="relative z-10">{children}</div>
         </div>
       </div>
 
-      {/* Ozdoby (kwiatki) */}
-      <CornerBracket corner="tl" />
-      <CornerBracket corner="tr" />
-      <CornerBracket corner="bl" />
-      <CornerBracket corner="br" />
+      {/* Godło holo (projekcja) + narożniki HUD + pieczęć czystości z sygnaturą */}
+      <NoosphericCrest className="absolute -top-[22px] left-1/2 -translate-x-1/2 z-20" size={46} />
+      <HudCorner corner="tl" />
+      <HudCorner corner="tr" />
+      <HudCorner corner="bl" />
+      <HudCorner corner="br" />
       <PuritySeal className="top-[40px] right-6 z-20" rotate={-9} />
+      <span className="absolute top-[88px] right-[18px] z-20 font-mono text-[8px] tracking-[0.12em] text-red-300/70 pointer-events-none" style={{ textShadow: "0 0 6px rgba(255,60,60,.5)" }} aria-hidden>IX-774</span>
     </div>
   );
 };
