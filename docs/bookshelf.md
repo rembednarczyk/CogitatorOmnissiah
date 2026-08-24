@@ -65,11 +65,20 @@ wall, floor, wall sconces with a flickering flame and warm glow (`motion`), drif
 pennant, a faint Mechanicus cog watermark, and a vignette. Purely decorative — it never touches the
 book physics.
 
-Each shelf is a **fixed-height bookcase**: `Shelf` takes a `pageSize` (rows per bookcase) and slices
-its packed rows into segments **"Regał I / N"** navigated with ◄ ► arrows; short pages are padded with
-empty planks so the bookcase height is constant, and a candle + plinth/feet make it "stand on the
-floor". This replaces the single ~700-tall list — you page through Regały instead. The row builder is
-shared (`buildShelfItems` + `chunk` in `utils/shelfLayout.ts`; one row → `ShelfRow`).
+**Desktop (≥1024 px): a dense horizontal wall.** `LibraryWall` shows the active collection (a toggle
+switches **Do przeczytania / Przeczytane**) as many **5-shelf bookcases** side by side. It measures one
+bookcase's natural size and the viewport height, `transform: scale`s the whole row to fit the height,
+and shows as many bookcases as fit the width — the rest are reached with the **"Regały I–VI / N"** pager.
+Read-state is flipped by dragging a volume onto the **drop dock** that appears at the bottom during a
+drag. Each bookcase is a `Bookcase` (fixed size, candle + plinth). Books flow across bookcases in order.
+
+**Narrow screens: two fixed-height bookcases.** `Shelf` takes a `pageSize` (rows per bookcase) and
+slices its packed rows into segments **"Regał I / N"** (◄ ► arrows); short pages are padded with empty
+planks so the height is constant, with a candle + plinth. You page through Regały instead of one
+~700-tall list.
+
+The row builder is shared (`buildShelfItems` + `chunk` in `utils/shelfLayout.ts`; one row → `ShelfRow`),
+and the physics (`shelfPacking`) is identical in both layouts.
 
 ## 2. Data
 - Reuses **`GET /api/books`** (`BookIndexEntry[]`, see [skryptorium-search.md](./skryptorium-search.md)) —

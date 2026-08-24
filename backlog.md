@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.18.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.19.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -62,6 +62,14 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.19.0** — **Gęsta pozioma ściana regałów** (desktop): `LibraryWall` pokazuje aktywną kolekcję
+  (przełącznik Do przeczytania / Przeczytane) jako wiele **regałów po 5 półek** obok siebie,
+  skalowanych transformem do wysokości viewportu (mierzy naturalny rozmiar regału + `innerHeight`),
+  z oknem „Regały I–VI / N" (strzałki). Przenoszenie między kolekcjami: **dok upuszczania** na dole
+  podczas przeciągania (`onDropBook(other)`). Nowe: `Bookcase` (regał stałej wielkości bez pomiaru),
+  `LibraryWall`, hook `useMediaQuery`. Wąski ekran (<1024) → fallback do dwóch regałów paginowanych.
+  Fizyka NIETKNIĘTA (regały używają `packAndLayout` przy `rowWidth=300`). Weryfikacja mockiem
+  (6 regałów × 5 półek). Lint/testy/build OK. `docs` §1b upd.
 - **1.18.0** — **Sala Archiwum**: regały stoją w POKOJU zamiast jednej długiej listy 700 pozycji.
   `RoomDecor` — ciepły skryptorium (drewniana ściana z panelami, podłoga, kinkiety z migoczącym
   światłem `motion`, kurz, proporzec, sygil koła zębatego, winieta; `aria-hidden`). Regały mają
