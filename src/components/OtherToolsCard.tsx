@@ -2,6 +2,8 @@ import React from "react";
 import { Settings, Search, RefreshCw, AlertTriangle, Sparkles, Database, BookOpen, Layers } from "lucide-react";
 import { motion } from "motion/react";
 import { useSync } from "../hooks/useSync";
+import { RitualButton } from "./stats/RitualButton";
+import { RitualColor } from "../theme/ritualColors";
 
 interface OtherToolsCardProps {
   schemaSync: ReturnType<typeof useSync>;
@@ -40,13 +42,16 @@ export const OtherToolsCard: React.FC<OtherToolsCardProps> = ({
   handleResetSync,
   isAnySyncLoading
 }) => {
-  const schemaSyncState = schemaSync.state;
-  const purifySyncState = purifySync.state;
-  const publisherSyncState = publisherSync.state;
-  const seriesSyncState = seriesSync.state;
-  const cyclesSyncState = cyclesSync.state;
-  const duplicatesSyncState = duplicatesSync.state;
-  const lpSyncState = lpSync.state;
+  // Wszystkie rytuały jednym idiomem (`RitualButton` + centralny `ritualButtonTheme`).
+  const rituals: { color: RitualColor; icon: typeof Database; title: string; subtitle: string; onClick: () => void; animate?: "spin" | "pulse" }[] = [
+    { color: "emerald", icon: Database, title: "Rytuał Inicjacji Schematu", subtitle: "Weryfikacja i kreacja brakujących kolumn w bazie Notion", onClick: handleSyncSchema, animate: schemaSync.state.loading ? "pulse" : undefined },
+    { color: "amber", icon: Sparkles, title: "Rytuał Puryfikacji", subtitle: "Oczyszczanie tytułów z nadmiarowych znaków i formatowania", onClick: handleSyncPurify, animate: purifySync.state.loading ? "pulse" : undefined },
+    { color: "purple", icon: RefreshCw, title: "Rytuał Rekonstrukcji Liczb", subtitle: "Rekalkulacja i naprawa numeracji porządkowej rekordów", onClick: handleSyncLp, animate: lpSync.state.loading ? "spin" : undefined },
+    { color: "blue", icon: RefreshCw, title: "Rytuał Oznaczania Cykli", subtitle: "Automatyczne przypisywanie książek do cykli wydawniczych", onClick: handleCyclesSync, animate: cyclesSync.state.loading ? "spin" : undefined },
+    { color: "rose", icon: BookOpen, title: "Rytuał Wydania", subtitle: "Eksploracja i aktualizacja danych o wydawcach z Encyklopedii", onClick: handleSyncPublisher, animate: publisherSync.state.loading ? "pulse" : undefined },
+    { color: "indigo", icon: Layers, title: "Rytuał Seryjny", subtitle: "Eksploracja i aktualizacja danych o seriach wydawniczych", onClick: handleSyncSeries, animate: seriesSync.state.loading ? "pulse" : undefined },
+    { color: "orange", icon: Search, title: "Rytuał Wykrycia Duplikacji", subtitle: "Identyfikacja i oznaczanie potencjalnych duplikatów w bazie", onClick: handleSyncDuplicates, animate: duplicatesSync.state.loading ? "pulse" : undefined },
+  ];
   return (
     <motion.div 
       initial={{ opacity: 0, x: 20 }}
@@ -60,110 +65,13 @@ export const OtherToolsCard: React.FC<OtherToolsCardProps> = ({
       </h2>
       
       <div className="grid grid-cols-1 gap-4 flex-1">
-        {/* 1. Rytuał Inicjacji Schematu */}
-        <button 
-          onClick={handleSyncSchema} 
-          disabled={isAnySyncLoading}
-          className="flex items-center gap-4 p-4 bg-slate-950/50 border border-slate-800 rounded-2xl hover:border-emerald-500/50 hover:bg-slate-900/50 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-emerald-500/10 group disabled:opacity-50 disabled:hover:scale-100"
-        >
-          <div className="p-3 bg-slate-900 rounded-xl group-hover:bg-emerald-500/20 transition-colors">
-            <Database className={`w-5 h-5 text-emerald-400 ${schemaSyncState.loading ? 'animate-pulse' : ''}`} />
-          </div>
-          <div className="text-left">
-            <h3 className="font-bold text-slate-200 group-hover:text-emerald-400 transition-colors">Rytuał Inicjacji Schematu</h3>
-            <p className="text-xs text-slate-500 mt-1 uppercase font-bold tracking-tighter">Weryfikacja i kreacja brakujących kolumn w bazie Notion</p>
-          </div>
-        </button>
-
-        {/* 2. Rytuał Puryfikacji */}
-        <button 
-          onClick={handleSyncPurify} 
-          disabled={isAnySyncLoading}
-          className="flex items-center gap-4 p-4 bg-slate-950/50 border border-slate-800 rounded-2xl hover:border-amber-500/50 hover:bg-slate-900/50 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-amber-500/10 group disabled:opacity-50 disabled:hover:scale-100"
-        >
-          <div className="p-3 bg-slate-900 rounded-xl group-hover:bg-amber-500/20 transition-colors">
-            <Sparkles className={`w-5 h-5 text-amber-400 ${purifySyncState.loading ? 'animate-pulse' : ''}`} />
-          </div>
-          <div className="text-left">
-            <h3 className="font-bold text-slate-200 group-hover:text-amber-400 transition-colors">Rytuał Puryfikacji</h3>
-            <p className="text-xs text-slate-500 mt-1 uppercase font-bold tracking-tighter">Oczyszczanie tytułów z nadmiarowych znaków i formatowania</p>
-          </div>
-        </button>
-
-        {/* 3. Rytuał Rekonstrukcji Liczb */}
-        <button 
-          onClick={handleSyncLp} 
-          disabled={isAnySyncLoading}
-          className="flex items-center gap-4 p-4 bg-slate-950/50 border border-slate-800 rounded-2xl hover:border-purple-500/50 hover:bg-slate-900/50 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-purple-500/10 group disabled:opacity-50 disabled:hover:scale-100"
-        >
-          <div className="p-3 rounded-xl bg-purple-500/10 text-purple-400 group-hover:scale-110 transition-transform">
-            <RefreshCw className={`w-5 h-5 ${lpSyncState.loading ? 'animate-spin' : ''}`} />
-          </div>
-          <div className="text-left">
-            <div className="font-bold text-slate-200 group-hover:text-purple-400 transition-colors">Rytuał Rekonstrukcji Liczb</div>
-            <div className="text-xs text-slate-500 uppercase font-bold tracking-tighter">Rekalkulacja i naprawa numeracji porządkowej rekordów</div>
-          </div>
-        </button>
-
-        {/* 4. Rytuał Oznaczania Cykli */}
-        <button 
-          onClick={handleCyclesSync} 
-          disabled={isAnySyncLoading}
-          className="flex items-center gap-4 p-4 bg-slate-950/50 border border-slate-800 rounded-2xl hover:border-blue-500/50 hover:bg-slate-900/50 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-blue-500/10 group disabled:opacity-50 disabled:hover:scale-100"
-        >
-          <div className="p-3 rounded-xl bg-blue-500/10 text-blue-400 group-hover:scale-110 transition-transform">
-            <RefreshCw className={`w-5 h-5 ${cyclesSyncState.loading ? 'animate-spin' : ''}`} />
-          </div>
-          <div className="text-left">
-            <div className="font-bold text-slate-200 group-hover:text-blue-400 transition-colors">Rytuał Oznaczania Cykli</div>
-            <div className="text-xs text-slate-500 uppercase font-bold tracking-tighter">Automatyczne przypisywanie książek do cykli wydawniczych</div>
-          </div>
-        </button>
-
-        {/* 5. Rytuał Wydania */}
-        <button 
-          onClick={handleSyncPublisher} 
-          disabled={isAnySyncLoading}
-          className="flex items-center gap-4 p-4 bg-slate-950/50 border border-slate-800 rounded-2xl hover:border-rose-500/50 hover:bg-slate-900/50 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-rose-500/10 group disabled:opacity-50 disabled:hover:scale-100"
-        >
-          <div className="p-3 rounded-xl bg-rose-500/10 text-rose-400 group-hover:scale-110 transition-transform">
-            <BookOpen className={`w-5 h-5 ${publisherSyncState.loading ? 'animate-pulse' : ''}`} />
-          </div>
-          <div className="text-left">
-            <div className="font-bold text-slate-200 group-hover:text-rose-400 transition-colors">Rytuał Wydania</div>
-            <div className="text-xs text-slate-500 uppercase font-bold tracking-tighter">Eksploracja i aktualizacja danych o wydawcach z Encyklopedii</div>
-          </div>
-        </button>
-
-        {/* 6. Rytuał Seryjny */}
-        <button 
-          onClick={handleSyncSeries} 
-          disabled={isAnySyncLoading}
-          className="flex items-center gap-4 p-4 bg-slate-950/50 border border-slate-800 rounded-2xl hover:border-indigo-500/50 hover:bg-slate-900/50 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-indigo-500/10 group disabled:opacity-50 disabled:hover:scale-100"
-        >
-          <div className="p-3 rounded-xl bg-indigo-500/10 text-indigo-400 group-hover:scale-110 transition-transform">
-            <Layers className={`w-5 h-5 ${seriesSyncState.loading ? 'animate-pulse' : ''}`} />
-          </div>
-          <div className="text-left">
-            <div className="font-bold text-slate-200 group-hover:text-indigo-400 transition-colors">Rytuał Seryjny</div>
-            <div className="text-xs text-slate-500 uppercase font-bold tracking-tighter">Eksploracja i aktualizacja danych o seriach wydawniczych</div>
-          </div>
-        </button>
-
-        {/* 7. Rytuał Wykrycia Duplikacji */}
-        <button 
-          onClick={handleSyncDuplicates} 
-          disabled={isAnySyncLoading}
-          className="flex items-center gap-4 p-4 bg-slate-950/50 border border-slate-800 rounded-2xl hover:border-orange-500/50 hover:bg-slate-900/50 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-orange-500/10 group disabled:opacity-50 disabled:hover:scale-100"
-        >
-          <div className="p-3 rounded-xl bg-orange-500/10 text-orange-400 group-hover:scale-110 transition-transform">
-            <Search className={`w-5 h-5 ${duplicatesSyncState.loading ? 'animate-pulse' : ''}`} />
-          </div>
-          <div className="text-left">
-            <div className="font-bold text-slate-200 group-hover:text-orange-400 transition-colors">Rytuał Wykrycia Duplikacji</div>
-            <div className="text-xs text-slate-500 uppercase font-bold tracking-tighter">Identyfikacja i oznaczanie potencjalnych duplikatów w bazie</div>
-          </div>
-        </button>
+        {rituals.map((r) => (
+          <RitualButton
+            key={r.title}
+            color={r.color} icon={r.icon} title={r.title} subtitle={r.subtitle}
+            onClick={r.onClick} animate={r.animate} disabled={isAnySyncLoading}
+          />
+        ))}
       </div>
 
       {handleResetSync && (

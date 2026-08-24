@@ -90,12 +90,16 @@ export interface RitualGradient {
   shadow: string;
 }
 
-export const ritualGradient: Record<string, RitualGradient> = {
-  cyan:    { gradient: "from-cyan-500 to-blue-600",     shadow: "shadow-cyan-500/20" },
-  purple:  { gradient: "from-purple-500 to-indigo-600", shadow: "shadow-purple-500/20" },
-  orange:  { gradient: "from-orange-500 to-red-600",    shadow: "shadow-orange-500/20" },
-  emerald: { gradient: "from-emerald-500 to-teal-600",  shadow: "shadow-emerald-500/20" },
+export const ritualGradient: Record<RitualColor, RitualGradient> = {
+  cyan:    { gradient: "from-cyan-500 to-blue-600",      shadow: "shadow-cyan-500/20" },
+  purple:  { gradient: "from-purple-500 to-indigo-600",  shadow: "shadow-purple-500/20" },
+  orange:  { gradient: "from-orange-500 to-red-600",     shadow: "shadow-orange-500/20" },
+  emerald: { gradient: "from-emerald-500 to-teal-600",   shadow: "shadow-emerald-500/20" },
+  rose:    { gradient: "from-rose-500 to-pink-600",      shadow: "shadow-rose-500/20" },
+  indigo:  { gradient: "from-indigo-500 to-purple-600",  shadow: "shadow-indigo-500/20" },
+  blue:    { gradient: "from-blue-500 to-indigo-600",    shadow: "shadow-blue-500/20" },
+  amber:   { gradient: "from-amber-500 to-orange-600",   shadow: "shadow-amber-500/20" },
 };
 
 export const getRitualGradient = (color?: string | null): RitualGradient =>
-  ritualGradient[color as string] ?? ritualGradient.emerald;
+  ritualGradient[color as RitualColor] ?? ritualGradient.emerald;
