@@ -37,9 +37,9 @@ export const SchemaColumnCard: React.FC<Props> = ({ name, value, isSelectType, o
           {isSelectType && isEditable && (
             <div className="flex items-center gap-2">
               <div className="h-1 w-24 bg-slate-800 rounded-full overflow-hidden">
-                <div className={`h-full transition-all duration-1000 ${isOverLimit ? 'bg-rose-500' : 'bg-cyan-500'}`} style={{ width: `${Math.min(100, (options.length / limit) * 100)}%` }} />
+                <div className={`h-full transition-all duration-1000 ${isOverLimit ? 'bg-red-500' : 'bg-cyan-500'}`} style={{ width: `${Math.min(100, (options.length / limit) * 100)}%` }} />
               </div>
-              <span className={`text-[9px] font-display font-bold uppercase tracking-widest ${isOverLimit ? 'text-rose-400' : 'text-slate-500'}`}>
+              <span className={`text-[9px] font-display font-bold uppercase tracking-widest ${isOverLimit ? 'text-red-400' : 'text-slate-500'}`}>
                 {options.length} / {limit}
               </span>
             </div>
@@ -55,10 +55,10 @@ export const SchemaColumnCard: React.FC<Props> = ({ name, value, isSelectType, o
       {isSelectType && (
         <div className="mt-6 pt-6 border-t border-white/5 relative z-10">
           {isOverLimit && isEditable && (
-            <div className="mb-6 p-4 bg-rose-500/5 border border-rose-500/10 rounded-2xl flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-rose-500 mt-0.5 shrink-0" />
-              <div className="text-[11px] text-rose-300/80 font-display font-medium leading-relaxed">
-                <span className="font-bold block mb-1 uppercase tracking-wider text-rose-400">Krytyczny Limit API</span>
+            <div className="mb-6 p-4 bg-red-500/5 border border-red-500/10 rounded-2xl flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 shrink-0" />
+              <div className="text-[11px] text-red-300/80 font-display font-medium leading-relaxed">
+                <span className="font-bold block mb-1 uppercase tracking-wider text-red-400">Krytyczny Limit API</span>
                 Wykryto {options.length} wpisów. Notion blokuje edycję powyżej {limit}.
                 Zalecana konwersja na <span className="text-cyan-400 font-bold">Plain Text</span> w panelu sterowania Notion.
               </div>
@@ -82,7 +82,7 @@ export const SchemaColumnCard: React.FC<Props> = ({ name, value, isSelectType, o
                   <button
                     onClick={() => onDeleteRequest(opt.name)}
                     disabled={updating}
-                    className="text-slate-600 hover:text-rose-500 disabled:opacity-50 transition-colors p-0.5 rounded-md hover:bg-rose-500/10"
+                    className="text-slate-600 hover:text-red-500 disabled:opacity-50 transition-colors p-0.5 rounded-md hover:bg-red-500/10"
                     title="Usuń opcję"
                   >
                     <X className="w-3 h-3" />

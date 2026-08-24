@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.23.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.23.2** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -62,6 +62,13 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.23.2** — **Audyt kolorów #2: ujednolicenie znaczeń.** (1) **danger = red** wszędzie: rose→red w
+  IntegrityCheckCard / SchemaColumnCard (krytyczny limit + usuwanie) / ConfirmDialog (destrukcja) /
+  SchemaEditor (banner błędu); rose zostaje **wyłącznie** marką Vinted + rytuałem „Wydawcy". (2) **jedno
+  pojęcie = jeden kolor**: „biblioteka" tag w Search indigo→blue (jak statystyki Biblioteki); kropka „OK"
+  w StatusSection cyan→emerald (sukces=emerald). (3) **kolory-sieroty**: teal→indigo (VintedResolveStatus,
+  kontekst „dane z bazy"), green→emerald (IdentifiedLibraryItem exact-match), violet→purple (nominacja),
+  sky-400→cyan-400 w liniach ParticleBackground.
 - **1.23.1** — **Oprawa Regału = amber (kolor zakładki), spójnie z konwencją „kolor per zakładka".**
   Nowy token `--sk-frame-accent` (Holo+ amber `251,191,36`; Relikwiarz teal — bez zmian) steruje ramką
   (`--sk-frame-border/-glow`), narożnikami HUD (`HudCorner` — lokalnie nadpisuje `--noo-glow`, by puls też

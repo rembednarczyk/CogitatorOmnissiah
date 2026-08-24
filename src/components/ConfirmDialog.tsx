@@ -29,8 +29,8 @@ export const ConfirmDialog: React.FC<Props> = ({ open, title, subtitle = "Operac
 
           <div className="p-8">
             <div className="flex items-center gap-4 mb-6">
-              <div className="p-3 bg-rose-500/10 rounded-full border border-rose-500/20">
-                <AlertCircle className="w-8 h-8 text-rose-400" />
+              <div className="p-3 bg-red-500/10 rounded-full border border-red-500/20">
+                <AlertCircle className="w-8 h-8 text-red-400" />
               </div>
               <div>
                 <h3 className="text-xl font-display font-bold text-slate-100 uppercase tracking-wider">{title}</h3>
@@ -44,7 +44,7 @@ export const ConfirmDialog: React.FC<Props> = ({ open, title, subtitle = "Operac
               <button onClick={onCancel} className="flex-1 px-6 py-3 text-sm font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl transition-all active:scale-95">
                 {cancelLabel}
               </button>
-              <button onClick={onConfirm} className="flex-1 px-6 py-3 text-sm font-bold bg-gradient-to-br from-rose-600 to-rose-900 hover:from-rose-500 hover:to-rose-800 text-white rounded-xl shadow-lg shadow-rose-500/20 transition-all active:scale-95 border border-rose-500/30">
+              <button onClick={onConfirm} className="flex-1 px-6 py-3 text-sm font-bold bg-gradient-to-br from-red-600 to-red-900 hover:from-red-500 hover:to-red-800 text-white rounded-xl shadow-lg shadow-red-500/20 transition-all active:scale-95 border border-red-500/30">
                 {confirmLabel}
               </button>
             </div>

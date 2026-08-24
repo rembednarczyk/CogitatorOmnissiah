@@ -127,12 +127,12 @@ export const IdentifiedLibraryItem: React.FC<IdentifiedLibraryItemProps> = ({
             return (
             <div key={book.id} className={`flex items-start gap-3 p-3 rounded-xl border transition-colors group/book ${
               isExactMatch 
-                ? "bg-green-500/5 border-green-500/30 hover:border-green-500/50" 
+                ? "bg-emerald-500/5 border-emerald-500/30 hover:border-emerald-500/50" 
                 : "bg-slate-950/30 border-slate-800/50 hover:border-blue-500/30"
             }`}>
               <div className="flex-1">
                 <div className="flex items-center justify-between gap-2">
-                  <div className={`text-sm font-bold leading-tight ${isExactMatch ? "text-green-400" : "text-slate-200"}`}>
+                  <div className={`text-sm font-bold leading-tight ${isExactMatch ? "text-emerald-400" : "text-slate-200"}`}>
                     {book.title}
                   </div>
                   {book.year && <div className="text-xs font-mono text-slate-400">{book.year}</div>}

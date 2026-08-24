@@ -82,7 +82,7 @@ export const ParticleBackground: React.FC = () => {
 
           if (distance < 120) {
             ctx.beginPath();
-            ctx.strokeStyle = `rgba(56, 189, 248, ${0.2 - distance / 600})`; // Cyan-ish connections
+            ctx.strokeStyle = `rgba(34, 211, 238, ${0.2 - distance / 600})`; // cyan-400 connections
             ctx.lineWidth = 0.5;
             ctx.moveTo(particles[i].x, particles[i].y);
             ctx.lineTo(particles[j].x, particles[j].y);

@@ -26,11 +26,11 @@ export function SchemaEditor({ schema, onSchemaUpdated }: SchemaEditorProps) {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="p-3 bg-rose-950/30 text-rose-400 rounded-lg text-xs border border-rose-900/50 flex items-center gap-2"
+            className="p-3 bg-red-950/30 text-red-400 rounded-lg text-xs border border-red-900/50 flex items-center gap-2"
           >
             <AlertCircle className="w-4 h-4" />
             {error}
-            <button onClick={() => setError(null)} className="ml-auto hover:text-rose-200">
+            <button onClick={() => setError(null)} className="ml-auto hover:text-red-200">
               <X className="w-4 h-4" />
             </button>
           </motion.div>
