@@ -7,6 +7,7 @@ import { ShelfId, ReadOverrides, isRead, splitShelves, featuredReads } from "../
 import { Shelf } from "./shelf/Shelf";
 import { CoverCard } from "./shelf/CoverCard";
 import { ShelfFrame } from "./shelf/ShelfFrame";
+import { RoomDecor } from "./shelf/RoomDecor";
 
 export const BookshelfSection: React.FC = () => {
   const { books, loading, error, fetchBooks } = useBooks();
@@ -74,7 +75,7 @@ export const BookshelfSection: React.FC = () => {
         <div className="h-px flex-1 bg-gradient-to-r from-transparent via-amber-500/20 to-transparent" />
       </div>
       <p className="text-center text-[11px] text-slate-500 uppercase tracking-widest font-bold -mt-4">
-        Przeciągnij wolumin między regałami — zapis trafia do kolumny „Źródło" w Notion
+        Przeciągnij wolumin między regałami · strzałkami przełączasz segmenty „Regał I/N"
       </p>
 
       {moveError && (
@@ -101,44 +102,46 @@ export const BookshelfSection: React.FC = () => {
           </div>
         </div>
       ) : (
-        <>
+        <RoomDecor>
           {/* Półka „Wyróżnione" (okładki twarzą) */}
           {featured.length > 0 && (
-            <ShelfFrame
-              title="Wyróżnione — nagrodzone, przeczytane"
-              icon={<Sparkles className="w-4 h-4" />}
-              accent="purple" count={featured.length}
-            >
-              <div className="flex items-end gap-3.5 overflow-x-auto pb-1 pt-1 custom-scrollbar">
-                {featured.map((b) => <CoverCard key={b.id} book={b} />)}
-              </div>
-              <div
-                className="h-[15px] mt-[2px] rounded-[2px]"
-                style={{ background: "linear-gradient(180deg, rgba(255,214,160,.45) 0, #5a3a1e 1px, #3a2413 55%, #1c1108 100%)", boxShadow: "0 8px 14px -6px rgba(0,0,0,.75)" }}
-              />
-            </ShelfFrame>
+            <div className="mb-8">
+              <ShelfFrame
+                title="Wyróżnione — nagrodzone, przeczytane"
+                icon={<Sparkles className="w-4 h-4" />}
+                accent="purple" count={featured.length}
+              >
+                <div className="flex items-end gap-3.5 overflow-x-auto pb-1 pt-1 custom-scrollbar">
+                  {featured.map((b) => <CoverCard key={b.id} book={b} />)}
+                </div>
+                <div
+                  className="h-[15px] mt-[2px] rounded-[2px]"
+                  style={{ background: "linear-gradient(180deg, rgba(255,214,160,.45) 0, #5a3a1e 1px, #3a2413 55%, #1c1108 100%)", boxShadow: "0 8px 14px -6px rgba(0,0,0,.75)" }}
+                />
+              </ShelfFrame>
+            </div>
           )}
 
-          {/* Dwa regały */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          {/* Dwa regały stałej wysokości (segmenty „Regał I/N") stojące w pokoju */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Shelf
-              shelfId="toRead" title="Do przeczytania" accent="cyan"
+              shelfId="toRead" title="Do przeczytania" accent="cyan" pageSize={3}
               icon={<BookOpen className="w-4 h-4" />}
               books={toRead} dragging={!!dragging}
               onDragStart={setDragging} onDragEnd={() => setDragging(null)} onDropBook={handleDrop}
             />
             <Shelf
-              shelfId="read" title="Przeczytane" accent="emerald"
+              shelfId="read" title="Przeczytane" accent="emerald" pageSize={3}
               icon={<CheckCircle2 className="w-4 h-4" />}
               books={read} dragging={!!dragging}
               onDragStart={setDragging} onDragEnd={() => setDragging(null)} onDropBook={handleDrop}
             />
           </div>
 
-          <p className="text-center text-[10px] text-slate-600 uppercase tracking-widest font-bold">
+          <p className="text-center text-[10px] text-amber-200/40 uppercase tracking-widest font-bold mt-6">
             {all.length} woluminów · <span className="text-amber-400/70">●</span> = nagroda · najedź, by wysunąć grzbiet
           </p>
-        </>
+        </RoomDecor>
       )}
     </div>
   );
