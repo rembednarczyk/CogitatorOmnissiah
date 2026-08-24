@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.20.2** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.21.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -62,6 +62,17 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.21.0** — **Regał w stylistyce „noosferycznej" Adeptus Mechanicus (cyfrowy relikwiarz).**
+  Warstwa holo na mosiężnym korpusie: animowany **ticker danych** (marquee) w gzymsie, **godło
+  cog-skull** z wolno obracającą się aureolą + pulsujący glow (`NoosphericCrest`), **narożniki HUD**
+  (teal, pulsujące, zastąpiły mosiężne `CornerBracket`), **siatka noosfery + sweep skanline**
+  (`HoloField`) we wnęce, **pieczęć czystości** z sygnaturą `IX-774`. Tabliczki dekad → runy mono
+  (font `Share Tech Mono`) z cog-skull + świecąca żyła danych na deseczce + smużka projekcji.
+  Grzbiety: teal rim-light + holo **sygnatura katalogowa** (`M####`, deterministyczna z id).
+  Sigilla nagród z teal-obwódką. Animacje CSS (`.noo-*` w `index.css`) z guardem
+  `prefers-reduced-motion`. Fizyka układania i color-code nagród NIETKNIĘTE. Zweryfikowane realnym
+  renderem komponentów (Vite). Nowe/zmienione: `ShelfOrnaments` (+NoosphericCrest/DataTicker/HoloField/HudCorner,
+  −CornerBracket), `ShelfFrame`, `ShelfDivider`, `BookSpine`, `index.css`.
 - **1.20.2** — **Przekładka dekady = deseczka + tabliczka u góry** (wariant A). Zamiast dużej
   pionowej tabliczki (34×156): cienka **deseczka** (`DIVIDER_W` 34→10) stojąca między dekadami
   na dole toru + pozioma **tabliczka rocznika** u góry półki, wyrównana do początku zakresu

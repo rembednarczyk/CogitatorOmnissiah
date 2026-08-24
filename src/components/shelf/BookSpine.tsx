@@ -9,6 +9,13 @@ interface Props {
   onDragEnd: () => void;
 }
 
+/** Sygnatura katalogowa holo (deterministyczna z id) — cyfrowy detal na grzbiecie. */
+function catalogSig(id: string): string {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return "M" + (1000 + (h % 9000));
+}
+
 /** Grzbiet książki (koncept A) — przeciągalny element regału. */
 export const BookSpine: React.FC<Props> = ({ book, style, onDragStart, onDragEnd }) => (
   <div
@@ -21,10 +28,19 @@ export const BookSpine: React.FC<Props> = ({ book, style, onDragStart, onDragEnd
       width: style.width,
       height: style.height,
       background: `linear-gradient(90deg, rgba(0,0,0,.35), ${style.color} 22%, ${style.color} 78%, rgba(0,0,0,.28))`,
-      boxShadow: "inset 1.5px 0 0 rgba(255,255,255,.14), inset -2px 0 4px rgba(0,0,0,.45), 0 6px 10px -6px rgba(0,0,0,.6)",
+      boxShadow: "inset 1.5px 0 0 rgba(120,255,240,.20), inset -2px 0 4px rgba(0,0,0,.45), 0 6px 10px -6px rgba(0,0,0,.6)",
     }}
   >
     <span className="absolute left-0 right-0 h-[10px] top-[9px] bg-black/25" aria-hidden />
+    {style.width >= 26 && (
+      <span
+        className="absolute top-[3px] left-0 right-0 text-center font-mono pointer-events-none"
+        style={{ fontSize: 6, letterSpacing: "0.03em", color: "rgba(63,224,208,.85)", textShadow: "0 0 4px rgba(63,224,208,.8)" }}
+        aria-hidden
+      >
+        {catalogSig(book.id)}
+      </span>
+    )}
     <span
       className="font-bold text-white/85 whitespace-nowrap overflow-hidden max-h-[94%] py-1"
       style={{ fontSize: spineFontSize(style, displayTitle(book)), writingMode: "vertical-rl", transform: "rotate(180deg)", textShadow: "0 1px 2px rgba(0,0,0,.5)" }}
@@ -37,7 +53,7 @@ export const BookSpine: React.FC<Props> = ({ book, style, onDragStart, onDragEnd
       return (
         <span className="absolute bottom-[6px] left-1/2 -translate-x-1/2 flex flex-col-reverse items-center gap-[3px]" title={wins.map((w) => w.label).join(" · ")}>
           {wins.map((w) => (
-            <span key={w.key} className="w-[8px] h-[8px] rounded-full" style={{ background: w.color, boxShadow: `0 0 6px ${w.color}` }} />
+            <span key={w.key} className="w-[8px] h-[8px] rounded-full" style={{ background: w.color, boxShadow: `0 0 6px ${w.color}, 0 0 0 1px rgba(63,224,208,.5)` }} />
           ))}
         </span>
       );
