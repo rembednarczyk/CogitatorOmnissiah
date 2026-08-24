@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { PackItem, packRows, layoutRow, packAndLayout } from "../utils/shelfPacking";
+import { PackItem, packRows, layoutRow, packAndLayout, STRAIGHT_MAX } from "../utils/shelfPacking";
 import { MAX_LEAN_DEG } from "../utils/bookshelf";
 
 const spine = (key: string, bw = 20, h = 150, leanDir: -1 | 0 | 1 = 0): PackItem => ({ key, kind: "spine", bw, h, leanDir });
@@ -48,6 +48,21 @@ describe("shelfPacking.layoutRow (wypełnienie + fizyka oparcia)", () => {
     const gap = placed[1].x - (leaner.x + leaner.bw);
     const expectDeg = Math.min(MAX_LEAN_DEG, Math.atan(gap / 100) * 180 / Math.PI);
     expect(leaner.deg).toBeCloseTo(expectDeg, 4);
+  });
+
+  it("keeps upright books close: most straight gaps ≤ STRAIGHT_MAX, overflow in few breaks", () => {
+    // 10 stojących grzbietów, spory luz, brak pochyłów → mają stać zwarcie.
+    const row = Array.from({ length: 10 }, (_, i) => spine(`s${i}`, 20));
+    const placed = layoutRow(row, 400); // base 200, slack 200
+    const gaps: number[] = [];
+    for (let i = 1; i < placed.length; i++) gaps.push(placed[i].x - (placed[i - 1].x + placed[i - 1].bw));
+    const tight = gaps.filter((g) => g <= STRAIGHT_MAX + 1e-6).length;
+    const wide = gaps.filter((g) => g > STRAIGHT_MAX + 1e-6).length;
+    expect(tight).toBeGreaterThan(wide);            // większość par blisko siebie
+    expect(wide).toBeLessThanOrEqual(3);            // luz skupiony w kilku przerwach
+    // wciąż wypełnione do prawej krawędzi
+    const last = placed[placed.length - 1];
+    expect(last.x + last.bw).toBeCloseTo(400, 6);
   });
 
   it("stands straight when there is no slack (packed tight → no unsupported lean)", () => {

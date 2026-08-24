@@ -60,6 +60,10 @@ CSS `flex-wrap`, so two physical rules hold:
 - **Every shelf is filled — no end gap.** `packRows` greedily fills each row; `layoutRow` distributes
   the row's leftover width so the first volume starts at the left edge and the last ends at the right
   edge (`x = 0 … rowWidth`). A tight row has no slack; a sparse row spreads to fill.
+- **Upright books stay close together.** The gap between two straight-standing spines is capped at
+  `STRAIGHT_MAX` (3 px). Slack is absorbed first by leaning books (resting on their support), and only
+  the overflow goes into a few "break" gaps (every 4th free gap) — so upright books cluster tightly
+  instead of drifting apart, while the row still spans full width.
 - **A leaning book rests on its support, never floats.** A book leans **only when there is a gap to
   lean into**, at exactly `θ = atan(gap / supportHeight)` (capped at `MAX_LEAN_DEG`, pivoting at the
   base corner on the support side). That angle makes the book's face meet the top corner of the

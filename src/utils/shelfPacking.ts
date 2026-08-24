@@ -36,6 +36,10 @@ export interface PackOpts {
 }
 
 const DEG = Math.PI / 180;
+/** Maks. szczelina między dwiema stojącymi równo książkami (mają być blisko siebie). */
+export const STRAIGHT_MAX = 3;
+/** Co ile stojących książek powstaje „przerwa" pochłaniająca nadmiar luzu. */
+const GROUP = 4;
 
 /** Zachłanne pakowanie woluminów w rzędy o zadanej szerokości. */
 export function packRows(items: PackItem[], rowWidth: number, minGap = 3): PackItem[][] {
@@ -94,8 +98,22 @@ export function layoutRow(row: PackItem[], rowWidth: number, maxLeanDeg = MAX_LE
     for (const i of leanIdx) gaps[i] = leanAt[i]!.cap;
     rem -= leanCapSum;
     if (freeIdx.length) {
-      const per = rem / freeIdx.length;
-      for (const i of freeIdx) gaps[i] = per;
+      // Stojące równo książki mają stać BLISKO siebie: szczelina między nimi jest
+      // przycięta do STRAIGHT_MAX. Dopiero nadmiar luzu (gdy pochyłe już wypełniły
+      // ile mogły) trafia do rzadkich „przerw" (co GROUP-tą szczelinę), tworząc
+      // zwarte grupki zamiast równomiernego rozjazdu wszystkich grzbietów.
+      const room = freeIdx.length * STRAIGHT_MAX;
+      if (rem <= room) {
+        const per = rem / freeIdx.length;
+        for (const i of freeIdx) gaps[i] = per;
+      } else {
+        for (const i of freeIdx) gaps[i] = STRAIGHT_MAX;
+        const extra = rem - room;
+        const breaks = freeIdx.filter((_, k) => k % GROUP === 0);
+        const use = breaks.length ? breaks : [freeIdx[0]];
+        const per = extra / use.length;
+        for (const i of use) gaps[i] += per;
+      }
     } else {
       // brak wolnych szczelin — resztę rozkładamy równo na wszystkie
       const per = rem / (n - 1);

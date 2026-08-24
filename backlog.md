@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.17.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.17.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -62,6 +62,10 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.17.1** — Fizyka: **stojące równo książki blisko siebie**. `layoutRow` przycina szczelinę
+  między prostymi grzbietami do `STRAIGHT_MAX=3 px`; luz w pierwszej kolejności pochłaniają pochyłe
+  (oparcie), a dopiero nadmiar trafia do rzadkich „przerw" (co 4-tą wolną szczelinę) → zwarte grupki
+  zamiast równomiernego rozjazdu. Rząd nadal wypełniony do prawej krawędzi. +test. Screenshot OK.
 - **1.17.0** — **Fizyka regału** (nowy `utils/shelfPacking.ts`): (1) **każda półka wypełniona** —
   `Shelf` mierzy szerokość (`ResizeObserver`), pakuje woluminy w rzędy i rozdziela luz tak, że rząd
   spina lewą i prawą krawędź (bez dziury na końcu); (2) **pochylenie z podparciem** — książka pochyla
