@@ -46,10 +46,10 @@ expressed as rules. They are enforced by pure, unit-tested helpers (`utils/books
     never lean outward.
 12. **Every shelf is filled edge-to-edge** — each row's first volume starts at the left edge and the
     last ends at the right edge; there is no ragged gap at the end of a row.
-13. **Upright volumes are spaced evenly — no empty holes.** Slack is consumed first by leaning books
-    (rule 11); whatever remains is spread **equally** across every gap between straight spines. That
-    minimises the largest gap, so a full row's seams are hair-thin and a sparse row spreads out
-    uniformly, never leaving a single big empty space.
+13. **No air between upright books — the leftover thickens the spines.** After leaning books take
+    their rest gaps (rule 11), the remaining slack is absorbed by **making the straight spines thicker**
+    (weighted so longer-titled volumes thicken more), because real shelves have no gaps between
+    standing books. Only if every spine hits its thickness cap does a hair-thin even gap remain.
 
 **Titles & interaction**
 14. **Full titles, never truncated**: an upright spine shrinks its font (6–11 px) to fit the whole
@@ -108,10 +108,11 @@ CSS `flex-wrap`, so two physical rules hold:
 - **Every shelf is filled — no end gap.** `packRows` greedily fills each row; `layoutRow` distributes
   the row's leftover width so the first volume starts at the left edge and the last ends at the right
   edge (`x = 0 … rowWidth`). A tight row has no slack; a sparse row spreads to fill.
-- **Upright books are spaced evenly — no empty holes.** Slack is absorbed first by leaning books
-  (resting on their support); whatever remains is spread **equally** across every gap between straight
-  spines. Even distribution minimises the largest gap, so a full row's seams are hair-thin and a
-  sparse row spreads out uniformly — never a single big empty space, while the row still spans full width.
+- **No air between upright books — leftover thickens the spines.** Slack is absorbed first by leaning
+  books (resting on their support); whatever remains is used to **make the straight spines thicker**
+  (`PackItem.stretch`, water-filled and weighted so longer-titled volumes grow more) so books touch
+  like on a real shelf. Piles and leaning books are never thickened; only if every spine hits its
+  `stretch` cap does a hair-thin even gap remain. The row still spans full width.
 - **A leaning book rests on its support, never floats.** A book leans **only when there is a gap to
   lean into**, at exactly `θ = atan(gap / supportHeight)` (capped at `MAX_LEAN_DEG`, pivoting at the
   base corner on the support side). That angle makes the book's face meet the top corner of the

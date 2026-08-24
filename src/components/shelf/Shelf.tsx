@@ -1,6 +1,6 @@
 import React, { useLayoutEffect, useRef, useState } from "react";
 import { BookIndexEntry } from "../../types";
-import { ShelfId, ShelfSlot, spineStyle, planShelf, layoutStack, SHELF_ROW_H, SHELF_ROW_GAP, SHELF_PLANK_H } from "../../utils/bookshelf";
+import { ShelfId, ShelfSlot, spineStyle, planShelf, layoutStack, displayTitle, SHELF_ROW_H, SHELF_ROW_GAP, SHELF_PLANK_H } from "../../utils/bookshelf";
 import { PackItem, packAndLayout } from "../../utils/shelfPacking";
 import { BookSpine } from "./BookSpine";
 import { BookStack } from "./BookStack";
@@ -58,7 +58,9 @@ export const Shelf: React.FC<Props> = ({ shelfId, title, icon, accent, books, on
     }
     slotByKey.set(slot.book.id, slot);
     const st = spineStyle(slot.book);
-    return { key: slot.book.id, kind: "spine", bw: st.width, h: st.height, leanDir: Math.sign(slot.lean) as -1 | 0 | 1 };
+    // Dłuższy tytuł → grzbiet może zgrubieć bardziej (naturalnie „grubsza książka").
+    const stretch = Math.min(26, Math.max(8, 6 + displayTitle(slot.book).length * 0.5));
+    return { key: slot.book.id, kind: "spine", bw: st.width, h: st.height, leanDir: Math.sign(slot.lean) as -1 | 0 | 1, stretch };
   });
 
   const rows = width > 0 ? packAndLayout(items, { rowWidth: width }) : [];
@@ -96,7 +98,7 @@ export const Shelf: React.FC<Props> = ({ shelfId, title, icon, accent, books, on
                         ? { left: p.x, transform: `rotate(${p.deg}deg)`, transformOrigin: p.deg > 0 ? "bottom right" : "bottom left" }
                         : { left: p.x }}
                     >
-                      <BookSpine book={slot.book} style={spineStyle(slot.book)} onDragStart={onDragStart} onDragEnd={onDragEnd} />
+                      <BookSpine book={slot.book} style={{ ...spineStyle(slot.book), width: p.w }} onDragStart={onDragStart} onDragEnd={onDragEnd} />
                     </div>
                   );
                 })}

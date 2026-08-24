@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.17.3** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.17.4** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -62,6 +62,12 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.17.4** — **Brak powietrza między stojącymi książkami — luz pogrubia grzbiety**. Zamiast wkładać
+  luz w szczeliny, `layoutRow` po oparciu pochyłych POGRUBIA stojące grzbiety (`PackItem.stretch`,
+  water-filling `widenEvenly`, waga ~ długość tytułu → dłuższy tytuł = grubsza książka). Książki się
+  stykają jak na prawdziwej półce; kupki/pochyłe nie grubieją; dopiero po nasyceniu limitów zostaje
+  włoskowa równa szczelina. `PlacedItem.w` (szerokość renderowania), `Shelf` renderuje grzbiet `p.w`.
+  +2 testy (pogrubienie zeruje szczeliny; fallback równych szczelin przy `stretch=0`). Reguła 13 upd.
 - **1.17.3** — **Koniec pustych „dziur" w rzędzie**: luz (po oparciu pochyłych) rozkładany RÓWNO na
   wszystkie szczeliny między stojącymi grzbietami zamiast skupiania w kilka przerw. Minimalizuje
   największą szczelinę → pełny rząd ma włoskowe szwy, rzadki rozkłada się równo (żadnej dużej dziury).
