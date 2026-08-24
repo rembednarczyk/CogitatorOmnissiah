@@ -23,13 +23,14 @@ export const BookSpine: React.FC<Props> = ({ book, style, onDragStart, onDragEnd
     onDragStart={(e) => { e.dataTransfer.setData("text/plain", book.id); e.dataTransfer.effectAllowed = "move"; onDragStart(book); }}
     onDragEnd={onDragEnd}
     title={`${displayTitle(book)}${book.author ? " — " + book.author : ""}${book.year ? " (" + book.year + ")" : ""}`}
-    className="group relative shrink-0 flex items-center justify-center cursor-grab active:cursor-grabbing select-none rounded-[3px_3px_1px_1px] transition-transform duration-150 hover:-translate-y-3"
+    className="book-spine group relative shrink-0 flex items-center justify-center cursor-grab active:cursor-grabbing select-none rounded-[3px_3px_1px_1px] transition-transform duration-150 hover:-translate-y-3"
     style={{
       width: style.width,
       height: style.height,
-      background: `linear-gradient(90deg, rgba(0,0,0,.35), ${style.color} 22%, ${style.color} 78%, rgba(0,0,0,.28))`,
-      boxShadow: "inset 1.5px 0 0 rgba(var(--noo-glow),.22), inset -2px 0 4px rgba(0,0,0,.45), 0 6px 10px -6px rgba(0,0,0,.6)",
-    }}
+      ["--spine-muted" as string]: style.color,
+      ["--spine-app" as string]: style.app,
+      ["--spine-app-rgb" as string]: style.appRgb,
+    } as React.CSSProperties}
   >
     <span className="absolute left-0 right-0 h-[10px] top-[9px] bg-black/25" aria-hidden />
     {style.width >= 26 && (
@@ -42,8 +43,8 @@ export const BookSpine: React.FC<Props> = ({ book, style, onDragStart, onDragEnd
       </span>
     )}
     <span
-      className="font-bold text-white/85 whitespace-nowrap overflow-hidden max-h-[94%] py-1"
-      style={{ fontSize: spineFontSize(style, displayTitle(book)), writingMode: "vertical-rl", transform: "rotate(180deg)", textShadow: "0 1px 2px rgba(0,0,0,.5)" }}
+      className="spine-title font-bold whitespace-nowrap overflow-hidden max-h-[94%] py-1"
+      style={{ fontSize: spineFontSize(style, displayTitle(book)), writingMode: "vertical-rl", transform: "rotate(180deg)" }}
     >
       {displayTitle(book)}
     </span>

@@ -92,6 +92,15 @@ body {
   --sk-room-flame: radial-gradient(circle at 50% 72%, #cffafe, #22d3ee 55%, #0e7490);
 }
 
+.skin-noospheric .book-spine {
+  background: linear-gradient(90deg, rgba(0,0,0,.35), var(--spine-muted) 22%, var(--spine-muted) 78%, rgba(0,0,0,.28));
+  box-shadow: inset 1.5px 0 0 rgba(var(--noo-glow),.22), inset -2px 0 4px rgba(0,0,0,.45), 0 6px 10px -6px rgba(0,0,0,.6);
+}
+.skin-holo .book-spine {
+  background: linear-gradient(90deg, var(--spine-app) 0 2.5px, rgba(var(--spine-app-rgb),.68) 3px, rgba(var(--spine-app-rgb),.42) 55%, rgba(var(--spine-app-rgb),.30) 100%);
+  box-shadow: inset 1.5px 0 0 var(--spine-app), inset -3px 0 6px rgba(0,0,0,.4), 0 0 13px -3px rgba(var(--spine-app-rgb),.8), 0 6px 10px -6px rgba(0,0,0,.7);
+}
+
 @keyframes noo-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 @keyframes noo-pulse {
   0%, 100% { opacity: .5; filter: drop-shadow(0 0 3px rgba(var(--noo-glow), .5)); }
@@ -111,3 +120,13 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .noo-marquee, .noo-marquee-slow, .noo-pulse, .noo-spin, .noo-data, .noo-scan { animation: none !important; }
 }
+.skin-noospheric .spine-title { color: rgba(255,255,255,.86); text-shadow: 0 1px 2px rgba(0,0,0,.5); }
+.skin-holo .spine-title { color: #f0f9ff; text-shadow: 0 0 7px rgba(var(--spine-app-rgb),.95), 0 0 2px rgba(255,255,255,.5); }
+.skin-noospheric .stack-layer { background: linear-gradient(0deg, rgba(0,0,0,.42) 0, var(--spine-muted) 26%, var(--spine-muted) 74%, rgba(255,255,255,.12) 100%); }
+.skin-holo .stack-layer { background: linear-gradient(0deg, rgba(var(--spine-app-rgb),.30) 0, rgba(var(--spine-app-rgb),.44) 55%, rgba(var(--spine-app-rgb),.66) 90%, var(--spine-app) 100%); }
+.skin-noospheric .fore-edge { background: linear-gradient(to bottom, rgba(255,251,235,.7), rgba(255,247,220,.4), rgba(255,251,235,.7)); }
+.skin-holo .fore-edge { background: linear-gradient(to bottom, rgba(var(--spine-app-rgb),.75), rgba(255,255,255,.45), rgba(var(--spine-app-rgb),.75)); }
+.skin-noospheric .cover-card { background: linear-gradient(150deg, var(--cm-a), var(--cm-b)); }
+.skin-holo .cover-card { background: linear-gradient(150deg, var(--ca-a), var(--ca-b)); }
+.skin-noospheric .cover-badge { color: #fcd34d; border-color: #fcd34d; }
+.skin-holo .cover-badge { color: #67e8f9; border-color: #67e8f9; }

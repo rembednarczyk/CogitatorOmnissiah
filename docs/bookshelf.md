@@ -96,8 +96,14 @@ The row builder is shared (`buildShelfItems` + `chunk` in `utils/shelfLayout.ts`
 
 ## 3. Pure helpers (`src/utils/bookshelf.ts`, unit-tested)
 - **`isRead(book, overrides)`** — read state with optimistic overrides layered over the base tag.
-- **`spineStyle(book)`** — deterministic spine colour (a muted book-cloth palette), width and height
-  from a hash of the title, so a spine looks identical across re-renders. The hash is unsigned
+- **`spineStyle(book)`** — deterministic spine colour, width and height from a hash of the title, so a
+  spine looks identical across re-renders. Returns **two** parallel accents by the same index: `color`
+  (muted `CLOTH_PALETTE`, used by **Relikwiarz**) and `app`/`appRgb` (`APP_PALETTE`, cyan/blue/violet/
+  purple, used by **Holo+**). The element sets both as inline CSS vars (`--spine-muted`/`--spine-app`/
+  `--spine-app-rgb`); the actual look is real per-skin rules in `index.css` (`.skin-* .book-spine` etc.):
+  Holo+ = accent-tinted **glass** + neon left edge + white glowing title; Relikwiarz = matte cloth.
+  (Gradients live in real rules, not `var(--sk-…)` custom properties — a gradient-with-nested-`var()`
+  stored in a custom property gets dropped by the CSS pipeline.) The hash is unsigned
   (`>>> 0`); the height derivation uses an **unsigned** shift (`>>> 3`) — a signed `>> 3` goes
   negative for hashes above 2³¹ and produced out-of-range heights (caught by a bounds test).
 - **`splitShelves(books, overrides)`** — partitions into `{ read, toRead }`, each sorted by

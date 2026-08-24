@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { BookIndexEntry } from "../types";
-import { isRead, spineStyle, planShelf, MAX_LEAN_DEG, LEAN_TOWARD, spineFontSize, flatBookLayout, FLAT_MAX_W, layoutStack, stackAlign, stackChaos, splitShelves, featuredReads, awardWins, hasAward, CLOTH_PALETTE, READ_TAG, shelfPlankBackground, SHELF_ROW_H, SHELF_PLANK_H, SHELF_ROW_GAP } from "../utils/bookshelf";
+import { isRead, spineStyle, planShelf, MAX_LEAN_DEG, LEAN_TOWARD, spineFontSize, flatBookLayout, FLAT_MAX_W, layoutStack, stackAlign, stackChaos, splitShelves, featuredReads, awardWins, hasAward, CLOTH_PALETTE, APP_PALETTE, READ_TAG, shelfPlankBackground, SHELF_ROW_H, SHELF_PLANK_H, SHELF_ROW_GAP } from "../utils/bookshelf";
 
 const mk = (over: Partial<BookIndexEntry>): BookIndexEntry => ({
   id: over.id ?? over.plTitle ?? "x", plTitle: "", origTitle: "", author: "", year: "",
@@ -30,6 +30,10 @@ describe("bookshelf.spineStyle", () => {
     for (const t of ["Diuna", "Hyperion", "Ubik", "Solaris", "Lód"]) {
       const s = spineStyle(mk({ plTitle: t }));
       expect(CLOTH_PALETTE).toContain(s.color);
+      // akcent Holo+ z tego samego indeksu (równoległa paleta)
+      const idx = CLOTH_PALETTE.indexOf(s.color);
+      expect(s.app).toBe(APP_PALETTE[idx][0]);
+      expect(s.appRgb).toBe(APP_PALETTE[idx][1]);
       expect(s.width).toBeGreaterThanOrEqual(16);
       expect(s.width).toBeLessThanOrEqual(27);
       expect(s.height).toBeGreaterThanOrEqual(124);
@@ -108,7 +112,7 @@ describe("bookshelf.planShelf", () => {
 });
 
 describe("bookshelf.title sizing (pełne nazwy)", () => {
-  const style = { color: "#000", width: 20, height: 160 };
+  const style = { color: "#000", app: "#06b6d4", appRgb: "6,182,212", width: 20, height: 160 };
   it("spineFontSize shrinks for longer titles, within 6–11 px", () => {
     const short = spineFontSize(style, "Ubik");
     const long = spineFontSize(style, "Opowieści z meekhańskiego pogranicza. Północ-Południe");

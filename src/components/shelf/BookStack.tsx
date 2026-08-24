@@ -21,7 +21,7 @@ export const BookStack: React.FC<Props> = ({ books, onDragStart, onDragEnd }) =>
   return (
     <div className="relative shrink-0 flex flex-col-reverse items-start" style={{ width: cellW }}>
       {layers.map(({ book, width, fontSize, thickness, lines, x }, i) => {
-        const color = spineStyle(book).color;
+        const s = spineStyle(book);
         const wins = awardWins(book);
         return (
           <div
@@ -30,21 +30,23 @@ export const BookStack: React.FC<Props> = ({ books, onDragStart, onDragEnd }) =>
             onDragStart={(e) => { e.dataTransfer.setData("text/plain", book.id); e.dataTransfer.effectAllowed = "move"; onDragStart(book); }}
             onDragEnd={onDragEnd}
             title={`${displayTitle(book)}${book.author ? " — " + book.author : ""}${book.year ? " (" + book.year + ")" : ""}`}
-            className="group/layer relative rounded-[2px] cursor-grab active:cursor-grabbing select-none transition-transform duration-150 hover:-translate-y-0.5"
+            className="stack-layer group/layer relative rounded-[2px] cursor-grab active:cursor-grabbing select-none transition-transform duration-150 hover:-translate-y-0.5"
             style={{
               height: thickness,
               width,
               marginLeft: x,
               marginBottom: i === 0 ? 0 : 1,
-              background: `linear-gradient(0deg, rgba(0,0,0,.42) 0, ${color} 26%, ${color} 74%, rgba(255,255,255,.12) 100%)`,
+              ["--spine-muted" as string]: s.color,
+              ["--spine-app" as string]: s.app,
+              ["--spine-app-rgb" as string]: s.appRgb,
               boxShadow: "inset 0 1.5px 0 rgba(255,255,255,.12), 0 2px 4px -1px rgba(0,0,0,.5)",
-            }}
+            } as React.CSSProperties}
           >
             {/* Krawędź kartek (fore-edge) po prawej */}
-            <span className="absolute top-[2px] bottom-[2px] right-[2px] w-[3px] rounded-[1px] bg-gradient-to-b from-amber-50/70 via-amber-100/40 to-amber-50/70" aria-hidden />
+            <span className="fore-edge absolute top-[2px] bottom-[2px] right-[2px] w-[3px] rounded-[1px]" aria-hidden />
             {/* PEŁNY tytuł wzdłuż grzbietu — zawijany do max 2 linii zamiast poszerzania */}
             <span
-              className="absolute inset-y-0 right-3 flex items-center font-bold text-white/90"
+              className="spine-title absolute inset-y-0 right-3 flex items-center font-bold"
               style={{ left: wins.length ? 6 + wins.length * 7 : 8 }}
             >
               <span
@@ -56,7 +58,6 @@ export const BookStack: React.FC<Props> = ({ books, onDragStart, onDragEnd }) =>
                   WebkitLineClamp: lines,
                   overflow: "hidden",
                   whiteSpace: lines === 1 ? "nowrap" : "normal",
-                  textShadow: "0 1px 2px rgba(0,0,0,.55)",
                 }}
               >
                 {displayTitle(book)}

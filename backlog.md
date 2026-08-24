@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.22.3** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.23.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -62,6 +62,14 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.23.0** — **Grzbiety zależne od skóry (wariant „E").** Holo+: grzbiet = **szkło w akcencie
+  aplikacji** (paleta `APP_PALETTE` cyan/niebieski/indygo/fiolet/purpura, równoległa do `CLOTH_PALETTE`
+  po tym samym indeksie) + **neonowa lewa krawędź** + **biały tytuł z glow**; kupki i okładki
+  „Wyróżnione" też przemalowane (fore-edge cyan, gwiazdka cyan). Relikwiarz: matowe grzbiety bez zmian.
+  `spineStyle` zwraca dodatkowo `app`/`appRgb`; element podaje akcenty inline (`--spine-muted`/`--spine-app`/
+  `--spine-app-rgb`/`--cm-*`/`--ca-*`), a wygląd nadają **realne reguły** `.skin-* .book-spine/.spine-title/
+  .stack-layer/.fore-edge/.cover-*` w `index.css` (gradient w custom-property z zagnieżdżonym `var()` bywa
+  zjadany przez pipeline CSS — stąd klasy zamiast `var(--sk-...)`). Fizyka/szerokości bez zmian. +2 asercje.
 - **1.22.3** — Sprzątanie ozdób regału: usunięte **pieczęcie czystości** (+ sygnatura IX-774) z ram
   i **proporzec** z tła (`RoomDecor`). Brązowa obwódka korpusu → tokeny `--sk-frame-border` /
   `--sk-frame-glow`: w Holo+ **glow cyan**, w Relikwiarzu brąz. Listwa świetlna gzymsu też w kolorze
