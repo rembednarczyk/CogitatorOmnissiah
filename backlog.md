@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.22.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.22.2** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -62,6 +62,11 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.22.2** — **Holo+ dostrojony do palety aplikacji.** Korpus/wnęka/cokół = slate-900→slate-950
+  (jak karty i tło `bg-slate-950`), sala `RoomDecor` zlewa się z tłem strony; akcenty cyan-400
+  (`#22d3ee`) + purpura-500 (`#a855f7`, pieczęć/aureola/proporzec) — spójne z gradientem nagłówka
+  cyan→blue→purpura. Award color-code (Hugo=złoty itd.) bez zmian (to dane, nie motyw). Relikwiarz
+  zostaje ciepłym mosiądzem jako alternatywa. Zweryfikowane realnym renderem na tle `bg-slate-950`.
 - **1.22.1** — **Skóra obejmuje też Salę Archiwum (`RoomDecor`).** Tło pokoju (ściana, podłoga,
   znak wodny koła, proporzec, kurz, płomień + poświata kinkietów) czyta `--sk-room-*` — Holo+ dostaje
   chłodną salę cyan/adamant, Relikwiarz zostaje ciepły mosiądz. `CogMark` maluje kolor przez `style`
