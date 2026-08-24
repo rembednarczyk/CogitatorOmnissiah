@@ -90,15 +90,17 @@ export const HoloField: React.FC<{ className?: string }> = ({ className = "" }) 
   </div>
 );
 
-/** Narożnik HUD (celownik) — w kolorze poświaty skóry, pulsujący. */
+/** Narożnik HUD (celownik) — w kolorze OPRAWY Regału (`--sk-frame-accent`, amber),
+ *  pulsujący. Lokalnie nadpisuje `--noo-glow`, by pulsujący glow też był w akcencie ramki. */
 export const HudCorner: React.FC<{ corner: Corner }> = ({ corner }) => {
   const base = "absolute w-4 h-4 z-20 pointer-events-none noo-pulse";
-  const c = GLOW(1);
+  const c = "rgb(var(--sk-frame-accent))";
+  const common = { ["--noo-glow" as string]: "var(--sk-frame-accent)" };
   const box: Record<Corner, React.CSSProperties> = {
-    tl: { top: 6, left: 6, borderTop: `2px solid ${c}`, borderLeft: `2px solid ${c}` },
-    tr: { top: 6, right: 6, borderTop: `2px solid ${c}`, borderRight: `2px solid ${c}`, animationDelay: ".6s" },
-    bl: { bottom: 6, left: 6, borderBottom: `2px solid ${c}`, borderLeft: `2px solid ${c}`, animationDelay: "1.2s" },
-    br: { bottom: 6, right: 6, borderBottom: `2px solid ${c}`, borderRight: `2px solid ${c}`, animationDelay: "1.8s" },
+    tl: { ...common, top: 6, left: 6, borderTop: `2px solid ${c}`, borderLeft: `2px solid ${c}` },
+    tr: { ...common, top: 6, right: 6, borderTop: `2px solid ${c}`, borderRight: `2px solid ${c}`, animationDelay: ".6s" },
+    bl: { ...common, bottom: 6, left: 6, borderBottom: `2px solid ${c}`, borderLeft: `2px solid ${c}`, animationDelay: "1.2s" },
+    br: { ...common, bottom: 6, right: 6, borderBottom: `2px solid ${c}`, borderRight: `2px solid ${c}`, animationDelay: "1.8s" },
   };
-  return <span className={base} style={box[corner]} aria-hidden />;
+  return <span className={base} style={box[corner] as React.CSSProperties} aria-hidden />;
 };

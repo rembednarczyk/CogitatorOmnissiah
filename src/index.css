@@ -55,6 +55,7 @@ body {
   --sk-board-bg: linear-gradient(90deg, #8a6b34, #4a3315 45%, #6b4e22 55%, #2a1c0a);
   --sk-cog-ring: #c8961f; --sk-cog-skull: #d9c9a8; --sk-cog-disc: #241706;
   --sk-frame-border: #3a2413; --sk-frame-glow: 0 0 0 rgba(0,0,0,0);
+  --sk-frame-accent: 63, 224, 208; /* oprawa/HUD Relikwiarza — teal (bez zmian) */
   --sk-plinth: linear-gradient(180deg, #3a2915, #1c1108);
   --sk-foot: linear-gradient(180deg, #2a1c0f, #120b06);
   /* Sala Archiwum (RoomDecor) — ciepła */
@@ -79,7 +80,10 @@ body {
   --sk-plate-text: #a5f0fc; --sk-plate-edge: #1e7a99;
   --sk-board-bg: linear-gradient(180deg, #67e8f9, #22d3ee 40%, #0e7490);
   --sk-cog-ring: #22d3ee; --sk-cog-skull: #04101c; --sk-cog-disc: #060a14;
-  --sk-frame-border: rgba(34,211,238,.45); --sk-frame-glow: 0 0 20px rgba(34,211,238,.16);
+  /* Oprawa Regału = amber (kolor zakładki „Regał"), spójnie w obu skórach;
+     wnętrze (godło/deseczki/ticker/sygnatury/książki) zostaje na --noo-glow (cyan). */
+  --sk-frame-accent: 251, 191, 36;
+  --sk-frame-border: rgba(var(--sk-frame-accent),.45); --sk-frame-glow: 0 0 20px rgba(var(--sk-frame-accent),.16);
   --sk-plinth: linear-gradient(180deg, #0f172a, #060a14);
   --sk-foot: linear-gradient(180deg, #0b1120, #03060f);
   /* Sala Archiwum (RoomDecor) — zlewa się z tłem aplikacji (slate-950) */
