@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.22.2** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.22.3** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -62,6 +62,11 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.22.3** — Sprzątanie ozdób regału: usunięte **pieczęcie czystości** (+ sygnatura IX-774) z ram
+  i **proporzec** z tła (`RoomDecor`). Brązowa obwódka korpusu → tokeny `--sk-frame-border` /
+  `--sk-frame-glow`: w Holo+ **glow cyan**, w Relikwiarzu brąz. Listwa świetlna gzymsu też w kolorze
+  poświaty skóry. Usunięty martwy `PuritySeal` + nieużywane `--sk-seal-wax` / `--sk-room-pennant` /
+  `--sk-room-cog2`.
 - **1.22.2** — **Holo+ dostrojony do palety aplikacji.** Korpus/wnęka/cokół = slate-900→slate-950
   (jak karty i tło `bg-slate-950`), sala `RoomDecor` zlewa się z tłem strony; akcenty cyan-400
   (`#22d3ee`) + purpura-500 (`#a855f7`, pieczęć/aureola/proporzec) — spójne z gradientem nagłówka

@@ -1,5 +1,5 @@
 import React from "react";
-import { CogSigil, PuritySeal, NoosphericCrest, DataTicker, HoloField, HudCorner } from "./ShelfOrnaments";
+import { CogSigil, NoosphericCrest, DataTicker, HoloField, HudCorner } from "./ShelfOrnaments";
 
 export type ShelfAccent = "emerald" | "cyan" | "purple" | "amber";
 
@@ -31,10 +31,12 @@ interface Props {
  */
 export const ShelfFrame: React.FC<Props> = ({ title, icon, accent, count, highlight = "idle", headerExtra, rootProps, children }) => {
   const a = ACCENT[accent];
+  // Idle: kolor obwódki i poświata pochodzą ze skóry (`--sk-frame-*`) — brąz w
+  // Relikwiarzu, cyan-glow w Holo+. Stany target/dragging nadpisują klasą.
   const stateRing =
     highlight === "target" ? `${a.ring} ${a.glow}` :
     highlight === "dragging" ? "border-amber-400/30 border-dashed" :
-    "border-amber-950/70";
+    "";
 
   return (
     <div
@@ -42,7 +44,8 @@ export const ShelfFrame: React.FC<Props> = ({ title, icon, accent, count, highli
       className={`relative rounded-[18px] border-2 transition-all duration-200 ${stateRing}`}
       style={{
         background: "var(--sk-cab-bg)",
-        boxShadow: "0 24px 40px -22px rgba(0,0,0,.85), inset 0 1px 0 rgba(var(--noo-glow),.10)",
+        boxShadow: "0 24px 40px -22px rgba(0,0,0,.85), inset 0 1px 0 rgba(var(--noo-glow),.10), var(--sk-frame-glow)",
+        ...(highlight === "idle" ? { borderColor: "var(--sk-frame-border)" } : {}),
       }}
     >
       {/* Boczne słupki + cokół tworzy padding; gzyms nakładamy górnym paddingiem */}
@@ -65,8 +68,8 @@ export const ShelfFrame: React.FC<Props> = ({ title, icon, accent, count, highli
           {/* Ticker danych (przewijany) — wypełnia wolną przestrzeń gzymsu */}
           <DataTicker className="ml-3 hidden sm:flex flex-1 min-w-0 max-w-[280px]" text="++ NOOSPHERA·SYNC ++ 01001101·01000001·01010011 ++ AVE·OMNISSIAH ++" />
           <div className="ml-auto flex items-center gap-3">{headerExtra}</div>
-          {/* Delikatna listwa świetlna pod gzymsem */}
-          <div className="absolute bottom-0 inset-x-6 h-px bg-gradient-to-r from-transparent via-amber-300/25 to-transparent" />
+          {/* Delikatna listwa świetlna pod gzymsem (w kolorze poświaty skóry) */}
+          <div className="absolute bottom-0 inset-x-6 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(var(--noo-glow),.28), transparent)" }} />
         </div>
 
         {/* Wnętrze regału — ciemne „plecy" z pionowymi deskami + warstwa holo */}
@@ -82,14 +85,12 @@ export const ShelfFrame: React.FC<Props> = ({ title, icon, accent, count, highli
         </div>
       </div>
 
-      {/* Godło holo (projekcja) + narożniki HUD + pieczęć czystości z sygnaturą */}
+      {/* Godło holo (projekcja) + narożniki HUD */}
       <NoosphericCrest className="absolute -top-[22px] left-1/2 -translate-x-1/2 z-20" size={46} />
       <HudCorner corner="tl" />
       <HudCorner corner="tr" />
       <HudCorner corner="bl" />
       <HudCorner corner="br" />
-      <PuritySeal className="top-[40px] right-6 z-20" rotate={-9} />
-      <span className="absolute top-[88px] right-[18px] z-20 font-mono text-[8px] tracking-[0.12em] pointer-events-none" style={{ color: "rgba(var(--noo-glow),.75)", textShadow: "0 0 6px rgba(var(--noo-glow),.5)" }} aria-hidden>IX-774</span>
     </div>
   );
 };

@@ -69,12 +69,6 @@ export const RoomDecor: React.FC<{ children: React.ReactNode }> = ({ children })
     {/* Znak wodny koła zębatego */}
     <CogMark size={320} color="var(--sk-room-cog)" className="absolute left-1/2 -translate-x-1/2 top-6 opacity-[0.05] pointer-events-none" />
 
-    {/* Proporzec z sygilem */}
-    <div className="absolute left-1/2 -translate-x-1/2 top-0 w-[92px] h-[128px] hidden sm:flex items-center justify-center pointer-events-none"
-      style={{ background: "var(--sk-room-pennant)", clipPath: "polygon(0 0,100% 0,100% 82%,50% 100%,0 82%)", boxShadow: "0 6px 14px rgba(0,0,0,.6)" }} aria-hidden>
-      <CogMark size={46} color="var(--sk-room-cog2)" />
-    </div>
-
     {/* Kinkiety */}
     <Sconce className="left-3 top-16 hidden md:block" />
     <Sconce className="right-3 top-16 hidden md:block" />
