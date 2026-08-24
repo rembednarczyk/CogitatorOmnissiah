@@ -120,7 +120,7 @@ export const SanctityDebugger: React.FC<SanctityDebuggerProps> = ({ result }) =>
                                 ))}
                               </div>
                             ) : (
-                              <div className="text-[9px] text-slate-600 italic p-2">Brak unikalnych rekordów</div>
+                              <div className="text-[9px] text-slate-400 italic p-2">Brak unikalnych rekordów</div>
                             )}
                           </div>
 
@@ -139,7 +139,7 @@ export const SanctityDebugger: React.FC<SanctityDebuggerProps> = ({ result }) =>
                                 ))}
                               </div>
                             ) : (
-                              <div className="text-[9px] text-slate-600 italic p-2">Brak unikalnych rekordów</div>
+                              <div className="text-[9px] text-slate-400 italic p-2">Brak unikalnych rekordów</div>
                             )}
                           </div>
                         </div>

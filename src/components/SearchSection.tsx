@@ -57,7 +57,7 @@ export const SearchSection: React.FC = () => {
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Wpisz fragment tytułu lub nazwisko autora…"
           aria-label="Przeszukaj archiwum"
-          className="w-full pl-14 pr-12 py-4 text-sm bg-slate-950/60 border border-white/10 text-slate-200 rounded-2xl focus:outline-none focus:border-cyan-500/50 focus:ring-4 focus:ring-cyan-500/5 placeholder-slate-600 transition-all"
+          className="w-full pl-14 pr-12 py-4 text-sm bg-slate-950/60 border border-white/10 text-slate-200 rounded-2xl focus:outline-none focus:border-cyan-500/50 focus:ring-4 focus:ring-cyan-500/5 placeholder-slate-500 transition-all"
         />
         {query && (
           <button
@@ -102,7 +102,7 @@ export const SearchSection: React.FC = () => {
         </div>
       ) : results.length === 0 ? (
         <div className="text-center py-16 space-y-4">
-          <p className="text-sm text-slate-600 italic">
+          <p className="text-sm text-slate-400 italic">
             {query.trim()
               ? `Archiwum milczy — żaden wolumin nie pasuje do „${query}".`
               : "Archiwum jest puste — brak rekordów do przeszukania."}
@@ -118,7 +118,7 @@ export const SearchSection: React.FC = () => {
                   >
                     {s}
                   </button>
-                  {i < suggestions.length - 1 ? <span className="text-slate-600">, </span> : <span className="text-slate-500">?</span>}
+                  {i < suggestions.length - 1 ? <span className="text-slate-500">, </span> : <span className="text-slate-500">?</span>}
                 </React.Fragment>
               ))}
             </p>
