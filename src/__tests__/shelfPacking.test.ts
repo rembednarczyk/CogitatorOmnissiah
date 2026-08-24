@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { PackItem, packRows, layoutRow, packAndLayout } from "../utils/shelfPacking";
 import { MAX_LEAN_DEG } from "../utils/bookshelf";
 
-const spine = (key: string, bw = 20, h = 150, leanDir: -1 | 0 | 1 = 0): PackItem => ({ key, kind: "spine", bw, h, leanDir });
+const spine = (key: string, bw = 20, h = 150, leanDir: -1 | 0 | 1 = 0, stretch = 0): PackItem => ({ key, kind: "spine", bw, h, leanDir, stretch });
 
 describe("shelfPacking.packRows", () => {
   it("packs items into rows that fit the width", () => {
@@ -50,17 +50,29 @@ describe("shelfPacking.layoutRow (wypełnienie + fizyka oparcia)", () => {
     expect(leaner.deg).toBeCloseTo(expectDeg, 4);
   });
 
-  it("spaces upright books EVENLY (no big empty gaps): all straight gaps equal", () => {
-    // 12 stojących grzbietów, brak pochyłów → luz rozłożony równo, żadnej „dziury".
-    const row = Array.from({ length: 12 }, (_, i) => spine(`s${i}`, 20));
-    const placed = layoutRow(row, 340); // base 240, slack 100
-    const gaps: number[] = [];
-    for (let i = 1; i < placed.length; i++) gaps.push(placed[i].x - (placed[i - 1].x + placed[i - 1].bw));
-    const min = Math.min(...gaps), max = Math.max(...gaps);
-    expect(max - min).toBeLessThan(1e-6);                     // wszystkie szczeliny równe
-    expect(max).toBeCloseTo(100 / 11, 6);                     // slack / liczba szczelin
+  it("fills slack by THICKENING straight spines (no gaps) — real shelves have no air between books", () => {
+    // 12 stojących grzbietów z zapasem na pogrubienie → luz idzie w grubość, nie w szczeliny.
+    const row = Array.from({ length: 12 }, (_, i) => spine(`s${i}`, 20, 150, 0, 20));
+    const placed = layoutRow(row, 340); // base 240, slack 100, łączny zapas 240
+    for (let i = 1; i < placed.length; i++) {
+      const gap = placed[i].x - (placed[i - 1].x + placed[i - 1].w);
+      expect(gap).toBeLessThan(1e-6);                         // książki się stykają — zero przerw
+    }
+    for (const p of placed) expect(p.w).toBeGreaterThanOrEqual(p.bw); // grzbiety zgrubiały
+    const widened = placed.reduce((s, p) => s + (p.w - p.bw), 0);
+    expect(widened).toBeCloseTo(100, 4);                      // cały luz wchłonięty przez grubość
     const last = placed[placed.length - 1];
-    expect(last.x + last.bw).toBeCloseTo(340, 6);             // wypełnione do prawej
+    expect(last.x + last.w).toBeCloseTo(340, 6);              // wypełnione do prawej
+  });
+
+  it("falls back to EVEN gaps only when spines can't thicken further (stretch = 0)", () => {
+    const row = Array.from({ length: 12 }, (_, i) => spine(`s${i}`, 20)); // stretch 0
+    const placed = layoutRow(row, 340);
+    const gaps: number[] = [];
+    for (let i = 1; i < placed.length; i++) gaps.push(placed[i].x - (placed[i - 1].x + placed[i - 1].w));
+    const min = Math.min(...gaps), max = Math.max(...gaps);
+    expect(max - min).toBeLessThan(1e-6);                     // równe (żadnej pojedynczej dziury)
+    expect(placed[placed.length - 1].x + placed[placed.length - 1].w).toBeCloseTo(340, 6);
   });
 
   it("stands straight when there is no slack (packed tight → no unsupported lean)", () => {
