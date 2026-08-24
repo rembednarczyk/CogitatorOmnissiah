@@ -21,9 +21,6 @@ interface Props {
   pageSize?: number;
 }
 
-const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
-const roman = (n: number) => ROMAN[n - 1] ?? String(n);
-
 /** Jeden regał: drewniany korpus + FIZYCZNE rozłożenie woluminów (wypełnione półki, oparte pochyły). */
 export const Shelf: React.FC<Props> = ({ shelfId, title, icon, accent, books, onDragStart, onDragEnd, onDropBook, dragging, pageSize }) => {
   const [over, setOver] = useState(false);
@@ -66,7 +63,7 @@ export const Shelf: React.FC<Props> = ({ shelfId, title, icon, accent, books, on
             className="p-1 rounded-md text-amber-200/70 hover:text-amber-100 disabled:opacity-30" aria-label="Poprzedni regał">
             <ChevronLeft className="w-4 h-4" />
           </button>
-          <span className="text-[10px] font-display font-bold uppercase tracking-widest text-amber-200/80">Regał {roman(cur + 1)}<span className="text-amber-200/40"> / {pageCount}</span></span>
+          <span className="text-[10px] font-display font-bold uppercase tracking-widest text-amber-200/80">Regał {cur + 1}<span className="text-amber-200/40"> / {pageCount}</span></span>
           <button onClick={() => setPage((p) => Math.min(pageCount - 1, Math.min(p, pageCount - 1) + 1))} disabled={cur >= pageCount - 1}
             className="p-1 rounded-md text-amber-200/70 hover:text-amber-100 disabled:opacity-30" aria-label="Następny regał">
             <ChevronRight className="w-4 h-4" />

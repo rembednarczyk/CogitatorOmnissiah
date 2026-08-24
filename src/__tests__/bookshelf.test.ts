@@ -202,9 +202,9 @@ describe("bookshelf.shelfPlankBackground", () => {
 
 describe("bookshelf.splitShelves", () => {
   const books = [
-    mk({ id: "1", plTitle: "B", author: "Lem", zrodlo: [READ_TAG] }),
-    mk({ id: "2", plTitle: "A", author: "Lem", zrodlo: ["Posiadam"] }),
-    mk({ id: "3", plTitle: "C", author: "Dick", zrodlo: [READ_TAG] }),
+    mk({ id: "1", plTitle: "B", author: "Lem", year: "1970", zrodlo: [READ_TAG] }),
+    mk({ id: "2", plTitle: "A", author: "Lem", year: "1965", zrodlo: ["Posiadam"] }),
+    mk({ id: "3", plTitle: "C", author: "Dick", year: "1962", zrodlo: [READ_TAG] }),
   ];
 
   it("partitions by read state", () => {
@@ -213,16 +213,25 @@ describe("bookshelf.splitShelves", () => {
     expect(toRead.map((b) => b.id)).toEqual(["2"]);
   });
 
-  it("sorts each shelf by author then title", () => {
+  it("sorts each shelf by publication date (year, ascending)", () => {
     const { read } = splitShelves(books);
-    // Dick/C before Lem/B
+    // 1962 (id 3) before 1970 (id 1)
     expect(read.map((b) => b.id)).toEqual(["3", "1"]);
+  });
+
+  it("puts books without a year at the end", () => {
+    const withGaps = [
+      mk({ id: "n", plTitle: "Nieznany", year: "", zrodlo: [READ_TAG] }),
+      mk({ id: "y", plTitle: "Datowany", year: "1980", zrodlo: [READ_TAG] }),
+    ];
+    expect(splitShelves(withGaps).read.map((b) => b.id)).toEqual(["y", "n"]);
   });
 
   it("respects overrides when partitioning (drag&drop move)", () => {
     const { read, toRead } = splitShelves(books, { "1": false });
     expect(read.map((b) => b.id)).toEqual(["3"]);
-    expect(toRead.map((b) => b.id).sort()).toEqual(["1", "2"]);
+    // toRead posortowane po dacie: 1965 (id 2) przed 1970 (id 1)
+    expect(toRead.map((b) => b.id)).toEqual(["2", "1"]);
   });
 });
 

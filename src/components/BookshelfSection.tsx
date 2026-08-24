@@ -8,13 +8,10 @@ import { Shelf } from "./shelf/Shelf";
 import { CoverCard } from "./shelf/CoverCard";
 import { ShelfFrame } from "./shelf/ShelfFrame";
 import { RoomDecor } from "./shelf/RoomDecor";
-import { LibraryWall } from "./shelf/LibraryWall";
-import { useMediaQuery } from "../hooks/useMediaQuery";
 
 export const BookshelfSection: React.FC = () => {
   const { books, loading, error, fetchBooks } = useBooks();
   const { setRead } = useMarkRead();
-  const isDesktop = useMediaQuery("(min-width: 1024px)");
 
   const [overrides, setOverrides] = useState<ReadOverrides>({});
   const [dragging, setDragging] = useState<BookIndexEntry | null>(null);
@@ -125,28 +122,22 @@ export const BookshelfSection: React.FC = () => {
             </div>
           )}
 
-          {/* Desktop: gęsta ściana regałów. Wąski ekran: dwa regały stałej wysokości. */}
-          {isDesktop ? (
-            <LibraryWall
-              toRead={toRead} read={read} dragging={!!dragging}
+          {/* Dwa regały stałej wysokości: lewy „Do przeczytania", prawy zawsze
+              „Przeczytane" — drag&drop między nimi. Każdy paginowany (Regał N/M). */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Shelf
+              shelfId="toRead" title="Do przeczytania" accent="cyan" pageSize={3}
+              icon={<BookOpen className="w-4 h-4" />}
+              books={toRead} dragging={!!dragging}
               onDragStart={setDragging} onDragEnd={() => setDragging(null)} onDropBook={handleDrop}
             />
-          ) : (
-            <div className="grid grid-cols-1 gap-6">
-              <Shelf
-                shelfId="toRead" title="Do przeczytania" accent="cyan" pageSize={3}
-                icon={<BookOpen className="w-4 h-4" />}
-                books={toRead} dragging={!!dragging}
-                onDragStart={setDragging} onDragEnd={() => setDragging(null)} onDropBook={handleDrop}
-              />
-              <Shelf
-                shelfId="read" title="Przeczytane" accent="emerald" pageSize={3}
-                icon={<CheckCircle2 className="w-4 h-4" />}
-                books={read} dragging={!!dragging}
-                onDragStart={setDragging} onDragEnd={() => setDragging(null)} onDropBook={handleDrop}
-              />
-            </div>
-          )}
+            <Shelf
+              shelfId="read" title="Przeczytane" accent="emerald" pageSize={3}
+              icon={<CheckCircle2 className="w-4 h-4" />}
+              books={read} dragging={!!dragging}
+              onDragStart={setDragging} onDragEnd={() => setDragging(null)} onDropBook={handleDrop}
+            />
+          </div>
 
           <p className="text-center text-[10px] text-amber-200/40 uppercase tracking-widest font-bold mt-6">
             {all.length} woluminów · <span className="text-amber-400/70">●</span> = nagroda · najedź, by wysunąć grzbiet

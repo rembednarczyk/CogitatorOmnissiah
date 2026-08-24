@@ -271,19 +271,26 @@ export function hasAward(book: BookIndexEntry): boolean {
   return book.awards.length > 0;
 }
 
-const byAuthorTitle = (a: BookIndexEntry, b: BookIndexEntry) =>
-  (a.author || "").localeCompare(b.author || "", "pl") || displayTitle(a).localeCompare(displayTitle(b), "pl");
+/** Rok wydania jako liczba do sortowania; brak/niepoprawny → na koniec. */
+function pubYear(b: BookIndexEntry): number {
+  const y = Number(b.year);
+  return Number.isFinite(y) && y > 0 ? y : Infinity;
+}
+
+/** Porządek wg daty wydania (rosnąco, chronologicznie), remis → tytuł. */
+const byYearTitle = (a: BookIndexEntry, b: BookIndexEntry) =>
+  pubYear(a) - pubYear(b) || displayTitle(a).localeCompare(displayTitle(b), "pl");
 
 /**
  * Dzieli księgozbiór na dwie półki wg stanu „przeczytane" (z nadpisaniami),
- * każda posortowana wg autora → tytułu (naturalny porządek biblioteczny).
+ * każda posortowana wg **daty wydania** (rosnąco), remis → tytuł.
  */
 export function splitShelves(books: BookIndexEntry[], overrides: ReadOverrides = {}): Record<ShelfId, BookIndexEntry[]> {
   const read: BookIndexEntry[] = [];
   const toRead: BookIndexEntry[] = [];
   for (const b of books) (isRead(b, overrides) ? read : toRead).push(b);
-  read.sort(byAuthorTitle);
-  toRead.sort(byAuthorTitle);
+  read.sort(byYearTitle);
+  toRead.sort(byYearTitle);
   return { read, toRead };
 }
 
