@@ -68,29 +68,31 @@ body {
   --sk-room-flame: radial-gradient(circle at 50% 72%, #fff3c0, #ffb03a 55%, #ff6a00);
 }
 
-/* Holo+ — kolorystyka aplikacji (cyan/purpura na adamancie), mocne holo. */
+/* Holo+ — kolorystyka aplikacji: slate-950 + akcenty cyan-400/purpura-500. */
 .skin-holo {
   --noo-glow: 34, 211, 238; --noo-accent2: 168, 85, 247;
-  --sk-cab-bg: linear-gradient(150deg, #0f1b2e 0%, #0a1220 45%, #05090f 100%);
-  --sk-cornice-bg: linear-gradient(180deg, #123047 0%, #0b1a2b 60%, #060d17 100%);
-  --sk-well-bg: repeating-linear-gradient(90deg, #0a1422 0px, #0a1422 26px, #07101c 27px, #0a1422 28px), radial-gradient(120% 80% at 50% 0%, rgba(0,0,0,.1), rgba(0,0,0,.55));
-  --sk-plank-bg: linear-gradient(180deg, rgba(120,240,255,.40) 0, #1c5a72 1px, #0e3a4c 55%, #04101a 100%);
-  --sk-plate-bg: linear-gradient(180deg, rgba(12,40,54,.94), rgba(6,20,30,.94));
-  --sk-plate-text: #bdf2ff; --sk-plate-edge: #1e8fa8;
-  --sk-board-bg: linear-gradient(180deg, #7fe8ff, #22b8d8 40%, #0a5a68);
-  --sk-cog-ring: #5fdcff; --sk-cog-skull: #04141c; --sk-cog-disc: #061620;
-  --sk-seal-wax: radial-gradient(circle at 35% 30%, #7fe8ff, #1fa8c8 65%, #0a4a58);
-  --sk-plinth: linear-gradient(180deg, #123047, #060d17);
-  --sk-foot: linear-gradient(180deg, #0c1e30, #05090f);
-  /* Sala Archiwum (RoomDecor) — chłodna, cyan/adamant */
-  --sk-room-bg: linear-gradient(180deg, #0e1a2b 0%, #0a1424 55%, #060c16 100%), repeating-linear-gradient(90deg, rgba(120,220,255,.03) 0 2px, transparent 2px 130px);
-  --sk-room-inset: rgba(120,220,255,.08);
-  --sk-room-floor: linear-gradient(180deg, #12263a 0, #0b1826 40%, #05090f 100%);
-  --sk-room-cog: #2f7fa0; --sk-room-cog2: #5fd0e8;
-  --sk-room-pennant: linear-gradient(180deg, #123a4a, #0a2230);
-  --sk-room-mote: rgba(120,220,255,.4);
-  --sk-room-glow: rgba(60,200,240,.24);
-  --sk-room-flame: radial-gradient(circle at 50% 72%, #dffcff, #3fd0f0 55%, #1080c0);
+  /* korpus = slate-900 → slate-950 (jak karty/tło aplikacji) */
+  --sk-cab-bg: linear-gradient(150deg, #0f172a 0%, #0b1120 45%, #060a14 100%);
+  --sk-cornice-bg: linear-gradient(180deg, #1e293b 0%, #131c2e 60%, #0a111c 100%);
+  --sk-well-bg: repeating-linear-gradient(90deg, #0b1120 0px, #0b1120 26px, #070c17 27px, #0b1120 28px), radial-gradient(120% 80% at 50% 0%, rgba(0,0,0,.1), rgba(0,0,0,.55));
+  --sk-plank-bg: linear-gradient(180deg, rgba(34,211,238,.35) 0, #1e4a5e 1px, #14324a 55%, #060a14 100%);
+  --sk-plate-bg: linear-gradient(180deg, rgba(15,23,42,.94), rgba(2,6,23,.94));
+  --sk-plate-text: #a5f0fc; --sk-plate-edge: #1e7a99;
+  --sk-board-bg: linear-gradient(180deg, #67e8f9, #22d3ee 40%, #0e7490);
+  --sk-cog-ring: #22d3ee; --sk-cog-skull: #04101c; --sk-cog-disc: #060a14;
+  /* pieczęć w akcencie purpurowym aplikacji */
+  --sk-seal-wax: radial-gradient(circle at 35% 30%, #c084fc, #a855f7 65%, #6b21a8);
+  --sk-plinth: linear-gradient(180deg, #0f172a, #060a14);
+  --sk-foot: linear-gradient(180deg, #0b1120, #03060f);
+  /* Sala Archiwum (RoomDecor) — zlewa się z tłem aplikacji (slate-950) */
+  --sk-room-bg: linear-gradient(180deg, #0a0f1c 0%, #060a14 55%, #020510 100%), repeating-linear-gradient(90deg, rgba(34,211,238,.03) 0 2px, transparent 2px 130px);
+  --sk-room-inset: rgba(34,211,238,.08);
+  --sk-room-floor: linear-gradient(180deg, #0e1626 0, #070c16 40%, #02050d 100%);
+  --sk-room-cog: #1e6a8c; --sk-room-cog2: #22d3ee;
+  --sk-room-pennant: linear-gradient(180deg, #3b1d6b, #241243);
+  --sk-room-mote: rgba(34,211,238,.4);
+  --sk-room-glow: rgba(34,211,238,.22);
+  --sk-room-flame: radial-gradient(circle at 50% 72%, #cffafe, #22d3ee 55%, #0e7490);
 }
 
 @keyframes noo-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
