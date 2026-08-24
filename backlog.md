@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.17.4** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.18.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -62,6 +62,15 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.18.0** — **Sala Archiwum**: regały stoją w POKOJU zamiast jednej długiej listy 700 pozycji.
+  `RoomDecor` — ciepły skryptorium (drewniana ściana z panelami, podłoga, kinkiety z migoczącym
+  światłem `motion`, kurz, proporzec, sygil koła zębatego, winieta; `aria-hidden`). Regały mają
+  **stałą wysokość** (`Shelf` prop `pageSize=3` rzędy) i dzielą się na **segmenty „Regał I/N"** ze
+  strzałkami; brakujące rzędy dopełniane pustą deską (stała wysokość); świeca na szczycie + cokół/
+  nóżki („stoi na podłodze"). Wspólny builder `buildShelfItems` + `chunk` (`utils/shelfLayout.ts`),
+  render rzędu wyjęty do `ShelfRow`/`EmptyShelfRow`. Fizyka książek NIETKNIĘTA. +3 testy (`chunk`).
+  Weryfikacja mockiem-screenshotem. Wybór usera: ciepły / bogato / segmenty po kolei. **Iteracja 1** —
+  możliwe rozszerzenie do gęstej poziomej ściany wielu regałów.
 - **1.17.4** — **Brak powietrza między stojącymi książkami — luz pogrubia grzbiety**. Zamiast wkładać
   luz w szczeliny, `layoutRow` po oparciu pochyłych POGRUBIA stojące grzbiety (`PackItem.stretch`,
   water-filling `widenEvenly`, waga ~ długość tytułu → dłuższy tytuł = grubsza książka). Książki się

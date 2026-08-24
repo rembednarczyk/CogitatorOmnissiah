@@ -59,6 +59,18 @@ expressed as rules. They are enforced by pure, unit-tested helpers (`utils/books
     drop writes read-state back to Notion (§4). Read/`toRead` split and per-book optimistic move are
     unchanged by any of the above.
 
+## 1b. Sala Archiwum (room view)
+The shelves live inside a **warm scriptorium room** (`RoomDecor`, `aria-hidden`): a wooden panelled
+wall, floor, wall sconces with a flickering flame and warm glow (`motion`), drifting dust motes, a
+pennant, a faint Mechanicus cog watermark, and a vignette. Purely decorative — it never touches the
+book physics.
+
+Each shelf is a **fixed-height bookcase**: `Shelf` takes a `pageSize` (rows per bookcase) and slices
+its packed rows into segments **"Regał I / N"** navigated with ◄ ► arrows; short pages are padded with
+empty planks so the bookcase height is constant, and a candle + plinth/feet make it "stand on the
+floor". This replaces the single ~700-tall list — you page through Regały instead. The row builder is
+shared (`buildShelfItems` + `chunk` in `utils/shelfLayout.ts`; one row → `ShelfRow`).
+
 ## 2. Data
 - Reuses **`GET /api/books`** (`BookIndexEntry[]`, see [skryptorium-search.md](./skryptorium-search.md)) —
   the same slim index the search uses. Read state is derived from the `zrodlo` (Źródło) tag
