@@ -55,7 +55,7 @@ export const StatusSection: React.FC<StatusSectionProps> = ({ configStatus }) =>
                 transition={{ delay: 0.2 + idx * 0.1 }}
                 className="flex items-center gap-4 p-4 rounded-2xl bg-slate-950/50 border border-slate-800/50"
               >
-                <div className={`w-3 h-3 rounded-full shadow-[0_0_10px_rgba(0,0,0,0.5)] ${item.status ? 'bg-cyan-500 shadow-cyan-500/50' : 'bg-red-600 shadow-red-600/50'}`} />
+                <div className={`w-3 h-3 rounded-full shadow-[0_0_10px_rgba(0,0,0,0.5)] ${item.status ? 'bg-emerald-500 shadow-emerald-500/50' : 'bg-red-600 shadow-red-600/50'}`} />
                 <div>
                   <div className="text-xs font-bold text-slate-500 uppercase tracking-tighter mb-1">{item.label}</div>
                   <div className={`text-sm font-bold ${item.status ? 'text-slate-200' : 'text-red-400'}`}>

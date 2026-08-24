@@ -28,7 +28,7 @@ export const IntegrityCheckCard: React.FC<IntegrityCheckCardProps> = ({
         [ ZATWIERDZONO ]
       </div>
     ) : (
-      <div className="flex items-center gap-2 text-rose-400 font-bold text-[9px] uppercase tracking-widest bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/20 animate-pulse">
+      <div className="flex items-center gap-2 text-red-400 font-bold text-[9px] uppercase tracking-widest bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/20 animate-pulse">
         <AlertTriangle className="w-2.5 h-2.5" />
         [ HEREZJA ]
       </div>
@@ -101,7 +101,7 @@ export const IntegrityCheckCard: React.FC<IntegrityCheckCardProps> = ({
               onClick={() => toggleExpand(check.id)}
               aria-expanded={expanded === check.id}
               className={`w-full flex flex-col p-2 rounded-xl border transition-all cursor-pointer text-left ${
-                result ? (check.status ? 'bg-emerald-500/5 border-emerald-500/10' : 'bg-rose-500/5 border-rose-500/20 animate-pulse') : 'bg-slate-950/30 border-slate-800/50'
+                result ? (check.status ? 'bg-emerald-500/5 border-emerald-500/10' : 'bg-red-500/5 border-red-500/20 animate-pulse') : 'bg-slate-950/30 border-slate-800/50'
               } hover:border-slate-600`}
             >
               <div className="flex items-center justify-between gap-2">
@@ -136,7 +136,7 @@ export const IntegrityCheckCard: React.FC<IntegrityCheckCardProps> = ({
       </div>
 
       {state.error && (
-        <div className="mt-3 p-2 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-400 text-[9px] font-medium flex items-center gap-2">
+        <div className="mt-3 p-2 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-[9px] font-medium flex items-center gap-2">
           <AlertTriangle className="w-3 h-3 shrink-0" />
           <span className="truncate">{state.error}</span>
         </div>
