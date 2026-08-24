@@ -1,9 +1,11 @@
 import React from "react";
 import { BookIndexEntry } from "../../types";
-import { ShelfSlot, spineStyle, SHELF_ROW_H, SHELF_PLANK_H } from "../../utils/bookshelf";
+import { spineStyle, SHELF_ROW_H, SHELF_PLANK_H } from "../../utils/bookshelf";
+import { RenderSlot } from "../../utils/shelfLayout";
 import { PlacedItem } from "../../utils/shelfPacking";
 import { BookSpine } from "./BookSpine";
 import { BookStack } from "./BookStack";
+import { ShelfDivider } from "./ShelfDivider";
 
 export const PLANK_STYLE: React.CSSProperties = {
   height: SHELF_PLANK_H,
@@ -14,7 +16,7 @@ export const PLANK_STYLE: React.CSSProperties = {
 
 interface Props {
   row: PlacedItem[];
-  slotByKey: Map<string, ShelfSlot>;
+  slotByKey: Map<string, RenderSlot>;
   onDragStart: (book: BookIndexEntry) => void;
   onDragEnd: () => void;
 }
@@ -25,6 +27,13 @@ export const ShelfRow: React.FC<Props> = ({ row, slotByKey, onDragStart, onDragE
     <div className="relative" style={{ height: SHELF_ROW_H }}>
       {row.map((p) => {
         const slot = slotByKey.get(p.key)!;
+        if (slot.kind === "divider") {
+          return (
+            <div key={p.key} className="absolute bottom-0" style={{ left: p.x }}>
+              <ShelfDivider label={slot.label} />
+            </div>
+          );
+        }
         if (slot.kind === "stack") {
           return (
             <div key={p.key} className="absolute bottom-0" style={{ left: p.x }}>

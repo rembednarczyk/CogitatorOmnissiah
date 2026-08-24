@@ -1,6 +1,6 @@
 import React from "react";
 import { BookIndexEntry } from "../../types";
-import { spineStyle, layoutStack, displayTitle, hasAward } from "../../utils/bookshelf";
+import { spineStyle, layoutStack, displayTitle, awardWins } from "../../utils/bookshelf";
 
 interface Props {
   books: BookIndexEntry[];          // każda warstwa to OSOBNA prawdziwa książka
@@ -22,6 +22,7 @@ export const BookStack: React.FC<Props> = ({ books, onDragStart, onDragEnd }) =>
     <div className="relative shrink-0 flex flex-col-reverse items-start" style={{ width: cellW }}>
       {layers.map(({ book, width, fontSize, thickness, lines, x }, i) => {
         const color = spineStyle(book).color;
+        const wins = awardWins(book);
         return (
           <div
             key={book.id}
@@ -43,7 +44,8 @@ export const BookStack: React.FC<Props> = ({ books, onDragStart, onDragEnd }) =>
             <span className="absolute top-[2px] bottom-[2px] right-[2px] w-[3px] rounded-[1px] bg-gradient-to-b from-amber-50/70 via-amber-100/40 to-amber-50/70" aria-hidden />
             {/* PEŁNY tytuł wzdłuż grzbietu — zawijany do max 2 linii zamiast poszerzania */}
             <span
-              className={`absolute inset-y-0 right-3 flex items-center font-bold text-white/90 ${hasAward(book) ? "left-3.5" : "left-2"}`}
+              className="absolute inset-y-0 right-3 flex items-center font-bold text-white/90"
+              style={{ left: wins.length ? 6 + wins.length * 7 : 8 }}
             >
               <span
                 style={{
@@ -60,8 +62,12 @@ export const BookStack: React.FC<Props> = ({ books, onDragStart, onDragEnd }) =>
                 {displayTitle(book)}
               </span>
             </span>
-            {hasAward(book) && (
-              <span className="absolute top-1/2 -translate-y-1/2 left-1 w-[7px] h-[7px] rounded-full bg-amber-400 shadow-[0_0_5px_rgba(251,191,36,.85)]" title="Nagroda / nominacja" />
+            {wins.length > 0 && (
+              <span className="absolute top-1/2 -translate-y-1/2 left-1 flex items-center gap-[2px]" title={wins.map((w) => w.label).join(" · ")}>
+                {wins.map((w) => (
+                  <span key={w.key} className="w-[6px] h-[6px] rounded-full" style={{ background: w.color, boxShadow: `0 0 5px ${w.color}` }} />
+                ))}
+              </span>
             )}
           </div>
         );

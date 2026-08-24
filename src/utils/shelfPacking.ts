@@ -17,7 +17,7 @@ import { MAX_LEAN_DEG } from "./bookshelf";
 
 export interface PackItem {
   key: string;
-  kind: "spine" | "stack";
+  kind: "spine" | "stack" | "divider";
   bw: number;          // szerokość podstawy (footprint na półce), px
   h: number;           // wysokość widoczna (jako podpora dla sąsiada), px
   leanDir: -1 | 0 | 1; // zamierzony kierunek pochylenia (−1 w lewo, +1 w prawo, 0 brak)
@@ -26,7 +26,7 @@ export interface PackItem {
 
 export interface PlacedItem {
   key: string;
-  kind: "spine" | "stack";
+  kind: "spine" | "stack" | "divider";
   bw: number;
   w: number;           // szerokość do wyrenderowania (≥ bw — po ewentualnym pogrubieniu)
   x: number;           // lewa krawędź, px

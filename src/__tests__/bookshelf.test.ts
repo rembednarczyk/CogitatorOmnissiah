@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { BookIndexEntry } from "../types";
-import { isRead, spineStyle, planShelf, MAX_LEAN_DEG, LEAN_TOWARD, spineFontSize, flatBookLayout, FLAT_MAX_W, layoutStack, stackAlign, stackChaos, splitShelves, featuredReads, CLOTH_PALETTE, READ_TAG, shelfPlankBackground, SHELF_ROW_H, SHELF_PLANK_H, SHELF_ROW_GAP } from "../utils/bookshelf";
+import { isRead, spineStyle, planShelf, MAX_LEAN_DEG, LEAN_TOWARD, spineFontSize, flatBookLayout, FLAT_MAX_W, layoutStack, stackAlign, stackChaos, splitShelves, featuredReads, awardWins, hasAward, CLOTH_PALETTE, READ_TAG, shelfPlankBackground, SHELF_ROW_H, SHELF_PLANK_H, SHELF_ROW_GAP } from "../utils/bookshelf";
 
 const mk = (over: Partial<BookIndexEntry>): BookIndexEntry => ({
   id: over.id ?? over.plTitle ?? "x", plTitle: "", origTitle: "", author: "", year: "",
@@ -200,6 +200,28 @@ describe("bookshelf.shelfPlankBackground", () => {
   });
 });
 
+describe("bookshelf.awardWins (color-code, bez nominacji)", () => {
+  it("counts only wins, color-coded, in Hugo→Nebula→Locus order", () => {
+    const w = awardWins(mk({ awards: ["Nagroda Locus", "Nagroda Hugo"] }));
+    expect(w.map((x) => x.key)).toEqual(["hugo", "locus"]);
+    expect(w[0].color).toMatch(/^#/);
+    expect(w[0].label).toBe("Hugo");
+  });
+  it("ignores nominations entirely", () => {
+    expect(awardWins(mk({ awards: ["Nominacja Hugo", "Nominacja Nebula"] }))).toEqual([]);
+    expect(hasAward(mk({ awards: ["Nominacja Hugo"] }))).toBe(false);
+    // wygrana + nominacja → tylko wygrana
+    expect(awardWins(mk({ awards: ["Nominacja Hugo", "Nagroda Nebula"] })).map((x) => x.key)).toEqual(["nebula"]);
+  });
+  it("treats Wszystkie as all three wins, deduped", () => {
+    expect(awardWins(mk({ awards: ["Wszystkie", "Nagroda Hugo"] })).map((x) => x.key)).toEqual(["hugo", "nebula", "locus"]);
+  });
+  it("no awards → empty", () => {
+    expect(awardWins(mk({ awards: [] }))).toEqual([]);
+    expect(hasAward(mk({ awards: [] }))).toBe(false);
+  });
+});
+
 describe("bookshelf.splitShelves", () => {
   const books = [
     mk({ id: "1", plTitle: "B", author: "Lem", year: "1970", zrodlo: [READ_TAG] }),
@@ -249,7 +271,7 @@ describe("bookshelf.featuredReads", () => {
 
   it("respects the limit", () => {
     const many = Array.from({ length: 20 }, (_, i) =>
-      mk({ id: String(i), plTitle: `T${i}`, zrodlo: [READ_TAG], awards: ["Nagroda X"], year: String(2000 + i) }));
+      mk({ id: String(i), plTitle: `T${i}`, zrodlo: [READ_TAG], awards: ["Nagroda Hugo"], year: String(2000 + i) }));
     expect(featuredReads(many, {}, 5)).toHaveLength(5);
   });
 });
