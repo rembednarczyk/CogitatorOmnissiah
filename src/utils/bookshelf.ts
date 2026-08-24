@@ -73,8 +73,8 @@ export const MAX_LEAN_DEG = 6;
 /**
  * Planuje sloty dla posortowanej listy woluminów. Decyzja per książka jest
  * deterministyczna (hasz tytułu); kupkę tworzy kilka KOLEJNYCH prawdziwych
- * książek (starter „pożera" następne). ~80 % stoi prosto, ~12 % lekko przechylone,
- * reszta ląduje w kupkach po 4–7 realnych woluminów.
+ * książek (starter „pożera" następne). Zdecydowana większość stoi prosto,
+ * ~12 % lekko przechylone, a kupki (po 4–7 realnych woluminów) są rzadkie.
  *
  * Reguły ułożenia:
  * - **dwie kupki nigdy nie sąsiadują** (po kupce następny slot to zawsze grzbiet),
@@ -89,8 +89,8 @@ export function planShelf(books: BookIndexEntry[]): ShelfSlot[] {
     const b = books[i];
     const x = seed(b);
     const sel = x % 100;
-    // Kupka tylko gdy: los trafił, są ≥2 książki i poprzedni slot NIE był kupką.
-    if (sel >= 92 && books.length - i >= 2 && !prevWasStack) {
+    // Kupka tylko gdy: los trafił (rzadko), są ≥2 książki i poprzedni slot NIE był kupką.
+    if (sel >= 95 && books.length - i >= 2 && !prevWasStack) {
       const size = Math.min(4 + ((x >>> 17) % 4), books.length - i); // 4–7 realnych książek
       slots.push({ kind: "stack", books: books.slice(i, i + size) });
       i += size;
@@ -164,7 +164,7 @@ export const FLAT_MAX_W = 150;
  * szersza). Bardzo długi tytuł dodatkowo zmniejsza czcionkę, aż połowa zmieści
  * się w jednej linii (2 linie zawsze wystarczą). Nic nie jest ucinane.
  */
-export function flatBookLayout(book: BookIndexEntry, _style: SpineStyle): FlatBookLayout {
+export function flatBookLayout(book: BookIndexEntry): FlatBookLayout {
   const len = Math.max(1, displayTitle(book).length);
   const PAD_X = 20;                       // lewy margines tekstu + prawa krawędź kartek
   const availW = FLAT_MAX_W - PAD_X;
@@ -183,6 +183,64 @@ export function flatBookLayout(book: BookIndexEntry, _style: SpineStyle): FlatBo
   const lineH = fontSize + 1;
   const thickness = Math.min(24, Math.max(15, lines * lineH + 4));
   return { width, fontSize, thickness, lines };
+}
+
+// ─── Ułożenie kupki ───────────────────────────────────────────────────────
+export type StackAlign = "left" | "right" | "center";
+
+function stackSeed(books: BookIndexEntry[]): number {
+  return mix32((seed(books[0]) ^ Math.imul(books.length, 0x9e3779b1)) >>> 0);
+}
+
+/**
+ * Wyrównanie kupki: **często do lewej, często do prawej, BARDZO RZADKO symetryczna
+ * piramida** (center). Deterministyczne z pierwszej książki + rozmiaru kupki.
+ */
+export function stackAlign(books: BookIndexEntry[]): StackAlign {
+  const s = stackSeed(books) % 100;
+  if (s < 45) return "left";
+  if (s < 90) return "right";
+  return "center"; // ~10 %
+}
+
+/** Poziom „chaosu" ułożenia w px: 0 = równo, ~⅓ kupek dostaje 3–7 px rozjazdu. */
+export function stackChaos(books: BookIndexEntry[]): number {
+  const s = mix32(stackSeed(books) ^ 0x85ebca6b);
+  return (s % 100) < 34 ? 3 + (s % 5) : 0;
+}
+
+/** Deterministyczny luz pojedynczej książki w kupce, znormalizowany do [-1, 1). */
+export function layerJitter(book: BookIndexEntry): number {
+  const s = mix32(seed(book) ^ 0xc2b2ae35);
+  return ((s % 1000) / 500) - 1;
+}
+
+export interface StackLayoutLayer extends FlatBookLayout { book: BookIndexEntry; x: number }
+export interface StackLayout { cellW: number; align: StackAlign; chaos: number; layers: StackLayoutLayer[] }
+
+/**
+ * Pełne ułożenie kupki: sortuje książki **od największej (dół) do najmniejszej
+ * (góra)**, wybiera wyrównanie (`stackAlign`) i poziom chaosu (`stackChaos`),
+ * i liczy poziomy offset `x` każdej warstwy. Gwarancja: `0 ≤ x ≤ cellW − width`
+ * (nic nie wystaje poza komórkę → brak nachodzenia na sąsiednie sloty).
+ * `layers[0]` to spód kupki (renderować przez `flex-col-reverse`).
+ */
+export function layoutStack(books: BookIndexEntry[]): StackLayout {
+  const align = stackAlign(books);
+  const chaos = stackChaos(books);
+  const sorted = books
+    .map((b) => ({ book: b, ...flatBookLayout(b) }))
+    .sort((a, b) => b.width - a.width || b.thickness - a.thickness || a.book.id.localeCompare(b.book.id));
+  const maxW = Math.max(...sorted.map((l) => l.width));
+  const cellW = maxW + 2 * chaos;
+  const layers = sorted.map((l) => {
+    const slack = cellW - l.width;
+    let x = align === "left" ? chaos : align === "right" ? slack - chaos : slack / 2;
+    x += layerJitter(l.book) * chaos;
+    x = Math.max(0, Math.min(slack, x));
+    return { ...l, x };
+  });
+  return { cellW, align, chaos, layers };
 }
 
 /** Tytuł do pokazania (polski, a gdy brak — oryginalny). */

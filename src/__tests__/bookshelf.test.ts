@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { BookIndexEntry } from "../types";
-import { isRead, spineStyle, planShelf, leanLayout, MAX_LEAN_DEG, LEAN_TOWARD, spineFontSize, flatBookLayout, FLAT_MAX_W, splitShelves, featuredReads, CLOTH_PALETTE, READ_TAG, shelfPlankBackground, SHELF_ROW_H, SHELF_PLANK_H, SHELF_ROW_GAP } from "../utils/bookshelf";
+import { isRead, spineStyle, planShelf, leanLayout, MAX_LEAN_DEG, LEAN_TOWARD, spineFontSize, flatBookLayout, FLAT_MAX_W, layoutStack, stackAlign, stackChaos, splitShelves, featuredReads, CLOTH_PALETTE, READ_TAG, shelfPlankBackground, SHELF_ROW_H, SHELF_PLANK_H, SHELF_ROW_GAP } from "../utils/bookshelf";
 
 const mk = (over: Partial<BookIndexEntry>): BookIndexEntry => ({
   id: over.id ?? over.plTitle ?? "x", plTitle: "", origTitle: "", author: "", year: "",
@@ -143,11 +143,11 @@ describe("bookshelf.title sizing (pełne nazwy)", () => {
     }
   });
   it("flatBookLayout wraps long titles to 2 lines instead of widening past the cap", () => {
-    const short = flatBookLayout(mk({ plTitle: "Ubik" }), style);
+    const short = flatBookLayout(mk({ plTitle: "Ubik" }));
     expect(short.lines).toBe(1);
     expect(short.width).toBeLessThanOrEqual(FLAT_MAX_W);
 
-    const long = flatBookLayout(mk({ plTitle: "Hyperion i jego długa, rozwlekła kontynuacja opowieści" }), style);
+    const long = flatBookLayout(mk({ plTitle: "Hyperion i jego długa, rozwlekła kontynuacja opowieści" }));
     expect(long.lines).toBe(2);                 // zawija, nie poszerza
     expect(long.width).toBe(FLAT_MAX_W);        // szerokość zaczepiona na limicie
     expect(long.thickness).toBeGreaterThan(short.thickness); // 2 linie → trochę grubsza
@@ -162,6 +162,48 @@ describe("bookshelf.title sizing (pełne nazwy)", () => {
       const availW = FLAT_MAX_W - 20;
       expect(Math.ceil((l === long ? "Hyperion i jego długa, rozwlekła kontynuacja opowieści".length : 4) * 0.6 * l.fontSize / l.lines)).toBeLessThanOrEqual(availW);
     }
+  });
+});
+
+describe("bookshelf.layoutStack (wyrównanie + chaos)", () => {
+  const mkBooks = (prefix: string, n: number) =>
+    Array.from({ length: n }, (_, i) => mk({ id: `${prefix}${i}`, plTitle: `${prefix} tom ${i}` }));
+
+  it("sorts largest at the bottom (layers[0]) down to smallest at the top", () => {
+    const { layers } = layoutStack(mkBooks("A", 6));
+    for (let i = 1; i < layers.length; i++) {
+      expect(layers[i - 1].width).toBeGreaterThanOrEqual(layers[i].width);
+    }
+  });
+
+  it("keeps every layer fully inside the cell (0 ≤ x ≤ cellW − width) — no overhang", () => {
+    for (let s = 0; s < 200; s++) {
+      const { cellW, layers } = layoutStack(mkBooks(`S${s}_`, 4 + (s % 4)));
+      for (const l of layers) {
+        expect(l.x).toBeGreaterThanOrEqual(-1e-9);
+        expect(l.x + l.width).toBeLessThanOrEqual(cellW + 1e-9);
+      }
+    }
+  });
+
+  it("aligns left / right often and symmetric (center) only rarely", () => {
+    const counts = { left: 0, right: 0, center: 0 } as Record<string, number>;
+    for (let s = 0; s < 600; s++) counts[stackAlign(mkBooks(`Z${s}_`, 4))]++;
+    expect(counts.center).toBeLessThan(counts.left);   // piramida rzadka
+    expect(counts.center).toBeLessThan(counts.right);
+    expect(counts.left).toBeGreaterThan(0);
+    expect(counts.right).toBeGreaterThan(0);
+  });
+
+  it("chaos is 0 for most stacks, else a small 3–7 px offset", () => {
+    let chaotic = 0;
+    for (let s = 0; s < 600; s++) {
+      const c = stackChaos(mkBooks(`C${s}_`, 4));
+      expect(c === 0 || (c >= 3 && c <= 7)).toBe(true);
+      if (c > 0) chaotic++;
+    }
+    expect(chaotic).toBeGreaterThan(0);
+    expect(chaotic).toBeLessThan(600 / 2); // większość równa
   });
 });
 
