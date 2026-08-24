@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.22.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.22.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -62,6 +62,10 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.22.1** — **Skóra obejmuje też Salę Archiwum (`RoomDecor`).** Tło pokoju (ściana, podłoga,
+  znak wodny koła, proporzec, kurz, płomień + poświata kinkietów) czyta `--sk-room-*` — Holo+ dostaje
+  chłodną salę cyan/adamant, Relikwiarz zostaje ciepły mosiądz. `CogMark` maluje kolor przez `style`
+  (atrybut `fill` nie rozwiązuje `var()`). Nowe tokeny `--sk-room-{bg,inset,floor,cog,cog2,pennant,mote,glow,flame}`.
 - **1.22.0** — **Dwie skóry regału + przełącznik (Holo+ domyślnie).** Skóry sterowane WYŁĄCZNIE
   zmiennymi CSS (`.skin-holo` / `.skin-noospheric` w `index.css`: `--sk-*` gradienty/kolory +
   `--noo-glow`/`--noo-accent2` triplety RGB używane przez keyframes i inline `rgba(var(--noo-glow),a)`),

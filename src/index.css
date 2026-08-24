@@ -57,6 +57,15 @@ body {
   --sk-seal-wax: radial-gradient(circle at 35% 30%, #a83246, #6d1526 65%, #3f0a15);
   --sk-plinth: linear-gradient(180deg, #3a2915, #1c1108);
   --sk-foot: linear-gradient(180deg, #2a1c0f, #120b06);
+  /* Sala Archiwum (RoomDecor) — ciepła */
+  --sk-room-bg: linear-gradient(180deg, #2a2018 0%, #241b12 55%, #1b140d 100%), repeating-linear-gradient(90deg, rgba(255,220,170,.03) 0 2px, transparent 2px 130px);
+  --sk-room-inset: rgba(255,220,170,.08);
+  --sk-room-floor: linear-gradient(180deg, #3a2a19 0, #241a10 40%, #150e07 100%);
+  --sk-room-cog: #c8961f; --sk-room-cog2: #d9b45a;
+  --sk-room-pennant: linear-gradient(180deg, #5b1f2a, #3a121a);
+  --sk-room-mote: rgba(251,224,175,.4);
+  --sk-room-glow: rgba(255,165,70,.24);
+  --sk-room-flame: radial-gradient(circle at 50% 72%, #fff3c0, #ffb03a 55%, #ff6a00);
 }
 
 /* Holo+ — kolorystyka aplikacji (cyan/purpura na adamancie), mocne holo. */
@@ -73,6 +82,15 @@ body {
   --sk-seal-wax: radial-gradient(circle at 35% 30%, #7fe8ff, #1fa8c8 65%, #0a4a58);
   --sk-plinth: linear-gradient(180deg, #123047, #060d17);
   --sk-foot: linear-gradient(180deg, #0c1e30, #05090f);
+  /* Sala Archiwum (RoomDecor) — chłodna, cyan/adamant */
+  --sk-room-bg: linear-gradient(180deg, #0e1a2b 0%, #0a1424 55%, #060c16 100%), repeating-linear-gradient(90deg, rgba(120,220,255,.03) 0 2px, transparent 2px 130px);
+  --sk-room-inset: rgba(120,220,255,.08);
+  --sk-room-floor: linear-gradient(180deg, #12263a 0, #0b1826 40%, #05090f 100%);
+  --sk-room-cog: #2f7fa0; --sk-room-cog2: #5fd0e8;
+  --sk-room-pennant: linear-gradient(180deg, #123a4a, #0a2230);
+  --sk-room-mote: rgba(120,220,255,.4);
+  --sk-room-glow: rgba(60,200,240,.24);
+  --sk-room-flame: radial-gradient(circle at 50% 72%, #dffcff, #3fd0f0 55%, #1080c0);
 }
 
 @keyframes noo-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
