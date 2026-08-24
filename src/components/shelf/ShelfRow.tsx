@@ -28,9 +28,10 @@ export const ShelfRow: React.FC<Props> = ({ row, slotByKey, onDragStart, onDragE
       {row.map((p) => {
         const slot = slotByKey.get(p.key)!;
         if (slot.kind === "divider") {
+          // z-15: tabliczka u góry + deseczka malują się PONAD granicznymi grzbietami.
           return (
-            <div key={p.key} className="absolute bottom-0" style={{ left: p.x }}>
-              <ShelfDivider label={slot.label} />
+            <div key={p.key} className="absolute bottom-0" style={{ left: p.x, zIndex: 15 }}>
+              <ShelfDivider label={slot.label} width={p.w} />
             </div>
           );
         }

@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.20.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.20.2** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -62,6 +62,12 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.20.2** — **Przekładka dekady = deseczka + tabliczka u góry** (wariant A). Zamiast dużej
+  pionowej tabliczki (34×156): cienka **deseczka** (`DIVIDER_W` 34→10) stojąca między dekadami
+  na dole toru + pozioma **tabliczka rocznika** u góry półki, wyrównana do początku zakresu
+  (tylko przy pierwszym pojawieniu dekady — kontynuacja na nowym rzędzie bez podpisu). `ShelfDivider`
+  przepisany (deseczka + tabliczka top-0, `BOARD_H`=`DIVIDER_H`=168 jako podpora fizyki);
+  `ShelfRow` daje przekładce `z-15` (maluje się ponad granicznymi grzbietami). Fizyka NIETKNIĘTA.
 - **1.20.1** — **Pola wielodatowe wpadają w dekadę** (nie „bez daty"). `parseYear(year)` w
   `bookshelf.ts` wyciąga pierwszy 4-cyfrowy rok z pola (`/\d{4}/`, `null` gdy brak); używany
   przez `decadeOf` (sortowanie tabliczek dekad) i `pubYear` (sort po dacie). Np. „1965/1966",

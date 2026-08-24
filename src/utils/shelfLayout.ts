@@ -5,8 +5,8 @@ import { PackItem } from "./shelfPacking";
 /** Slot do renderu: wolumin/kupka (`ShelfSlot`) albo tabliczka-przekładka sekcji. */
 export type RenderSlot = ShelfSlot | { kind: "divider"; label: string };
 
-const DIVIDER_W = 34;
-const DIVIDER_H = 156;
+const DIVIDER_W = 10;   // cienka deseczka (footprint na półce)
+const DIVIDER_H = 168;  // = BOARD_H w ShelfDivider — realna podpora dla pochyłego sąsiada
 
 /** Dekada roku wydania (np. 1954 → 1950); pola wielodatowe → pierwszy rok; brak → `null`. */
 export function decadeOf(year: string): number | null {
@@ -22,7 +22,8 @@ export function decadeLabel(dec: number | null): string {
 /**
  * Buduje `PackItem[]` (do fizyki `packAndLayout`) i mapę `slotByKey` (do renderu).
  * Woluminy przychodzą już posortowane po dacie wydania; na **granicy każdej dekady**
- * wstawiamy tabliczkę-przekładkę (`divider`). Kupki nie przekraczają granicy dekady
+ * wstawiamy przekładkę (`divider`) — cienką deseczkę na półce z poziomą tabliczką
+ * rocznika u góry (render: `ShelfDivider`). Kupki nie przekraczają granicy dekady
  * (planShelf liczony osobno per dekada). Wspólne dla wszystkich widoków regału.
  */
 export function buildShelfItems(books: BookIndexEntry[]): { items: PackItem[]; slotByKey: Map<string, RenderSlot> } {
