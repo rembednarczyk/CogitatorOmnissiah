@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.16.7** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.17.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -62,6 +62,14 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.17.0** — **Fizyka regału** (nowy `utils/shelfPacking.ts`): (1) **każda półka wypełniona** —
+  `Shelf` mierzy szerokość (`ResizeObserver`), pakuje woluminy w rzędy i rozdziela luz tak, że rząd
+  spina lewą i prawą krawędź (bez dziury na końcu); (2) **pochylenie z podparciem** — książka pochyla
+  się TYLKO gdy ma szczelinę do oparcia; kąt `θ=atan(szczelina/wys_podpory)` (≤MAX_LEAN, pivot w rogu
+  podstawy od strony podpory) → wierzch dosięga górnej krawędzi sąsiada/kupki, nie wisi bezwładnie.
+  Rząd ciasny → książki stoją prosto (emergentna fizyka). Render przeszedł z flex-wrap na własne
+  rzędy z deską per-rząd; usunięty martwy `leanLayout`. `layoutStack` zwraca `height` (podpora).
+  +8 testów fizyki (fill, kąt oparcia, brak pochyłu przy 0-luzie i na krawędzi). Screenshot OK.
 - **1.16.7** — Kupki: **mniej ich** (próg `planShelf` 92→95 → ~5%) + **zmienne ułożenie**. Nowy pure
   `layoutStack(books)` (+`stackAlign`/`stackChaos`/`layerJitter`): wyrównanie kupki często do lewej,
   często do prawej, **bardzo rzadko symetryczna piramida** (center ~10%), plus opcjonalny „chaos"

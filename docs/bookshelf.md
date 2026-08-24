@@ -51,11 +51,24 @@ title, dark back-panel with vertical planks, brass corner brackets and a hanging
   one **wraps to two lines** (the book gets a touch thicker, not wider — `lines` in the return);
   a very long title also shrinks the font until half fits on a line (two lines always suffice).
   `BookStack` renders the title with `-webkit-line-clamp`.
-- **`leanLayout(style, deg)`** — enforces the **no-overlap rule** for a tilted spine: the cell
-  reserves the *rotated* width (`cellW = W·cosθ + H·sinθ`) and offsets it (`shiftX`) so the rotated
-  box is centred, keeping the volume inside its own track (the `column-gap` between cells is
-  preserved). `deg === 0` → plain spine width. Unit-tested by checking all four rotated corners fall
-  within `±cellW/2`.
+- **`layoutStack(books)`** also returns the stack **`height`** (sum of layer thicknesses), used as a
+  support height when a neighbouring spine leans onto the pile.
+
+## 3a. Shelf physics (`src/utils/shelfPacking.ts`, unit-tested)
+`Shelf` measures its inner width (`ResizeObserver`) and lays out volumes with real packing instead of
+CSS `flex-wrap`, so two physical rules hold:
+- **Every shelf is filled — no end gap.** `packRows` greedily fills each row; `layoutRow` distributes
+  the row's leftover width so the first volume starts at the left edge and the last ends at the right
+  edge (`x = 0 … rowWidth`). A tight row has no slack; a sparse row spreads to fill.
+- **A leaning book rests on its support, never floats.** A book leans **only when there is a gap to
+  lean into**, at exactly `θ = atan(gap / supportHeight)` (capped at `MAX_LEAN_DEG`, pivoting at the
+  base corner on the support side). That angle makes the book's face meet the top corner of the
+  neighbour/pile it leans toward — it rests on it. No gap → the book stands straight (packed tight →
+  upright, emergent physics). Edge volumes never lean outward (no support beyond the row edge).
+
+`planShelf` supplies each spine's intended lean **direction** (sign); the **angle** is derived at
+layout time from the actual gap. Each row is rendered as an absolutely-positioned band of height
+`SHELF_ROW_H` with its own wooden plank beneath it.
 - **`BookStack`** (`shelf/BookStack.tsx`) — renders a `stack` slot: each real volume as its own
   lying book (colour from its title, title along the spine, award marker, individually draggable).
 

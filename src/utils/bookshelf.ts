@@ -120,22 +120,6 @@ export function planShelf(books: BookIndexEntry[]): ShelfSlot[] {
   return slots;
 }
 
-/**
- * Layout przechylonego grzbietu. Reguła: **żadna książka nie nachodzi na drugą** —
- * komórka rezerwuje szerokość OBRÓCONEGO grzbietu (`cellW`), a `shiftX` przesuwa go,
- * by obrócony prostokąt był wyśrodkowany w komórce (inaczej wierzchołek wychodzi
- * jedną stroną poza tor). Dla `deg === 0` → zwykła szerokość, bez przesunięcia.
- */
-export interface LeanLayout { cellW: number; shiftX: number; }
-
-export function leanLayout(style: SpineStyle, deg: number): LeanLayout {
-  if (!deg) return { cellW: style.width, shiftX: 0 };
-  const rad = (Math.abs(deg) * Math.PI) / 180;
-  const cellW = Math.ceil(style.width * Math.cos(rad) + style.height * Math.sin(rad)) + 1;
-  const shiftX = -Math.sign(deg) * (style.height * Math.sin(rad)) / 2;
-  return { cellW, shiftX };
-}
-
 // Przybliżona szerokość znaku względem rozmiaru czcionki (font bold) — celowo
 // zawyżona, by CAŁY tytuł na pewno się zmieścił (bez ucinania / wielokropka).
 const CHAR_W = 0.6;
@@ -216,7 +200,7 @@ export function layerJitter(book: BookIndexEntry): number {
 }
 
 export interface StackLayoutLayer extends FlatBookLayout { book: BookIndexEntry; x: number }
-export interface StackLayout { cellW: number; align: StackAlign; chaos: number; layers: StackLayoutLayer[] }
+export interface StackLayout { cellW: number; height: number; align: StackAlign; chaos: number; layers: StackLayoutLayer[] }
 
 /**
  * Pełne ułożenie kupki: sortuje książki **od największej (dół) do najmniejszej
@@ -240,7 +224,9 @@ export function layoutStack(books: BookIndexEntry[]): StackLayout {
     x = Math.max(0, Math.min(slack, x));
     return { ...l, x };
   });
-  return { cellW, align, chaos, layers };
+  // Wysokość kupki: suma grubości warstw + 1 px marginesu między nimi.
+  const height = layers.reduce((s, l) => s + l.thickness, 0) + Math.max(0, layers.length - 1);
+  return { cellW, height, align, chaos, layers };
 }
 
 /** Tytuł do pokazania (polski, a gdy brak — oryginalny). */
