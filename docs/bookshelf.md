@@ -92,8 +92,13 @@ The row builder is shared (`buildShelfItems` + `chunk` in `utils/shelfLayout.ts`
   ignored.** Rendered as coloured dots on the spine / lying book; `hasAward` = `awardWins().length > 0`.
 - **`buildShelfItems(books)` / `decadeOf` / `decadeLabel`** — build the pack items and, since the shelf
   is sorted by year, insert a generic **section divider** (`ShelfDivider`, a `RenderSlot` of kind
-  `"divider"`) at each **decade boundary** (e.g. `1950–1959`). The divider is a generic nameplate — the
-  label is just a string, so a future mode can show an alphabet letter or author surname instead.
+  `"divider"`) at each **decade boundary** (e.g. `1950–1959`). The divider renders as a thin **board**
+  (`DIVIDER_W` = 10 px) standing between the decades plus a horizontal **year nameplate mounted at the
+  top of the shelf**, left-aligned to the board (the start of the range). Variant A: the nameplate is
+  drawn only where the decade first appears — a decade continuing onto the next row has no repeated
+  label. `ShelfRow` gives the divider `z-15` so the board + nameplate paint above the boundary spines;
+  `DIVIDER_H` (168) matches `BOARD_H`, so a spine leaning onto the board rests on its real top edge.
+  The label is just a string, so a future mode can show an alphabet letter or author surname instead.
   `decadeOf` uses `parseYear` (first `\d{4}` in the field), so **multi-date entries**
   (`"1965/1966"`, `"1959 (wyd. pol. 1972)"`, `"wyd. 1948"`) fall into a real decade instead of
   `"bez daty"`; only a field with no 4-digit year is treated as undated.
