@@ -40,7 +40,7 @@ export const IntegrityCheckCard: React.FC<IntegrityCheckCardProps> = ({
       {items.length > 0 ? (
         items.map((item, i) => <div key={i} className="border-l border-slate-700 pl-2 py-0.5">{item}</div>)
       ) : (
-        <div className="text-slate-600 italic">Brak szczegółów.</div>
+        <div className="text-slate-400 italic">Brak szczegółów.</div>
       )}
     </div>
   );

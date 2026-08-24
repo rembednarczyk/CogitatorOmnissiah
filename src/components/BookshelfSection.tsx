@@ -160,7 +160,7 @@ export const BookshelfSection: React.FC = () => {
             />
           </div>
 
-          <p className="text-center text-[10px] text-amber-200/40 uppercase tracking-widest font-bold mt-6">
+          <p className="text-center text-[10px] text-amber-200/60 uppercase tracking-widest font-bold mt-6">
             {all.length} woluminów · <span className="text-amber-400/70">●</span> = nagroda · najedź, by wysunąć grzbiet
           </p>
         </RoomDecor>

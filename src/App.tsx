@@ -87,7 +87,7 @@ export default function App() {
                 </div>
                 <div className="flex-1">
                   <h3 className="text-lg font-bold text-red-200 uppercase tracking-widest mb-1">Błąd Synchronizacji</h3>
-                  <p className="text-red-400/80 text-sm font-medium">{anyError.state.error}</p>
+                  <p className="text-red-400 text-sm font-medium">{anyError.state.error}</p>
                 </div>
                 <button onClick={() => anyError.reset()} className="p-2 hover:bg-red-500/10 rounded-xl text-red-400 transition-colors">
                   <XCircle className="w-5 h-5" />
@@ -103,7 +103,7 @@ export default function App() {
                     <RefreshCw className="w-4 h-4" />
                     Wymuś Reset Stanu
                   </button>
-                  <p className="text-[10px] text-red-500/60 mt-2 italic">Użyj tej opcji, jeśli jesteś pewien, że żadna inna synchronizacja nie jest aktualnie uruchomiona.</p>
+                  <p className="text-[10px] text-red-400 mt-2 italic">Użyj tej opcji, jeśli jesteś pewien, że żadna inna synchronizacja nie jest aktualnie uruchomiona.</p>
                 </div>
               )}
             </motion.div>

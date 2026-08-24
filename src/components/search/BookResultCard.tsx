@@ -71,8 +71,8 @@ export const BookResultCard: React.FC<Props> = ({ book, query }) => {
 
           <div className="text-[11px] text-slate-400 uppercase font-bold tracking-[0.15em] mt-1.5">
             <HighlightedText text={book.author || "—"} query={query} />
-            {book.year ? <span className="text-slate-600"> · {book.year}</span> : null}
-            {book.series ? <span className="text-slate-600 normal-case tracking-normal italic"> · {book.series}</span> : null}
+            {book.year ? <span className="text-slate-500"> · {book.year}</span> : null}
+            {book.series ? <span className="text-slate-500 normal-case tracking-normal italic"> · {book.series}</span> : null}
           </div>
 
           {book.awards.length > 0 && (

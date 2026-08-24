@@ -83,7 +83,7 @@ export const OtherToolsCard: React.FC<OtherToolsCardProps> = ({
             <AlertTriangle className="w-4 h-4" />
             Resetuj Stan Synchronizacji
           </button>
-          <p className="text-[10px] text-slate-600 mt-2 text-center italic">Użyj tylko jeśli proces utknął w martwym punkcie.</p>
+          <p className="text-[10px] text-slate-400 mt-2 text-center italic">Użyj tylko jeśli proces utknął w martwym punkcie.</p>
         </div>
       )}
     </motion.div>

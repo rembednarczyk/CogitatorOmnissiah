@@ -67,7 +67,7 @@ export const SchemaColumnCard: React.FC<Props> = ({ name, value, isSelectType, o
 
           <div className="flex items-center justify-between mb-4">
             <p className="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-bold">Zasoby Opcji</p>
-            {options.length === 0 && <span className="text-[10px] text-slate-600 italic font-display">Baza pusta</span>}
+            {options.length === 0 && <span className="text-[10px] text-slate-400 italic font-display">Baza pusta</span>}
           </div>
 
           <div className="flex flex-wrap gap-2 mb-6">
@@ -97,7 +97,7 @@ export const SchemaColumnCard: React.FC<Props> = ({ name, value, isSelectType, o
               <input
                 type="text"
                 placeholder="Wprowadź nową desygnację..."
-                className="w-full pl-4 pr-4 py-3 text-xs bg-slate-950/60 border border-white/5 text-slate-300 rounded-2xl focus:outline-none focus:border-cyan-500/50 focus:ring-4 focus:ring-cyan-500/5 placeholder-slate-700 transition-all duration-300 font-display font-medium"
+                className="w-full pl-4 pr-4 py-3 text-xs bg-slate-950/60 border border-white/5 text-slate-300 rounded-2xl focus:outline-none focus:border-cyan-500/50 focus:ring-4 focus:ring-cyan-500/5 placeholder-slate-500 transition-all duration-300 font-display font-medium"
                 value={newOptionValue}
                 onChange={(e) => onNewOptionChange(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') onAdd(); }}

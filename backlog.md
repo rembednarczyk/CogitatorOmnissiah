@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.23.3** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.23.4** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -62,6 +62,15 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.23.4** — **Audyt kolorów #4: kontrast (WCAG).** Treść czytelna `slate-600`→**`slate-400`**
+  (empty-state'y: „Baza pusta", „Brak szczegółów", „Archiwum milczy…", „Brak unikalnych rekordów" ×2,
+  podpowiedź resetu w OtherToolsCard). Metadane (rok/seria w `BookResultCard`) `slate-600`→**`slate-500`**.
+  Placeholdery `placeholder-slate-700` (SchemaColumnCard) / `-600` (SearchSection) →**`-500`** (były
+  1.9:1, FAIL). Stopka Regału i licznik „/ N" `amber-200/40`→**`/60`**. Tekst błędu/ostrzeżenia bez
+  alfy: `text-red-400/80`→`red-400`, `text-red-500/60`→`red-400` (App.tsx). Separator „," w
+  podpowiedziach Search `slate-600`→`slate-500` (spójnie z „?"). **Zostawione** dekoracyjne ikony
+  (`Circle`/`ChevronRight`/`ChevronDown`/`XCircle`/`BookImage` na `slate-600`). Domyka wdrożenie audytu
+  kolorów (PR #1–#4).
 - **1.23.3** — **Audyt kolorów #3: abstrakcje + martwy kod.** `OtherToolsCard` — 7 ręcznie klepanych
   przycisków (w 2 różnych idiomach) → `RitualButton` sterowany tablicą `rituals` (jeden idiom, centralny
   `ritualButtonTheme`). `YearlyProgressItem` — inline `from-orange-500 to-red-600` → `getRitualGradient("orange")`.
