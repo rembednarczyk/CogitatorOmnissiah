@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.23.2** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.23.3** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -62,6 +62,12 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.23.3** — **Audyt kolorów #3: abstrakcje + martwy kod.** `OtherToolsCard` — 7 ręcznie klepanych
+  przycisków (w 2 różnych idiomach) → `RitualButton` sterowany tablicą `rituals` (jeden idiom, centralny
+  `ritualButtonTheme`). `YearlyProgressItem` — inline `from-orange-500 to-red-600` → `getRitualGradient("orange")`.
+  `ritualGradient` dopełniony do **8 kluczy** (dodane rose/indigo/blue/amber) — koniec cichego fallbacku na
+  zielono dla tych rytuałów; `Record<RitualColor,…>`. Usunięty martwy wpis `amber` w `ShelfFrame.ACCENT`
+  (+ zwężony typ `ShelfAccent`).
 - **1.23.2** — **Audyt kolorów #2: ujednolicenie znaczeń.** (1) **danger = red** wszędzie: rose→red w
   IntegrityCheckCard / SchemaColumnCard (krytyczny limit + usuwanie) / ConfirmDialog (destrukcja) /
   SchemaEditor (banner błędu); rose zostaje **wyłącznie** marką Vinted + rytuałem „Wydawcy". (2) **jedno

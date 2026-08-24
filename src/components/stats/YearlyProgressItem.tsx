@@ -2,10 +2,12 @@ import React from "react";
 import { motion } from "motion/react";
 import { Calendar, ChevronDown, ChevronUp, CheckCircle2, Circle } from "lucide-react";
 import { YearlyStat } from "../../hooks/useStats";
+import { getRitualGradient } from "../../theme/ritualColors";
 
 export const YearlyProgressItem: React.FC<{ year: YearlyStat }> = ({ year }) => {
   const [isExpanded, setIsExpanded] = React.useState(false);
   const percent = year.total > 0 ? Math.round((year.read / year.total) * 100) : 0;
+  const { gradient, shadow } = getRitualGradient("orange");
 
   return (
     <div className="space-y-2">
@@ -26,7 +28,7 @@ export const YearlyProgressItem: React.FC<{ year: YearlyStat }> = ({ year }) => 
         <motion.div 
           initial={{ width: 0 }}
           animate={{ width: `${percent}%` }}
-          className="h-full rounded-full bg-gradient-to-r from-orange-500 to-red-600 shadow-lg shadow-orange-500/20"
+          className={`h-full rounded-full bg-gradient-to-r ${gradient} shadow-lg ${shadow}`}
         />
       </div>
       {isExpanded && (
