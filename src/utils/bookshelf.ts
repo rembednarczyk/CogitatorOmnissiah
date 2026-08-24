@@ -298,10 +298,20 @@ export function hasAward(book: BookIndexEntry): boolean {
   return awardWins(book).length > 0;
 }
 
-/** Rok wydania jako liczba do sortowania; brak/niepoprawny → na koniec. */
+/**
+ * Rok wydania z pola daty. Pole bywa wielokrotne („1965/1966", „1965, 1966",
+ * „1965 (wyd. pol. 1970)") — bierzemy **pierwszy 4-cyfrowy rok z brzegu**, żeby
+ * pozycja i tak trafiła do swojej dekady. Brak roku → `null`.
+ */
+export function parseYear(year: string): number | null {
+  const m = String(year ?? "").match(/\d{4}/);
+  const y = m ? Number(m[0]) : NaN;
+  return Number.isFinite(y) && y > 0 ? y : null;
+}
+
+/** Rok wydania jako liczba do sortowania; brak → na koniec. */
 function pubYear(b: BookIndexEntry): number {
-  const y = Number(b.year);
-  return Number.isFinite(y) && y > 0 ? y : Infinity;
+  return parseYear(b.year) ?? Infinity;
 }
 
 /** Porządek wg daty wydania (rosnąco, chronologicznie), remis → tytuł. */

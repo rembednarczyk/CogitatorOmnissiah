@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.20.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.20.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -62,6 +62,10 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.20.1** — **Pola wielodatowe wpadają w dekadę** (nie „bez daty"). `parseYear(year)` w
+  `bookshelf.ts` wyciąga pierwszy 4-cyfrowy rok z pola (`/\d{4}/`, `null` gdy brak); używany
+  przez `decadeOf` (sortowanie tabliczek dekad) i `pubYear` (sort po dacie). Np. „1965/1966",
+  „1959 (wyd. pol. 1972)", „wyd. 1948" → dekada zamiast „bez daty". +1 test (multi-date decadeOf).
 - **1.20.0** — (1) **Tabliczki dekad**: generyczna przekładka `ShelfDivider` (parchment + mosiężny guzik,
   pionowy tekst) wstawiana na granicy każdej dekady wydania (`buildShelfItems` grupuje po `decadeOf`,
   kupki nie przekraczają dekady; `RenderSlot` + `PackItem`/`PlacedItem` kind `divider`). Etykieta

@@ -94,6 +94,9 @@ The row builder is shared (`buildShelfItems` + `chunk` in `utils/shelfLayout.ts`
   is sorted by year, insert a generic **section divider** (`ShelfDivider`, a `RenderSlot` of kind
   `"divider"`) at each **decade boundary** (e.g. `1950–1959`). The divider is a generic nameplate — the
   label is just a string, so a future mode can show an alphabet letter or author surname instead.
+  `decadeOf` uses `parseYear` (first `\d{4}` in the field), so **multi-date entries**
+  (`"1965/1966"`, `"1959 (wyd. pol. 1972)"`, `"wyd. 1948"`) fall into a real decade instead of
+  `"bez daty"`; only a field with no 4-digit year is treated as undated.
 - **`featuredReads(books, overrides, limit)`** — the cover row: read **and** awarded, newest year
   first (no read-date exists in the data), capped at `limit`.
 - **`shelfPlankBackground()`** — the CSS `repeating-linear-gradient` that paints a wooden plank under

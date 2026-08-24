@@ -16,6 +16,12 @@ describe("shelfLayout.decade", () => {
     expect(decadeLabel(1950)).toBe("1950–1959");
     expect(decadeLabel(null)).toBe("bez daty");
   });
+  it("takes the FIRST year from multi-date fields (not bez daty)", () => {
+    expect(decadeOf("1965/1966")).toBe(1960);
+    expect(decadeOf("1965, 1966")).toBe(1960);
+    expect(decadeOf("1959 (wyd. pol. 1972)")).toBe(1950);
+    expect(decadeOf("wyd. 1948")).toBe(1940);
+  });
 });
 
 describe("shelfLayout.buildShelfItems (tabliczki dekad)", () => {
