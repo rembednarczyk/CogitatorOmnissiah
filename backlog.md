@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.17.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.17.2** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -62,6 +62,11 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.17.2** — Stojące książki jeszcze bliżej + **reguły modułu w dokumentacji**. Szew między prostymi
+  grzbietami zmniejszony do `STRAIGHT_GAP=1 px`, `packRows` minGap 3→2; nadmiar luzu trafia do
+  minimalnej liczby „przerw" (każda ≤ `MAX_BREAK=34 px`, równo rozłożone) zamiast co-4-tej szczeliny.
+  `docs/bookshelf.md` §1a — cały arc `1.16.0→1.17.2` ujęty jako **reguły działania** (15 punktów:
+  mebel/deski, pozy, kupki, fizyka fill+oparcie+zwarcie, pełne nazwy, drag). +test (zwarte + przerwy ≤cap).
 - **1.17.1** — Fizyka: **stojące równo książki blisko siebie**. `layoutRow` przycina szczelinę
   między prostymi grzbietami do `STRAIGHT_MAX=3 px`; luz w pierwszej kolejności pochłaniają pochyłe
   (oparcie), a dopiero nadmiar trafia do rzadkich „przerw" (co 4-tą wolną szczelinę) → zwarte grupki

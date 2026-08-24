@@ -11,6 +11,53 @@ title, dark back-panel with vertical planks, brass corner brackets and a hanging
 (`ShelfOrnaments` — decorative, `aria-hidden`). Rows of spines each rest on a real **plank**, and the
 **Do przeczytania** shelf holds **every** volume (no scroll cap) so the whole backlog is visible at once.
 
+## 1a. Operating rules (the "physical shelf" contract)
+These are the invariants the layout obeys — the whole visual design, built up across `1.16.0 → 1.17.2`,
+expressed as rules. They are enforced by pure, unit-tested helpers (`utils/bookshelf.ts`,
+`utils/shelfPacking.ts`); the components only render what those return. All decisions are
+**deterministic from the title hash**, so the shelf never flickers between renders or re-wraps.
+
+**Furniture & planks**
+1. Every shelf is a wooden cabinet (cornice + posts + plinth + ornaments); ornaments are decorative
+   and `aria-hidden`.
+2. Every **row of volumes rests on its own plank**; rows are fixed-height bands so planks always land
+   directly under the books.
+3. The **Do przeczytania** shelf shows **all** volumes at once (no scroll cap).
+
+**Poses (per volume, deterministic)**
+4. Most volumes **stand upright**; a minority lean; stacks are **rare**.
+5. A volume leans **at most `MAX_LEAN_DEG` (6°)**, and only where it makes physical sense (see §11).
+6. A book's spine colour / width / height and its pose are stable for a given title (hash-derived,
+   avalanche-mixed so the split is even across any corpus).
+
+**Stacks (lying piles)**
+7. A stack is **several real, consecutive volumes** lying down — each its own title/colour/award/drag —
+   never one spine faking a pile. A stack holds **4–7** volumes.
+8. **Two stacks are never adjacent** (a stack is always followed by an upright volume).
+9. The upright volumes **next to a stack lean toward it** (they rest on it — see §11).
+10. Inside a stack, volumes are sorted **largest at the bottom → smallest at the top**; the pile is
+    aligned **often to the left, often to the right, and only rarely a symmetric centred pyramid**,
+    with an occasional small horizontal "chaos" scatter. No layer overhangs the pile.
+
+**Physics: filling & resting**
+11. **A book leans only when there is a gap to lean into**, at exactly `θ = atan(gap / supportHeight)`
+    (≤ 6°, pivoting at the base corner on the support side) — its face meets the top corner of the
+    neighbour/pile and **rests on it**, never floating. No gap → it stands straight. Edge volumes
+    never lean outward.
+12. **Every shelf is filled edge-to-edge** — each row's first volume starts at the left edge and the
+    last ends at the right edge; there is no ragged gap at the end of a row.
+13. **Upright volumes stand tight together** (a ~1 px seam). Slack is consumed first by leaning books
+    (rule 11); only the overflow becomes a few capped "break" gaps (each ≤ `MAX_BREAK`), so books
+    cluster instead of drifting evenly apart.
+
+**Titles & interaction**
+14. **Full titles, never truncated**: an upright spine shrinks its font (6–11 px) to fit the whole
+    title along its height; a lying book fits the full title too, wrapping to **two lines** rather
+    than widening past `FLAT_MAX_W` (150 px).
+15. Every volume — upright or in a pile — is individually **draggable** between the two shelves; the
+    drop writes read-state back to Notion (§4). Read/`toRead` split and per-book optimistic move are
+    unchanged by any of the above.
+
 ## 2. Data
 - Reuses **`GET /api/books`** (`BookIndexEntry[]`, see [skryptorium-search.md](./skryptorium-search.md)) —
   the same slim index the search uses. Read state is derived from the `zrodlo` (Źródło) tag
@@ -60,10 +107,10 @@ CSS `flex-wrap`, so two physical rules hold:
 - **Every shelf is filled — no end gap.** `packRows` greedily fills each row; `layoutRow` distributes
   the row's leftover width so the first volume starts at the left edge and the last ends at the right
   edge (`x = 0 … rowWidth`). A tight row has no slack; a sparse row spreads to fill.
-- **Upright books stay close together.** The gap between two straight-standing spines is capped at
-  `STRAIGHT_MAX` (3 px). Slack is absorbed first by leaning books (resting on their support), and only
-  the overflow goes into a few "break" gaps (every 4th free gap) — so upright books cluster tightly
-  instead of drifting apart, while the row still spans full width.
+- **Upright books stand tight together.** Two straight-standing spines get only a ~1 px seam
+  (`STRAIGHT_GAP`). Slack is absorbed first by leaning books (resting on their support); only the
+  overflow becomes a **minimal number of "break" gaps** (each ≤ `MAX_BREAK` = 34 px, spread evenly),
+  so upright books cluster together while the row still spans full width.
 - **A leaning book rests on its support, never floats.** A book leans **only when there is a gap to
   lean into**, at exactly `θ = atan(gap / supportHeight)` (capped at `MAX_LEAN_DEG`, pivoting at the
   base corner on the support side). That angle makes the book's face meet the top corner of the
