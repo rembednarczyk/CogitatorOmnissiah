@@ -1,6 +1,6 @@
 import React from "react";
 import { BookIndexEntry } from "../../types";
-import { SpineStyle, displayTitle, hasAward, spineFontSize } from "../../utils/bookshelf";
+import { SpineStyle, displayTitle, awardWins, spineFontSize } from "../../utils/bookshelf";
 
 interface Props {
   book: BookIndexEntry;
@@ -31,8 +31,16 @@ export const BookSpine: React.FC<Props> = ({ book, style, onDragStart, onDragEnd
     >
       {displayTitle(book)}
     </span>
-    {hasAward(book) && (
-      <span className="absolute bottom-[7px] left-1/2 -translate-x-1/2 w-[9px] h-[9px] rounded-full bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,.85)]" title="Nagroda / nominacja" />
-    )}
+    {(() => {
+      const wins = awardWins(book);
+      if (!wins.length) return null;
+      return (
+        <span className="absolute bottom-[6px] left-1/2 -translate-x-1/2 flex flex-col-reverse items-center gap-[3px]" title={wins.map((w) => w.label).join(" · ")}>
+          {wins.map((w) => (
+            <span key={w.key} className="w-[8px] h-[8px] rounded-full" style={{ background: w.color, boxShadow: `0 0 6px ${w.color}` }} />
+          ))}
+        </span>
+      );
+    })()}
   </div>
 );

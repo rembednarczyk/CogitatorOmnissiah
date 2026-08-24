@@ -266,9 +266,36 @@ export function shelfPlankBackground(): { backgroundImage: string } {
   return { backgroundImage };
 }
 
-/** Czy pozycja ma nagrodę/nominację (do pieczęci na grzbiecie i półki „Wyróżnione"). */
+/** Znacznik zdobytej NAGRODY (nie nominacji) z color-code do pieczęci na grzbiecie. */
+export interface AwardMark { key: "hugo" | "nebula" | "locus"; color: string; label: string }
+
+const AWARD_MARKS: Record<AwardMark["key"], AwardMark> = {
+  hugo: { key: "hugo", color: "#fbbf24", label: "Hugo" },      // złoto (rakieta)
+  nebula: { key: "nebula", color: "#c084fc", label: "Nebula" }, // fiolet (mgławica)
+  locus: { key: "locus", color: "#38bdf8", label: "Locus" },   // błękit
+};
+
+/**
+ * Zdobyte nagrody książki z color-code. Bierze TYLKO wygrane („Nagroda …" lub
+ * „Wszystkie" = Hugo+Nebula+Locus) — **nominacje pomijamy**. Zdeduplikowane,
+ * w stałej kolejności Hugo → Nebula → Locus.
+ */
+export function awardWins(book: BookIndexEntry): AwardMark[] {
+  const won = new Set<AwardMark["key"]>();
+  for (const a of book.awards) {
+    const s = a.toLowerCase().trim();
+    if (s === "wszystkie") { won.add("hugo"); won.add("nebula"); won.add("locus"); continue; }
+    if (!s.startsWith("nagroda ")) continue;        // pomijamy „Nominacja …" i inne
+    if (s.includes("hugo")) won.add("hugo");
+    else if (s.includes("nebula")) won.add("nebula");
+    else if (s.includes("locus")) won.add("locus");
+  }
+  return (["hugo", "nebula", "locus"] as const).filter((k) => won.has(k)).map((k) => AWARD_MARKS[k]);
+}
+
+/** Czy pozycja ma zdobytą nagrodę (do pieczęci na grzbiecie i półki „Wyróżnione"). */
 export function hasAward(book: BookIndexEntry): boolean {
-  return book.awards.length > 0;
+  return awardWins(book).length > 0;
 }
 
 /** Rok wydania jako liczba do sortowania; brak/niepoprawny → na koniec. */

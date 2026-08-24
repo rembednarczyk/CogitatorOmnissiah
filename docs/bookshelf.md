@@ -87,6 +87,13 @@ The row builder is shared (`buildShelfItems` + `chunk` in `utils/shelfLayout.ts`
   negative for hashes above 2³¹ and produced out-of-range heights (caught by a bounds test).
 - **`splitShelves(books, overrides)`** — partitions into `{ read, toRead }`, each sorted by
   **publication date** (year, ascending; volumes without a year go last), tie-broken by title.
+- **`awardWins(book)` / `hasAward(book)`** — the **won** awards only, colour-coded (Hugo = gold,
+  Nebula = purple, Locus = blue; `"Wszystkie"` = all three). **Nominations (`"Nominacja …"`) are
+  ignored.** Rendered as coloured dots on the spine / lying book; `hasAward` = `awardWins().length > 0`.
+- **`buildShelfItems(books)` / `decadeOf` / `decadeLabel`** — build the pack items and, since the shelf
+  is sorted by year, insert a generic **section divider** (`ShelfDivider`, a `RenderSlot` of kind
+  `"divider"`) at each **decade boundary** (e.g. `1950–1959`). The divider is a generic nameplate — the
+  label is just a string, so a future mode can show an alphabet letter or author surname instead.
 - **`featuredReads(books, overrides, limit)`** — the cover row: read **and** awarded, newest year
   first (no read-date exists in the data), capped at `limit`.
 - **`shelfPlankBackground()`** — the CSS `repeating-linear-gradient` that paints a wooden plank under
