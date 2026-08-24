@@ -65,20 +65,14 @@ wall, floor, wall sconces with a flickering flame and warm glow (`motion`), drif
 pennant, a faint Mechanicus cog watermark, and a vignette. Purely decorative — it never touches the
 book physics.
 
-**Desktop (≥1024 px): a dense horizontal wall.** `LibraryWall` shows the active collection (a toggle
-switches **Do przeczytania / Przeczytane**) as many **5-shelf bookcases** side by side. It measures one
-bookcase's natural size and the viewport height, `transform: scale`s the whole row to fit the height,
-and shows as many bookcases as fit the width — the rest are reached with the **"Regały I–VI / N"** pager.
-Read-state is flipped by dragging a volume onto the **drop dock** that appears at the bottom during a
-drag. Each bookcase is a `Bookcase` (fixed size, candle + plinth). Books flow across bookcases in order.
+**Two fixed-height bookcases side by side.** The left one is **Do przeczytania**, the right one is
+always **Przeczytane** — a volume is dragged between them and the drop writes read-state back to Notion.
+Each is a `Shelf` with a `pageSize` (rows per bookcase) that slices its packed rows into segments
+**"Regał N / M"** (plain Arabic numbers, ◄ ► arrows); short pages are padded with empty planks so the
+bookcase height is constant, and a candle + plinth make it stand on the floor. You page through Regały
+instead of one ~700-tall list. On narrow screens the two bookcases stack vertically.
 
-**Narrow screens: two fixed-height bookcases.** `Shelf` takes a `pageSize` (rows per bookcase) and
-slices its packed rows into segments **"Regał I / N"** (◄ ► arrows); short pages are padded with empty
-planks so the height is constant, with a candle + plinth. You page through Regały instead of one
-~700-tall list.
-
-The row builder is shared (`buildShelfItems` + `chunk` in `utils/shelfLayout.ts`; one row → `ShelfRow`),
-and the physics (`shelfPacking`) is identical in both layouts.
+The row builder is shared (`buildShelfItems` + `chunk` in `utils/shelfLayout.ts`; one row → `ShelfRow`).
 
 ## 2. Data
 - Reuses **`GET /api/books`** (`BookIndexEntry[]`, see [skryptorium-search.md](./skryptorium-search.md)) —
@@ -91,8 +85,8 @@ and the physics (`shelfPacking`) is identical in both layouts.
   from a hash of the title, so a spine looks identical across re-renders. The hash is unsigned
   (`>>> 0`); the height derivation uses an **unsigned** shift (`>>> 3`) — a signed `>> 3` goes
   negative for hashes above 2³¹ and produced out-of-range heights (caught by a bounds test).
-- **`splitShelves(books, overrides)`** — partitions into `{ read, toRead }`, each sorted by author
-  then title.
+- **`splitShelves(books, overrides)`** — partitions into `{ read, toRead }`, each sorted by
+  **publication date** (year, ascending; volumes without a year go last), tie-broken by title.
 - **`featuredReads(books, overrides, limit)`** — the cover row: read **and** awarded, newest year
   first (no read-date exists in the data), capped at `limit`.
 - **`shelfPlankBackground()`** — the CSS `repeating-linear-gradient` that paints a wooden plank under

@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.19.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.19.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -62,6 +62,11 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.19.1** — Powrót do **dwóch regałów** (lewy „Do przeczytania", prawy zawsze „Przeczytane",
+  paginacja `Regał N/M`) — drag&drop po staremu; usunięte `LibraryWall`/`Bookcase`/`useMediaQuery`
+  (ściana odrzucona). Numeracja regałów **arabska** (było rzymskie). **Sortowanie półek po DACIE
+  WYDANIA** (rok rosnąco, brak roku → koniec; remis → tytuł) zamiast autor→tytuł (`byYearTitle`).
+  +test (sort po roku, brak roku na końcu, override). Fizyka NIETKNIĘTA. `docs` §1b/§3 upd.
 - **1.19.0** — **Gęsta pozioma ściana regałów** (desktop): `LibraryWall` pokazuje aktywną kolekcję
   (przełącznik Do przeczytania / Przeczytane) jako wiele **regałów po 5 półek** obok siebie,
   skalowanych transformem do wysokości viewportu (mierzy naturalny rozmiar regału + `innerHeight`),
