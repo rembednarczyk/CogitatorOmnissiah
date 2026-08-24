@@ -102,24 +102,3 @@ export const HudCorner: React.FC<{ corner: Corner }> = ({ corner }) => {
   };
   return <span className={base} style={box[corner]} aria-hidden />;
 };
-
-/** Pieczęć czystości zwisająca na wstędze (kwiatek + atrybut z fabuły). */
-export const PuritySeal: React.FC<{ className?: string; rotate?: number }> = ({ className = "", rotate = -8 }) => (
-  <div
-    aria-hidden
-    className={`absolute pointer-events-none select-none ${className}`}
-    style={{ transform: `rotate(${rotate}deg)`, transformOrigin: "top center" }}
-    title="Pieczęć czystości"
-  >
-    {/* Wstęga pergaminu */}
-    <div className="relative flex flex-col items-center">
-      <div className="w-[13px] h-9 bg-gradient-to-b from-[#e8dcc0] via-[#d8c8a2] to-[#b9a271] shadow-[0_2px_4px_rgba(0,0,0,.5)]"
-        style={{ clipPath: "polygon(0 0, 100% 0, 100% 86%, 50% 100%, 0 86%)" }} />
-      {/* Woskowa pieczęć */}
-      <div className="-mt-3 w-[22px] h-[22px] rounded-full flex items-center justify-center shadow-[0_2px_5px_rgba(0,0,0,.6),inset_0_2px_3px_rgba(255,255,255,.25)]"
-        style={{ background: "var(--sk-seal-wax)" }}>
-        <span className="text-[11px] leading-none text-amber-200/70 font-black" style={{ textShadow: "0 1px 1px rgba(0,0,0,.6)" }}>☼</span>
-      </div>
-    </div>
-  </div>
-);
