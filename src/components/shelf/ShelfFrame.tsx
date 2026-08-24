@@ -68,8 +68,8 @@ export const ShelfFrame: React.FC<Props> = ({ title, icon, accent, count, highli
           {/* Ticker danych (przewijany) — wypełnia wolną przestrzeń gzymsu */}
           <DataTicker className="ml-3 hidden sm:flex flex-1 min-w-0 max-w-[280px]" text="++ NOOSPHERA·SYNC ++ 01001101·01000001·01010011 ++ AVE·OMNISSIAH ++" />
           <div className="ml-auto flex items-center gap-3">{headerExtra}</div>
-          {/* Delikatna listwa świetlna pod gzymsem (w kolorze poświaty skóry) */}
-          <div className="absolute bottom-0 inset-x-6 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(var(--noo-glow),.28), transparent)" }} />
+          {/* Delikatna listwa świetlna pod gzymsem (w kolorze oprawy Regału) */}
+          <div className="absolute bottom-0 inset-x-6 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(var(--sk-frame-accent),.28), transparent)" }} />
         </div>
 
         {/* Wnętrze regału — ciemne „plecy" z pionowymi deskami + warstwa holo */}

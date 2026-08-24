@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.23.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.23.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -62,6 +62,11 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.23.1** — **Oprawa Regału = amber (kolor zakładki), spójnie z konwencją „kolor per zakładka".**
+  Nowy token `--sk-frame-accent` (Holo+ amber `251,191,36`; Relikwiarz teal — bez zmian) steruje ramką
+  (`--sk-frame-border/-glow`), narożnikami HUD (`HudCorner` — lokalnie nadpisuje `--noo-glow`, by puls też
+  był amber) i listwą gzymsu. Wnętrze (godło/deseczki/ticker/sygnatury/szkło książek) zostaje na `--noo-glow`
+  (cyan). „Mosiężna oprawa relikwiarza trzymająca cyanowe data-tomy". Zaczyna wdrożenie audytu kolorów.
 - **1.23.0** — **Grzbiety zależne od skóry (wariant „E").** Holo+: grzbiet = **szkło w akcencie
   aplikacji** (paleta `APP_PALETTE` cyan/niebieski/indygo/fiolet/purpura, równoległa do `CLOTH_PALETTE`
   po tym samym indeksie) + **neonowa lewa krawędź** + **biały tytuł z glow**; kupki i okładki
