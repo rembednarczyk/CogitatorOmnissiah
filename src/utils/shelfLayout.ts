@@ -1,5 +1,5 @@
 import { BookIndexEntry } from "../types";
-import { ShelfSlot, spineStyle, planShelf, layoutStack, displayTitle } from "./bookshelf";
+import { ShelfSlot, spineStyle, planShelf, layoutStack, displayTitle, parseYear } from "./bookshelf";
 import { PackItem } from "./shelfPacking";
 
 /** Slot do renderu: wolumin/kupka (`ShelfSlot`) albo tabliczka-przekładka sekcji. */
@@ -8,10 +8,10 @@ export type RenderSlot = ShelfSlot | { kind: "divider"; label: string };
 const DIVIDER_W = 34;
 const DIVIDER_H = 156;
 
-/** Dekada roku wydania (np. 1954 → 1950); brak/niepoprawny rok → `null` (sekcja „bez daty"). */
+/** Dekada roku wydania (np. 1954 → 1950); pola wielodatowe → pierwszy rok; brak → `null`. */
 export function decadeOf(year: string): number | null {
-  const y = Number(year);
-  return Number.isFinite(y) && y > 0 ? Math.floor(y / 10) * 10 : null;
+  const y = parseYear(year);
+  return y === null ? null : Math.floor(y / 10) * 10;
 }
 
 /** Etykieta tabliczki dekady, np. „1950–1959" (albo „bez daty"). */
