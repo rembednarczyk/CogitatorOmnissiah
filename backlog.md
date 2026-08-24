@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.17.2** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.17.3** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -62,6 +62,11 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.17.3** — **Koniec pustych „dziur" w rzędzie**: luz (po oparciu pochyłych) rozkładany RÓWNO na
+  wszystkie szczeliny między stojącymi grzbietami zamiast skupiania w kilka przerw. Minimalizuje
+  największą szczelinę → pełny rząd ma włoskowe szwy, rzadki rozkłada się równo (żadnej dużej dziury).
+  Usunięte `STRAIGHT_GAP`/`MAX_BREAK` i logika „break". Reguła 13 w docs zaktualizowana. +test (równe
+  szczeliny, fill do prawej). Screenshot OK.
 - **1.17.2** — Stojące książki jeszcze bliżej + **reguły modułu w dokumentacji**. Szew między prostymi
   grzbietami zmniejszony do `STRAIGHT_GAP=1 px`, `packRows` minGap 3→2; nadmiar luzu trafia do
   minimalnej liczby „przerw" (każda ≤ `MAX_BREAK=34 px`, równo rozłożone) zamiast co-4-tej szczeliny.

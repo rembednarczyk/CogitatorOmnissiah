@@ -46,9 +46,10 @@ expressed as rules. They are enforced by pure, unit-tested helpers (`utils/books
     never lean outward.
 12. **Every shelf is filled edge-to-edge** — each row's first volume starts at the left edge and the
     last ends at the right edge; there is no ragged gap at the end of a row.
-13. **Upright volumes stand tight together** (a ~1 px seam). Slack is consumed first by leaning books
-    (rule 11); only the overflow becomes a few capped "break" gaps (each ≤ `MAX_BREAK`), so books
-    cluster instead of drifting evenly apart.
+13. **Upright volumes are spaced evenly — no empty holes.** Slack is consumed first by leaning books
+    (rule 11); whatever remains is spread **equally** across every gap between straight spines. That
+    minimises the largest gap, so a full row's seams are hair-thin and a sparse row spreads out
+    uniformly, never leaving a single big empty space.
 
 **Titles & interaction**
 14. **Full titles, never truncated**: an upright spine shrinks its font (6–11 px) to fit the whole
@@ -107,10 +108,10 @@ CSS `flex-wrap`, so two physical rules hold:
 - **Every shelf is filled — no end gap.** `packRows` greedily fills each row; `layoutRow` distributes
   the row's leftover width so the first volume starts at the left edge and the last ends at the right
   edge (`x = 0 … rowWidth`). A tight row has no slack; a sparse row spreads to fill.
-- **Upright books stand tight together.** Two straight-standing spines get only a ~1 px seam
-  (`STRAIGHT_GAP`). Slack is absorbed first by leaning books (resting on their support); only the
-  overflow becomes a **minimal number of "break" gaps** (each ≤ `MAX_BREAK` = 34 px, spread evenly),
-  so upright books cluster together while the row still spans full width.
+- **Upright books are spaced evenly — no empty holes.** Slack is absorbed first by leaning books
+  (resting on their support); whatever remains is spread **equally** across every gap between straight
+  spines. Even distribution minimises the largest gap, so a full row's seams are hair-thin and a
+  sparse row spreads out uniformly — never a single big empty space, while the row still spans full width.
 - **A leaning book rests on its support, never floats.** A book leans **only when there is a gap to
   lean into**, at exactly `θ = atan(gap / supportHeight)` (capped at `MAX_LEAN_DEG`, pivoting at the
   base corner on the support side). That angle makes the book's face meet the top corner of the

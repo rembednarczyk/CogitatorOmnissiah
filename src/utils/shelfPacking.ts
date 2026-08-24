@@ -36,10 +36,6 @@ export interface PackOpts {
 }
 
 const DEG = Math.PI / 180;
-/** Szew między stojącymi równo książkami — cienki, żeby stały tuż koło siebie. */
-export const STRAIGHT_GAP = 1;
-/** Maks. rozmiar pojedynczej „przerwy" pochłaniającej nadmiar luzu. */
-export const MAX_BREAK = 34;
 
 /** Zachłanne pakowanie woluminów w rzędy o zadanej szerokości. */
 export function packRows(items: PackItem[], rowWidth: number, minGap = 2): PackItem[][] {
@@ -98,23 +94,12 @@ export function layoutRow(row: PackItem[], rowWidth: number, maxLeanDeg = MAX_LE
     for (const i of leanIdx) gaps[i] = leanAt[i]!.cap;
     rem -= leanCapSum;
     if (freeIdx.length) {
-      // Stojące równo książki mają stać TUŻ koło siebie: między nimi tylko cienki
-      // szew STRAIGHT_GAP. Nadmiar luzu (gdy pochyłe już oparły się ile mogły) NIE
-      // rozjeżdża wszystkich grzbietów — trafia do minimalnej liczby „przerw",
-      // każda ≤ MAX_BREAK, rozłożonych równomiernie. Reszta książek stoi zwarcie.
-      const room = freeIdx.length * STRAIGHT_GAP;
-      if (rem <= room) {
-        const per = rem / freeIdx.length;
-        for (const i of freeIdx) gaps[i] = per;
-      } else {
-        for (const i of freeIdx) gaps[i] = STRAIGHT_GAP;
-        const extra = rem - room;
-        const nBreaks = Math.min(freeIdx.length, Math.max(1, Math.ceil(extra / MAX_BREAK)));
-        const chosen: number[] = [];
-        for (let b = 0; b < nBreaks; b++) chosen.push(freeIdx[Math.floor(((b + 0.5) * freeIdx.length) / nBreaks)]);
-        const per = extra / chosen.length;
-        for (const i of chosen) gaps[i] += per;
-      }
+      // Nadmiar luzu (po tym, jak pochyłe już oparły się ile mogły) rozkładamy
+      // RÓWNO na wszystkie szczeliny między stojącymi grzbietami. To minimalizuje
+      // największą szczelinę — brak pojedynczych pustych „dziur", wszystkie
+      // książki są równo koło siebie (a na pełnym rzędzie odstęp jest znikomy).
+      const per = rem / freeIdx.length;
+      for (const i of freeIdx) gaps[i] = per;
     } else {
       // brak wolnych szczelin — resztę rozkładamy równo na wszystkie
       const per = rem / (n - 1);

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { PackItem, packRows, layoutRow, packAndLayout, STRAIGHT_GAP, MAX_BREAK } from "../utils/shelfPacking";
+import { PackItem, packRows, layoutRow, packAndLayout } from "../utils/shelfPacking";
 import { MAX_LEAN_DEG } from "../utils/bookshelf";
 
 const spine = (key: string, bw = 20, h = 150, leanDir: -1 | 0 | 1 = 0): PackItem => ({ key, kind: "spine", bw, h, leanDir });
@@ -50,16 +50,15 @@ describe("shelfPacking.layoutRow (wypełnienie + fizyka oparcia)", () => {
     expect(leaner.deg).toBeCloseTo(expectDeg, 4);
   });
 
-  it("keeps upright books touching: most straight gaps ≈ STRAIGHT_GAP, overflow in few capped breaks", () => {
-    // 12 stojących grzbietów, spory luz, brak pochyłów → mają stać tuż koło siebie.
+  it("spaces upright books EVENLY (no big empty gaps): all straight gaps equal", () => {
+    // 12 stojących grzbietów, brak pochyłów → luz rozłożony równo, żadnej „dziury".
     const row = Array.from({ length: 12 }, (_, i) => spine(`s${i}`, 20));
-    const placed = layoutRow(row, 340); // base 240, slack 100 (rząd raczej pełny)
+    const placed = layoutRow(row, 340); // base 240, slack 100
     const gaps: number[] = [];
     for (let i = 1; i < placed.length; i++) gaps.push(placed[i].x - (placed[i - 1].x + placed[i - 1].bw));
-    const tight = gaps.filter((g) => g <= STRAIGHT_GAP + 1e-6).length;
-    const breaks = gaps.filter((g) => g > STRAIGHT_GAP + 1e-6);
-    expect(tight).toBeGreaterThan(breaks.length * 2);         // znaczna większość zwarta
-    for (const g of breaks) expect(g).toBeLessThanOrEqual(MAX_BREAK + 1e-6); // każda przerwa ograniczona
+    const min = Math.min(...gaps), max = Math.max(...gaps);
+    expect(max - min).toBeLessThan(1e-6);                     // wszystkie szczeliny równe
+    expect(max).toBeCloseTo(100 / 11, 6);                     // slack / liczba szczelin
     const last = placed[placed.length - 1];
     expect(last.x + last.bw).toBeCloseTo(340, 6);             // wypełnione do prawej
   });
