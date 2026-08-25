@@ -2,10 +2,7 @@ import React, { useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Layers, X, Loader2, Check, Package, Award, CircleDashed, MapPin, AlertTriangle, ExternalLink } from "lucide-react";
 import { useCycle } from "../../hooks/useCycle";
-
-/** Link do strony tomu w Archiwum Encyklopedii Fantastyki (ten sam wzorzec co parser). */
-const encyclopediaUrl = (title: string) =>
-  `https://encyklopediafantastyki.pl/index.php?title=${encodeURIComponent(title.replace(/ /g, "_"))}`;
+import { encyclopediaUrl } from "../../utils/encyclopedia";
 
 /**
  * Modal podglądu cyklu (Skryptorium). Pobiera na żądanie uporządkowaną listę tomów
