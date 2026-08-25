@@ -15,6 +15,7 @@ import { AvailabilityCard } from "./stats/AvailabilityCard";
 import { PublishingCard } from "./stats/PublishingCard";
 import { DecadeHistogram } from "./stats/DecadeHistogram";
 import { MarketCard } from "./stats/MarketCard";
+import { CyclesHarvestCard } from "./stats/CyclesHarvestCard";
 import { useEffectiveConfig, persistStatsOrder } from "../hooks/useAppConfig";
 import { orderByIds, moveId, distributeColumns } from "../utils/statsLayout";
 
@@ -118,6 +119,7 @@ export const StatsSection: React.FC = () => {
     { id: "availability", node: <AvailabilityCard stats={stats.availabilityStats} /> },
     { id: "market", node: <MarketCard market={stats.marketStats} /> },
     { id: "publishing", node: <PublishingCard publishers={stats.publisherStats} series={stats.seriesStats} cycles={stats.cycleStats} /> },
+    { id: "cyclesHarvest", node: <CyclesHarvestCard /> },
     { id: "decades", span2: true, node: <DecadeHistogram decades={stats.decadeStats} /> },
     {
       id: "yearly",

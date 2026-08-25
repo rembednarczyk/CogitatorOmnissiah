@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.36.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.37.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,13 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.37.0** — **Cykle: karta „Archiwum Cykli" (UC2) — Etap 1 frontend (CYH-PR2).** Czysty
+  `mergeCycleCaches(books)` scala bloby `CycleCache` z wszystkich pozycji w listę cykli (grupa po
+  nazwie, dedup tomów po tytule, statusy OR-owane, sort malejąco po `missing`) → `getCyclesHarvest()`
+  + `GET /api/cycles-harvest`. Front: `useCyclesHarvest` + `CyclesHarvestCard` (rozwijane cykle,
+  liczniki inBase/total + badge „N do zdobycia", statusy tomów jak Skryptorium, link do Encyklopedii,
+  ikona nagrody) wpięta jako karta „cyclesHarvest" w Analizie Zasobów. Testy agregacji. Zweryfikowane
+  zrzutem. NASTĘPNE: UC1 — skaner Vinted czyta bloby i szuka widmowych tomów do kupienia.
 - **1.36.0** — **Cykle: Rytuał Żniw (harvest struktury do blobu per-pozycja) — Etap 1 backend (CYH-PR1).**
   Nowy rytuał `cycles-harvest` (`CycleHarvestService`): iteruje książki z „Część cyklu", reużywa
   `CycleLookupService` (prev/next + {{Cykl}} + cross-ref) i zapisuje zebrane tomy w blobie `CycleCache`
