@@ -1,9 +1,9 @@
 import { getRandomUserAgent } from "../scrapingClient";
 
-/** Nagłówki żądania Vinted (świeży User-Agent na wywołanie). Wspólne dla skanu i grupowania. */
-export function vintedRequestHeaders() {
+/** Nagłówki żądania Vinted (świeży User-Agent na wywołanie; pula z konfiguracji). */
+export function vintedRequestHeaders(uaPool?: string[]) {
   return {
-    'User-Agent': getRandomUserAgent(),
+    'User-Agent': getRandomUserAgent(uaPool),
     'Accept-Language': 'pl-PL,pl;q=0.9,en-US;q=0.8,en;q=0.7',
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
     'Referer': 'https://www.vinted.pl/',

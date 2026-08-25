@@ -6,10 +6,10 @@ import { withRetry } from "../retry";
 import { createLogger } from "../logger";
 import { getRandomUserAgent, createScrapingAgent } from "../scrapingClient";
 import { parseOpacResults, findBookMatch } from "./opacParser";
+import { ConfigService } from "./configService";
 
 const log = createLogger("LibraryCheck");
 
-const CONCURRENCY = 6;
 const REQUEST_TIMEOUT = 20000;
 
 /**
@@ -19,13 +19,16 @@ const REQUEST_TIMEOUT = 20000;
  * pomijane). Zob. docs/library-check.md i services/opacParser.ts.
  */
 export class LibraryCheckService {
-  constructor(private notion: NotionAdapter) {}
+  constructor(private notion: NotionAdapter, private config: ConfigService) {}
 
   async runLibraryCheck(
     libraryCode: string,
     sendEvent: (data: SyncEvent) => void,
     checkCancellation: () => boolean,
   ) {
+    // Knoby skanera (równoległość / wykluczenia / pula UA) czytane raz na przebieg.
+    const cfg = await this.config.getConfig();
+    const concurrency = cfg.library.concurrency;
     sendEvent({ type: "status", message: "Pobieranie listy książek z Notion..." });
     // cache: kolejne filie w „Skanuj wszystkie" współdzielą jedno pobranie z Notion.
     const allBooks = await this.notion.getBooksForStats(undefined, checkCancellation, { cache: true });
@@ -33,8 +36,7 @@ export class LibraryCheckService {
     // Kandydaci: mają polski tytuł i NIE są już przeczytane/posiadane/w bibliotece.
     const candidates = allBooks.filter((b) => {
       const zrodlo = b.zrodlo || [];
-      const excluded = ["Przeczytane", "Biblioteka", "Biblioteka 9", "Posiadam"];
-      return !zrodlo.some((z) => excluded.includes(z)) && b.plTitle && b.plTitle.trim() !== "";
+      return !zrodlo.some((z) => cfg.library.excludedSources.includes(z)) && b.plTitle && b.plTitle.trim() !== "";
     });
 
     sendEvent({ type: "status", message: `Znaleziono ${candidates.length} kandydatów do sprawdzenia...` });
@@ -43,8 +45,8 @@ export class LibraryCheckService {
     // OPAC MBP Lublin nie wysyła certyfikatu pośredniego → Node zgłasza „unable to
     // verify the first certificate" i każde żądanie leci wyjątkiem. Wyłączamy
     // weryfikację TLS tylko dla tego agenta (czytamy publiczny katalog, bez sekretów).
-    const httpsAgent = createScrapingAgent({ rejectUnauthorized: false, maxSockets: CONCURRENCY });
-    const limit = pLimit(CONCURRENCY);
+    const httpsAgent = createScrapingAgent({ rejectUnauthorized: false, maxSockets: concurrency });
+    const limit = pLimit(concurrency);
     let processed = 0;
 
     const tasks = candidates.map((book) =>
@@ -54,7 +56,7 @@ export class LibraryCheckService {
         const title = book.plTitle;
         const url = `https://opac.mbp.lublin.pl/search/description?q=${encodeURIComponent(title)}&index=1&scope=full&f2%5B0%5D=${encodeURIComponent(libraryCode)}`;
         const headers = {
-          "User-Agent": getRandomUserAgent(),
+          "User-Agent": getRandomUserAgent(cfg.scraping.userAgents),
           "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
           "Accept-Language": "pl-PL,pl;q=0.9,en-US;q=0.8,en;q=0.7",
           "Cache-Control": "no-cache",

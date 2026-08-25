@@ -9,8 +9,15 @@ import { NotionBook } from "../src/types";
 import { offerFromItem, parseVintedData, mergeAndDiff, serializeVintedData, computeChangedAt, toStoredBookView, StoredVintedData, StoredOffer, StoredBookView, OfferDiff, EMPTY_DIFF } from "./vintedStore";
 import { selectAndOrderCandidates } from "./vintedScanPlanner";
 import { vintedRequestHeaders, memMb, throttle, classifyVintedError } from "./vintedHttp";
+import { ConfigService } from "./configService";
+import { AppConfig } from "../src/configSchema";
 
 const log = createLogger("VintedScan");
+
+/** URL katalogu Vinted zbudowany z knobów konfiguracji (kategoria/język/cena/waluta/sortowanie). */
+function buildCatalogUrl(v: AppConfig["vinted"], searchText: string): string {
+  return `https://www.vinted.pl/catalog?catalog[]=${v.catalogId}&language_book_ids[]=${v.languageId}&page=1&order=${encodeURIComponent(v.order)}&price_from=${v.priceFrom}&currency=${v.currency}&search_text=${encodeURIComponent(searchText)}`;
+}
 
 /**
  * Skaner ofert na Vinted (bezpośredni scraper HTML — NIE AI). Dla każdej książki,
@@ -20,7 +27,7 @@ const log = createLogger("VintedScan");
  * (`vintedStore`) żyją w czystych helperach. Zob. docs/vinted-scanner.md.
  */
 export class VintedSyncService {
-  constructor(private notion: NotionAdapter) {}
+  constructor(private notion: NotionAdapter, private config: ConfigService) {}
 
   /**
    * Etap 3: czyta składowane wyniki Vinted ze wszystkich książek (blob VintedData) do
@@ -76,12 +83,15 @@ export class VintedSyncService {
     params?: { skipScannedWithinHours?: number },
   ) {
     try {
+      // Knoby skanera (throttle/URL/retry/UA/wykluczenia) czytane raz na przebieg.
+      const cfg = await this.config.getConfig();
+      const v = cfg.vinted;
       sendEvent({ type: "status", message: "Pobieranie listy książek z Notion..." });
       // cache: współdziel pobranie z sąsiadującymi skanami (biblioteka/Vinted).
       const allBooks = await this.notion.getBooksForStats(undefined, checkCancellation, { cache: true });
 
       const skipHours = params?.skipScannedWithinHours;
-      const { candidates, skipped } = selectAndOrderCandidates(allBooks, skipHours);
+      const { candidates, skipped } = selectAndOrderCandidates(allBooks, skipHours, Date.now(), v.excludedSources);
       if (skipHours && skipHours > 0 && skipped > 0) {
         sendEvent({ type: "status", message: `Wznawianie: pominięto ${skipped} skanowanych < ${skipHours} h. Do sprawdzenia: ${candidates.length}.` });
       }
@@ -116,12 +126,12 @@ export class VintedSyncService {
           total: candidates.length,
         });
 
-        const url = `https://www.vinted.pl/catalog?catalog[]=2319&language_book_ids[]=6440&page=1&order=price_low_to_high&price_from=2&currency=PLN&search_text=${encodeURIComponent(searchText)}`;
+        const url = buildCatalogUrl(v, searchText);
 
         sendEvent({ type: "search_attempt", result: { id: book.id, title: book.plTitle, author: book.author, url, status: "pending", itemCount: 0 } });
 
         try {
-          const response = await withRetry(async () => axios.get(url, { httpsAgent, headers: vintedRequestHeaders(), timeout: 30000 }), 3, 4000);
+          const response = await withRetry(async () => axios.get(url, { httpsAgent, headers: vintedRequestHeaders(cfg.scraping.userAgents), timeout: v.requestTimeoutMs }), v.retryAttempts, v.retryBackoffMs);
 
           const html = response.data;
           log.info(`Odpowiedź Vinted`, { title, chars: html.length, ...memMb() });
@@ -132,7 +142,7 @@ export class VintedSyncService {
             sendEvent({ type: "status", message: `⚠️ Vinted wykrył bota przy "${title}". Próbuję ominąć...` });
             sendEvent({ type: "search_attempt", result: { id: book.id, title, author: book.author, url, status: "blocked", itemCount: 0, debug: { ...vintedDiagnostics(html, 0), ...memMb() } } });
             // Blok to NIE „brak ofert": nie zapisujemy pustki ani scannedAt, by wznowienie ponowiło tę książkę.
-            await throttle();
+            await throttle(v.throttleMinMs, v.throttleJitterMs);
             continue;
           }
 
@@ -140,7 +150,7 @@ export class VintedSyncService {
             log.info(`Brak wyników na Vinted`, { searchText });
             sendEvent({ type: "search_attempt", result: { id: book.id, title, author: book.author, url, status: "no_results", itemCount: 0, debug: { ...vintedDiagnostics(html, 0), ...memMb() } } });
             await this.persistEmptyIfNew(book, scannedAt, persistEnabled, "Marker 'Brak wyników' mimo zapisanych ofert — pomijam zapis (możliwy fałszywy marker)");
-            await throttle();
+            await throttle(v.throttleMinMs, v.throttleJitterMs);
             continue;
           }
 
@@ -176,7 +186,7 @@ export class VintedSyncService {
         }
 
         // Odstęp między żądaniami (z jitterem) — na KAŻDEJ ścieżce, by nie wywołać bloku.
-        await throttle();
+        await throttle(v.throttleMinMs, v.throttleJitterMs);
       }
 
       const wasCancelled = checkCancellation();
@@ -199,7 +209,11 @@ export class VintedSyncService {
     checkCancellation: () => boolean,
     params?: { cap?: number },
   ) {
-    const CAP = params?.cap && params.cap > 0 ? params.cap : Infinity;
+    // Cap: parametr żądania > knob konfiguracji (`sellerResolveCap`; 0 = bez limitu).
+    const cfg = await this.config.getConfig();
+    const v = cfg.vinted;
+    const capKnob = params?.cap && params.cap > 0 ? params.cap : v.sellerResolveCap;
+    const CAP = capKnob > 0 ? capKnob : Infinity;
     try {
       sendEvent({ type: "status", message: "Wczytywanie składowanych ofert z Notion..." });
       const allBooks = await this.notion.getBooksForStats(undefined, checkCancellation, { cache: true });
@@ -238,7 +252,7 @@ export class VintedSyncService {
           fetched++;
           sendEvent({ type: "progress", message: `Sprzedawca: ${p.book.plTitle} (${fetched}/${target})`, current: fetched, total: target });
           try {
-            const response = await withRetry(async () => axios.get(offer.url, { httpsAgent, headers: vintedRequestHeaders(), timeout: 30000 }), 3, 4000);
+            const response = await withRetry(async () => axios.get(offer.url, { httpsAgent, headers: vintedRequestHeaders(cfg.scraping.userAgents), timeout: v.requestTimeoutMs }), v.retryAttempts, v.retryBackoffMs);
             const html = response.data;
             if (looksBlocked(html)) {
               log.warn("Vinted zablokował stronę oferty (sprzedawca, baza)", { url: offer.url });
@@ -254,7 +268,7 @@ export class VintedSyncService {
           } catch (err: any) {
             log.warn("Błąd ustalania sprzedawcy (baza)", { url: offer.url, error: err.message });
           }
-          await throttle();
+          await throttle(v.throttleMinMs, v.throttleJitterMs);
         }
         // Zapisz książkę raz, po ustaleniu jej ofert (mniej zapisów do Notion).
         if (dirty) {

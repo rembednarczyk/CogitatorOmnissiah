@@ -1,4 +1,5 @@
 import { NotionAdapter } from "../notion.adapter";
+import { ConfigService } from "./configService";
 import { WikiAdapter } from "../wiki.adapter";
 import { BookSyncService } from "./bookSyncService";
 import { SyncEvent, NotionBook, Book, IntegrityCheckResult } from "../src/types";
@@ -22,8 +23,8 @@ interface BookEntry { keys: string[]; years: string[]; display: string }
 export class IntegrityService {
   private bookSyncService: BookSyncService;
 
-  constructor(private notion: NotionAdapter, private wiki: WikiAdapter) {
-    this.bookSyncService = new BookSyncService(notion, wiki);
+  constructor(private notion: NotionAdapter, private wiki: WikiAdapter, config: ConfigService) {
+    this.bookSyncService = new BookSyncService(notion, wiki, config);
   }
 
   async runIntegrityCheck(sendEvent: (data: SyncEvent) => void, checkCancellation: () => boolean) {

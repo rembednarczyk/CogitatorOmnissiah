@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.25.3** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.26.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,16 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.26.0** — **Konfiguracja aplikacji (backend, CFG-PR1).** Nowy współdzielony schemat
+  `src/configSchema.ts` (AppConfig + DEFAULT_CONFIG + mergeConfig z clampami + diffFromDefaults +
+  parseStoredConfig; defaulty = dotychczasowe zachowanie 1:1). **Składowanie: diff od defaultów
+  jako JSON w OPISIE kolumny `AppConfig`** (adapter `get/saveAppConfigRaw`; opis, nie wiersz —
+  sentinel wyciekałby do rytuałów iterujących wiersze). `services/configService.ts` (cache 30 s,
+  limit blobu 1900 zn., odporny odczyt → defaulty). REST: `GET/PUT /api/app-config`. Konsumenci:
+  vinted (URL katalogu/timeout/retry/throttle/UA/wykluczenia/cap sprzedawców), library (concurrency/
+  wykluczenia/UA), bookSync+syncManager-diagnostyka (nagrody z cfg — skasowane 2 z 3 kopii listy),
+  duplicates (progi 0.85/0.9), bookSync+cycles (writeConcurrency). Testy: +7 (configSchema) → 320.
+  Uwaga: listy wykluczeń Vinted i biblioteki celowo OSOBNE (różnią się Audioteką).
 - **1.25.3** — **Vinted „Kontynuuj": okno 12 h → 24 h.** Audyt potwierdził, że mechanizm wznowienia
   jest nienaruszony (bloki celowo nie zapisują `scannedAt`, stąd pozorne „189 co przebieg" w czasie
   fali wykryć). Przy skanach raz dziennie 12 h zawsze wygasało — teraz `RESUME_HOURS = 24`,

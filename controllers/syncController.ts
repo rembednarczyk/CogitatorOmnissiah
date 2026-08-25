@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { syncManager, SyncTaskName } from "../syncManager";
+import { syncManager, SyncTaskName, configService } from "../syncManager";
 import { SyncParams } from "../src/types";
 import { createLogger } from "../logger";
 import { executeSyncTask } from "./sseStream";
@@ -61,6 +61,24 @@ export const getConfig = (req: Request, res: Response) => {
     hasNotionKey: !!process.env.NOTION_API_KEY,
     hasDatabaseId: !!process.env.NOTION_DATABASE_ID,
   });
+};
+
+/** Efektywna konfiguracja aplikacji (defaulty + nadpisania z Notion) — zakładka „Konfiguracja". */
+export const getAppConfig = async (req: Request, res: Response) => {
+  try {
+    res.json(await configService.getConfig(req.query.force === "1"));
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || "Nie udało się odczytać konfiguracji." });
+  }
+};
+
+/** Zapis konfiguracji: wejście przechodzi clampy w configSchema; składowany jest diff od defaultów. */
+export const updateAppConfig = async (req: Request, res: Response) => {
+  try {
+    res.json(await configService.saveConfig(req.body));
+  } catch (error: any) {
+    res.status(400).json({ error: error.message || "Nie udało się zapisać konfiguracji." });
+  }
 };
 
 export const getNotionSchema = async (req: Request, res: Response) => {
