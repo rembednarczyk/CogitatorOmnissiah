@@ -14,6 +14,7 @@ import { LibraryCheckService } from "./services/libraryCheckService";
 import { VintedSyncService } from "./services/vintedSyncService";
 import { CycleLookupService } from "./services/cycleLookupService";
 import { CycleHarvestService } from "./services/cycleHarvestService";
+import { mergeCycleCaches } from "./services/cycleHarvest";
 import { toSearchIndex } from "./services/bookSearchIndex";
 import { ConfigService } from "./services/configService";
 import { createLogger, classifyHttpError } from "./logger";
@@ -178,6 +179,12 @@ class SyncManager {
   }
 
   /** Podgląd cyklu dla książki (na żądanie, bez zapisu do bazy). */
+  /** Zagregowany widok zebranych cykli (z blobów `CycleCache`) dla Archiwum. */
+  async getCyclesHarvest() {
+    const books = await this.notion.getBooksForStats(undefined, undefined, { cache: true });
+    return mergeCycleCaches(books);
+  }
+
   async getCycle(title: string, author: string) {
     return await cycleLookupService.lookup(title, author);
   }
