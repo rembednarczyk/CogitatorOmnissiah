@@ -3,8 +3,9 @@ import { NotionAdapter } from "../notion.adapter";
 import { SyncEvent, NotionBook } from "../src/types";
 import { ConfigService } from "./configService";
 import { CycleLookupService, normTitle } from "./cycleLookupService";
-import { buildCycleVolumeProperties, cycleLpLabel, cycleVolumeEncyclopediaUrl, buildCycleTitleProperty } from "./cycleRows";
+import { buildCycleVolumeProperties, cycleLpLabel, buildCycleTitleProperty } from "./cycleRows";
 import { isCycleVolume } from "./bookCategory";
+import { encyclopediaUrl } from "../src/utils/encyclopedia";
 import { sanitizeNotionString } from "../utils";
 import { createLogger } from "../logger";
 
@@ -101,7 +102,7 @@ export class CycleHarvestService {
               if (isCycleVolume(existing)) {
                 const label = cycleLpLabel(cyc, nr);
                 if (existing.lp !== label) props["Lp"] = { title: [{ text: { content: label } }] };
-                const wantLink = cycleVolumeEncyclopediaUrl(existing.plTitle || title);
+                const wantLink = encyclopediaUrl(existing.plTitle || title);
                 const curLink = existing.plTitleRichText?.[0]?.text?.link?.url;
                 if (curLink !== wantLink) props["Tytuł polski"] = buildCycleTitleProperty(existing.plTitle || title);
               }

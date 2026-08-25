@@ -3,19 +3,11 @@ import { sanitizeNotionString, isValidUrl } from "../utils";
 import { buildAuthorTags } from "./bookDiff";
 import { CYCLE_VOLUME_CATEGORY, isCycleVolume } from "./bookCategory";
 import { parseVintedData } from "./vintedStore";
-
-/**
- * Link do strony tomu w Archiwum Encyklopedii Fantastyki — tytuł tomu to nazwa strony
- * wiki (z łańcucha poprzednia/następna). Ten sam wzorzec co w parserze i w karcie
- * (spacje → „_"), więc link w Notion i w UI są identyczne.
- */
-export function cycleVolumeEncyclopediaUrl(title: string): string {
-  return `https://encyklopediafantastyki.pl/index.php?title=${encodeURIComponent((title || "").replace(/ /g, "_"))}`;
-}
+import { encyclopediaUrl } from "../src/utils/encyclopedia";
 
 /** Właściwość „Tytuł polski" z linkiem do encyklopedii (jak w oryginalnych rytuałach). */
 export function buildCycleTitleProperty(title: string): Record<string, any> {
-  const link = cycleVolumeEncyclopediaUrl(title);
+  const link = encyclopediaUrl(title);
   return { rich_text: [{ text: { content: sanitizeNotionString(title || ""), ...(isValidUrl(link) ? { link: { url: link } } : {}) } }] };
 }
 

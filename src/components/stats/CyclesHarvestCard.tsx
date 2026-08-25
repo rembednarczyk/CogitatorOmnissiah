@@ -2,10 +2,7 @@ import React, { useState } from "react";
 import { motion } from "motion/react";
 import { Layers, ChevronDown, Check, CheckCheck, Package, AlertTriangle, Award, ExternalLink, Loader2, ShoppingCart } from "lucide-react";
 import { useCyclesHarvest, HarvestVolume } from "../../hooks/useCyclesHarvest";
-
-/** Link do tomu w Archiwum Encyklopedii Fantastyki (ten sam wzorzec co parser/panel). */
-const encyclopediaUrl = (title: string) =>
-  `https://encyklopediafantastyki.pl/index.php?title=${encodeURIComponent(title.replace(/ /g, "_"))}`;
+import { encyclopediaUrl } from "../../utils/encyclopedia";
 
 const volStatus = (v: HarvestVolume) => {
   if (v.read) return { icon: Check, cls: "text-cyan-400", label: "przeczytana" };

@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.44.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.44.2** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,15 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.44.2** — **Audyt integralności — remediacja kodu (front B).** Werdykt: kod jednolity (architektura
+  wytrzymała), dryf głównie w DOKUMENTACJI (→ osobny PR). Fixy jednolitości: wspólny `encyclopediaUrl`
+  (`src/utils/encyclopedia.ts`) zamiast 3 identycznych kopii (CyclePanel/CyclesHarvestCard/cycleRows;
+  StatusSection = statyczne stałe, wiki.parser = inny wariant — zostają); `useShelfOrder` — `BookshelfSection`
+  nie robi już surowego `fetch` (§2 Logic Isolation), transport w hooku, optymistyczny override zostaje w
+  komponencie; testy `configService` (merge diff/defaulty/corrupt/cache/save-tylko-diff) + `cycleHarvestService`
+  (create-missing/tag-existing/idempotencja/no-siblings). AKCEPTOWANE (nie-fix): `useMarkRead` (Regał) vs
+  `useMarkAsRead` (Statystyki) — różne konteksty/efekty uboczne; duplikacja typów cross-boundary spójna z
+  precedensem `statsService↔useStats`. NASTĘPNE: sync dokumentacji (guidelines v1.6 + CLAUDE.md + README + docs/).
 - **1.44.1** — **Bughunt cykli (2 subagentów + weryfikacja) — naprawy.** Backend: (HIGH) bezimienne cykle
   (łańcuch prev/next bez `|cykl=`) zlewały się w jedną grupę „Cykl" i większość była pomijana w żniwach →
   `cycleName = |cykl= || tytuł pierwszego tomu` (stabilny między kotwicami); (DATA) żniwa używały `normKey`,

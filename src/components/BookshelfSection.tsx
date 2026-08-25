@@ -3,6 +3,7 @@ import { Library, BookOpen, CheckCircle2, Sparkles, Loader2, AlertCircle, X } fr
 import { BookIndexEntry } from "../types";
 import { useBooks } from "../hooks/useBooks";
 import { useMarkRead } from "../hooks/useMarkRead";
+import { useShelfOrder } from "../hooks/useShelfOrder";
 import { ShelfId, ReadOverrides, isRead, splitShelves, featuredReads } from "../utils/bookshelf";
 import { planInsertion } from "../utils/shelfInsertion";
 import { ShelfSkin, SHELF_SKINS, skinClass, loadSkin, saveSkin } from "../utils/shelfSkin";
@@ -15,6 +16,7 @@ import { RoomDecor } from "./shelf/RoomDecor";
 export const BookshelfSection: React.FC = () => {
   const { books, loading, error, fetchBooks } = useBooks();
   const { setRead } = useMarkRead();
+  const { saveOrders } = useShelfOrder();
 
   const [overrides, setOverrides] = useState<ReadOverrides>({});
   const [dragging, setDragging] = useState<BookIndexEntry | null>(null);
@@ -103,15 +105,7 @@ export const BookshelfSection: React.FC = () => {
       });
       void (async () => {
         try {
-          const res = await fetch("/api/shelf-order", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ orders: plan.orders }),
-          });
-          if (!res.ok) {
-            const j = await res.json().catch(() => null);
-            throw new Error(j?.error || `Błąd serwera: ${res.status}`);
-          }
+          await saveOrders(plan.orders);
         } catch (e: any) {
           setOrderOverrides((prev) => {
             const next = { ...prev };
