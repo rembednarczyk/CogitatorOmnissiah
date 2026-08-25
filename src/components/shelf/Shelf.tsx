@@ -1,10 +1,11 @@
-import React, { useLayoutEffect, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { BookIndexEntry } from "../../types";
 import { ShelfId, SHELF_ROW_GAP, SHELF_PLANK_H } from "../../utils/bookshelf";
 import { packAndLayout } from "../../utils/shelfPacking";
 import { buildShelfItems, chunk } from "../../utils/shelfLayout";
-import { ShelfRow, EmptyShelfRow } from "./ShelfRow";
+import { canInsertAt } from "../../utils/shelfInsertion";
+import { ShelfRow, EmptyShelfRow, GapBoundary, GapCaret } from "./ShelfRow";
 import { ShelfFrame, ShelfAccent } from "./ShelfFrame";
 
 interface Props {
@@ -16,17 +17,59 @@ interface Props {
   onDragStart: (book: BookIndexEntry) => void;
   onDragEnd: () => void;
   onDropBook: (target: ShelfId) => void;
-  dragging: boolean;
+  /** Precyzyjny drop: wstaw przeciąganą książkę przed `insertBeforeId` (null = koniec półki). */
+  onPreciseDrop?: (target: ShelfId, insertBeforeId: string | null) => void;
+  /** Przeciągana książka (do walidacji dekady precyzyjnego dropu); null = brak przeciągania. */
+  draggingBook: BookIndexEntry | null;
+  /** Knob `ui.preciseShelfDrop` — wyłączony = tylko globalny drop na ramę. */
+  preciseEnabled?: boolean;
   /** Gdy podane: regał ma STAŁĄ wysokość tylu rzędów i dzieli się na segmenty „Regał I/N". */
   pageSize?: number;
 }
 
 /** Jeden regał: drewniany korpus + FIZYCZNE rozłożenie woluminów (wypełnione półki, oparte pochyły). */
-export const Shelf: React.FC<Props> = ({ shelfId, title, icon, accent, books, onDragStart, onDragEnd, onDropBook, dragging, pageSize }) => {
+export const Shelf: React.FC<Props> = ({ shelfId, title, icon, accent, books, onDragStart, onDragEnd, onDropBook, onPreciseDrop, draggingBook, preciseEnabled = true, pageSize }) => {
+  const dragging = draggingBook !== null;
   const [over, setOver] = useState(false);
   const [page, setPage] = useState(0);
   const wellRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
+
+  // Kursor wstawienia + rozstrzygnięty cel (beforeId) — czyszczone z końcem przeciągania.
+  const [caret, setCaret] = useState<(GapCaret & { beforeId: string | null }) | null>(null);
+  useEffect(() => { if (!dragging) setCaret(null); }, [dragging]);
+
+  const preciseActive = preciseEnabled && dragging && !!onPreciseDrop;
+  // Sekwencja półki bez przeciąganej książki (przy przeciąganiu w obrębie tej samej półki).
+  const seqSans = draggingBook ? books.filter((b) => b.id !== draggingBook.id) : books;
+
+  /** Granica szczeliny → cel wstawienia; undefined = no-op (szczelina przy samej przeciąganej). */
+  const resolveBoundary = (b: GapBoundary): string | null | undefined => {
+    if (b.beforeId) return b.beforeId === draggingBook?.id ? undefined : b.beforeId;
+    if (b.afterId) {
+      if (b.afterId === draggingBook?.id) return undefined;
+      const i = seqSans.findIndex((x) => x.id === b.afterId);
+      if (i < 0) return undefined;
+      return seqSans[i + 1]?.id ?? null;
+    }
+    return undefined;
+  };
+
+  const handleGapOver = (rowIndex: number, b: GapBoundary) => {
+    if (!draggingBook) return;
+    const beforeId = resolveBoundary(b);
+    if (beforeId === undefined) { setCaret(null); return; }
+    setCaret({ row: rowIndex, x: b.x, beforeId, valid: canInsertAt(seqSans, draggingBook, beforeId) });
+  };
+
+  const handleGapDrop = (): boolean => {
+    if (!caret?.valid || !onPreciseDrop) return false;
+    const beforeId = caret.beforeId;
+    setCaret(null);
+    setOver(false);
+    onPreciseDrop(shelfId, beforeId);
+    return true;
+  };
 
   useLayoutEffect(() => {
     const el = wellRef.current;
@@ -95,7 +138,12 @@ export const Shelf: React.FC<Props> = ({ shelfId, title, icon, accent, books, on
         ) : (
           <div ref={wellRef} className="flex flex-col" style={{ rowGap: SHELF_ROW_GAP - SHELF_PLANK_H }}>
             {shown.map((row, ri) => (
-              <ShelfRow key={cur * 1000 + ri} row={row} slotByKey={slotByKey} rowWidth={width} onDragStart={onDragStart} onDragEnd={onDragEnd} />
+              <ShelfRow
+                key={cur * 1000 + ri} row={row} slotByKey={slotByKey} rowWidth={width}
+                rowIndex={ri} preciseActive={preciseActive} caret={caret}
+                onGapOver={handleGapOver} onGapLeave={() => setCaret(null)} onGapDrop={handleGapDrop}
+                onDragStart={onDragStart} onDragEnd={onDragEnd}
+              />
             ))}
             {Array.from({ length: pad }).map((_, i) => <EmptyShelfRow key={`pad${i}`} />)}
           </div>

@@ -4,6 +4,7 @@ import { BookIndexEntry } from "../types";
 import { useBooks } from "../hooks/useBooks";
 import { useMarkRead } from "../hooks/useMarkRead";
 import { ShelfId, ReadOverrides, isRead, splitShelves, featuredReads } from "../utils/bookshelf";
+import { planInsertion } from "../utils/shelfInsertion";
 import { ShelfSkin, SHELF_SKINS, skinClass, loadSkin, saveSkin } from "../utils/shelfSkin";
 import { useEffectiveConfig } from "../hooks/useAppConfig";
 import { Shelf } from "./shelf/Shelf";
@@ -19,8 +20,11 @@ export const BookshelfSection: React.FC = () => {
   const [dragging, setDragging] = useState<BookIndexEntry | null>(null);
   const [moveError, setMoveError] = useState<string | null>(null);
   const [skin, setSkin] = useState<ShelfSkin>(loadSkin);
-  // Liczba rzędów regału na stronę — knob `ui.shelfRowsPerPage`.
-  const rowsPerPage = useEffectiveConfig().ui.shelfRowsPerPage;
+  // Knoby UI: liczba rzędów regału na stronę + precyzyjny drop.
+  const uiCfg = useEffectiveConfig().ui;
+  const rowsPerPage = uiCfg.shelfRowsPerPage;
+  // Optymistyczne nadpisania ręcznych kluczy porządku (precyzyjny drop) do czasu refetch.
+  const [orderOverrides, setOrderOverrides] = useState<Record<string, number>>({});
   useEffect(() => { saveSkin(skin); }, [skin]);
 
   // Zapis stanu „przeczytane" jest SERIALIZOWANY per książka (latest-wins). Backend
@@ -30,20 +34,16 @@ export const BookshelfSection: React.FC = () => {
   const pendingRef = useRef<Record<string, boolean>>({});
   const runningRef = useRef<Set<string>>(new Set());
 
-  const all = books ?? [];
+  // Księgozbiór z nadpisanymi kluczami porządku (optymistycznie, do czasu refetch).
+  const all = useMemo(() => {
+    const src = books ?? [];
+    return src.map((b) => (orderOverrides[b.id] !== undefined ? { ...b, shelfOrder: orderOverrides[b.id] } : b));
+  }, [books, orderOverrides]);
   const { read, toRead } = useMemo(() => splitShelves(all, overrides), [all, overrides]);
   const featured = useMemo(() => featuredReads(all, overrides), [all, overrides]);
 
-  const handleDrop = useCallback((target: ShelfId) => {
-    const book = dragging;
-    setDragging(null);
-    if (!book) return;
-
-    const targetRead = target === "read";
-    const wasRead = isRead(book, overrides);
-    if (wasRead === targetRead) return; // upuszczono na tę samą półkę — nic
-
-    // Optymistyczny ruch od razu.
+  /** Optymistyczna zmiana „przeczytane" + serializowany zapis (latest-wins per książka). */
+  const applyReadChange = useCallback((book: BookIndexEntry, targetRead: boolean) => {
     setOverrides((prev) => ({ ...prev, [book.id]: targetRead }));
     setMoveError(null);
 
@@ -67,7 +67,64 @@ export const BookshelfSection: React.FC = () => {
         runningRef.current.delete(book.id);
       }
     })();
-  }, [dragging, overrides, setRead]);
+  }, [setRead]);
+
+  const handleDrop = useCallback((target: ShelfId) => {
+    const book = dragging;
+    setDragging(null);
+    if (!book) return;
+
+    const targetRead = target === "read";
+    if (isRead(book, overrides) === targetRead) return; // upuszczono na tę samą półkę — nic
+    applyReadChange(book, targetRead);
+  }, [dragging, overrides, applyReadChange]);
+
+  /**
+   * Precyzyjny drop: wstaw książkę przed `insertBeforeId` (null = koniec półki).
+   * Klucze liczy czysty `planInsertion` (zwykle 1 wpis; remis roku → mała renumeracja);
+   * zapis optymistyczny + POST /api/shelf-order z rollbackiem. Przy zmianie półki
+   * dokłada się standardowa zmiana „przeczytane".
+   */
+  const handlePreciseDrop = useCallback((target: ShelfId, insertBeforeId: string | null) => {
+    const book = dragging;
+    setDragging(null);
+    if (!book) return;
+
+    const targetRead = target === "read";
+    const wasRead = isRead(book, overrides);
+    const seq = (targetRead ? read : toRead).filter((b) => b.id !== book.id);
+    const plan = planInsertion(seq, book, insertBeforeId);
+
+    if (plan && plan.orders.length > 0) {
+      setOrderOverrides((prev) => {
+        const next = { ...prev };
+        for (const o of plan.orders) next[o.pageId] = o.order;
+        return next;
+      });
+      void (async () => {
+        try {
+          const res = await fetch("/api/shelf-order", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ orders: plan.orders }),
+          });
+          if (!res.ok) {
+            const j = await res.json().catch(() => null);
+            throw new Error(j?.error || `Błąd serwera: ${res.status}`);
+          }
+        } catch (e: any) {
+          setOrderOverrides((prev) => {
+            const next = { ...prev };
+            for (const o of plan.orders) delete next[o.pageId];
+            return next;
+          });
+          setMoveError(`Nie udało się zapisać pozycji „${book.plTitle || book.origTitle}": ${e.message}`);
+        }
+      })();
+    }
+
+    if (wasRead !== targetRead) applyReadChange(book, targetRead);
+  }, [dragging, overrides, read, toRead, applyReadChange]);
 
   return (
     <div className="space-y-8">
@@ -152,13 +209,15 @@ export const BookshelfSection: React.FC = () => {
             <Shelf
               shelfId="toRead" title="Do przeczytania" accent="cyan" pageSize={rowsPerPage}
               icon={<BookOpen className="w-4 h-4" />}
-              books={toRead} dragging={!!dragging}
+              books={toRead} draggingBook={dragging}
+              preciseEnabled={uiCfg.preciseShelfDrop} onPreciseDrop={handlePreciseDrop}
               onDragStart={setDragging} onDragEnd={() => setDragging(null)} onDropBook={handleDrop}
             />
             <Shelf
               shelfId="read" title="Przeczytane" accent="emerald" pageSize={rowsPerPage}
               icon={<CheckCircle2 className="w-4 h-4" />}
-              books={read} dragging={!!dragging}
+              books={read} draggingBook={dragging}
+              preciseEnabled={uiCfg.preciseShelfDrop} onPreciseDrop={handlePreciseDrop}
               onDragStart={setDragging} onDragEnd={() => setDragging(null)} onDropBook={handleDrop}
             />
           </div>

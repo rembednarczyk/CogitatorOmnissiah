@@ -74,6 +74,8 @@ export interface AppConfig {
   ui: {
     /** Liczba rzędów regału na stronę (Regał N/M). */
     shelfRowsPerPage: number;
+    /** Precyzyjny drag&drop na regale (wstawianie w szczelinę w obrębie dekady). */
+    preciseShelfDrop: boolean;
   };
 }
 
@@ -129,6 +131,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   },
   ui: {
     shelfRowsPerPage: 5,
+    preciseShelfDrop: true,
   },
 };
 
@@ -140,6 +143,8 @@ const clamp = (v: unknown, min: number, max: number, dflt: number): number => {
 };
 const clampInt = (v: unknown, min: number, max: number, dflt: number): number =>
   Math.round(clamp(v, min, max, dflt));
+
+const cleanBool = (v: unknown, dflt: boolean): boolean => (typeof v === "boolean" ? v : dflt);
 
 const cleanString = (v: unknown, dflt: string, maxLen = 120): string => {
   const s = typeof v === "string" ? v.trim() : "";
@@ -231,6 +236,7 @@ export function mergeConfig(overrides?: unknown): AppConfig {
     },
     ui: {
       shelfRowsPerPage: clampInt(u.shelfRowsPerPage, 1, 12, d.ui.shelfRowsPerPage),
+      preciseShelfDrop: cleanBool(u.preciseShelfDrop, d.ui.preciseShelfDrop),
     },
   };
 }

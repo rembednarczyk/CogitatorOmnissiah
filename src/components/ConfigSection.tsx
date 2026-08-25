@@ -214,6 +214,12 @@ export const ConfigSection: React.FC = () => {
               <NumberField label="Biblioteka: równoległość" hint="Jednoczesne zapytania OPAC." value={draft.library.concurrency} onChange={(v) => upd("library", { concurrency: v })} />
               <NumberField label="Sync: równoległość zapisów" hint="pLimit zapisów do Notion (nagrody/cykle)." value={draft.sync.writeConcurrency} onChange={(v) => upd("sync", { writeConcurrency: v })} />
               <NumberField label="Regał: rzędy na stronę" value={draft.ui.shelfRowsPerPage} onChange={(v) => upd("ui", { shelfRowsPerPage: v })} />
+              <Field label="Regał: precyzyjny drop" hint="Wstawianie woluminu w konkretną szczelinę (w obrębie dekady). Wyłączony = tylko globalny drag&drop między półkami.">
+                <label className="flex items-center gap-2 px-3 py-2 text-sm text-slate-300 cursor-pointer select-none">
+                  <input type="checkbox" checked={draft.ui.preciseShelfDrop} onChange={(e) => upd("ui", { preciseShelfDrop: e.target.checked })} className="accent-cyan-500 w-4 h-4" />
+                  Włączony
+                </label>
+              </Field>
               <NumberField label="Duplikaty: próg autora" hint="0.5–1; wyżej = mniej czułe." value={draft.sync.dupAuthorThreshold} step={0.01} onChange={(v) => upd("sync", { dupAuthorThreshold: v })} />
               <NumberField label="Duplikaty: próg tytułu" hint="0.5–1; dotyczy tytułu PL i oryginalnego." value={draft.sync.dupTitleThreshold} step={0.01} onChange={(v) => upd("sync", { dupTitleThreshold: v })} />
             </div>

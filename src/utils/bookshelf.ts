@@ -323,24 +323,45 @@ export function parseYear(year: string): number | null {
 }
 
 /** Rok wydania jako liczba do sortowania; brak → na koniec. */
-function pubYear(b: BookIndexEntry): number {
+export function pubYear(b: BookIndexEntry): number {
   return parseYear(b.year) ?? Infinity;
 }
 
-/** Porządek wg daty wydania (rosnąco, chronologicznie), remis → tytuł. */
-const byYearTitle = (a: BookIndexEntry, b: BookIndexEntry) =>
-  pubYear(a) - pubYear(b) || displayTitle(a).localeCompare(displayTitle(b), "pl");
+/** Klucz dekady książki (1950, 1960, …); brak roku → Infinity (sekcja „bez daty" na końcu). */
+export function decadeKeyOf(b: BookIndexEntry): number {
+  const y = parseYear(b.year);
+  return y === null ? Infinity : Math.floor(y / 10) * 10;
+}
+
+/**
+ * Efektywny klucz porządku na półce: ręczny `shelfOrder` (precyzyjny drag&drop),
+ * o ile mieści się w dekadzie książki — klucz spoza dekady jest STALE (rok książki
+ * zmienił dekadę po nadaniu klucza) i wraca do sortu po roku. Skala: ułamkowe lata.
+ */
+export function effShelfKey(b: BookIndexEntry): number {
+  const dec = decadeKeyOf(b);
+  const so = b.shelfOrder;
+  if (typeof so === "number" && isFinite(so) && isFinite(dec) && so >= dec && so < dec + 10) return so;
+  return pubYear(b);
+}
+
+/**
+ * Porządek na regale: dekada → efektywny klucz (ręczny lub rok) → tytuł.
+ * Bez ręcznych kluczy równoważny dawnemu sortowi po roku (dekada rośnie z rokiem).
+ */
+export const byShelfPosition = (a: BookIndexEntry, b: BookIndexEntry) =>
+  decadeKeyOf(a) - decadeKeyOf(b) || effShelfKey(a) - effShelfKey(b) || displayTitle(a).localeCompare(displayTitle(b), "pl");
 
 /**
  * Dzieli księgozbiór na dwie półki wg stanu „przeczytane" (z nadpisaniami),
- * każda posortowana wg **daty wydania** (rosnąco), remis → tytuł.
+ * każda posortowana porządkiem regału (`byShelfPosition`).
  */
 export function splitShelves(books: BookIndexEntry[], overrides: ReadOverrides = {}): Record<ShelfId, BookIndexEntry[]> {
   const read: BookIndexEntry[] = [];
   const toRead: BookIndexEntry[] = [];
   for (const b of books) (isRead(b, overrides) ? read : toRead).push(b);
-  read.sort(byYearTitle);
-  toRead.sort(byYearTitle);
+  read.sort(byShelfPosition);
+  toRead.sort(byShelfPosition);
   return { read, toRead };
 }
 
