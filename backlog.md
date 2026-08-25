@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.25.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.25.2** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -62,6 +62,15 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.25.2** — **Skanery: odświeżona pula User-Agentów (sierpień 2026).** Audyt regresji po
+  refaktorze god-object/god-hook wykazał, że CAŁA konfiguracja skanera Vinted (URL, nagłówki,
+  agent, timeout 30 s, retry 3×4 s bez ponawiania 403, throttle 3–5 s, `looksBlocked`, watchdog
+  120 s) przetrwała bajt w bajt — bloki to eskalacja po stronie Vinted/Cloudflare, nie nasz kod.
+  Pierwszy krok mitygacji: pula UA z Chrome 120–122/FF 122 (początek 2024) → **Chrome 151/152,
+  Firefox 154, Edge 151, Safari 26.0** (formaty realne: Chrome x.0.0.0 zredukowane, Safari
+  zamrożone Version/26.0, tokeny platform zamrożone). Też hardcoded UA w `wiki.adapter.ts`.
+  UWAGA: odświeżać pulę co kilka miesięcy. Jeśli bloki nie ustąpią → dłuższy throttle / proxy
+  rezydencjalne (Cloudflare Worker NIE jest rezydencjalny — datacenter IP, nie zdejmie scoringu).
 - **1.25.1** — **Przekładki: tabliczki zawsze nad deseczkami + przytłumiony amber.** (1) Render dwuwarstwowy
   w `ShelfRow`: najpierw wszystkie deseczki (`ShelfDivider part="board"`, z-20), potem wszystkie tabliczki
   (`part="plate"`, z-40) — tabliczka nie chowa się już pod deseczką sąsiada (ani własną). `ShelfDivider`
