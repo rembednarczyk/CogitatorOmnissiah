@@ -84,6 +84,24 @@ describe('StatsService', () => {
     expect(a).toEqual({ totalUnread: 5, owned: 2, library: 1, vinted: 1, none: 1 });
   });
 
+  it('aggregates publishers / series / cycles from their fields', async () => {
+    const mk = (id: string, over: Partial<NotionBook>): NotionBook => ({
+      id, plTitle: `T${id}`, origTitle: "", author: "A", year: "1970", zrodlo: [], awards: [],
+      currentWydawnictwo: "", currentSeria: "", currentCzesccyklu: false, lp: id,
+      plTitleRichText: [], origTitleRichText: [], ...over,
+    });
+    mockNotion.getBooksForStats.mockResolvedValue([
+      mk("1", { currentWydawnictwo: "MAG", currentSeria: "Uczta Wyobraźni", currentCzesccyklu: true, zrodlo: ["Posiadam", "Przeczytane"] }),
+      mk("2", { currentWydawnictwo: "MAG", currentSeria: "Uczta Wyobraźni", currentCzesccyklu: true, zrodlo: ["Posiadam"] }),
+      mk("3", { currentWydawnictwo: "Rebis", currentSeria: "", currentCzesccyklu: false }),
+    ]);
+    const { publisherStats, seriesStats, cycleStats } = await service.getStats();
+    expect(publisherStats[0]).toEqual({ name: "MAG", count: 2, read: 1 });
+    expect(publisherStats.find(p => p.name === "Rebis")).toEqual({ name: "Rebis", count: 1, read: 0 });
+    expect(seriesStats[0]).toEqual({ name: "Uczta Wyobraźni", count: 2, owned: 2, read: 1 });
+    expect(cycleStats).toEqual({ partOfCycle: 2, standalone: 1, total: 3 });
+  });
+
   it('builds libraryStats from config branches (id = sourceTag)', async () => {
     mockNotion.getBooksForStats.mockResolvedValue([
       { id: "1", plTitle: "X", origTitle: "", author: "A", year: "1970", zrodlo: ["Biblioteka"], awards: [], currentWydawnictwo: "", currentSeria: "", currentCzesccyklu: false, lp: "1", plTitleRichText: [], origTitleRichText: [] } as NotionBook,

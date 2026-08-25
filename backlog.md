@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.29.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.30.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,11 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.30.0** — **Statystyki: Wydawnictwa / Serie / Cykle (STAT-PR2).** Nowe bloki w `getStats`
+  z pól, które wypełniają rytuały publisher/series/cycles, a statystyki dotąd ignorowały:
+  `publisherStats` (top 15 oficyn: liczba tytułów + read-rate), `seriesStats` (top 15 serii:
+  posiadane/total → luki), `cycleStats` (udział „część cyklu" w kolekcji). Karta `PublishingCard`
+  (pasek cykli + top oficyny z read-rate + serie z „luki/komplet", zielony = komplet). Testy +1 → 333.
 - **1.29.0** — **Statystyki: zagregowana dostępność + dług libraryStats (STAT-PR1).** `StatsService`
   dostaje `ConfigService`. `libraryStats` iteruje teraz `config.library.branches` (koniec hardcode
   Felin/Bronowice — 3. filia z Kalibracji od razu w statystykach; `id` = `sourceTag`, zachowana

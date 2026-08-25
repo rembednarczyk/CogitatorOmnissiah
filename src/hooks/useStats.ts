@@ -49,6 +49,10 @@ export interface AvailabilityStats {
   none: number;
 }
 
+export interface PublisherStat { name: string; count: number; read: number }
+export interface SeriesStat { name: string; count: number; owned: number; read: number }
+export interface CycleStats { partOfCycle: number; standalone: number; total: number }
+
 export interface Stats {
   authorStats: AuthorStat[];
   awardBooksStats: { read: number; total: number };
@@ -57,6 +61,9 @@ export interface Stats {
   allAwardsStats: { read: number; total: number };
   yearlyStats: YearlyStat[];
   availabilityStats: AvailabilityStats;
+  publisherStats: PublisherStat[];
+  seriesStats: SeriesStat[];
+  cycleStats: CycleStats;
   libraryStats: LibraryStat[];
 }
 

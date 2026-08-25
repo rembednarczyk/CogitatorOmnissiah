@@ -12,6 +12,7 @@ import { IdentifiedLibraryItem } from "./stats/IdentifiedLibraryItem";
 import { OwnedUnreadItem } from "./stats/OwnedUnreadItem";
 import { AwardCoverageGrid } from "./stats/AwardCoverageGrid";
 import { AvailabilityCard } from "./stats/AvailabilityCard";
+import { PublishingCard } from "./stats/PublishingCard";
 import { useEffectiveConfig } from "../hooks/useAppConfig";
 
 export const StatsSection: React.FC = () => {
@@ -132,6 +133,9 @@ export const StatsSection: React.FC = () => {
 
         {/* Aggregate Availability */}
         <AvailabilityCard stats={stats.availabilityStats} />
+
+        {/* Publishers / Series / Cycles */}
+        <PublishingCard publishers={stats.publisherStats} series={stats.seriesStats} cycles={stats.cycleStats} />
 
         {/* Yearly Progress */}
         <motion.div
