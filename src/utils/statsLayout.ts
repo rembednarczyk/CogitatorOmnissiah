@@ -25,6 +25,19 @@ export function orderByIds(allIds: string[], savedOrder: string[]): string[] {
 }
 
 /**
+ * Rozkłada elementy na `cols` kolumn round-robin (element i → kolumna i % cols),
+ * zachowując czytanie „wiersz po wierszu": 0 i 2 i 4 w lewej, 1 i 3 i 5 w prawej.
+ * Każda kolumna pakuje się potem niezależnie (brak sprzężenia wysokości = brak dziur),
+ * a kolejność odczytu lewo→prawo, góra→dół pozostaje 0,1,2,3,... Zwraca `cols` list.
+ */
+export function distributeColumns<T>(items: T[], cols: number): T[][] {
+  const n = Math.max(1, Math.floor(cols));
+  const out: T[][] = Array.from({ length: n }, () => []);
+  items.forEach((it, i) => out[i % n].push(it));
+  return out;
+}
+
+/**
  * Przenosi `dragId` na pozycję `targetId` (wstawienie przed elementem docelowym w
  * jego bieżącym miejscu). Zwraca nową listę; wejście pozostaje nietknięte.
  * No-op gdy któreś id nie istnieje lub są równe.

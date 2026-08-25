@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
-import { orderByIds, moveId } from "../utils/statsLayout";
+import { orderByIds, moveId, distributeColumns } from "../utils/statsLayout";
 
 describe("orderByIds", () => {
   const all = ["a", "b", "c", "d"];
@@ -50,5 +50,26 @@ describe("moveId", () => {
     const copy = order.slice();
     moveId(order, "a", "d");
     expect(order).toEqual(copy);
+  });
+});
+
+describe("distributeColumns", () => {
+  it("round-robin do 2 kolumn (wiersz po wierszu)", () => {
+    expect(distributeColumns(["a", "b", "c", "d", "e"], 2)).toEqual([
+      ["a", "c", "e"],
+      ["b", "d"],
+    ]);
+  });
+
+  it("1 kolumna = wszystko w kolejności", () => {
+    expect(distributeColumns(["a", "b", "c"], 1)).toEqual([["a", "b", "c"]]);
+  });
+
+  it("cols < 1 traktuje jak 1", () => {
+    expect(distributeColumns(["a", "b"], 0)).toEqual([["a", "b"]]);
+  });
+
+  it("puste wejście → puste kolumny", () => {
+    expect(distributeColumns([], 2)).toEqual([[], []]);
   });
 });

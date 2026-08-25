@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { Book, BarChart3, Award, User, Calendar, Package, RefreshCw, Library, Search, GripVertical, LayoutGrid, RotateCcw, Check } from "lucide-react";
 import { useStats } from "../hooks/useStats";
@@ -16,7 +16,7 @@ import { PublishingCard } from "./stats/PublishingCard";
 import { DecadeHistogram } from "./stats/DecadeHistogram";
 import { MarketCard } from "./stats/MarketCard";
 import { useEffectiveConfig, persistStatsOrder } from "../hooks/useAppConfig";
-import { orderByIds, moveId } from "../utils/statsLayout";
+import { orderByIds, moveId, distributeColumns } from "../utils/statsLayout";
 
 interface StatCard {
   id: string;
@@ -37,6 +37,17 @@ export const StatsSection: React.FC = () => {
   const [arranging, setArranging] = useState(false);
   const [dragId, setDragId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
+
+  // Liczba kolumn masonry zależna od breakpointu md (768px) — round-robin trzyma
+  // czytanie „wiersz po wierszu", więc kolumny muszą odpowiadać temu, co widać.
+  const [cols, setCols] = useState(2);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const apply = () => setCols(mq.matches ? 2 : 1);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
 
   if (loading && !stats) {
     return (
@@ -221,6 +232,55 @@ export const StatsSection: React.FC = () => {
   };
   const exitArrange = () => { setArranging(false); setDragId(null); setOverId(null); };
 
+  // Jedna karta z opakowaniem DnD + nakładkami trybu układania (reużywalna w blokach
+  // round-robin i w kartach pełnej szerokości).
+  const renderCard = (card: StatCard) => {
+    const dragging = dragId === card.id;
+    const isOver = arranging && overId === card.id && !!dragId && dragId !== card.id;
+    return (
+      <div
+        key={card.id}
+        className={`relative ${arranging ? "cursor-move select-none" : ""} ${dragging ? "opacity-40" : ""}`}
+        draggable={arranging}
+        onDragStart={(e) => {
+          if (!arranging) return;
+          setDragId(card.id);
+          e.dataTransfer.effectAllowed = "move";
+          try { e.dataTransfer.setData("text/plain", card.id); } catch { /* Safari */ }
+        }}
+        onDragEnter={() => { if (arranging) setOverId(card.id); }}
+        onDragOver={(e) => { if (arranging) e.preventDefault(); }}
+        onDrop={(e) => { if (arranging) { e.preventDefault(); commitReorder(card.id); } }}
+        onDragEnd={() => { setDragId(null); setOverId(null); }}
+      >
+        <div className={arranging ? "pointer-events-none" : ""}>{card.node}</div>
+        {arranging && (
+          <div className={`absolute inset-0 rounded-3xl border-2 border-dashed pointer-events-none transition-colors ${isOver ? "border-cyan-400/70 bg-cyan-500/5" : "border-amber-500/40"}`} />
+        )}
+        {arranging && !dragging && (
+          <div className="absolute top-3 right-3 flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-950/85 border border-amber-500/30 text-amber-300 text-[9px] font-bold uppercase tracking-widest pointer-events-none">
+            <GripVertical className="w-3 h-3" /> przeciągnij
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Segmentacja: karty pełnej szerokości (span2) przerywają blok round-robin i renderują
+  // się na całą szerokość; pozostałe idą w kolumny (i % cols) z niezależnym pakowaniem.
+  type Segment = { kind: "full"; card: StatCard } | { kind: "block"; cards: StatCard[] };
+  const segments: Segment[] = [];
+  let run: StatCard[] = [];
+  for (const c of ordered) {
+    if (c.span2) {
+      if (run.length) { segments.push({ kind: "block", cards: run }); run = []; }
+      segments.push({ kind: "full", card: c });
+    } else {
+      run.push(c);
+    }
+  }
+  if (run.length) segments.push({ kind: "block", cards: run });
+
   return (
     <div className="space-y-8">
       <div className="flex items-center gap-6">
@@ -276,42 +336,24 @@ export const StatsSection: React.FC = () => {
         </div>
       )}
 
-      {/* Masonry (multi-column): każda kolumna pakuje się niezależnie, więc krótsza
-          karta nie rozciąga się do wysokości sąsiada i nie zostawia dziury pod sobą.
-          Karta pełnej szerokości (histogram dekad) rozpina się przez `column-span:all`. */}
-      <div className="columns-1 md:columns-2 gap-8">
-        {ordered.map((card) => {
-          const dragging = dragId === card.id;
-          const isOver = arranging && overId === card.id && !!dragId && dragId !== card.id;
-          return (
-            <div
-              key={card.id}
-              className={`relative mb-8 break-inside-avoid ${card.span2 ? "md:[column-span:all]" : ""} ${arranging ? "cursor-move select-none" : ""} ${dragging ? "opacity-40" : ""}`}
-              draggable={arranging}
-              onDragStart={(e) => {
-                if (!arranging) return;
-                setDragId(card.id);
-                e.dataTransfer.effectAllowed = "move";
-                try { e.dataTransfer.setData("text/plain", card.id); } catch { /* Safari */ }
-              }}
-              onDragEnter={() => { if (arranging) setOverId(card.id); }}
-              onDragOver={(e) => { if (arranging) e.preventDefault(); }}
-              onDrop={(e) => { if (arranging) { e.preventDefault(); commitReorder(card.id); } }}
-              onDragEnd={() => { setDragId(null); setOverId(null); }}
-            >
-              <div className={arranging ? "pointer-events-none" : ""}>{card.node}</div>
-
-              {arranging && (
-                <div className={`absolute inset-0 rounded-3xl border-2 border-dashed pointer-events-none transition-colors ${isOver ? "border-cyan-400/70 bg-cyan-500/5" : "border-amber-500/40"}`} />
-              )}
-              {arranging && !dragging && (
-                <div className="absolute top-3 right-3 flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-950/85 border border-amber-500/30 text-amber-300 text-[9px] font-bold uppercase tracking-widest pointer-events-none">
-                  <GripVertical className="w-3 h-3" /> przeciągnij
+      {/* Masonry „wiersz po wierszu": karty rozłożone round-robin (i % cols) na osobne
+          kolumny, każda pakuje się niezależnie (brak sprzężenia wysokości = brak dziur),
+          a odczyt lewo→prawo/góra→dół pozostaje 0,1,2,3,... Karta pełnej szerokości
+          (histogram dekad) przerywa blok i zajmuje całą szerokość. */}
+      <div className="space-y-8">
+        {segments.map((seg, si) =>
+          seg.kind === "full" ? (
+            <div key={`full-${si}`}>{renderCard(seg.card)}</div>
+          ) : (
+            <div key={`block-${si}`} className="flex gap-8">
+              {distributeColumns(seg.cards, cols).map((col, ci) => (
+                <div key={ci} className="flex-1 min-w-0 flex flex-col gap-8">
+                  {col.map((card) => renderCard(card))}
                 </div>
-              )}
+              ))}
             </div>
-          );
-        })}
+          )
+        )}
       </div>
     </div>
   );
