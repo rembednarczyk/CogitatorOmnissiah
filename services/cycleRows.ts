@@ -37,11 +37,19 @@ export interface CyclesHarvest {
   harvestedAt: number | null;
 }
 
+/**
+ * Etykieta kolumny „Lp" (tytułowej) dla tomu cyklu: „Nazwa cyklu (nr)", np. „Mistborn (3)".
+ * Stabilna (nie zależy od przenumerowań Lp), czytelna, jasno odróżnia tom od numeru nagrody.
+ */
+export function cycleLpLabel(cycleName: string, nr: number): string {
+  return `${(cycleName || "Cykl").trim()} (${nr})`;
+}
+
 /** Payload nowego wiersza pobocznego tomu cyklu. */
 export function buildCycleVolumeProperties(input: { title: string; author?: string; cycleName: string; nr: number }): Record<string, any> {
   const title = sanitizeNotionString(input.title || "");
   const properties: Record<string, any> = {
-    "Lp": { title: [{ text: { content: title || "Tom cyklu" } }] },
+    "Lp": { title: [{ text: { content: sanitizeNotionString(cycleLpLabel(input.cycleName, input.nr)) } }] },
     "Tytuł polski": { rich_text: [{ text: { content: title } }] },
     "Kategoria": { select: { name: CYCLE_VOLUME_CATEGORY } },
     "Cykl": { rich_text: [{ text: { content: sanitizeNotionString(input.cycleName || "") } }] },
