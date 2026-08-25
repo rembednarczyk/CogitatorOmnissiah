@@ -1,3 +1,4 @@
+import { fakeConfig } from "./testConfig";
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BookSyncService } from '../bookSyncService';
 import { NotionAdapter } from '../../notion.adapter';
@@ -23,7 +24,7 @@ describe('BookSyncService', () => {
 
     mockSendEvent = vi.fn();
 
-    service = new BookSyncService(mockNotion as unknown as NotionAdapter, mockWiki as unknown as WikiAdapter);
+    service = new BookSyncService(mockNotion as unknown as NotionAdapter, mockWiki as unknown as WikiAdapter, fakeConfig);
   });
 
   describe('fetchBooksFromMediaWiki', () => {

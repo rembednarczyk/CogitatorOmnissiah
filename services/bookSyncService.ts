@@ -7,11 +7,12 @@ import { Book, NotionBook, SyncEvent, SyncParams } from "../src/types";
 import { normalizeData } from "./dataNormalizer";
 import { buildBookUpdates, buildNewBookProperties } from "./bookDiff";
 import { createLogger } from "../logger";
+import { ConfigService } from "./configService";
 
 const log = createLogger("BookSync");
 
 export class BookSyncService {
-  constructor(private notion: NotionAdapter, private wiki: WikiAdapter) {}
+  constructor(private notion: NotionAdapter, private wiki: WikiAdapter, private config: ConfigService) {}
 
   async fetchBooksFromMediaWiki(pageTitle: string, awardName: string, sendEvent: (data: SyncEvent) => void): Promise<Book[]> {
     sendEvent({ type: "status", message: `Inicjacja ekstrakcji danych z Archiwum Encyklopedii: ${awardName}...` });
@@ -34,12 +35,9 @@ export class BookSyncService {
       await this.notion.init();
       let allBooksToSync: Book[] = [];
       if (params.syncAll) {
-        const PREDEFINED_AWARDS = [
-          { name: "Nagroda Hugo", title: "Hugo nagroda powieść" },
-          { name: "Nagroda Nebula", title: "Nebula nagroda najlepsza powieść" },
-          { name: "Nagroda Locus", title: "Locus nagroda powieść" }
-        ];
-        for (const aw of PREDEFINED_AWARDS) {
+        // Lista stron nagród z konfiguracji (knob `sync.awards`) — bez kopii w kodzie.
+        const awards = (await this.config.getConfig()).sync.awards;
+        for (const aw of awards) {
           if (checkCancellation()) break;
           const books = await this.fetchBooksFromMediaWiki(aw.title, aw.name, sendEvent);
           allBooksToSync = allBooksToSync.concat(books);
@@ -91,7 +89,7 @@ export class BookSyncService {
       const syncSummary = { added: [] as string[], updated: [] as string[], skipped: [] as string[], duplicates: [] as string[] };
       const errors: any[] = [];
       
-      const limit = pLimit(3);
+      const limit = pLimit((await this.config.getConfig()).sync.writeConcurrency);
       let processedCount = 0;
 
       const syncTasks = booksToSync.map((book) => limit(async () => {

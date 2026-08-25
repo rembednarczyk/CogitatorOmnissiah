@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { fakeConfig } from "./testConfig";
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 vi.mock('axios', () => ({
@@ -52,7 +53,7 @@ describe('VintedSyncService', () => {
       }),
     });
 
-    const svc = new VintedSyncService(notion);
+    const svc = new VintedSyncService(notion, fakeConfig);
     await svc.runVintedCheck(sendEvent, never);
 
     const events = sendEvent.mock.calls.map((c: any) => c[0]);
@@ -73,7 +74,7 @@ describe('VintedSyncService', () => {
     ]);
     mockedGet.mockResolvedValue({ data: NO_RESULTS_HTML });
 
-    const svc = new VintedSyncService(notion);
+    const svc = new VintedSyncService(notion, fakeConfig);
     await svc.runVintedCheck(sendEvent, never);
 
     const events = sendEvent.mock.calls.map((c: any) => c[0]);
@@ -90,7 +91,7 @@ describe('VintedSyncService', () => {
     ]);
     mockedGet.mockResolvedValue({ data: NO_RESULTS_HTML });
 
-    const svc = new VintedSyncService(notion);
+    const svc = new VintedSyncService(notion, fakeConfig);
     await svc.runVintedCheck(sendEvent, never);
 
     expect(mockedGet).not.toHaveBeenCalled();

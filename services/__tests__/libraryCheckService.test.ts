@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { fakeConfig } from "./testConfig";
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('axios', () => ({
@@ -46,7 +47,7 @@ describe('LibraryCheckService', () => {
     ]);
     mockedGet.mockResolvedValue({ data: OPAC_MISS });
 
-    await new LibraryCheckService(notion).runLibraryCheck('48', sendEvent, never);
+    await new LibraryCheckService(notion, fakeConfig).runLibraryCheck('48', sendEvent, never);
 
     expect(mockedGet).toHaveBeenCalledTimes(1); // only book #1 is a valid candidate
     const complete = sendEvent.mock.calls.map((c: any) => c[0]).find((e: any) => e.type === 'complete');
@@ -64,7 +65,7 @@ describe('LibraryCheckService', () => {
       ),
     });
 
-    await new LibraryCheckService(notion).runLibraryCheck('48', sendEvent, never);
+    await new LibraryCheckService(notion, fakeConfig).runLibraryCheck('48', sendEvent, never);
 
     const match = sendEvent.mock.calls.map((c: any) => c[0]).find((e: any) => e.type === 'match');
     expect(match).toBeDefined();
@@ -83,7 +84,7 @@ describe('LibraryCheckService', () => {
       ),
     });
 
-    await new LibraryCheckService(notion).runLibraryCheck('48', sendEvent, never);
+    await new LibraryCheckService(notion, fakeConfig).runLibraryCheck('48', sendEvent, never);
 
     const match = sendEvent.mock.calls.map((c: any) => c[0]).find((e: any) => e.type === 'match');
     expect(match).toBeUndefined();
@@ -95,7 +96,7 @@ describe('LibraryCheckService', () => {
     const notion = makeNotion([{ id: '1', plTitle: 'Solaris', author: 'Stanisław Lem', zrodlo: [] }]);
     mockedGet.mockResolvedValue({ data: OPAC_MISS });
 
-    await new LibraryCheckService(notion).runLibraryCheck('48', sendEvent, () => true);
+    await new LibraryCheckService(notion, fakeConfig).runLibraryCheck('48', sendEvent, () => true);
 
     expect(mockedGet).not.toHaveBeenCalled();
     const complete = sendEvent.mock.calls.map((c: any) => c[0]).find((e: any) => e.type === 'complete');

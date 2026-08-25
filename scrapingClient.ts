@@ -22,7 +22,11 @@ const USER_AGENTS = [
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15'
 ];
 
-export const getRandomUserAgent = () => USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
+/** Losowy UA z przekazanej puli (konfig `scraping.userAgents`); bez argumentu — z wbudowanej. */
+export const getRandomUserAgent = (pool?: string[]) => {
+  const list = pool && pool.length > 0 ? pool : USER_AGENTS;
+  return list[Math.floor(Math.random() * list.length)];
+};
 
 export interface ScrapingAgentOptions {
   /** Maks. równoległych połączeń do jednego hosta (domyślnie 5). */

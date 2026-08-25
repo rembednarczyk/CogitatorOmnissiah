@@ -4,9 +4,10 @@ import { WikiAdapter } from "../wiki.adapter";
 import { WikiParser } from "../wiki.parser";
 import { NotionBook, SyncEvent } from "../src/types";
 import { isWikiAuthorMatch } from "./dataNormalizer";
+import { ConfigService } from "./configService";
 
 export class CyclesSyncService {
-  constructor(private notion: NotionAdapter, private wiki: WikiAdapter) {}
+  constructor(private notion: NotionAdapter, private wiki: WikiAdapter, private config: ConfigService) {}
 
   async runCyclesSync(sendEvent: (data: SyncEvent) => void, checkCancellation: () => boolean) {
     try {
@@ -34,7 +35,7 @@ export class CyclesSyncService {
       if (failedTitles.length > 0) {
         errors.push({ book: `${failedTitles.length} stron`, error: `Nie udało się pobrać treści z encyklopedii (fallback przez wyszukiwarkę): ${failedTitles.slice(0, 5).join(", ")}${failedTitles.length > 5 ? "…" : ""}` });
       }
-      const limit = pLimit(3);
+      const limit = pLimit((await this.config.getConfig()).sync.writeConcurrency);
       
       const isAuthorMatch = isWikiAuthorMatch;
 

@@ -2,13 +2,16 @@ import { NotionAdapter } from "../notion.adapter";
 import { WikiAdapter } from "../wiki.adapter";
 import { NotionBook, SyncEvent } from "../src/types";
 import { countCommonWords, calculateSimilarity } from "../utils";
+import { ConfigService } from "./configService";
 
 export class DuplicateSyncService {
-  constructor(private notion: NotionAdapter, private wiki: WikiAdapter) {}
+  constructor(private notion: NotionAdapter, private wiki: WikiAdapter, private config: ConfigService) {}
 
   async runDuplicateCheck(sendEvent: (data: SyncEvent) => void, checkCancellation: () => boolean) {
     console.log("DuplicateSyncService runDuplicateCheck started");
     try {
+      // Progi podobieństwa z konfiguracji (knoby `sync.dup*Threshold`).
+      const { dupAuthorThreshold, dupTitleThreshold } = (await this.config.getConfig()).sync;
       sendEvent({ type: "status", message: "Inicjalizacja bazy Notion..." });
       await this.notion.init();
       console.log("Notion initialized");
@@ -36,7 +39,7 @@ export class DuplicateSyncService {
           let isDuplicate = false;
           let reason = "";
           
-          const sameAuthor = authorA && authorB && (authorA === authorB || calculateSimilarity(authorA, authorB) > 0.85);
+          const sameAuthor = authorA && authorB && (authorA === authorB || calculateSimilarity(authorA, authorB) > dupAuthorThreshold);
           const differentAuthor = authorA && authorB && !sameAuthor && calculateSimilarity(authorA, authorB) < 0.5; // Clearly different
 
           if (differentAuthor) continue; 
@@ -52,12 +55,12 @@ export class DuplicateSyncService {
             reason = "identyczny tytuł oryg.";
           }
           // 3. High similarity for Polish title
-          else if (titleA && titleB && calculateSimilarity(titleA, titleB) > 0.9) {
+          else if (titleA && titleB && calculateSimilarity(titleA, titleB) > dupTitleThreshold) {
             isDuplicate = true;
             reason = "wysokie podobieństwo PL";
           }
           // 4. High similarity for Original title
-          else if (origA && origB && calculateSimilarity(origA, origB) > 0.9) {
+          else if (origA && origB && calculateSimilarity(origA, origB) > dupTitleThreshold) {
             isDuplicate = true;
             reason = "wysokie podobieństwo oryg.";
           }

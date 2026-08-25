@@ -1,3 +1,4 @@
+import { fakeConfig } from "./testConfig";
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { IntegrityService } from '../integrityService';
 import { NotionAdapter } from '../../notion.adapter';
@@ -22,7 +23,7 @@ describe('IntegrityService', () => {
 
     mockSendEvent = vi.fn();
 
-    service = new IntegrityService(mockNotion as unknown as NotionAdapter, mockWiki as unknown as WikiAdapter);
+    service = new IntegrityService(mockNotion as unknown as NotionAdapter, mockWiki as unknown as WikiAdapter, fakeConfig);
   });
 
   it('detects duplicate Lp values', async () => {

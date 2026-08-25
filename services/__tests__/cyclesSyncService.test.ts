@@ -1,3 +1,4 @@
+import { fakeConfig } from "./testConfig";
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { CyclesSyncService } from '../cyclesSyncService';
 import { NotionAdapter } from '../../notion.adapter';
@@ -26,7 +27,7 @@ describe('CyclesSyncService', () => {
 
     mockSendEvent = vi.fn();
 
-    service = new CyclesSyncService(mockNotion as unknown as NotionAdapter, mockWiki as unknown as WikiAdapter);
+    service = new CyclesSyncService(mockNotion as unknown as NotionAdapter, mockWiki as unknown as WikiAdapter, fakeConfig);
   });
 
   it('updates cycle checkbox when it differs', async () => {

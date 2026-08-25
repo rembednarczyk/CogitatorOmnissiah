@@ -113,6 +113,29 @@ export class NotionAdapter {
     }
   }
 
+  /** Nazwa kolumny-nośnika konfiguracji aplikacji (blob JSON żyje w jej OPISIE, nie w wierszach). */
+  private static readonly APP_CONFIG_COLUMN = "AppConfig";
+
+  /**
+   * Odczyt blobu konfiguracji z opisu kolumny `AppConfig`. Brak kolumny/opisu → null
+   * (aplikacja działa na defaultach z `configSchema`). Opis kolumny wybrano zamiast
+   * wiersza-sentinela, bo rytuały (puryfikacja/integralność/LP) iterują po wszystkich
+   * wierszach i sentinel by w nie wyciekał.
+   */
+  async getAppConfigRaw(): Promise<string | null> {
+    const schema = await this.getSchema();
+    const desc = schema?.[NotionAdapter.APP_CONFIG_COLUMN]?.description;
+    return typeof desc === "string" && desc.trim() ? desc : null;
+  }
+
+  /** Zapis blobu konfiguracji do opisu kolumny `AppConfig` (tworzy kolumnę przy pierwszym zapisie). */
+  async saveAppConfigRaw(json: string): Promise<void> {
+    await this.init();
+    await this.updateSource(this.actualDataSourceId!, {
+      [NotionAdapter.APP_CONFIG_COLUMN]: { rich_text: {}, description: json },
+    });
+  }
+
   async queryAllBooks(onProgress?: (count: number) => void, checkCancellation?: () => boolean): Promise<NotionBook[]> {
     await this.init();
     const allBooks: NotionBook[] = [];

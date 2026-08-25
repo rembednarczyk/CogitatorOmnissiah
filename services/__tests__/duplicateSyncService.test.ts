@@ -1,3 +1,4 @@
+import { fakeConfig } from "./testConfig";
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DuplicateSyncService } from '../duplicateSyncService';
 import { NotionAdapter } from '../../notion.adapter';
@@ -20,7 +21,7 @@ describe('DuplicateSyncService', () => {
 
     mockSendEvent = vi.fn();
 
-    service = new DuplicateSyncService(mockNotion as unknown as NotionAdapter, mockWiki as unknown as WikiAdapter);
+    service = new DuplicateSyncService(mockNotion as unknown as NotionAdapter, mockWiki as unknown as WikiAdapter, fakeConfig);
   });
 
   it('detects duplicates with identical titles', async () => {

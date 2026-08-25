@@ -9,6 +9,8 @@ router.get("/wiki/last-update", syncController.getWikiLastUpdate);
 router.get("/health", syncController.getHealth);
 router.get("/diagnostics", syncController.getDiagnostics);
 router.get("/config", syncController.getConfig);
+router.get("/app-config", syncController.getAppConfig);
+router.put("/app-config", syncController.updateAppConfig);
 router.get("/notion/schema", syncController.getNotionSchema);
 router.patch("/notion/schema", syncController.updateNotionSchema);
 router.post("/sync/reset", syncController.resetSyncState);

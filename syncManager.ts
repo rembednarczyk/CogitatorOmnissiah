@@ -13,6 +13,7 @@ import { IntegrityService } from "./services/integrityService";
 import { LibraryCheckService } from "./services/libraryCheckService";
 import { VintedSyncService } from "./services/vintedSyncService";
 import { toSearchIndex } from "./services/bookSearchIndex";
+import { ConfigService } from "./services/configService";
 import { createLogger, classifyHttpError } from "./logger";
 import { SyncEvent } from "./src/types";
 
@@ -27,18 +28,20 @@ const log = createLogger("SyncManager");
 
 const notionAdapter = new NotionAdapter(process.env.NOTION_API_KEY!, process.env.NOTION_DATABASE_ID!);
 const wikiAdapter = new WikiAdapter();
-const duplicateSyncService = new DuplicateSyncService(notionAdapter, wikiAdapter);
-const bookSyncService = new BookSyncService(notionAdapter, wikiAdapter);
+/** Konfiguracja aplikacji (knoby) — defaulty + nadpisania z Notion; wstrzykiwana do serwisów. */
+export const configService = new ConfigService(notionAdapter);
+const duplicateSyncService = new DuplicateSyncService(notionAdapter, wikiAdapter, configService);
+const bookSyncService = new BookSyncService(notionAdapter, wikiAdapter, configService);
 const publisherSyncService = new PublisherSyncService(notionAdapter, wikiAdapter);
 const seriesSyncService = new SeriesSyncService(notionAdapter, wikiAdapter);
-const cyclesSyncService = new CyclesSyncService(notionAdapter, wikiAdapter);
+const cyclesSyncService = new CyclesSyncService(notionAdapter, wikiAdapter, configService);
 const lpSyncService = new LpSyncService(notionAdapter);
 const statsService = new StatsService(notionAdapter);
 const purificationService = new PurificationService(notionAdapter);
 const schemaValidationService = new SchemaValidationService(notionAdapter);
-const integrityService = new IntegrityService(notionAdapter, wikiAdapter);
-const libraryCheckService = new LibraryCheckService(notionAdapter);
-const vintedSyncService = new VintedSyncService(notionAdapter);
+const integrityService = new IntegrityService(notionAdapter, wikiAdapter, configService);
+const libraryCheckService = new LibraryCheckService(notionAdapter, configService);
+const vintedSyncService = new VintedSyncService(notionAdapter, configService);
 
 interface SyncTask {
   name: string;
@@ -193,12 +196,8 @@ class SyncManager {
       log.error("Diagnostics: Notion FAILED", report.notion);
     }
 
-    // 2. Wiki — pobranie każdej strony nagrody z osobna
-    const AWARDS = [
-      { name: "Nagroda Hugo", title: "Hugo nagroda powieść" },
-      { name: "Nagroda Nebula", title: "Nebula nagroda najlepsza powieść" },
-      { name: "Nagroda Locus", title: "Locus nagroda powieść" },
-    ];
+    // 2. Wiki — pobranie każdej strony nagrody z osobna (lista z konfiguracji `sync.awards`)
+    const AWARDS = (await configService.getConfig()).sync.awards;
     for (const aw of AWARDS) {
       const t0 = Date.now();
       try {

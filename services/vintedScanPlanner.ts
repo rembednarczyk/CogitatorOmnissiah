@@ -22,16 +22,17 @@ export interface ScanPlan {
  * (2) opcjonalnie pomiń skanowane w ostatnich `skipScannedWithinHours` (bieżąca partia),
  * (3) posortuj OD NAJSTARSZYCH (nigdy-skanowane pierwsze) — przerwany przebieg zawsze
  * posuwa najbardziej nieaktualne dane, a „Kontynuuj" domyka partię zamiast dublować świeże.
- * `now` wstrzykiwalny dla testów.
+ * `now` wstrzykiwalny dla testów; `excludedSources` z konfiguracji (default = dotychczasowa lista).
  */
 export function selectAndOrderCandidates(
   books: NotionBook[],
   skipScannedWithinHours?: number,
   now: number = Date.now(),
+  excludedSources: string[] = EXCLUDED_SOURCES,
 ): ScanPlan {
   const base = books.filter((b) => {
     const zrodlo = b.zrodlo || [];
-    return !zrodlo.some((z) => EXCLUDED_SOURCES.includes(z)) && !!b.plTitle && b.plTitle.trim() !== "";
+    return !zrodlo.some((z) => excludedSources.includes(z)) && !!b.plTitle && b.plTitle.trim() !== "";
   });
 
   let withDates = base.map((b) => ({ book: b, at: scannedMs(b) }));
