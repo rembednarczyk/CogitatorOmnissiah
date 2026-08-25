@@ -83,6 +83,44 @@ export class StatsService {
     });
     const availabilityStats = { totalUnread, ...availability };
 
+    // 5c. Wydawnictwa / Serie / Cykle — dane z rytuałów publisher/series/cycles, dotąd
+    // nietknięte przez statystyki. Wszystkie liczą się per książka z niepustym polem.
+    const isReadBook = (b: typeof books[number]) => (b.zrodlo || []).includes("Przeczytane");
+    const isOwnedBook = (b: typeof books[number]) => (b.zrodlo || []).includes("Posiadam");
+
+    // Top wydawnictwa: liczba tytułów + ile przeczytanych.
+    const publisherMap: Record<string, { count: number; read: number }> = {};
+    books.forEach(book => {
+      const pub = (book.currentWydawnictwo || "").trim();
+      if (!pub) return;
+      if (!publisherMap[pub]) publisherMap[pub] = { count: 0, read: 0 };
+      publisherMap[pub].count++;
+      if (isReadBook(book)) publisherMap[pub].read++;
+    });
+    const publisherStats = Object.entries(publisherMap)
+      .map(([name, s]) => ({ name, ...s }))
+      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "pl"))
+      .slice(0, 15);
+
+    // Serie: ile tytułów w serii, ile posiadasz (luki = count − owned).
+    const seriesMap: Record<string, { count: number; owned: number; read: number }> = {};
+    books.forEach(book => {
+      const ser = (book.currentSeria || "").trim();
+      if (!ser) return;
+      if (!seriesMap[ser]) seriesMap[ser] = { count: 0, owned: 0, read: 0 };
+      seriesMap[ser].count++;
+      if (isOwnedBook(book)) seriesMap[ser].owned++;
+      if (isReadBook(book)) seriesMap[ser].read++;
+    });
+    const seriesStats = Object.entries(seriesMap)
+      .map(([name, s]) => ({ name, ...s }))
+      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "pl"))
+      .slice(0, 15);
+
+    // Cykle: udział książek będących częścią cyklu (currentCzesccyklu) w kolekcji.
+    const cyclePart = books.filter(b => b.currentCzesccyklu === true).length;
+    const cycleStats = { partOfCycle: cyclePart, standalone: books.length - cyclePart, total: books.length };
+
     // 6. Yearly progress
     const yearlyStats: Record<string, { read: number; total: number; books: any[] }> = {};
     books.forEach(book => {
@@ -124,6 +162,9 @@ export class StatsService {
         .map(([year, stats]) => ({ year, ...stats }))
         .sort((a, b) => parseInt(a.year) - parseInt(b.year)),
       availabilityStats,
+      publisherStats,
+      seriesStats,
+      cycleStats,
       // Filie z konfiguracji (`library.branches`) — dopisanie 3. filii w Kalibracji od razu
       // pojawia się w statystykach. `id` = tag „Źródło" filii (dopasowanie po znaczniku).
       libraryStats: branches.map(branch => ({
