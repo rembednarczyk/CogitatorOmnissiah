@@ -61,6 +61,7 @@ export function useCyclesHarvest() {
    * widok. `active=true` dopisuje, `false` usuwa (endpoint mark/unmark-as-read).
    */
   const toggleSource = useCallback(async (id: string, tag: "Przeczytane" | "Posiadam", active: boolean) => {
+    if (!id) return; // bez ID nie ma czego oznaczać (i pusty busyId rozbrajałby blokadę)
     setBusyId(id);
     setError(null);
     try {

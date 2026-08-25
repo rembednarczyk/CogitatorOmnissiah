@@ -30,8 +30,10 @@ export interface CycleView {
   source: "chain" | "template" | "mixed" | "single";
 }
 
-/** Normalizacja tytułu do krzyżowania: bez formatowania wiki, lowercase, bez interpunkcji brzegowej. */
-function normTitle(t: string): string {
+/** Normalizacja tytułu do krzyżowania: bez formatowania wiki, lowercase, bez interpunkcji brzegowej.
+ *  Eksportowana, by rytuał żniw indeksował wiersze DOKŁADNIE tak samo (inaczej „inBase" z
+ *  lookup i dopasowanie w żniwach się rozjeżdżają → duplikat wiersza). */
+export function normTitle(t: string): string {
   return (t || "")
     .replace(/''+/g, "")
     .replace(/\[\[([^\]|]+\|)?([^\]]+)\]\]/g, "$2")
@@ -147,7 +149,11 @@ export class CycleLookupService {
     const currentIdx = volumes.findIndex((v) => v.isCurrent);
     const unreadBefore = currentIdx > 0 ? volumes.slice(0, currentIdx).filter((v) => !v.read).length : 0;
 
-    log.info("Cykl", { title: rawTitle, cycle: info.cycleName, volumes: volumes.length, source });
-    return { cycleName: info.cycleName || "Cykl", volumes, unreadBefore, source };
+    // Nazwa cyklu: pole |cykl= jeśli jest; inaczej NIE „Cykl" (wszystkie bezimienne
+    // cykle zlałyby się w jedną grupę i większość zostałaby pominięta w żniwach) —
+    // bierzemy tytuł PIERWSZEGO tomu, stabilny niezależnie od kotwicy startowej.
+    const cycleName = info.cycleName || volumes[0]?.title || "Cykl";
+    log.info("Cykl", { title: rawTitle, cycle: cycleName, volumes: volumes.length, source });
+    return { cycleName, volumes, unreadBefore, source };
   }
 }

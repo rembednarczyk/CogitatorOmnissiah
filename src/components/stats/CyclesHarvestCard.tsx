@@ -45,7 +45,13 @@ export const CyclesHarvestCard: React.FC = () => {
         </div>
       )}
 
-      {error && !loading && <p className="text-sm text-slate-400 italic text-center py-8">{error}</p>}
+      {/* Błąd wczytywania (brak danych) → duży komunikat; błąd oznaczania (dane są) → zwięzły baner nad listą. */}
+      {error && !loading && !view && <p className="text-sm text-slate-400 italic text-center py-8">{error}</p>}
+      {error && !loading && view && (
+        <div className="flex items-center gap-2 p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 text-xs">
+          <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> {error}
+        </div>
+      )}
 
       {view && !loading && view.totalCycles === 0 && (
         <p className="text-slate-400 text-sm italic text-center py-8">

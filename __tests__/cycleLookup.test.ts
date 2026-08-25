@@ -82,6 +82,18 @@ describe("CycleLookupService.lookup", () => {
     expect(view!.unreadBefore).toBe(2); // T1 i T2 nieprzeczytane
   });
 
+  it("names a nameless (chain-only) cycle by its first volume, not the generic 'Cykl'", async () => {
+    // Łańcuch prev/next BEZ pola |cykl= — dawniej cycleName spadał do „Cykl", przez co
+    // wszystkie bezimienne cykle zlewały się w jedną grupę i były pomijane w żniwach.
+    const wiki = makeWiki({
+      "Alfa": page({ następna: "Beta" }),
+      "Beta": page({ poprzednia: "Alfa" }),
+    });
+    const svc = new CycleLookupService(makeNotion([]), wiki);
+    const view = await svc.lookup("Beta", "");
+    expect(view!.cycleName).toBe("Alfa"); // tytuł pierwszego tomu, stabilny między kotwicami
+  });
+
   it("returns null when the book is not part of any cycle", async () => {
     const wiki = makeWiki({ "X": page({ tytuł: "X" }) });
     const svc = new CycleLookupService(makeNotion([]), wiki);
