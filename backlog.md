@@ -620,6 +620,31 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
 
 ## Otwarte pozycje
 
+- **Cykle UC1: skaner Vinted szuka BRAKUJĄCYCH tomów cykli („widm")** — ODŁOŻONE (na życzenie, po Etapie 1).
+  Kontekst: Etap 1 gotowy (1.36.0–1.37.1) — Rytuał Żniw zbiera tomy cykli do blobów `CycleCache` per-pozycja;
+  karta „Archiwum Cykli" je wyświetla (UC2). UC1 = wykorzystać te bloby do KUPOWANIA brakujących tomów.
+  - **Cel**: dla tomów cykli, których NIE ma w bazie (albo są, ale nieposiadane+nieprzeczytane), szukać ofert
+    na Vinted — jak zwykłej książki — i pokazać dostępność, nie dodając ich jako wiersze bazy.
+  - **Dane wejściowe**: `mergeCycleCaches(books)` daje już listę tomów per cykl ze statusami. Widma =
+    `volumes.filter(v => !inBase || (inBase && !owned && !read))`, dedup po znorm. `tytuł|autor` (autor = autor
+    książki-kotwicy cyklu — tomy nie mają własnego pola autora w blobie; ewentualnie dołożyć `a` do `CycleBlobVol`).
+    Czysty helper `buildPhantomTargets(harvest, baseBooks)` + testy; wyklucza tomy będące już wierszami bazy
+    (te skanuje normalny Vinted).
+  - **Szukanie**: reużyć `buildCatalogUrl` + ścieżkę scrape'owania z `vintedSyncService` (ten sam httpsAgent,
+    UA pool, retry, diagnostyka blokad, `search_attempt`/`match` SSE). NIE duplikować — wydzielić wspólny
+    „search one query → items" z `runVintedCheck` i użyć w obu.
+  - **Zapis dostępności**: NIE ma wiersza bazy dla widma → zapisać do... (DECYZJA) albo (a) osobny agregat-blob
+    (np. opis kolumny `CyclePhantoms`, jeśli zmieści się limit — raczej nie przy wielu ofertach), albo (b) dopisać
+    najtańszą ofertę do wpisu tomu w blobie `CycleCache` książki-kotwicy (`mkt:{price,url,at}` w `CycleBlobVol`).
+    REKOMENDACJA: (b) — self-contained, karta „Archiwum Cykli" czyta to samo źródło. Uwaga: skan widm i harvest
+    struktury piszą wtedy w ten sam blob — trzymać rozłącznie (harvest nie kasuje `mkt`, skan nie kasuje struktury).
+  - **Trigger** (DECYZJA, odłożona): osobny rytuał „Vinted Cykli" (rekomendacja — rozdział odpowiedzialności,
+    kontrola obciążenia) vs knob `vinted.scanCyclePhantoms` doczepiający widma do głównego skanu vs oba.
+  - **Ryzyko**: więcej zapytań do Vinted = większe ryzyko blokad (świeżo naprawiona pula UA). Dać opt-in +
+    limit (`vinted.maxPhantomsPerRun`), uczciwy raport pominięć, respektować istniejące okno wznowienia.
+  - **UI**: w karcie „Archiwum Cykli" pokazać przy tomie dostępność (cena + link „kup"), gdy `mkt` obecne.
+  - **Kolejność PR**: (UC1-PR1) czysty `buildPhantomTargets` + `CycleBlobVol.mkt` + ekstrakcja wspólnego
+    „searchOne" z Vinted; (UC1-PR2) rytuał/knob + zapis dostępności; (UC1-PR3) UI dostępności w karcie.
 - **Data przeczytania + „Tempo czytania" (velocity)** — ODŁOŻONE (wymaga NOWEGO ZAPISU, nie tylko
   odczytu). Dziś nie mamy kiedy książka została przeczytana — brak pola. Plan: kolumna „Data
   przeczytania" (date) stemplowana przy oznaczaniu „Przeczytane" (`markAsRead`/`setRead`), czyszczona
