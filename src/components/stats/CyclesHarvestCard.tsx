@@ -15,11 +15,11 @@ const volStatus = (v: HarvestVolume) => {
 };
 
 /**
- * Archiwum Cykli — zbiorczy widok tomów cykli zebranych Rytuałem Żniw (bloby
- * `CycleCache`). Pokazuje ile tomów masz / brakuje, bez dodawania ich do bazy.
+ * Archiwum Cykli — zbiorczy widok tomów cykli (wiersze bazy z pola `Cykl`). Pokazuje
+ * ile tomów masz / do zdobycia i pozwala oznaczać tomy przeczytane/posiadane w miejscu.
  */
 export const CyclesHarvestCard: React.FC = () => {
-  const { view, loading, error } = useCyclesHarvest();
+  const { view, loading, error, busyId, toggleSource } = useCyclesHarvest();
   const [open, setOpen] = useState<string | null>(null);
 
   return (
@@ -85,11 +85,37 @@ export const CyclesHarvestCard: React.FC = () => {
                       const s = volStatus(v);
                       const Icon = s.icon;
                       return (
-                        <li key={i} className="flex items-center gap-2.5 p-2 rounded-lg bg-slate-950/40">
+                        <li key={v.id || i} className="flex items-center gap-2.5 p-2 rounded-lg bg-slate-950/40">
                           <span className="text-[10px] font-bold tabular-nums text-slate-500 w-4 text-right shrink-0">{i + 1}.</span>
                           <Icon className={`w-3.5 h-3.5 shrink-0 ${s.cls}`} />
-                          <span className={`flex-1 min-w-0 text-sm truncate ${v.inBase ? "text-slate-200" : "text-slate-400"}`}>{v.title}</span>
+                          <span className={`flex-1 min-w-0 text-sm truncate ${v.read || v.owned ? "text-slate-200" : "text-slate-400"}`}>{v.title}</span>
                           {v.awarded && <Award className="w-3.5 h-3.5 text-amber-400 shrink-0" aria-label="nagrodzona" />}
+
+                          {busyId === v.id ? (
+                            <Loader2 className="w-3.5 h-3.5 shrink-0 animate-spin text-slate-400" />
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => toggleSource(v.id, "Posiadam", !v.owned)}
+                                disabled={!!busyId}
+                                className={`shrink-0 p-1 rounded-md transition-colors disabled:opacity-40 ${v.owned ? "text-emerald-400 bg-emerald-500/10" : "text-slate-500 hover:text-emerald-300 hover:bg-emerald-500/10"}`}
+                                title={v.owned ? "Oznacz jako nieposiadaną" : "Oznacz jako posiadaną"}
+                                aria-label={`Przełącz posiadanie: ${v.title}`}
+                              >
+                                <Package className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => toggleSource(v.id, "Przeczytane", !v.read)}
+                                disabled={!!busyId}
+                                className={`shrink-0 p-1 rounded-md transition-colors disabled:opacity-40 ${v.read ? "text-cyan-400 bg-cyan-500/10" : "text-slate-500 hover:text-cyan-300 hover:bg-cyan-500/10"}`}
+                                title={v.read ? "Oznacz jako nieprzeczytaną" : "Oznacz jako przeczytaną"}
+                                aria-label={`Przełącz przeczytanie: ${v.title}`}
+                              >
+                                <Check className="w-3.5 h-3.5" />
+                              </button>
+                            </>
+                          )}
+
                           <a
                             href={encyclopediaUrl(v.title)}
                             target="_blank"

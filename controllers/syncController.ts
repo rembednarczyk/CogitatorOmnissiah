@@ -188,7 +188,7 @@ export const stopSchemaSync = makeStopHandler("Zatrzymano inicjalizację schemat
 // Znaczniki „Źródło", które wolno dopisać z tego endpointu. Ograniczone do
 // znanego zbioru — endpoint jedynie oznacza pozycję (przeczytana / dostępna w
 // danej filii), nie może wstrzykiwać dowolnych tagów do bazy Notion.
-const ALLOWED_SOURCE_TAGS = new Set(["Przeczytane", "Biblioteka", "Biblioteka 9"]);
+const ALLOWED_SOURCE_TAGS = new Set(["Przeczytane", "Posiadam", "Biblioteka", "Biblioteka 9"]);
 
 export const markAsRead = async (req: Request, res: Response) => {
   try {
