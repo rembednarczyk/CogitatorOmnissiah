@@ -1,9 +1,53 @@
 import { BookIndexEntry } from "../types";
 import { ShelfSlot, spineStyle, planShelf, layoutStack, displayTitle, parseYear } from "./bookshelf";
-import { PackItem } from "./shelfPacking";
+import { PackItem, PlacedItem } from "./shelfPacking";
 
 /** Slot do renderu: wolumin/kupka (`ShelfSlot`) albo tabliczka-przekładka sekcji. */
 export type RenderSlot = ShelfSlot | { kind: "divider"; label: string };
+
+/** Poziom, na którym maluje się pozioma tabliczka dekady: u góry (domyślnie) albo u dołu. */
+export type DividerLevel = "top" | "bottom";
+
+/**
+ * Estymowana szerokość poziomej tabliczki rocznika (px) — do wykrywania kolizji.
+ * Sygil koła (13) + gap (6) + padding `px-[9px]` (2×9) + tekst (mono 11px z
+ * `letterSpacing 0.06em` ≈ 7.3 px/znak). To heurystyka, nie pomiar DOM — celuje
+ * w wykrycie „wąskich dekad", nie w subpikselową dokładność.
+ */
+export function plateWidth(label: string): number {
+  return Math.ceil(37 + label.length * 7.3);
+}
+
+/**
+ * Rozdziela tabliczki dekad w JEDNYM rzędzie na dwa poziomy (góra/dół), tak by
+ * sąsiednie nie nachodziły na siebie, gdy dekada jest wąska (mało książek → następna
+ * przekładka blisko). Zachłannie od lewej: tabliczka zostaje na górze, jeśli nie
+ * zderza się z prawą krawędzią ostatniej górnej; inaczej ląduje na dole; a gdy i dół
+ * zajęty (rzadka potrójna kolizja) — wraca na górę (akceptujemy). Zwraca mapę
+ * `key→poziom` TYLKO dla przekładek, które muszą zjechać na dół (reszta = góra).
+ */
+export function assignDividerLevels(
+  row: PlacedItem[],
+  labelOf: (key: string) => string | undefined,
+  gap = 6,
+): Map<string, DividerLevel> {
+  const dividers = row.filter((p) => p.kind === "divider").sort((a, b) => a.x - b.x);
+  const out = new Map<string, DividerLevel>();
+  let topRight = -Infinity;
+  let botRight = -Infinity;
+  for (const d of dividers) {
+    const right = d.x + plateWidth(labelOf(d.key) ?? "");
+    if (d.x >= topRight) {
+      topRight = right + gap;               // góra (domyślna) — nie zapisujemy
+    } else if (d.x >= botRight) {
+      out.set(d.key, "bottom");
+      botRight = right + gap;
+    } else {
+      topRight = right + gap;               // potrójna kolizja → góra
+    }
+  }
+  return out;
+}
 
 const DIVIDER_W = 10;   // cienka deseczka (footprint na półce)
 const DIVIDER_H = 168;  // = BOARD_H w ShelfDivider — realna podpora dla pochyłego sąsiada
