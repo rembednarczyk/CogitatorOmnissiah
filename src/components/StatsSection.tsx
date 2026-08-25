@@ -13,6 +13,7 @@ import { OwnedUnreadItem } from "./stats/OwnedUnreadItem";
 import { AwardCoverageGrid } from "./stats/AwardCoverageGrid";
 import { AvailabilityCard } from "./stats/AvailabilityCard";
 import { PublishingCard } from "./stats/PublishingCard";
+import { DecadeHistogram } from "./stats/DecadeHistogram";
 import { useEffectiveConfig } from "../hooks/useAppConfig";
 
 export const StatsSection: React.FC = () => {
@@ -136,6 +137,11 @@ export const StatsSection: React.FC = () => {
 
         {/* Publishers / Series / Cycles */}
         <PublishingCard publishers={stats.publisherStats} series={stats.seriesStats} cycles={stats.cycleStats} />
+
+        {/* Decade histogram — full width */}
+        <div className="md:col-span-2">
+          <DecadeHistogram decades={stats.decadeStats} />
+        </div>
 
         {/* Yearly Progress */}
         <motion.div
