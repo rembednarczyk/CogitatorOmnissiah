@@ -1,4 +1,5 @@
 import { NotionBook, BookIndexEntry } from "../src/types";
+import { isAwardBook } from "./bookCategory";
 
 /**
  * Czysta projekcja pełnych rekordów Notion → odchudzony indeks wyszukiwarki.
@@ -9,6 +10,9 @@ import { NotionBook, BookIndexEntry } from "../src/types";
  */
 export function toSearchIndex(books: NotionBook[]): BookIndexEntry[] {
   return books
+    // Regał i Skryptorium pozostają nagrodowe — poboczne tomy cykli wykluczamy
+    // (mają własny widok „Archiwum Cykli"); włączenie opcjonalne dojdzie później.
+    .filter((b) => isAwardBook(b))
     .filter((b) => (b.plTitle && b.plTitle.trim().length > 0) || (b.origTitle && b.origTitle.trim().length > 0))
     .map((b) => ({
       id: b.id,

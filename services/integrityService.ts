@@ -4,6 +4,7 @@ import { WikiAdapter } from "../wiki.adapter";
 import { BookSyncService } from "./bookSyncService";
 import { SyncEvent, NotionBook, Book, IntegrityCheckResult } from "../src/types";
 import { normalizeData } from "./dataNormalizer";
+import { isAwardBook } from "./bookCategory";
 
 export type { IntegrityCheckResult };
 
@@ -33,10 +34,13 @@ export class IntegrityService {
       await this.notion.init();
 
       sendEvent({ type: "status", message: "Pobieranie wszystkich danych z Notion..." });
-      const notionBooks = await this.notion.queryAllBooks(
+      const allNotionRows = await this.notion.queryAllBooks(
         (count) => sendEvent({ type: "status", message: `Pobrano ${count} rekordów z Notion...` }),
         checkCancellation
       );
+      // Integralność dotyczy pozycji NAGRODOWYCH — poboczne tomy cykli (Kategoria=Tom
+      // cyklu) nie są na listach nagród wiki, więc wykluczamy je z porównań (rok/Lp).
+      const notionBooks = allNotionRows.filter(isAwardBook);
       if (checkCancellation()) return;
 
       sendEvent({ type: "status", message: "Pobieranie danych z Archiwum Encyklopedii (Nagrody)..." });

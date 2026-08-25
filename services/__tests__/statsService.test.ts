@@ -64,6 +64,19 @@ describe('StatsService', () => {
     expect(stats.ownedUnread[0].title).toBe('Cyberiada');
   });
 
+  it('excludes cycle-volume rows (Kategoria=Tom cyklu) from award stats', async () => {
+    const base = { origTitle: '', author: 'Autor X', year: '1980', currentWydawnictwo: '', currentSeria: '', currentCzesccyklu: false, plTitleRichText: [], origTitleRichText: [] };
+    mockNotion.getBooksForStats.mockResolvedValue([
+      { ...base, id: '1', plTitle: 'Nagrodzona', zrodlo: ['Przeczytane'], awards: ['Nagroda Hugo'], lp: '1' },
+      { ...base, id: '2', plTitle: 'Poboczny tom', zrodlo: ['Przeczytane'], awards: [], lp: '2', kategoria: 'Tom cyklu' },
+    ] as NotionBook[]);
+
+    const stats = await service.getStats();
+    // Tylko pozycja nagrodowa liczona; tom cyklu pominięty w awardBooks i autorach.
+    expect(stats.awardBooksStats).toEqual({ read: 1, total: 1 });
+    expect(stats.authorStats).toEqual([expect.objectContaining({ name: 'Autor X', total: 1 })]);
+  });
+
   it('partitions unread availability by priority (owned > library > vinted > none)', async () => {
     const vintedBlob = JSON.stringify({ scannedAt: "2026-01-01", offers: [{ id: "o", url: "https://vinted.pl/items/1", price: 10 }] });
     const mk = (id: string, zrodlo: string[], vintedData?: string): NotionBook => ({

@@ -2,6 +2,7 @@ import { NotionAdapter } from "../notion.adapter";
 import { ConfigService } from "./configService";
 import { parseVintedData } from "./vintedStore";
 import { computeMarketStats } from "./marketStats";
+import { isAwardBook } from "./bookCategory";
 
 export class StatsService {
   constructor(private notion: NotionAdapter, private config: ConfigService) {}
@@ -10,8 +11,9 @@ export class StatsService {
     let books = await this.notion.getBooksForStats();
     const branches = (await this.config.getConfig()).library.branches;
 
-    // Global filter: only books with a non-empty Polish title
-    books = books.filter(b => b.plTitle && b.plTitle.trim() !== "");
+    // Global filter: tylko pozycje NAGRODOWE (poboczne tomy cykli mają własny widok
+    // w „Archiwum Cykli") oraz z niepustym tytułem polskim.
+    books = books.filter(b => isAwardBook(b) && b.plTitle && b.plTitle.trim() !== "");
     
     // 1. Author progress
     const authorStats: Record<string, { read: number; total: number; books: any[] }> = {};

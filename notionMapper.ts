@@ -64,6 +64,9 @@ export function mapPageToBook(page: NotionPage): NotionBook {
   const currentWydawnictwo = getPlainText(getProp(props, "Wydawnictwo"));
   const currentSeria = getPlainText(getProp(props, "Seria"));
   const currentCzesccyklu = getProp(props, "Część cyklu")?.checkbox || false;
+  // Kategoria wiersza: „Nagroda" (domyślnie, gdy pusto) vs „Tom cyklu" (poboczny tom
+  // cyklu dodany rytuałem żniw). Rozdziela pozycje nagrodowe od reszty.
+  const kategoria = getProp(props, "Kategoria")?.select?.name || undefined;
   const lp = getPlainText(getProp(props, "Lp"));
 
   const awards = multiSelectNames(getProp(props, "Nagroda"));
@@ -88,6 +91,7 @@ export function mapPageToBook(page: NotionPage): NotionBook {
     currentWydawnictwo,
     currentSeria,
     currentCzesccyklu,
+    kategoria,
     lp,
     awards,
     zrodlo,
