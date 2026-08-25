@@ -36,6 +36,19 @@ export interface IdentifiedBook {
   extractedAuthor?: string | null;
 }
 
+/** Zagregowana dostępność nieprzeczytanych — partycja priorytetowa (każda książka raz). */
+export interface AvailabilityStats {
+  totalUnread: number;
+  /** Posiadane, ale nieprzeczytane. */
+  owned: number;
+  /** Dostępne do wypożyczenia w bibliotece (tag filii), nieposiadane. */
+  library: number;
+  /** Dostępne na Vinted (≥1 składowana oferta), nieposiadane i nie w bibliotece. */
+  vinted: number;
+  /** Bez śladu — brak posiadania, biblioteki i ofert. */
+  none: number;
+}
+
 export interface Stats {
   authorStats: AuthorStat[];
   awardBooksStats: { read: number; total: number };
@@ -43,6 +56,7 @@ export interface Stats {
   awardCoverage: AwardCoverageStat[];
   allAwardsStats: { read: number; total: number };
   yearlyStats: YearlyStat[];
+  availabilityStats: AvailabilityStats;
   libraryStats: LibraryStat[];
 }
 
