@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.27.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.28.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,7 +69,18 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
-- **1.27.1** — **Precyzyjny drag&drop na regale — plumbing (DND-PR1).** Kolumna `ShelfOrder`
+- **1.28.0** — **Precyzyjny drag&drop na regale (DND-PR2).** Sort półek: `byShelfPosition`
+  (dekada → `effShelfKey` → tytuł); `effShelfKey` = `shelfOrder` o ile mieści się w dekadzie książki
+  (klucz STALE spoza dekady ignorowany → powrót do roku). Czysty planer `shelfInsertion.ts`:
+  `canInsertAt` (walidacja: szczelina musi sąsiadować z dekadą książki; „bez daty" wykluczone) +
+  `planInsertion` (klucz-środek między sąsiadami = 1 zapis; remis rocznika → renumeracja TYLKO
+  związanego przedziału, limit 40). UI: `ShelfRow` liczy granice szczelin (kupka = 1 slot) i rysuje
+  neonowy kursor wstawienia (cyan = OK, róż = zła dekada); `Shelf` mapuje granice na cel
+  (`beforeId`/koniec półki, no-op przy sobie samej) i waliduje; `BookshelfSection.handlePreciseDrop`
+  = optymistyczne `orderOverrides` + POST `/api/shelf-order` z rollbackiem + (przy zmianie półki)
+  standardowa zmiana „przeczytane" (wydzielone `applyReadChange`). Globalny drop na ramę bez zmian;
+  szczelina ma priorytet (stopPropagation tylko przy walidnym trafieniu). Knob `ui.preciseShelfDrop`
+  (default on, sekcja Zaawansowane). Testy: +10 (planer/sort/walidacja) → 330. Screeny: caret OK/odmowa. Kolumna `ShelfOrder`
   (number, tworzona przy pierwszym zapisie): rzadki, ręczny klucz porządku w skali ułamkowych lat —
   utrwalamy TYLKO ręcznie wstawione książki, reszta zostaje na deterministycznym auto-układzie
   (rok → dekada → fizyka). Mapper/typy (`NotionBook.shelfOrder`, `BookIndexEntry.shelfOrder`),
