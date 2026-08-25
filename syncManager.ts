@@ -161,6 +161,11 @@ class SyncManager {
     return await this.notion.removeTagFromMultiSelect(pageId, "Źródło", tag);
   }
 
+  /** Zapis ręcznych kluczy porządku regału (precyzyjny drag&drop). */
+  async setShelfOrders(entries: { pageId: string; order: number }[]) {
+    return await this.notion.setShelfOrders(entries);
+  }
+
   /** Odczyt składowanych wyników Vinted (kafelki/paczki z bazy — bez re-scrape). */
   async getVintedStored() {
     return await vintedSyncService.getStoredData();

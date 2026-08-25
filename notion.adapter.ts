@@ -113,6 +113,24 @@ export class NotionAdapter {
     }
   }
 
+  /**
+   * Zapis ręcznych kluczy porządku regału (kolumna „ShelfOrder", number) dla partii
+   * książek — precyzyjny drag&drop wysyła 1 wpis (wstawiona), a przy renumeracji
+   * remisów kilka. Kolumna tworzona przy pierwszym zapisie. Sekwencyjnie (nie
+   * równolegle) — partie są małe, a rate-limit Notion wrażliwy na bursty.
+   */
+  async setShelfOrders(entries: { pageId: string; order: number }[]): Promise<void> {
+    await this.init();
+    await this.createColumnIfNeeded("ShelfOrder", "number");
+    for (const e of entries) {
+      await withRetry(() => this.notion.pages.update({
+        page_id: e.pageId,
+        properties: { "ShelfOrder": { number: e.order } },
+      }));
+    }
+    this.invalidateBooksCache();
+  }
+
   /** Nazwa kolumny-nośnika konfiguracji aplikacji (blob JSON żyje w jej OPISIE, nie w wierszach). */
   private static readonly APP_CONFIG_COLUMN = "AppConfig";
 

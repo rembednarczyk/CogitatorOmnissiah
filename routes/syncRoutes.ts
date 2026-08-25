@@ -35,6 +35,7 @@ router.post("/sync-duplicates", syncController.runDuplicateCheck);
 router.post("/sync-integrity", syncController.runIntegrityCheck);
 router.post("/mark-as-read", syncController.markAsRead);
 router.post("/unmark-as-read", syncController.unmarkAsRead);
+router.post("/shelf-order", syncController.updateShelfOrders);
 router.post("/vinted-check", syncController.checkVintedAvailability);
 router.post("/vinted-check/stop", syncController.stopVintedCheck);
 router.post("/vinted-resolve-sellers", syncController.resolveVintedSellers);
