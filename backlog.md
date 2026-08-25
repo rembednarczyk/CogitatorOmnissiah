@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.30.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.31.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,12 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.31.0** — **Statystyki: Oś czasu / dekady (STAT-PR3).** `decadeStats` w `getStats` — rollup
+  roczników do dekad (pierwszy 4-cyfrowy rok; wielodatowe → pierwszy; brak roku pominięty),
+  total/read/owned per dekada. Karta `DecadeHistogram` (pełna szerokość, `md:col-span-2`):
+  pionowe słupki total z cyanowym wypełnieniem = przeczytane, złoty highlight „złotej ery"
+  (najliczniejsza dekada), legenda + łączny licznik przeczytań. GOTCHA: kolumny słupków
+  wymagają `h-full` (row `items-end` nie rozciąga wysokości → słupki 0px). Testy +1 → 334.
 - **1.30.0** — **Statystyki: Wydawnictwa / Serie / Cykle (STAT-PR2).** Nowe bloki w `getStats`
   z pól, które wypełniają rytuały publisher/series/cycles, a statystyki dotąd ignorowały:
   `publisherStats` (top 15 oficyn: liczba tytułów + read-rate), `seriesStats` (top 15 serii:

@@ -121,6 +121,22 @@ export class StatsService {
     const cyclePart = books.filter(b => b.currentCzesccyklu === true).length;
     const cycleStats = { partOfCycle: cyclePart, standalone: books.length - cyclePart, total: books.length };
 
+    // 5d. Rozkład dekad — rollup roczników do dekad (aplikacja już myśli dekadami przez
+    // regał). Pierwszy 4-cyfrowy rok z pola; wielodatowe → pierwszy rok. Brak roku pomijany.
+    const decadeMap: Record<number, { total: number; read: number; owned: number }> = {};
+    books.forEach(book => {
+      const m = (book.year || "").toString().match(/\d{4}/);
+      if (!m) return;
+      const dec = Math.floor(parseInt(m[0], 10) / 10) * 10;
+      if (!decadeMap[dec]) decadeMap[dec] = { total: 0, read: 0, owned: 0 };
+      decadeMap[dec].total++;
+      if (isReadBook(book)) decadeMap[dec].read++;
+      if (isOwnedBook(book)) decadeMap[dec].owned++;
+    });
+    const decadeStats = Object.entries(decadeMap)
+      .map(([decade, s]) => ({ decade: parseInt(decade, 10), ...s }))
+      .sort((a, b) => a.decade - b.decade);
+
     // 6. Yearly progress
     const yearlyStats: Record<string, { read: number; total: number; books: any[] }> = {};
     books.forEach(book => {
@@ -165,6 +181,7 @@ export class StatsService {
       publisherStats,
       seriesStats,
       cycleStats,
+      decadeStats,
       // Filie z konfiguracji (`library.branches`) — dopisanie 3. filii w Kalibracji od razu
       // pojawia się w statystykach. `id` = tag „Źródło" filii (dopasowanie po znaczniku).
       libraryStats: branches.map(branch => ({

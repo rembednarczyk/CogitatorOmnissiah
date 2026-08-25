@@ -102,6 +102,25 @@ describe('StatsService', () => {
     expect(cycleStats).toEqual({ partOfCycle: 2, standalone: 1, total: 3 });
   });
 
+  it('rolls years up into decades (read/owned, first 4-digit year)', async () => {
+    const mk = (id: string, year: string, zrodlo: string[] = []): NotionBook => ({
+      id, plTitle: `T${id}`, origTitle: "", author: "A", year, zrodlo, awards: [],
+      currentWydawnictwo: "", currentSeria: "", currentCzesccyklu: false, lp: id,
+      plTitleRichText: [], origTitleRichText: [],
+    });
+    mockNotion.getBooksForStats.mockResolvedValue([
+      mk("1", "1954", ["Przeczytane"]),
+      mk("2", "1959", ["Posiadam"]),
+      mk("3", "1965/1966"),        // wielodatowe → 1960
+      mk("4", "brak"),             // bez roku → pominięta
+    ]);
+    const { decadeStats } = await service.getStats();
+    expect(decadeStats).toEqual([
+      { decade: 1950, total: 2, read: 1, owned: 1 },
+      { decade: 1960, total: 1, read: 0, owned: 0 },
+    ]);
+  });
+
   it('builds libraryStats from config branches (id = sourceTag)', async () => {
     mockNotion.getBooksForStats.mockResolvedValue([
       { id: "1", plTitle: "X", origTitle: "", author: "A", year: "1970", zrodlo: ["Biblioteka"], awards: [], currentWydawnictwo: "", currentSeria: "", currentCzesccyklu: false, lp: "1", plTitleRichText: [], origTitleRichText: [] } as NotionBook,
