@@ -31,7 +31,15 @@ export class SchemaValidationService {
         { name: "Wydawnictwo", type: "multi_select" },
         { name: "Seria", type: "multi_select" },
         { name: "Nagroda", type: "multi_select" },
-        { name: "Część cyklu", type: "checkbox" }
+        { name: "Źródło", type: "multi_select" },
+        { name: "Część cyklu", type: "checkbox" },
+        // Kolumny cykli (tomy jako wiersze) — dotąd tworzone leniwie przez Rytuał Żniw.
+        { name: "Kategoria", type: "select" },
+        { name: "Cykl", type: "rich_text" },
+        { name: "CyklNr", type: "number" },
+        // Domknięcie starego długu — dotąd tworzone leniwie przez skaner/regał.
+        { name: "VintedData", type: "rich_text" },
+        { name: "ShelfOrder", type: "number" }
       ];
 
       // 1. Handle primary (title) column renaming if necessary
