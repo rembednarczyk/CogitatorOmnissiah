@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.33.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.34.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,12 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.34.0** — **Podgląd cyklu — Skryptorium (CYC-PR2).** Badge „cykl" w `BookResultCard` jest
+  teraz KLIKALNY → modal `CyclePanel`. `useCycle` (GET /api/cycle, cache per title+author w ref).
+  Panel: nazwa cyklu, ostrzeżenie „przed tą pozycją N nieprzeczytanych tomów — nadrób dla fabuły"
+  (unreadBefore), uporządkowana lista tomów ze statusem (przeczytana/posiadana/w bazie/brak +
+  ikona nagrody), wyróżniony bieżący (pin), adnotacja „nie zapisujemy w bazie". Esc/klik-tło zamyka.
+  Rozwiązuje przypadek „nagrodzony jest tom 2 — którego tomu 1 nie mam/nie przeczytałem".
 - **1.33.0** — **Podgląd cyklu — backend (CYC-PR1).** Na żądanie, BEZ zapisu do Notion (zgodnie z
   preferencją: nie zaśmiecamy bazy). `WikiParser.extractCycleInfo` (nazwa `|cykl=`, łańcuch
   `|poprzednia=`/`|następna=` — potwierdzony format; oba warianty ogonka „następna/nastepna"; +
@@ -580,8 +586,11 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
 - **Ewentualnie później**: odświeżanie pojedynczej książki/oferty z bazy (re-check
   świeżości), natywna baza „Vinted Offers" (jeśli blob przestanie wystarczać), proxy
   rezydencjalne dla ominięcia 403.
-- **Cykle: sąsiednie tomy** (pomysł, analiza 1.11.1) — dla książek „Część cyklu"
-  pokazywać/szukać wcześniejszych/późniejszych tomów; sąsiednie tomy mogą NIE być w bazie.
+- **Cykle: sąsiednie tomy — ZREALIZOWANE (1.33.0/1.34.0), wariant on-demand bez persystencji.**
+  Zamiast blobu `CycleData` + rytuału (poniższy plan): lazy `GET /api/cycle` na klik badge'a
+  „cykl" w Skryptorium → panel tomów krzyżowany z bazą. NIC nie zapisujemy do Notion (zgodnie z
+  preferencją użytkownika). Poniższy plan persystencji ZOSTAWIONY jako referencja, gdyby kiedyś
+  potrzebny był offline/statystyki cykli. Oryginalny pomysł/analiza 1.11.1:
   - **Kluczowy finding**: `cyclesSyncService` już parsuje `|cykl=` / `{{Cykl|…}}` z wikitekstu,
     ale zapisuje TYLKO boolean „Część cyklu" (linie 41–131) — nazwę cyklu i listę tomów
     z szablonu `{{Cykl}}` wyrzucamy. Tu jest źródło danych: rozszerzyć ten sam rytuał,
