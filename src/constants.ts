@@ -1,15 +1,14 @@
-export const PREDEFINED_AWARDS = [
-  { name: "Nagroda Hugo", title: "Hugo nagroda powieść" },
-  { name: "Nagroda Nebula", title: "Nebula nagroda najlepsza powieść" },
-  { name: "Nagroda Locus", title: "Locus nagroda powieść" },
-  { name: "Wszystkie Nagrody", title: "Wszystkie" },
-];
+import { DEFAULT_CONFIG } from "./configSchema";
 
-// sourceTag = znacznik „Źródło" dopisywany po kliknięciu na znalezionej pozycji.
-// Jest to zarazem tag wykluczający pozycję z kolejnych skanów (zob.
-// services/libraryCheckService.ts — lista `excluded`), więc oznaczenie książki
-// jednocześnie usuwa ją z puli kandydatów danej filii.
-export const LIBRARY_BRANCHES = [
-  { id: "felin", name: "Biblioteka Felin", code: "48", sourceTag: "Biblioteka" },
-  { id: "bronowice", name: "Biblioteka Bronowice", code: "7", sourceTag: "Biblioteka 9" }
-];
+/**
+ * Stałe-fallbacki DERYWOWANE z DEFAULT_CONFIG (jedno źródło prawdy w configSchema).
+ * Żywe wartości pochodzą z konfiguracji (`useEffectiveConfig` → GET /api/app-config);
+ * te listy służą jako stan początkowy zanim odpowiedź dotrze.
+ */
+
+/** Pseudo-nagroda pełnej synchronizacji — opcja UI, nie strona wiki. */
+export const SYNC_ALL_AWARD = { name: "Wszystkie Nagrody", title: "Wszystkie" };
+
+export const PREDEFINED_AWARDS = [...DEFAULT_CONFIG.sync.awards, SYNC_ALL_AWARD];
+
+export const LIBRARY_BRANCHES = DEFAULT_CONFIG.library.branches;

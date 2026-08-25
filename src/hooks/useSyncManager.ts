@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useSync } from "./useSync";
-import { PREDEFINED_AWARDS } from "../constants";
+import { PREDEFINED_AWARDS, SYNC_ALL_AWARD } from "../constants";
+import { useEffectiveConfig } from "./useAppConfig";
 
 /**
  * Orkiestracja wszystkich rytuałów synchronizacji po stronie frontendu.
@@ -12,6 +13,11 @@ import { PREDEFINED_AWARDS } from "../constants";
  */
 export function useSyncManager() {
   const [fullSyncResults, setFullSyncResults] = useState<any[] | null>(null);
+
+  // Lista nagród z konfiguracji (+ pseudo-opcja pełnej synchronizacji);
+  // PREDEFINED_AWARDS służy tylko jako stan początkowy do czasu pobrania.
+  const cfg = useEffectiveConfig();
+  const awardOptions = [...cfg.sync.awards, SYNC_ALL_AWARD];
 
   const sync = useSync("/api/sync", "/api/sync/stop", {
     awardName: PREDEFINED_AWARDS[0].name,
@@ -48,7 +54,7 @@ export function useSyncManager() {
   // Przyjmuje samą NAZWĘ nagrody (nie zdarzenie DOM) — manager pozostaje
   // niezależny od prezentacji (parsowanie <select> zostaje w komponencie).
   const handleAwardChange = (selectedName: string) => {
-    const predefined = PREDEFINED_AWARDS.find(a => a.name === selectedName);
+    const predefined = awardOptions.find(a => a.name === selectedName);
 
     sync.setState(prev => ({
       ...prev,
@@ -129,6 +135,8 @@ export function useSyncManager() {
   return {
     // Instancje rytuałów (przekazywane do komponentów prezentacyjnych)
     sync, publisherSync, seriesSync, cyclesSync, lpSync, integritySync, duplicatesSync, purifySync, schemaSync,
+    // Lista nagród z konfiguracji (dropdown w SyncAwards)
+    awardOptions,
     // Stan zbiorczy
     syncs, anyError, isAnySyncLoading,
     fullSyncResults, clearFullSyncResults: () => setFullSyncResults(null),

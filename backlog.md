@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.26.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.27.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,16 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.27.0** — **Zakładka „Sanktuarium Kalibracji" (frontend, CFG-PR2).** Klik w LOGO (nagłówek)
+  otwiera ukrytą zakładkę `admin` (ponowny klik wraca do statystyk; logo amber gdy aktywna).
+  `ConfigSection`: sekcje Vinted / pula UA / filie OPAC (edytor wierszy) / strony nagród (edytor)
+  / Zaawansowane (zwijane: timeout/retry, równoległości, progi duplikatów, rzędy regału, wykluczenia
+  biblioteki). Zapisz → PUT `/api/app-config`; „Domyślne" resetuje draft. `useAppConfig` (panel,
+  świeży GET) + `useEffectiveConfig` (konsumenci: cache modułowy, defaulty do czasu pobrania,
+  publish po zapisie). Konsumenci cfg: dropdown nagród (useSyncManager.awardOptions → SyncAwards),
+  filie w StatsSection, `pageSize` regału, `resumeHours` Vinted (checkbox + tooltip via prop).
+  `constants.ts` = fallbacki derywowane z DEFAULT_CONFIG (+`SYNC_ALL_AWARD`). UWAGA JSX: polskie
+  cudzysłowy „" w atrybutach stringowych psują parser — używać `{'...'}`.
 - **1.26.0** — **Konfiguracja aplikacji (backend, CFG-PR1).** Nowy współdzielony schemat
   `src/configSchema.ts` (AppConfig + DEFAULT_CONFIG + mergeConfig z clampami + diffFromDefaults +
   parseStoredConfig; defaulty = dotychczasowe zachowanie 1:1). **Składowanie: diff od defaultów

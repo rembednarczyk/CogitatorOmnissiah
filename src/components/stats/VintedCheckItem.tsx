@@ -2,7 +2,8 @@ import React from "react";
 import { VintedResult, VintedSearchAttempt } from "../../hooks/useVintedCheck";
 import { useVintedResolveSellers } from "../../hooks/useVintedResolveSellers";
 import { useVintedStored } from "../../hooks/useVintedStored";
-import { VintedScanControls, RESUME_HOURS } from "./vinted/VintedScanControls";
+import { VintedScanControls } from "./vinted/VintedScanControls";
+import { useEffectiveConfig } from "../../hooks/useAppConfig";
 import { VintedScanProgress } from "./vinted/VintedScanProgress";
 import { VintedDebugLog } from "./vinted/VintedDebugLog";
 import { VintedResolveStatus } from "./vinted/VintedResolveStatus";
@@ -20,6 +21,8 @@ interface VintedCheckItemProps {
 
 export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searchAttempts, onCheck, onStop, isChecking, progress }) => {
   const [showLogs, setShowLogs] = React.useState(false);
+  // Okno „Kontynuuj" z konfiguracji (knob `vinted.resumeHours`).
+  const resumeHours = useEffectiveConfig().vinted.resumeHours;
   // Wznawianie: domyślnie pomijamy książki skanowane < RESUME_HOURS h (bieżąca partia),
   // resztę skanujemy od najstarszych — kontynuacja przerwanego przebiegu, nie od zera.
   const [resumeScan, setResumeScan] = React.useState(true);
@@ -36,13 +39,14 @@ export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searc
     if (isChecking) { onStop(); return; }
     // Wyjdź z widoku bazy, żeby świeże wyniki skanu były widoczne (nie pinowane do stored).
     clearStored();
-    onCheck(resumeScan ? { skipScannedWithinHours: RESUME_HOURS } : undefined);
+    onCheck(resumeScan ? { skipScannedWithinHours: resumeHours } : undefined);
   };
   const onResolveToggle = () => { if (isResolving) { stopResolve(); return; } clearStored(); runResolve(); };
 
   return (
     <div className="space-y-8">
       <VintedScanControls
+        resumeHours={resumeHours}
         isChecking={isChecking} isResolving={isResolving} isLoadingStored={isLoadingStored}
         usingStored={usingStored} hasAttempts={searchAttempts.length > 0}
         resumeScan={resumeScan} setResumeScan={setResumeScan}

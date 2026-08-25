@@ -2,10 +2,10 @@ import React from "react";
 import { Loader2, Search, Bug, Database, HardDriveDownload, Trash2 } from "lucide-react";
 import { RitualButton } from "../RitualButton";
 
-/** Okno „Kontynuuj": pomiń książki skanowane w ostatnich N h. Jedno źródło — importuje je też VintedCheckItem. */
-export const RESUME_HOURS = 24;
 
 interface Props {
+  /** Okno „Kontynuuj" (h) z konfiguracji — tylko do tooltipa. */
+  resumeHours: number;
   isChecking: boolean;
   isResolving: boolean;
   isLoadingStored: boolean;
@@ -23,6 +23,7 @@ interface Props {
 
 /** Nagłówek skanera + rytuały (skan / identyfikacja handlarzy / przywołanie z bazy). */
 export const VintedScanControls: React.FC<Props> = ({
+  resumeHours,
   isChecking, isResolving, isLoadingStored, usingStored, hasAttempts,
   resumeScan, setResumeScan, showLogs, setShowLogs,
   onScanToggle, onResolveToggle, onLoadStored, onClearStored,
@@ -38,7 +39,7 @@ export const VintedScanControls: React.FC<Props> = ({
         {!isChecking && (
           <label
             className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 cursor-pointer select-none"
-            title={`Pomiń książki skanowane w ostatnich ${RESUME_HOURS} h (bieżąca partia); resztę skanuj OD NAJSTARSZYCH — kontynuuje przerwany przebieg i odświeża najstarsze. Odznacz, by skanować wszystko od nowa (też od najstarszych).`}
+            title={`Pomiń książki skanowane w ostatnich ${resumeHours} h (bieżąca partia); resztę skanuj OD NAJSTARSZYCH — kontynuuje przerwany przebieg i odświeża najstarsze. Odznacz, by skanować wszystko od nowa (też od najstarszych).`}
           >
             <input type="checkbox" checked={resumeScan} onChange={(e) => setResumeScan(e.target.checked)} className="accent-cyan-500 w-3.5 h-3.5" />
             Kontynuuj

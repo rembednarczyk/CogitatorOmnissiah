@@ -11,9 +11,11 @@ import { AuthorProgressItem } from "./stats/AuthorProgressItem";
 import { IdentifiedLibraryItem } from "./stats/IdentifiedLibraryItem";
 import { OwnedUnreadItem } from "./stats/OwnedUnreadItem";
 import { AwardCoverageGrid } from "./stats/AwardCoverageGrid";
-import { LIBRARY_BRANCHES } from "../constants";
+import { useEffectiveConfig } from "../hooks/useAppConfig";
 
 export const StatsSection: React.FC = () => {
+  // Filie biblioteczne z konfiguracji (fallback: defaulty do czasu pobrania).
+  const branches = useEffectiveConfig().library.branches;
   const { stats, loading, error, fetchStats, addBookToLibrarySection } = useStats();
   const { identifiedBooks, checkingLibrary, checkProgress, libraryError, checkLibrary, checkAllLibraries, stopLibraryCheck } = useLibraryCheck();
   const { markingId, markedIds, markAsRead } = useMarkAsRead({ identifiedBooks, addBookToLibrarySection, fetchStats });
@@ -210,7 +212,7 @@ export const StatsSection: React.FC = () => {
             </h3>
             
             <button
-              onClick={() => checkAllLibraries(LIBRARY_BRANCHES)}
+              onClick={() => checkAllLibraries(branches)}
               disabled={checkingLibrary !== null}
               className="px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 rounded-xl border border-blue-500/30 text-xs font-bold uppercase tracking-widest transition-all disabled:opacity-50 flex items-center gap-2"
             >
@@ -232,7 +234,7 @@ export const StatsSection: React.FC = () => {
           )}
 
           <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-            {LIBRARY_BRANCHES.map((library) => (
+            {branches.map((library) => (
               <IdentifiedLibraryItem 
                 key={library.id}
                 library={library}
