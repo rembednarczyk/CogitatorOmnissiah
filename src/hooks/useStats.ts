@@ -54,6 +54,19 @@ export interface SeriesStat { name: string; count: number; owned: number; read: 
 export interface CycleStats { partOfCycle: number; standalone: number; total: number }
 export interface DecadeStat { decade: number; total: number; read: number; owned: number }
 
+export interface CheapOffer { bookId: string; bookTitle: string; price: number; currency: string; url: string }
+export interface PriceDrop extends CheapOffer { prevPrice: number }
+export interface TopSeller { id: string; login: string; url: string; books: number; total: number }
+export interface MarketStats {
+  currency: string;
+  completionCost: number;
+  booksWithOffers: number;
+  totalOffers: number;
+  cheapest: CheapOffer[];
+  priceDrops: PriceDrop[];
+  topSellers: TopSeller[];
+}
+
 export interface Stats {
   authorStats: AuthorStat[];
   awardBooksStats: { read: number; total: number };
@@ -66,6 +79,7 @@ export interface Stats {
   seriesStats: SeriesStat[];
   cycleStats: CycleStats;
   decadeStats: DecadeStat[];
+  marketStats: MarketStats;
   libraryStats: LibraryStat[];
 }
 
