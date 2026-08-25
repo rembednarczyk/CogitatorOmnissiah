@@ -2,14 +2,13 @@ import pLimit from "p-limit";
 import { NotionAdapter } from "../notion.adapter";
 import { SyncEvent, NotionBook } from "../src/types";
 import { ConfigService } from "./configService";
-import { CycleLookupService } from "./cycleLookupService";
+import { CycleLookupService, normTitle } from "./cycleLookupService";
 import { buildCycleVolumeProperties, cycleLpLabel, cycleVolumeEncyclopediaUrl, buildCycleTitleProperty } from "./cycleRows";
 import { isCycleVolume } from "./bookCategory";
+import { sanitizeNotionString } from "../utils";
 import { createLogger } from "../logger";
 
 const log = createLogger("CycleHarvest");
-
-const normKey = (s: string): string => (s || "").toLowerCase().replace(/\s+/g, " ").trim();
 
 /**
  * Rytuał „Żniwa Cykli": dla każdej książki oznaczonej jako część cyklu zbiera
@@ -42,9 +41,11 @@ export class CycleHarvestService {
 
       // Indeks istniejących wierszy po znorm. tytule (polski + oryginalny) — żeby nie
       // tworzyć duplikatów i móc dotagować istniejące pozycje polem Cykl.
+      // Indeks po TEJ SAMEJ normalizacji co cross-ref w lookup (normTitle) — inaczej
+      // „inBase" z lookup i dopasowanie tutaj się rozjeżdżają i tworzymy duplikat.
       const byTitle = new Map<string, NotionBook>();
       for (const b of books) {
-        for (const t of [b.plTitle, b.origTitle]) if (t && t.trim()) byTitle.set(normKey(t), b);
+        for (const t of [b.plTitle, b.origTitle]) if (t && t.trim()) byTitle.set(normTitle(t), b);
       }
 
       const cycleAnchors = books.filter((b) => b.currentCzesccyklu && !isCycleVolume(b));
@@ -69,48 +70,57 @@ export class CycleHarvestService {
           const view = await this.cycleLookup.lookup(anchorTitle, anchor.author || "");
           if (!view || view.volumes.length <= 1) { noSiblingTitles.push(anchorTitle); return; }
 
-          const cycleKey = normKey(view.cycleName);
+          // Nazwa cyklu ustalona RAZ i sanityzowana — tak jak przy tworzeniu wiersza,
+          // inaczej guard `existing.cykl !== …` porównywałby surowe vs zsanityzowane i
+          // przepisywał Cykl co przebieg.
+          const cyc = sanitizeNotionString(view.cycleName);
+          const cycleKey = normTitle(cyc);
           // Cykl rozwijamy raz — kolejna kotwica tego samego cyklu tylko się dotaguje.
           if (cycleKey && processedCycles.has(cycleKey)) return;
           if (cycleKey) processedCycles.add(cycleKey);
 
-          for (let i = 0; i < view.volumes.length; i++) {
+          let nr = 0;
+          for (const vol of view.volumes) {
             if (checkCancellation()) return;
-            const vol = view.volumes[i];
-            const nr = i + 1;
-            const existing = byTitle.get(normKey(vol.title));
-            if (existing) {
-              // Istnieje jako wiersz — dotaguj Cykl/CyklNr (nie duplikuj). Dla wierszy
-              // tomów cykli ujednolić też etykietę Lp; kotwic nagrodowych (numer w Lp)
-              // NIE dotykamy.
+            const title = (vol.title || "").trim();
+            if (!title) continue;              // pomiń puste tytuły (brak junk-wiersza)
+            nr++;
+            const key = normTitle(title);
+            const existing = byTitle.get(key);
+            if (existing && !existing.id) {
+              // Rezerwacja innego zadania (wiersz w trakcie tworzenia) — nie duplikuj.
+              continue;
+            } else if (existing) {
+              // Istnieje realny wiersz — dotaguj Cykl/CyklNr (nie duplikuj). Dla wierszy
+              // tomów cykli ujednolić też Lp i link; kotwic nagrodowych (numer w Lp) NIE.
               const props: Record<string, any> = {};
-              if (existing.cykl !== view.cycleName || existing.cyklNr !== nr) {
-                props["Cykl"] = { rich_text: [{ text: { content: view.cycleName } }] };
+              if (existing.cykl !== cyc || existing.cyklNr !== nr) {
+                props["Cykl"] = { rich_text: [{ text: { content: cyc } }] };
                 props["CyklNr"] = { number: nr };
               }
               if (isCycleVolume(existing)) {
-                const label = cycleLpLabel(view.cycleName, nr);
+                const label = cycleLpLabel(cyc, nr);
                 if (existing.lp !== label) props["Lp"] = { title: [{ text: { content: label } }] };
-                // Domiguj link do encyklopedii przy polskim tytule, jeśli go brak/inny.
-                const wantLink = cycleVolumeEncyclopediaUrl(existing.plTitle || vol.title);
+                const wantLink = cycleVolumeEncyclopediaUrl(existing.plTitle || title);
                 const curLink = existing.plTitleRichText?.[0]?.text?.link?.url;
-                if (curLink !== wantLink) props["Tytuł polski"] = buildCycleTitleProperty(existing.plTitle || vol.title);
+                if (curLink !== wantLink) props["Tytuł polski"] = buildCycleTitleProperty(existing.plTitle || title);
               }
               if (Object.keys(props).length > 0) {
                 await this.notion.updatePage(existing.id, props);
-                taggedTitles.push(`${existing.plTitle || existing.origTitle} (${view.cycleName} ${nr})`);
-                existing.cykl = view.cycleName; existing.cyklNr = nr;
-                if (isCycleVolume(existing)) existing.lp = cycleLpLabel(view.cycleName, nr);
+                taggedTitles.push(`${existing.plTitle || existing.origTitle} (${cyc} ${nr})`);
+                existing.cykl = cyc; existing.cyklNr = nr;
+                if (isCycleVolume(existing)) existing.lp = cycleLpLabel(cyc, nr);
               }
             } else {
-              // Brak wiersza — utwórz poboczny tom cyklu (autor z kotwicy).
+              // Brak wiersza — REZERWUJ slot SYNCHRONICZNIE (przed await), potem utwórz.
+              // Równoległe zadanie zobaczy rezerwację (id="") i pominie ten tytuł.
+              const reserved = { id: "", plTitle: title, origTitle: "", cykl: cyc, cyklNr: nr } as NotionBook;
+              byTitle.set(key, reserved);
               const created = await this.notion.addRow(buildCycleVolumeProperties({
-                title: vol.title, author: anchor.author, cycleName: view.cycleName, nr,
+                title, author: anchor.author, cycleName: cyc, nr,
               }));
-              createdTitles.push(`${vol.title} (${view.cycleName})`);
-              // Dopisz do indeksu, by kolejna kotwica nie utworzyła duplikatu.
-              const stub = { id: created?.id, plTitle: vol.title, origTitle: "", cykl: view.cycleName, cyklNr: nr } as NotionBook;
-              byTitle.set(normKey(vol.title), stub);
+              reserved.id = created?.id ?? "";
+              createdTitles.push(`${title} (${cyc})`);
             }
           }
         } catch (err: any) {

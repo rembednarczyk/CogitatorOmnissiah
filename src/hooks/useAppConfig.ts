@@ -50,8 +50,12 @@ export function publishEffectiveConfig(cfg: AppConfig): void {
  * knobów: bierze bieżącą efektywną konfigurację i podmienia tylko to pole.
  */
 export async function persistStatsOrder(order: string[]): Promise<void> {
-  const current = await loadShared();
-  const next: AppConfig = { ...current, ui: { ...current.ui, statsOrder: order } };
+  await loadShared();
+  // Jeśli wczytanie configu się nie powiodło (`cachedConfig` puste, `loadShared` zwrócił
+  // DEFAULT_CONFIG), NIE zapisujemy — inaczej PUT defaultów skasowałby realne knoby
+  // (filie, ustawienia) na serwerze. Reorder poczeka na sprawną sesję.
+  if (!cachedConfig) return;
+  const next: AppConfig = { ...cachedConfig, ui: { ...cachedConfig.ui, statsOrder: order } };
   publishEffectiveConfig(next);
   try {
     const res = await fetch("/api/app-config", {

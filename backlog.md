@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.44.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.44.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,18 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.44.1** — **Bughunt cykli (2 subagentów + weryfikacja) — naprawy.** Backend: (HIGH) bezimienne cykle
+  (łańcuch prev/next bez `|cykl=`) zlewały się w jedną grupę „Cykl" i większość była pomijana w żniwach →
+  `cycleName = |cykl= || tytuł pierwszego tomu` (stabilny między kotwicami); (DATA) żniwa używały `normKey`,
+  a lookup `normTitle` → wiersz uznany za `inBase` mógł nie trafić w indeks żniw → duplikat; teraz wspólny
+  `normTitle` (eksport z `cycleLookupService`); (DATA) wyścig get→await→set na `byTitle` → synchroniczna
+  REZERWACJA slotu przed `addRow` (równoległe zadanie pomija); (MINOR) pomijanie pustych tytułów (brak
+  junk-wiersza); (MINOR) sanityzacja nazwy cyklu RAZ (`cyc`) i użycie wszędzie → koniec thrash-write pola
+  Cykl co przebieg. Frontend: (DATA) `persistStatsOrder` mógł nadpisać config DEFAULTAMI, gdy GET configu
+  padł → guard `if (!cachedConfig) return`; `toggleSource` no-op na pustym id; błąd oznaczania → zwięzły
+  baner nad listą (nie duży komunikat sugerujący brak danych). Test: bezimienny cykl nazwany 1. tomem.
+  ZNANE OGRANICZENIE (nie-bug, chain-walk): `CyklNr` to pozycja W ODKRYTYM łańcuchu (MAX_HOPS/urwany
+  neighbor/`{{Cykl}}` extras na końcu) — kolejność względna OK, numer bezwzględny może być przesunięty.
 - **1.44.0** — **Rytuał Inicjacji Schematu: pełny provisioning (kolumny cykli + domknięcie długu).** Do
   `requiredProps` doszły: `Kategoria`(select), `Cykl`(rich_text), `CyklNr`(number) — dotąd tworzone leniwie
   przez Żniwa — oraz stary dług `Źródło`(multi_select), `VintedData`(rich_text), `ShelfOrder`(number) —
