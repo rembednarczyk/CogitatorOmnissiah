@@ -1,7 +1,11 @@
 import React, { useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Layers, X, Loader2, Check, Package, Award, CircleDashed, MapPin, AlertTriangle } from "lucide-react";
+import { Layers, X, Loader2, Check, Package, Award, CircleDashed, MapPin, AlertTriangle, ExternalLink } from "lucide-react";
 import { useCycle } from "../../hooks/useCycle";
+
+/** Link do strony tomu w Archiwum Encyklopedii Fantastyki (ten sam wzorzec co parser). */
+const encyclopediaUrl = (title: string) =>
+  `https://encyklopediafantastyki.pl/index.php?title=${encodeURIComponent(title.replace(/ /g, "_"))}`;
 
 /**
  * Modal podglądu cyklu (Skryptorium). Pobiera na żądanie uporządkowaną listę tomów
@@ -104,6 +108,17 @@ export const CyclePanel: React.FC<Props> = ({ title, author, onClose }) => {
                         </div>
                         {v.awarded && <Award className="w-3.5 h-3.5 text-amber-400 shrink-0" aria-label="nagrodzona" />}
                         <span className={`text-[10px] uppercase tracking-wider font-bold shrink-0 ${s.cls}`}>{s.label}</span>
+                        <a
+                          href={encyclopediaUrl(v.title)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="shrink-0 p-1 rounded-md text-slate-500 hover:text-amber-300 hover:bg-amber-500/10 transition-colors"
+                          title="Otwórz w Encyklopedii (nowa karta)"
+                          aria-label={`Otwórz „${v.title}" w Encyklopedii`}
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
                       </li>
                     );
                   })}
