@@ -6,7 +6,9 @@ Szczegółowe opisy działania poszczególnych rytuałów (jeden dokument na kon
 | --- | --- |
 | [book-sync.md](./book-sync.md) | Synchronizacja nagród: pobieranie, parsowanie tabel, scalanie, porównanie i zapis do Notion. |
 | [publisher-series-sync.md](./publisher-series-sync.md) | Ekstrakcja wydawcy i serii ze stron książek (priorytet najnowszego wydania, weryfikacja autora). |
-| [cycles-sync.md](./cycles-sync.md) | Wykrywanie i oznaczanie przynależności do cyklu. |
+| [cycles-sync.md](./cycles-sync.md) | Wykrywanie i oznaczanie przynależności do cyklu (checkbox `Część cyklu`). |
+| [cycles-rows.md](./cycles-rows.md) | Cykle jako wiersze: podgląd, żniwa (materializacja tomów), model `Kategoria`/`Cykl`/`CyklNr`, dostępność Vinted. |
+| [config-store.md](./config-store.md) | Knoby aplikacji (diff-od-defaultów w opisie kolumny `AppConfig`) + panel kalibracji. |
 | [duplicate-detection.md](./duplicate-detection.md) | Wykrywanie duplikatów (tytuł + podobieństwo autora). |
 | [lp-sync.md](./lp-sync.md) | Przenumerowanie kolumny „Lp" wg roku i tytułu. |
 | [purification-service.md](./purification-service.md) | Czyszczenie tytułów ze składni wiki i formatowania Notion. |
