@@ -13,6 +13,10 @@ describe("buildCycleVolumeProperties", () => {
     // Lp (kolumna tytułowa) = etykieta cyklu, tytuł żyje w „Tytuł polski".
     expect(p["Lp"].title[0].text.content).toBe("Mistborn (3)");
     expect(p["Tytuł polski"].rich_text[0].text.content).toBe("Bohater Wieków");
+    // Tytuł polski linkuje do strony tomu w encyklopedii (jak oryginalne rytuały).
+    expect(p["Tytuł polski"].rich_text[0].text.link).toEqual({
+      url: "https://encyklopediafantastyki.pl/index.php?title=Bohater_Wiek%C3%B3w",
+    });
     expect(p["Autor"].multi_select).toEqual([{ name: "Brandon Sanderson" }]);
   });
 
