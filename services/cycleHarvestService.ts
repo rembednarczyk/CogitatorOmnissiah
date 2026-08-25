@@ -35,7 +35,8 @@ export class CycleHarvestService {
 
       sendEvent({ type: "status", message: `Znaleziono ${cycleBooks.length} pozycji oznaczonych jako część cyklu. Odpytywanie Archiwum...` });
       if (cycleBooks.length === 0) {
-        sendEvent({ type: "complete", result: { success: true, found: 0, written: 0, skipped: 0, noSiblings: 0, summary: { note: "Brak pozycji z zaznaczonym polem Część cyklu — uruchom najpierw Rytuał Oznaczania Cykli." } } });
+        // Bez summary → widok „Rytuał Zakończony" (found/updated), nie karty liczników.
+        sendEvent({ type: "complete", result: { success: true, found: 0, updated: 0 } });
         return;
       }
 
@@ -43,7 +44,11 @@ export class CycleHarvestService {
       // trzymamy niską współbieżność (max 3), niezależnie od writeConcurrency.
       const limit = pLimit(Math.min(3, Math.max(1, (await this.config.getConfig()).sync.writeConcurrency)));
 
-      let processed = 0, written = 0, unchanged = 0, noSiblings = 0;
+      // Zbieramy RZECZYWISTE listy tytułów — UI liczy count z długości list, więc
+      // pojedyncze zdanie podsumowania dawało błędne „1" (policzone jako 1 element).
+      let processed = 0, unchanged = 0;
+      const updatedTitles: string[] = [];
+      const noSiblingTitles: string[] = [];
       const errors: { book: string; error: string }[] = [];
 
       const tasks = cycleBooks.map((book) => limit(async () => {
@@ -53,7 +58,7 @@ export class CycleHarvestService {
           const view = await this.cycleLookup.lookup(title, book.author || "");
           // <=1 tom = brak sąsiadów do zebrania (albo strona bez danych cyklu).
           if (!view || view.volumes.length <= 1) {
-            noSiblings++;
+            noSiblingTitles.push(title);
           } else {
             const blob = buildCycleBlob(view, Date.now());
             const existing = parseCycleBlob(book.cycleCache);
@@ -61,7 +66,7 @@ export class CycleHarvestService {
               unchanged++;
             } else {
               await this.notion.saveCycleCache(book.id, serializeCycleBlob(blob));
-              written++;
+              updatedTitles.push(`${title} (${view.volumes.length} tomów: ${view.cycleName})`);
             }
           }
         } catch (err: any) {
@@ -76,21 +81,18 @@ export class CycleHarvestService {
 
       await Promise.all(tasks);
 
-      log.info("Żniwa cykli zakończone", { found: cycleBooks.length, written, unchanged, noSiblings, errors: errors.length });
+      const written = updatedTitles.length;
+      log.info("Żniwa cykli zakończone", { found: cycleBooks.length, written, unchanged, noSiblings: noSiblingTitles.length, errors: errors.length });
       sendEvent({
         type: "complete",
         result: {
           success: !checkCancellation(),
           found: cycleBooks.length,
-          written,
-          unchanged,
-          noSiblings,
+          updated: written,   // liczba realnie zapisanych pozycji (UI czyta to pole)
+          unchanged,          // bez zmian struktury (nie zapisano) — informacyjnie
           summary: {
-            updated: [`Zapisano tomy cyklu dla ${written} pozycji`],
-            skipped: [
-              `${unchanged} bez zmian`,
-              `${noSiblings} bez sąsiednich tomów`,
-            ],
+            updated: updatedTitles,      // panel „Zaktualizowane" + poprawny licznik
+            skipped: noSiblingTitles,    // „Pominięto — nie oceniono" (brak sąsiednich tomów)
           },
           errors: errors.length > 0 ? errors : undefined,
         },

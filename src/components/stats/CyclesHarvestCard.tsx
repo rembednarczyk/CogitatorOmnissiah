@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion } from "motion/react";
-import { Layers, ChevronDown, Check, Package, CircleDashed, AlertTriangle, Award, ExternalLink, Loader2 } from "lucide-react";
+import { Layers, ChevronDown, Check, CheckCheck, Package, CircleDashed, AlertTriangle, Award, ExternalLink, Loader2 } from "lucide-react";
 import { useCyclesHarvest, HarvestVolume } from "../../hooks/useCyclesHarvest";
 
 /** Link do tomu w Archiwum Encyklopedii Fantastyki (ten sam wzorzec co parser/panel). */
@@ -57,15 +57,21 @@ export const CyclesHarvestCard: React.FC = () => {
         <div className="space-y-2 max-h-[460px] overflow-y-auto pr-2 custom-scrollbar">
           {view.cycles.map((c) => {
             const isOpen = open === c.cycle;
+            // Cykl przeczytany w całości → wygaszony (nic nie zostało do nadrobienia).
+            const done = c.total > 0 && c.read === c.total;
             return (
-              <div key={c.cycle} className="rounded-2xl border border-white/5 bg-slate-950/40 overflow-hidden">
+              <div key={c.cycle} className={`rounded-2xl border border-white/5 bg-slate-950/40 overflow-hidden transition-opacity ${done && !isOpen ? "opacity-45" : ""}`}>
                 <button
                   onClick={() => setOpen(isOpen ? null : c.cycle)}
                   className="w-full flex items-center gap-2.5 p-3 text-left hover:bg-white/5 transition-colors"
                 >
                   <ChevronDown className={`w-4 h-4 shrink-0 text-slate-500 transition-transform ${isOpen ? "rotate-180" : ""}`} />
-                  <span className="flex-1 min-w-0 text-sm font-bold text-slate-200 truncate">{c.cycle}</span>
-                  {c.missing > 0 && (
+                  <span className={`flex-1 min-w-0 text-sm font-bold truncate ${done ? "text-slate-400" : "text-slate-200"}`}>{c.cycle}</span>
+                  {done ? (
+                    <span className="shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-full border border-cyan-500/25 bg-cyan-500/10 text-cyan-300/90 text-[9px] font-bold uppercase tracking-wider">
+                      <CheckCheck className="w-2.5 h-2.5" /> ukończony
+                    </span>
+                  ) : c.missing > 0 && (
                     <span className="shrink-0 px-2 py-0.5 rounded-full border border-amber-500/25 bg-amber-500/10 text-amber-300 text-[9px] font-bold uppercase tracking-wider">
                       {c.missing} do zdobycia
                     </span>
