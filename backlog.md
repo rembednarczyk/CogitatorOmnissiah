@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.37.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.38.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,16 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.38.0** — **Cykle jako wiersze — decyzja + CV-PR1 (infrastruktura separacji `Kategoria`).**
+  DECYZJA użytkownika: poboczne tomy cykli będą REALNYMI wierszami bazy (opcja A: te same wiersze +
+  `Kategoria`), żeby dało się je oznaczać przeczytane/posiadane i żeby Vinted je skanował. Gap w blobach:
+  tom „nieprzeczytany" = brak wiersza, nie dało się oznaczyć. CV-PR1 (bezpieczny fundament, no-op dopóki
+  nie ma takich wierszy): mapper czyta `Kategoria` (select; pusto = „Nagroda"), `NotionBook.kategoria`,
+  helper `isAwardBook`/`isCycleVolume` (`services/bookCategory.ts`). Filtr `isAwardBook` w choke-pointach
+  nagrodowych: `statsService.getStats` (1 linia → wszystkie staty), `integrityService` (rok/Lp vs wiki),
+  `toSearchIndex` (Regał + Skryptorium). Vinted CELOWO bez filtra (ma skanować też tomy cykli). Testy.
+  NASTĘPNE: CV-PR2 (Żniwa robią idempotentny upsert wierszy `Kategoria=Tom cyklu` zamiast blobów; Archiwum
+  czyta wiersze), CV-PR3 (opcjonalne włączanie cykli w Regale/Skryptorium, sprzątanie blobów, duplikaty).
 - **1.37.1** — **Żniwa Cykli: poprawki po testach.** (1) Podsumowanie liczyło „1" — bo `summary.updated`
   było jednym zdaniem, a UI liczy count z długości listy; teraz `result.updated = liczba zapisanych`
   + `summary.updated` to RZECZYWISTA lista tytułów (skipped = tytuły bez sąsiednich tomów; pusty 0-case

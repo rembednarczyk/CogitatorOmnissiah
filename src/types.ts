@@ -46,6 +46,8 @@ export interface NotionBook {
   currentWydawnictwo?: string;
   currentSeria?: string;
   currentCzesccyklu?: boolean;
+  /** Kategoria wiersza: „Nagroda" (domyślnie/pusto) vs „Tom cyklu" (poboczny tom cyklu). */
+  kategoria?: string;
   lp?: string;
   zrodlo?: string[];
   plTitleRichText?: NotionRichTextItem[];
