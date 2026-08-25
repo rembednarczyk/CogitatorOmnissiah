@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.31.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.32.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,14 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.32.0** — **Statystyki: panel „Rynek" (STAT-PR4, ostatnia z 4 kart).** Czysty helper
+  `services/marketStats.ts` (`computeMarketStats`) z blobu `VintedData`: koszt skompletowania
+  (suma najtańszych ofert po jednej na CHCIANĄ książkę — nieprzeczytana i nieposiadana),
+  najtańsze okazje (top 8), świeże spadki cen (cena < prevPrice, największe pierwsze),
+  ranking sprzedawców z paczką (≥2 chcianych książek, suma min-per-book). Waluta = dominująca
+  w ofertach. Karta `MarketCard` (actionable — linki wprost do ofert/profili). Reuse
+  `parseVintedData`. Testy +5 (osobny plik) → 339. **KOMPLET 4 kart statystyk** (Rynek /
+  Wydawnictwa-Serie-Cykle / Dekady / Dostępność) — wszystkie z danych, które już mamy.
 - **1.31.0** — **Statystyki: Oś czasu / dekady (STAT-PR3).** `decadeStats` w `getStats` — rollup
   roczników do dekad (pierwszy 4-cyfrowy rok; wielodatowe → pierwszy; brak roku pominięty),
   total/read/owned per dekada. Karta `DecadeHistogram` (pełna szerokość, `md:col-span-2`):

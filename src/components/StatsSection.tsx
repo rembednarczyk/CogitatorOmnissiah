@@ -14,6 +14,7 @@ import { AwardCoverageGrid } from "./stats/AwardCoverageGrid";
 import { AvailabilityCard } from "./stats/AvailabilityCard";
 import { PublishingCard } from "./stats/PublishingCard";
 import { DecadeHistogram } from "./stats/DecadeHistogram";
+import { MarketCard } from "./stats/MarketCard";
 import { useEffectiveConfig } from "../hooks/useAppConfig";
 
 export const StatsSection: React.FC = () => {
@@ -134,6 +135,9 @@ export const StatsSection: React.FC = () => {
 
         {/* Aggregate Availability */}
         <AvailabilityCard stats={stats.availabilityStats} />
+
+        {/* Market (Vinted) */}
+        <MarketCard market={stats.marketStats} />
 
         {/* Publishers / Series / Cycles */}
         <PublishingCard publishers={stats.publisherStats} series={stats.seriesStats} cycles={stats.cycleStats} />

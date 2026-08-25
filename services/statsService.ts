@@ -1,6 +1,7 @@
 import { NotionAdapter } from "../notion.adapter";
 import { ConfigService } from "./configService";
 import { parseVintedData } from "./vintedStore";
+import { computeMarketStats } from "./marketStats";
 
 export class StatsService {
   constructor(private notion: NotionAdapter, private config: ConfigService) {}
@@ -137,6 +138,9 @@ export class StatsService {
       .map(([decade, s]) => ({ decade: parseInt(decade, 10), ...s }))
       .sort((a, b) => a.decade - b.decade);
 
+    // 5e. Rynek — statystyki z blobu VintedData (koszt skompletowania, okazje, spadki, sprzedawcy).
+    const marketStats = computeMarketStats(books);
+
     // 6. Yearly progress
     const yearlyStats: Record<string, { read: number; total: number; books: any[] }> = {};
     books.forEach(book => {
@@ -182,6 +186,7 @@ export class StatsService {
       seriesStats,
       cycleStats,
       decadeStats,
+      marketStats,
       // Filie z konfiguracji (`library.branches`) — dopisanie 3. filii w Kalibracji od razu
       // pojawia się w statystykach. `id` = tag „Źródło" filii (dopasowanie po znaczniku).
       libraryStats: branches.map(branch => ({
