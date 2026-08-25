@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.35.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.35.2** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,13 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.35.2** — **Statystyki: masonry „wiersz po wierszu" (round-robin).** CSS `columns` czytało
+  się kolumnami (cała lewa, potem prawa) — nieintuicyjne przy drag&drop kolejności. Teraz karty
+  rozkładane round-robin `distributeColumns(items, cols)` (i % cols) do osobnych kolumn flex:
+  0,2,4 w lewej, 1,3,5 w prawej → odczyt lewo→prawo pozostaje 0,1,2,3,..., a kolumny pakują się
+  niezależnie (bez dziur). `cols` z `matchMedia('(min-width:768px)')` (1/2). Karty pełnej szerokości
+  (span2) przerywają blok i renderują się na całą szerokość (segmentacja `full`/`block`). Helper
+  `renderCard` (DRY DnD). Test round-robin. Zastąpiło `columns`/`column-span:all` z 1.35.1.
 - **1.35.1** — **Statystyki: masonry zamiast siatki (koniec dziur od wysokości pary).**
   Kontener `columns-1 md:columns-2` + karty `break-inside-avoid mb-8` — każda kolumna pakuje się
   niezależnie, więc krótsza karta nie rozciąga się do wysokości wyższego sąsiada i nie zostawia
