@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.38.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.39.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,17 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.39.0** — **Cykle jako wiersze — CV-PR2 (Żniwa tworzą wiersze, bloby wycofane).** Rytuał Żniw
+  zamiast blobów robi **idempotentny upsert WIERSZY**: dla każdej kotwicy nagrodowej (`Część cyklu`)
+  rozwija cykl (`CycleLookupService`) i dla brakujących tomów tworzy wiersz `Kategoria=Tom cyklu` +
+  `Cykl`/`CyklNr` (`buildCycleVolumeProperties`, autor z kotwicy); istniejące pozycje (nagrodowe/utworzone)
+  tylko dotagowuje polem `Cykl`/`CyklNr` (bez duplikatów; cykl rozwijany raz, dedup po nazwie i tytule).
+  Archiwum czyta teraz WIERSZE: `aggregateCycleRows(books)` grupuje po `Cykl`, sort po `CyklNr`, „do
+  zdobycia" = ani owned ani read; karta status tomu = przeczytana/posiadana/do zdobycia. Mapper czyta
+  `Cykl`/`CyklNr` (usunięto `cycleCache`). USUNIĘTE: blob `CycleCache` — `saveCycleCache`, `cycleHarvest.ts`
+  (build/parse/merge) + test. Nowe kolumny auto-tworzone: `Kategoria`(select), `Cykl`(text), `CyklNr`(number).
+  Tomy są teraz oznaczalne (przeczytane/posiadane) i skanowane przez Vinted. NASTĘPNE: CV-PR3 (opcjonalne
+  włączanie cykli w Regale/Skryptorium, duplikaty, szlify).
 - **1.38.0** — **Cykle jako wiersze — decyzja + CV-PR1 (infrastruktura separacji `Kategoria`).**
   DECYZJA użytkownika: poboczne tomy cykli będą REALNYMI wierszami bazy (opcja A: te same wiersze +
   `Kategoria`), żeby dało się je oznaczać przeczytane/posiadane i żeby Vinted je skanował. Gap w blobach:

@@ -3,19 +3,24 @@ import { NotionAdapter } from "../notion.adapter";
 import { SyncEvent, NotionBook } from "../src/types";
 import { ConfigService } from "./configService";
 import { CycleLookupService } from "./cycleLookupService";
-import { buildCycleBlob, serializeCycleBlob, parseCycleBlob, sameCycleContent } from "./cycleHarvest";
+import { buildCycleVolumeProperties } from "./cycleRows";
+import { isCycleVolume } from "./bookCategory";
 import { createLogger } from "../logger";
 
 const log = createLogger("CycleHarvest");
 
+const normKey = (s: string): string => (s || "").toLowerCase().replace(/\s+/g, " ").trim();
+
 /**
  * Rytuał „Żniwa Cykli": dla każdej książki oznaczonej jako część cyklu zbiera
- * sąsiednie tomy (reużywa `CycleLookupService` — prev/next + {{Cykl}} + cross-ref
- * z bazą) i składuje je w blobie `CycleCache` na TEJ pozycji. To CACHE, nie nowe
- * wiersze bazy — świadomie nie dodajemy pobocznych tomów jako pozycji Notion.
+ * sąsiednie tomy (reużywa `CycleLookupService`) i materializuje je jako REALNE
+ * wiersze bazy (`Kategoria=Tom cyklu`, pole `Cykl`/`CyklNr`). Dzięki temu tomy można
+ * oznaczać (przeczytane/posiadane) i skanować na Vinted — poprzednio siedziały w
+ * blobie i nie dało się ich oznaczyć (opcja A wybrana przez użytkownika).
  *
- * Rozdział odpowiedzialności: TU zbieramy strukturę cyklu (rzadko się zmienia);
- * dostępność na Vinted dopisze osobny przebieg skanera (inne tempo odświeżania).
+ * Idempotentny: istniejący wiersz (po znorm. tytule) nie jest duplikowany, a tylko
+ * dotagowany polem `Cykl`/`CyklNr`, jeśli go nie miał. Cykl przetwarzany raz, nawet
+ * gdy ma kilka kotwic nagrodowych.
  */
 export class CycleHarvestService {
   constructor(
@@ -27,72 +32,96 @@ export class CycleHarvestService {
   async runCycleHarvest(sendEvent: (data: SyncEvent) => void, checkCancellation: () => boolean): Promise<void> {
     try {
       sendEvent({ type: "status", message: "Sprawdzanie struktury bazy Notion..." });
-      await this.notion.createColumnIfNeeded("CycleCache", "rich_text");
+      await this.notion.createColumnIfNeeded("Kategoria", "select");
+      await this.notion.createColumnIfNeeded("Cykl", "rich_text");
+      await this.notion.createColumnIfNeeded("CyklNr", "number");
+      await this.notion.createColumnIfNeeded("Część cyklu", "checkbox");
 
       sendEvent({ type: "status", message: "Pobieranie listy książek z Notion..." });
-      const books: NotionBook[] = await this.notion.getBooksForStats(undefined, undefined, { cache: true });
-      const cycleBooks = books.filter((b) => b.currentCzesccyklu);
+      const books: NotionBook[] = await this.notion.getBooksForStats(undefined, checkCancellation, { cache: true });
 
-      sendEvent({ type: "status", message: `Znaleziono ${cycleBooks.length} pozycji oznaczonych jako część cyklu. Odpytywanie Archiwum...` });
-      if (cycleBooks.length === 0) {
-        // Bez summary → widok „Rytuał Zakończony" (found/updated), nie karty liczników.
+      // Indeks istniejących wierszy po znorm. tytule (polski + oryginalny) — żeby nie
+      // tworzyć duplikatów i móc dotagować istniejące pozycje polem Cykl.
+      const byTitle = new Map<string, NotionBook>();
+      for (const b of books) {
+        for (const t of [b.plTitle, b.origTitle]) if (t && t.trim()) byTitle.set(normKey(t), b);
+      }
+
+      const cycleAnchors = books.filter((b) => b.currentCzesccyklu && !isCycleVolume(b));
+      sendEvent({ type: "status", message: `Kotwic cyklu: ${cycleAnchors.length}. Odpytywanie Archiwum...` });
+      if (cycleAnchors.length === 0) {
         sendEvent({ type: "complete", result: { success: true, found: 0, updated: 0 } });
         return;
       }
 
-      // Delikatnie dla encyklopedii: lookup robi sekwencyjne fetsze łańcucha, więc
-      // trzymamy niską współbieżność (max 3), niezależnie od writeConcurrency.
       const limit = pLimit(Math.min(3, Math.max(1, (await this.config.getConfig()).sync.writeConcurrency)));
-
-      // Zbieramy RZECZYWISTE listy tytułów — UI liczy count z długości list, więc
-      // pojedyncze zdanie podsumowania dawało błędne „1" (policzone jako 1 element).
-      let processed = 0, unchanged = 0;
-      const updatedTitles: string[] = [];
+      const processedCycles = new Set<string>(); // nazwy cykli już rozwinięte (dedup po kotwicach)
+      const createdTitles: string[] = [];
       const noSiblingTitles: string[] = [];
       const errors: { book: string; error: string }[] = [];
+      let processed = 0, tagged = 0;
 
-      const tasks = cycleBooks.map((book) => limit(async () => {
+      const tasks = cycleAnchors.map((anchor) => limit(async () => {
         if (checkCancellation()) return;
-        const title = book.plTitle || book.origTitle;
+        const anchorTitle = anchor.plTitle || anchor.origTitle;
         try {
-          const view = await this.cycleLookup.lookup(title, book.author || "");
-          // <=1 tom = brak sąsiadów do zebrania (albo strona bez danych cyklu).
-          if (!view || view.volumes.length <= 1) {
-            noSiblingTitles.push(title);
-          } else {
-            const blob = buildCycleBlob(view, Date.now());
-            const existing = parseCycleBlob(book.cycleCache);
-            if (sameCycleContent(blob, existing)) {
-              unchanged++;
+          const view = await this.cycleLookup.lookup(anchorTitle, anchor.author || "");
+          if (!view || view.volumes.length <= 1) { noSiblingTitles.push(anchorTitle); return; }
+
+          const cycleKey = normKey(view.cycleName);
+          // Cykl rozwijamy raz — kolejna kotwica tego samego cyklu tylko się dotaguje.
+          if (cycleKey && processedCycles.has(cycleKey)) return;
+          if (cycleKey) processedCycles.add(cycleKey);
+
+          for (let i = 0; i < view.volumes.length; i++) {
+            if (checkCancellation()) return;
+            const vol = view.volumes[i];
+            const nr = i + 1;
+            const existing = byTitle.get(normKey(vol.title));
+            if (existing) {
+              // Istnieje jako wiersz — dotaguj Cykl/CyklNr, jeśli brak (nie duplikuj).
+              if (existing.cykl !== view.cycleName || existing.cyklNr !== nr) {
+                await this.notion.updatePage(existing.id, {
+                  "Cykl": { rich_text: [{ text: { content: view.cycleName } }] },
+                  "CyklNr": { number: nr },
+                });
+                tagged++;
+                existing.cykl = view.cycleName; existing.cyklNr = nr;
+              }
             } else {
-              await this.notion.saveCycleCache(book.id, serializeCycleBlob(blob));
-              updatedTitles.push(`${title} (${view.volumes.length} tomów: ${view.cycleName})`);
+              // Brak wiersza — utwórz poboczny tom cyklu (autor z kotwicy).
+              const created = await this.notion.addRow(buildCycleVolumeProperties({
+                title: vol.title, author: anchor.author, cycleName: view.cycleName, nr,
+              }));
+              createdTitles.push(`${vol.title} (${view.cycleName})`);
+              // Dopisz do indeksu, by kolejna kotwica nie utworzyła duplikatu.
+              const stub = { id: created?.id, plTitle: vol.title, origTitle: "", cykl: view.cycleName, cyklNr: nr } as NotionBook;
+              byTitle.set(normKey(vol.title), stub);
             }
           }
         } catch (err: any) {
-          errors.push({ book: title, error: err?.message || String(err) });
+          errors.push({ book: anchorTitle, error: err?.message || String(err) });
         } finally {
           processed++;
-          if (processed % 5 === 0 || processed === cycleBooks.length) {
-            sendEvent({ type: "progress", current: processed, total: cycleBooks.length, message: `Zebrano ${processed}/${cycleBooks.length} cykli...` });
+          if (processed % 5 === 0 || processed === cycleAnchors.length) {
+            sendEvent({ type: "progress", current: processed, total: cycleAnchors.length, message: `Rozwinięto ${processed}/${cycleAnchors.length} kotwic...` });
           }
         }
       }));
 
       await Promise.all(tasks);
 
-      const written = updatedTitles.length;
-      log.info("Żniwa cykli zakończone", { found: cycleBooks.length, written, unchanged, noSiblings: noSiblingTitles.length, errors: errors.length });
+      log.info("Żniwa cykli (wiersze) zakończone", { anchors: cycleAnchors.length, created: createdTitles.length, tagged, noSiblings: noSiblingTitles.length, errors: errors.length });
       sendEvent({
         type: "complete",
         result: {
           success: !checkCancellation(),
-          found: cycleBooks.length,
-          updated: written,   // liczba realnie zapisanych pozycji (UI czyta to pole)
-          unchanged,          // bez zmian struktury (nie zapisano) — informacyjnie
+          found: cycleAnchors.length,
+          added: createdTitles.length,      // nowe wiersze tomów cykli
+          updated: tagged,                  // istniejące pozycje dotagowane polem Cykl
           summary: {
-            updated: updatedTitles,      // panel „Zaktualizowane" + poprawny licznik
-            skipped: noSiblingTitles,    // „Pominięto — nie oceniono" (brak sąsiednich tomów)
+            added: createdTitles,
+            skipped: noSiblingTitles,       // kotwice bez sąsiednich tomów
           },
           errors: errors.length > 0 ? errors : undefined,
         },

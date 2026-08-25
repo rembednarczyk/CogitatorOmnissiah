@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion } from "motion/react";
-import { Layers, ChevronDown, Check, CheckCheck, Package, CircleDashed, AlertTriangle, Award, ExternalLink, Loader2 } from "lucide-react";
+import { Layers, ChevronDown, Check, CheckCheck, Package, AlertTriangle, Award, ExternalLink, Loader2 } from "lucide-react";
 import { useCyclesHarvest, HarvestVolume } from "../../hooks/useCyclesHarvest";
 
 /** Link do tomu w Archiwum Encyklopedii Fantastyki (ten sam wzorzec co parser/panel). */
@@ -10,8 +10,8 @@ const encyclopediaUrl = (title: string) =>
 const volStatus = (v: HarvestVolume) => {
   if (v.read) return { icon: Check, cls: "text-cyan-400", label: "przeczytana" };
   if (v.owned) return { icon: Package, cls: "text-emerald-400", label: "posiadana" };
-  if (v.inBase) return { icon: CircleDashed, cls: "text-slate-400", label: "w bazie" };
-  return { icon: AlertTriangle, cls: "text-amber-400", label: "brak w bazie" };
+  // Tomy są teraz wierszami bazy — brak posiadania/przeczytania = „do zdobycia".
+  return { icon: AlertTriangle, cls: "text-amber-400", label: "do zdobycia" };
 };
 
 /**

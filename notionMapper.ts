@@ -75,8 +75,11 @@ export function mapPageToBook(page: NotionPage): NotionBook {
   // Blob składowanych wyników Vinted (rich_text; wiele segmentów jest sklejanych w getPlainText).
   const vintedData = getPlainText(getProp(props, "VintedData")) || undefined;
 
-  // Blob zebranych tomów cyklu (rich_text; ten sam schemat segmentów co VintedData).
-  const cycleCache = getPlainText(getProp(props, "CycleCache")) || undefined;
+  // Grupowanie cyklu: nazwa cyklu (rich_text) + pozycja w cyklu (number). Ustawiane
+  // rytuałem żniw na kotwicy nagrodowej ORAZ na wierszach pobocznych tomów.
+  const cykl = getPlainText(getProp(props, "Cykl")) || undefined;
+  const cyklNrProp = getProp(props, "CyklNr");
+  const cyklNr = cyklNrProp?.type === "number" && typeof cyklNrProp.number === "number" ? cyklNrProp.number : undefined;
 
   // Ręczny klucz porządku na regale (number; brak/null → undefined = sort po roku).
   const shelfOrderProp = getProp(props, "ShelfOrder");
@@ -98,7 +101,8 @@ export function mapPageToBook(page: NotionPage): NotionBook {
     plTitleRichText,
     origTitleRichText,
     vintedData,
-    cycleCache,
+    cykl,
+    cyklNr,
     shelfOrder
   };
 }
