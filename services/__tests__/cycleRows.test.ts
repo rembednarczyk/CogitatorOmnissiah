@@ -70,4 +70,19 @@ describe("aggregateCycleRows", () => {
   it("brak wierszy z Cykl → pusto", () => {
     expect(aggregateCycleRows([mk("a", {})])).toEqual({ cycles: [], totalCycles: 0, harvestedAt: null });
   });
+
+  it("dołącza najtańszą ofertę Vinted i liczy koszt kompletacji (tylko do zdobycia)", () => {
+    const vd = (p: number) => JSON.stringify({ scannedAt: "2026-01-01", offers: [
+      { url: "https://vinted.pl/items/1", price: p + 5 }, { url: "https://vinted.pl/items/2", price: p },
+    ] });
+    const out = aggregateCycleRows([
+      mk("1", { cykl: "C", cyklNr: 1, kategoria: "Tom cyklu", vintedData: vd(12) }),                       // do zdobycia + oferta 12
+      mk("2", { cykl: "C", cyklNr: 2, kategoria: "Tom cyklu", zrodlo: ["Posiadam"], vintedData: vd(20) }), // posiadana → poza kosztem
+      mk("3", { cykl: "C", cyklNr: 3, kategoria: "Tom cyklu" }),                                           // do zdobycia, brak oferty
+    ]);
+    const c = out.cycles[0];
+    expect(c.volumes[0].vinted).toEqual({ price: 12, url: "https://vinted.pl/items/2", count: 2 });
+    expect(c.acquireCost).toBe(12); // tylko tom 1
+    expect(c.acquirable).toBe(1);
+  });
 });

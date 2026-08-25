@@ -1,5 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
 
+export interface VolumeOffer {
+  price: number;
+  url: string;
+  count: number;
+}
 export interface HarvestVolume {
   id: string;
   title: string;
@@ -7,6 +12,7 @@ export interface HarvestVolume {
   read: boolean;
   owned: boolean;
   awarded: boolean;
+  vinted?: VolumeOffer;
 }
 export interface HarvestCycle {
   cycle: string;
@@ -16,6 +22,8 @@ export interface HarvestCycle {
   owned: number;
   read: number;
   missing: number;
+  acquireCost?: number;
+  acquirable: number;
 }
 export interface CyclesHarvest {
   cycles: HarvestCycle[];
