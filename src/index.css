@@ -96,6 +96,20 @@ body {
   --sk-room-flame: radial-gradient(circle at 50% 72%, #cffafe, #22d3ee 55%, #0e7490);
 }
 
+/* Przekładki dekad w Holo+ = amber (kolor oprawy Regału), spójnie z ramką/HUD.
+   Lokalny override na `.shelf-divider`: --noo-glow → akcent ramki (żyła/smużka/
+   poświata sygila), deseczka/tabliczka/sygil przemalowane na amber. Tylko Holo+ —
+   w Relikwiarzu przekładki zostają mosiężno-teal (brak reguły). */
+.skin-holo .shelf-divider {
+  --noo-glow: var(--sk-frame-accent);
+  --sk-board-bg: linear-gradient(180deg, #fcd34d, #f59e0b 42%, #b45309);
+  --sk-plate-text: #fde68a;
+  --sk-plate-edge: #a16207;
+  --sk-cog-ring: #fbbf24;
+  --sk-cog-skull: #2a1e06;
+  --sk-cog-disc: #140e02;
+}
+
 .skin-noospheric .book-spine {
   background: linear-gradient(90deg, rgba(0,0,0,.35), var(--spine-muted) 22%, var(--spine-muted) 78%, rgba(0,0,0,.28));
   box-shadow: inset 1.5px 0 0 rgba(var(--noo-glow),.22), inset -2px 0 4px rgba(0,0,0,.45), 0 6px 10px -6px rgba(0,0,0,.6);

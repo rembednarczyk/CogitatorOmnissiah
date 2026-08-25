@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { chunk, buildShelfItems, decadeOf, decadeLabel, assignDividerLevels, plateWidth } from "../utils/shelfLayout";
+import { chunk, buildShelfItems, decadeOf, decadeLabel, assignDividerPlacement, plateWidth } from "../utils/shelfLayout";
 import { PlacedItem } from "../utils/shelfPacking";
 import { BookIndexEntry } from "../types";
 
@@ -53,13 +53,14 @@ describe("shelfLayout.buildShelfItems (tabliczki dekad)", () => {
   });
 });
 
-describe("shelfLayout.plateWidth / assignDividerLevels", () => {
+describe("shelfLayout.plateWidth / assignDividerPlacement", () => {
   const div = (key: string, x: number): PlacedItem => ({ key, kind: "divider", bw: 10, w: 10, x, deg: 0 });
   const spine = (key: string, x: number): PlacedItem => ({ key, kind: "spine", bw: 34, w: 34, x, deg: 0 });
   const labels: Record<string, string> = {
     a: "1940–1949", b: "1950–1959", c: "1960–1969", d: "1970–1979",
   };
   const labelOf = (k: string) => labels[k];
+  const W = 2000; // szeroka półka — bez zawijania przy prawej krawędzi
 
   it("estimates plate width from label length (mono 11px)", () => {
     expect(plateWidth("1950–1959")).toBe(103); // 37 + 9·7.3
@@ -67,35 +68,51 @@ describe("shelfLayout.plateWidth / assignDividerLevels", () => {
     expect(plateWidth("")).toBe(37);
   });
 
-  it("keeps every plate on top when decades are wide enough", () => {
+  it("keeps every plate top/right when decades are wide enough", () => {
     const row = [div("a", 0), div("b", 200), div("c", 420)];
-    expect(assignDividerLevels(row, labelOf).size).toBe(0);
+    const pl = assignDividerPlacement(row, labelOf, W);
+    expect([...pl.values()].every((p) => p.level === "top" && p.dir === "right")).toBe(true);
   });
 
   it("drops a plate to the bottom when the previous decade is too narrow", () => {
     // b sits only 40px past a → górna tabliczka a (szer. ~103) zderza się z b.
     const row = [div("a", 0), div("b", 40), div("c", 420)];
-    const lv = assignDividerLevels(row, labelOf);
-    expect(lv.get("b")).toBe("bottom");
-    expect(lv.has("a")).toBe(false);
-    expect(lv.has("c")).toBe(false);
+    const pl = assignDividerPlacement(row, labelOf, W);
+    expect(pl.get("b")?.level).toBe("bottom");
+    expect(pl.get("a")?.level).toBe("top");
+    expect(pl.get("c")?.level).toBe("top");
   });
 
   it("alternates top/bottom greedily and only the middle plate flips in a tight chain", () => {
     // a(0) top; b(40) collides top → bottom; c(80) collides both → góra (fallback).
     const row = [div("a", 0), div("b", 40), div("c", 80)];
-    const lv = assignDividerLevels(row, labelOf);
-    expect(lv.get("b")).toBe("bottom");
-    expect(lv.has("a")).toBe(false);
-    expect(lv.has("c")).toBe(false); // fallback = top
+    const pl = assignDividerPlacement(row, labelOf, W);
+    expect(pl.get("a")?.level).toBe("top");
+    expect(pl.get("b")?.level).toBe("bottom");
+    expect(pl.get("c")?.level).toBe("top"); // fallback = top
+  });
+
+  it("extends a plate leftward when it would overflow the right shelf edge", () => {
+    // rowWidth 300; b przy 240 → 240+103=343 > 300 → rozwija się w lewo (bez kolizji z a).
+    const row = [div("a", 0), div("b", 240)];
+    const pl = assignDividerPlacement(row, labelOf, 300);
+    expect(pl.get("a")?.dir).toBe("right");
+    expect(pl.get("b")?.dir).toBe("left");
+    expect(pl.get("b")?.level).toBe("top");
+  });
+
+  it("disables edge detection when rowWidth ≤ 0 (all rightward)", () => {
+    const row = [div("a", 0), div("b", 240)];
+    const pl = assignDividerPlacement(row, labelOf, 0);
+    expect([...pl.values()].every((p) => p.dir === "right")).toBe(true);
   });
 
   it("sorts by x and ignores non-divider items", () => {
     const row = [spine("s1", 15), div("b", 40), div("a", 0), spine("s2", 200)];
-    const lv = assignDividerLevels(row, labelOf);
-    expect(lv.get("b")).toBe("bottom");
-    expect(lv.has("s1")).toBe(false);
-    expect(lv.has("s2")).toBe(false);
+    const pl = assignDividerPlacement(row, labelOf, W);
+    expect(pl.get("b")?.level).toBe("bottom");
+    expect(pl.has("s1")).toBe(false);
+    expect(pl.has("s2")).toBe(false);
   });
 });
 

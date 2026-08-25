@@ -1,6 +1,6 @@
 {
   "name": "Cogitator Omnissiah",
-  "version": "1.24.0",
+  "version": "1.25.0",
   "description": "A full-stack application that syncs book awards from Encyklopedia Fantastyki (MediaWiki API) to a Notion database.",
   "requestFramePermissions": []
 }

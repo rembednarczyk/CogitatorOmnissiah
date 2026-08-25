@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.24.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.25.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -62,6 +62,15 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.25.0** — **Przekładki dekad: krawędź półki, amber w Holo+, plakietki na deskę, sygil u dołu.**
+  (1) **Granica półki**: `assignDividerLevels` → `assignDividerPlacement(row, labelOf, rowWidth)` — zwraca
+  `{level, dir}`; gdy tabliczka wyszłaby poza prawą krawędź (`x + plateWidth > rowWidth`), rozwija się
+  **w lewo** (`dir="left"`, prawy brzeg przy deseczce). `ShelfRow` dostaje `rowWidth` z `Shelf` (well).
+  (2) **Amber w Holo+**: reguła `.skin-holo .shelf-divider` nadpisuje lokalnie `--noo-glow`→`--sk-frame-accent`
+  + deseczkę/tabliczkę/sygil na amber (spójnie z oprawą Regału); Relikwiarz bez zmian (teal/mosiądz).
+  (3) **Dolne plakietki na linii półki**: `bottom:-12` — nachodzą na deskę, przestały zasłaniać tytuły;
+  z-index przekładki 15→**30** (plakietki zawsze nad grzbietami i deską). (4) **Sygil u dołu** każdej
+  przekładki (drugi `CogSigil` na linii półki). Czysto render; fizyka/pakowanie bez zmian. Testy: +2 → 313.
 - **1.24.0** — **Tabliczki dekad: auto-unik kolizji (góra↔dół).** Wąska dekada (mało książek →
   następna przekładka blisko) powodowała, że pozioma tabliczka rocznika nachodziła na sąsiednią.
   Nowy pure-helper `assignDividerLevels` (w `shelfLayout`) liczy per-rząd, zachłannie od lewej,
