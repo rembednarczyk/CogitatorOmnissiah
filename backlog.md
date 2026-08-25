@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.40.3** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.41.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,14 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.41.0** — **Cykle jako wiersze — CV-PR3b (oznaczanie tomów w Archiwum).** Karta „Archiwum Cykli"
+  ma teraz per-tom przełączniki **posiadane** (Posiadam) i **przeczytane** (Przeczytane) — klik dopisuje/
+  usuwa znacznik Źródło na wierszu i odświeża widok (silent refetch, bez migania kartą; per-wiersz spinner
+  `busyId`). Backend: „Posiadam" dodane do `ALLOWED_SOURCE_TAGS` (mark/unmark). `aggregateCycleRows` +
+  `HarvestVolume` zwracają `id` wiersza. Hook `useCyclesHarvest` dostał `toggleSource(id, tag, active)`.
+  Cache Notion inwalidowany przy zapisie → refetch pokazuje świeży status. Testy: „Posiadam" akceptowany,
+  „Nagroda" odrzucany. Teraz oznaczasz tomy w apce, nie tylko w Notion. (CV-PR3b domknięty; zostaje
+  ewentualne sprzątanie kolumny CycleCache.)
 - **1.40.3** — **Rytuał Żniw: spójny opis + summary (audyt spięcia).** Opis przycisku był NIEAKTUALNY
   („cache, bez dopisywania do bazy") — po CV-PR2 rytuał tworzy wiersze; poprawiono na „Materializacja
   tomów cykli jako wiersze… oznaczalne i skanowane na Vinted". Summary: dodano listę `updated`

@@ -11,6 +11,8 @@ import { CYCLE_VOLUME_CATEGORY, isCycleVolume } from "./bookCategory";
 
 /** Widok jednego tomu w Archiwum Cykli (agregacja z wierszy). */
 export interface HarvestVolume {
+  /** ID wiersza Notion — do oznaczania (przeczytane/posiadane) z karty. */
+  id: string;
   title: string;
   /** Zawsze true — tom jest wierszem bazy (zachowane dla zgodności z kartą). */
   inBase: boolean;
@@ -91,6 +93,7 @@ export function aggregateCycleRows(books: NotionBook[]): CyclesHarvest {
     const volumes: HarvestVolume[] = rows.map((r) => {
       const zr = r.zrodlo || [];
       return {
+        id: r.id,
         title: r.plTitle || r.origTitle || "",
         inBase: true,
         read: zr.includes("Przeczytane"),
