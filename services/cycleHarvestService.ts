@@ -57,9 +57,10 @@ export class CycleHarvestService {
       const limit = pLimit(Math.min(3, Math.max(1, (await this.config.getConfig()).sync.writeConcurrency)));
       const processedCycles = new Set<string>(); // nazwy cykli już rozwinięte (dedup po kotwicach)
       const createdTitles: string[] = [];
+      const taggedTitles: string[] = [];
       const noSiblingTitles: string[] = [];
       const errors: { book: string; error: string }[] = [];
-      let processed = 0, tagged = 0;
+      let processed = 0;
 
       const tasks = cycleAnchors.map((anchor) => limit(async () => {
         if (checkCancellation()) return;
@@ -93,7 +94,7 @@ export class CycleHarvestService {
               }
               if (Object.keys(props).length > 0) {
                 await this.notion.updatePage(existing.id, props);
-                tagged++;
+                taggedTitles.push(`${existing.plTitle || existing.origTitle} (${view.cycleName} ${nr})`);
                 existing.cykl = view.cycleName; existing.cyklNr = nr;
                 if (isCycleVolume(existing)) existing.lp = cycleLpLabel(view.cycleName, nr);
               }
@@ -120,17 +121,18 @@ export class CycleHarvestService {
 
       await Promise.all(tasks);
 
-      log.info("Żniwa cykli (wiersze) zakończone", { anchors: cycleAnchors.length, created: createdTitles.length, tagged, noSiblings: noSiblingTitles.length, errors: errors.length });
+      log.info("Żniwa cykli (wiersze) zakończone", { anchors: cycleAnchors.length, created: createdTitles.length, tagged: taggedTitles.length, noSiblings: noSiblingTitles.length, errors: errors.length });
       sendEvent({
         type: "complete",
         result: {
           success: !checkCancellation(),
           found: cycleAnchors.length,
-          added: createdTitles.length,      // nowe wiersze tomów cykli
-          updated: tagged,                  // istniejące pozycje dotagowane polem Cykl
+          added: createdTitles.length,          // nowe wiersze tomów cykli
+          updated: taggedTitles.length,         // istniejące pozycje dopięte do cyklu / migracja Lp
           summary: {
-            added: createdTitles,
-            skipped: noSiblingTitles,       // kotwice bez sąsiednich tomów
+            added: createdTitles,               // panel „Nowe Zapisy"
+            updated: taggedTitles,              // panel „Zaktualizowane"
+            skipped: noSiblingTitles,           // panel „Pominięte" — kotwice bez sąsiednich tomów
           },
           errors: errors.length > 0 ? errors : undefined,
         },
