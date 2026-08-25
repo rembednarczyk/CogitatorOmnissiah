@@ -333,6 +333,23 @@ export class NotionAdapter {
     this.invalidateBooksCache();
   }
 
+  /**
+   * Zapis blobu zebranych tomów cyklu do pola „CycleCache" (rich_text). Ten sam
+   * schemat co `saveVintedData`: segmenty ≤2000 znaków sklejane przy odczycie.
+   */
+  async saveCycleCache(pageId: string, text: string): Promise<void> {
+    const chunks: { text: { content: string } }[] = [];
+    for (let i = 0; i < text.length; i += 2000) {
+      chunks.push({ text: { content: text.slice(i, i + 2000) } });
+    }
+    if (chunks.length === 0) chunks.push({ text: { content: "" } });
+    await withRetry(() => this.notion.pages.update({
+      page_id: pageId,
+      properties: { "CycleCache": { rich_text: chunks } },
+    }));
+    this.invalidateBooksCache();
+  }
+
   async addRow(properties: any): Promise<any> {
     await this.init();
     const parent = this.isDataSource

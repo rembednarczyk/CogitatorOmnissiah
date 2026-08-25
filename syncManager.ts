@@ -13,6 +13,7 @@ import { IntegrityService } from "./services/integrityService";
 import { LibraryCheckService } from "./services/libraryCheckService";
 import { VintedSyncService } from "./services/vintedSyncService";
 import { CycleLookupService } from "./services/cycleLookupService";
+import { CycleHarvestService } from "./services/cycleHarvestService";
 import { toSearchIndex } from "./services/bookSearchIndex";
 import { ConfigService } from "./services/configService";
 import { createLogger, classifyHttpError } from "./logger";
@@ -44,6 +45,7 @@ const integrityService = new IntegrityService(notionAdapter, wikiAdapter, config
 const libraryCheckService = new LibraryCheckService(notionAdapter, configService);
 const vintedSyncService = new VintedSyncService(notionAdapter, configService);
 const cycleLookupService = new CycleLookupService(notionAdapter, wikiAdapter);
+const cycleHarvestService = new CycleHarvestService(notionAdapter, cycleLookupService, configService);
 
 interface SyncTask {
   name: string;
@@ -60,6 +62,7 @@ export type SyncTaskName =
   | "duplicates"
   | "lp"
   | "cycles"
+  | "cycles-harvest"
   | "integrity"
   | "library"
   | "vinted"
@@ -83,6 +86,7 @@ const TASK_REGISTRY: Record<SyncTaskName, (sendEvent: (data: SyncEvent) => void,
   duplicates: (s) => (cc) => duplicateSyncService.runDuplicateCheck(s, cc),
   lp:         (s) => (cc) => lpSyncService.runLpSync(s, cc),
   cycles:     (s) => (cc) => cyclesSyncService.runCyclesSync(s, cc),
+  "cycles-harvest": (s) => (cc) => cycleHarvestService.runCycleHarvest(s, cc),
   integrity:  (s) => (cc) => integrityService.runIntegrityCheck(s, cc),
   library:    (s, p) => (cc) => libraryCheckService.runLibraryCheck(p.libraryCode, s, cc),
   vinted:     (s, p) => (cc) => vintedSyncService.runVintedCheck(s, cc, p),

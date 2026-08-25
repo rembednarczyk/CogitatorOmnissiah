@@ -143,6 +143,7 @@ export const stopSync = makeStopHandler("Zatrzymywanie synchronizacji...");
 export const stopPublisherSync = makeStopHandler("Zatrzymywanie synchronizacji wydawnictw...");
 export const stopSeriesSync = makeStopHandler("Zatrzymywanie synchronizacji serii...");
 export const stopCyclesSync = makeStopHandler("Zatrzymywanie synchronizacji cykli...");
+export const stopCyclesHarvest = makeStopHandler("Zatrzymywanie żniw cykli...");
 export const stopLpSync = makeStopHandler("Zatrzymywanie aktualizacji Lp...");
 export const stopDuplicatesSync = makeStopHandler("Zatrzymywanie sprawdzania duplikatów...");
 export const stopLibraryCheck = makeStopHandler("Zatrzymywanie skanowania biblioteki...");
@@ -173,6 +174,7 @@ const makeSyncHandler = (task: SyncTaskName, errorLabel: string) =>
 export const runPublisherSync = makeSyncHandler("publisher", "Sync Publisher Error:");
 export const runSeriesSync = makeSyncHandler("series", "Sync Series Error:");
 export const runCyclesSync = makeSyncHandler("cycles", "Sync Cycles Error:");
+export const runCyclesHarvest = makeSyncHandler("cycles-harvest", "Cycle Harvest Error:");
 export const runLpSync = makeSyncHandler("lp", "Sync Lp Error:");
 export const runDuplicateCheck = makeSyncHandler("duplicates", "Sync Duplicates Error:");
 export const runPurifySync = makeSyncHandler("purify", "Sync Purify Error:");

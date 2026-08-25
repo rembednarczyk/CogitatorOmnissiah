@@ -52,6 +52,8 @@ export interface NotionBook {
   origTitleRichText?: NotionRichTextItem[];
   /** Blob JSON składowanych wyników Vinted (pole „VintedData") — parsowany przez vintedStore. */
   vintedData?: string;
+  /** Blob JSON zebranych tomów cyklu (pole „CycleCache") — parsowany przez cycleHarvest. */
+  cycleCache?: string;
   /** Ręczny klucz porządku na regale (kolumna „ShelfOrder"; skala ułamkowych lat). */
   shelfOrder?: number;
 }
