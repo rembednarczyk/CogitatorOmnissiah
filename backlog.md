@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.23.4** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.24.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -62,6 +62,13 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.24.0** — **Tabliczki dekad: auto-unik kolizji (góra↔dół).** Wąska dekada (mało książek →
+  następna przekładka blisko) powodowała, że pozioma tabliczka rocznika nachodziła na sąsiednią.
+  Nowy pure-helper `assignDividerLevels` (w `shelfLayout`) liczy per-rząd, zachłannie od lewej,
+  które tabliczki muszą zjechać na dół: `plateWidth(label)` estymuje szerokość napisu; jeśli
+  górna kolidowałaby z poprzednią górną → `plate="bottom"`. `ShelfDivider` dostał prop `plate`
+  (dolna tabliczka + smużka światła w górę). Czysto wizualne, fizyka/pakowanie bez zmian. Testy
+  (`plateWidth`, kolizje, łańcuch, sort/ignore) — +5 → 311.
 - **1.23.4** — **Audyt kolorów #4: kontrast (WCAG).** Treść czytelna `slate-600`→**`slate-400`**
   (empty-state'y: „Baza pusta", „Brak szczegółów", „Archiwum milczy…", „Brak unikalnych rekordów" ×2,
   podpowiedź resetu w OtherToolsCard). Metadane (rok/seria w `BookResultCard`) `slate-600`→**`slate-500`**.

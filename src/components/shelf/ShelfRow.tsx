@@ -1,7 +1,7 @@
 import React from "react";
 import { BookIndexEntry } from "../../types";
 import { spineStyle, SHELF_ROW_H, SHELF_PLANK_H } from "../../utils/bookshelf";
-import { RenderSlot } from "../../utils/shelfLayout";
+import { RenderSlot, assignDividerLevels } from "../../utils/shelfLayout";
 import { PlacedItem } from "../../utils/shelfPacking";
 import { BookSpine } from "./BookSpine";
 import { BookStack } from "./BookStack";
@@ -22,16 +22,22 @@ interface Props {
 }
 
 /** Jeden rząd półki: woluminy na pozycjach z fizyki + drewniana deska pod spodem. */
-export const ShelfRow: React.FC<Props> = ({ row, slotByKey, onDragStart, onDragEnd }) => (
+export const ShelfRow: React.FC<Props> = ({ row, slotByKey, onDragStart, onDragEnd }) => {
+  // Poziom tabliczek dekad (góra/dół) — wąskie dekady zderzałyby napisy u góry.
+  const plateLevels = assignDividerLevels(row, (k) => {
+    const s = slotByKey.get(k);
+    return s && s.kind === "divider" ? s.label : undefined;
+  });
+  return (
   <div>
     <div className="relative" style={{ height: SHELF_ROW_H }}>
       {row.map((p) => {
         const slot = slotByKey.get(p.key)!;
         if (slot.kind === "divider") {
-          // z-15: tabliczka u góry + deseczka malują się PONAD granicznymi grzbietami.
+          // z-15: tabliczka + deseczka malują się PONAD granicznymi grzbietami.
           return (
             <div key={p.key} className="absolute bottom-0" style={{ left: p.x, zIndex: 15 }}>
-              <ShelfDivider label={slot.label} width={p.w} />
+              <ShelfDivider label={slot.label} width={p.w} plate={plateLevels.get(p.key) ?? "top"} />
             </div>
           );
         }
@@ -57,7 +63,8 @@ export const ShelfRow: React.FC<Props> = ({ row, slotByKey, onDragStart, onDragE
     </div>
     <div style={PLANK_STYLE} />
   </div>
-);
+  );
+};
 
 /** Pusta półka (dla wyrównania stałej wysokości regału) — sama deska. */
 export const EmptyShelfRow: React.FC = () => (
