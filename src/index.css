@@ -101,13 +101,13 @@ body {
    poświata sygila), deseczka/tabliczka/sygil przemalowane na amber. Tylko Holo+ —
    w Relikwiarzu przekładki zostają mosiężno-teal (brak reguły). */
 .skin-holo .shelf-divider {
-  --noo-glow: var(--sk-frame-accent);
-  --sk-board-bg: linear-gradient(180deg, #fcd34d, #f59e0b 42%, #b45309);
-  --sk-plate-text: #fde68a;
-  --sk-plate-edge: #a16207;
-  --sk-cog-ring: #fbbf24;
-  --sk-cog-skull: #2a1e06;
-  --sk-cog-disc: #140e02;
+  --noo-glow: 214, 168, 92;   /* przytłumiony amber (żyła/smużka/poświata sygila) */
+  --sk-board-bg: linear-gradient(180deg, #cda24c, #b07d2e 42%, #6b3d12);
+  --sk-plate-text: #f0d69a;
+  --sk-plate-edge: #7d5210;
+  --sk-cog-ring: #d9a83f;
+  --sk-cog-skull: #241a06;
+  --sk-cog-disc: #120c02;
 }
 
 .skin-noospheric .book-spine {

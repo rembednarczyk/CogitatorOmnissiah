@@ -33,14 +33,14 @@ export const ShelfRow: React.FC<Props> = ({ row, slotByKey, rowWidth, onDragStar
   return (
   <div>
     <div className="relative" style={{ height: SHELF_ROW_H }}>
+      {/* Warstwa 1: grzbiety/kupki + deseczki przekładek (z-20, nad tłem i deską). */}
       {row.map((p) => {
         const slot = slotByKey.get(p.key)!;
         if (slot.kind === "divider") {
-          // z-30: tabliczka + deseczka malują się PONAD grzbietami i deską półki.
           const pl = placement.get(p.key);
           return (
-            <div key={p.key} className="absolute bottom-0" style={{ left: p.x, zIndex: 30 }}>
-              <ShelfDivider label={slot.label} width={p.w} plate={pl?.level ?? "top"} dir={pl?.dir ?? "right"} />
+            <div key={p.key} className="absolute bottom-0" style={{ left: p.x, zIndex: 20 }}>
+              <ShelfDivider part="board" label={slot.label} width={p.w} plate={pl?.level ?? "top"} dir={pl?.dir ?? "right"} />
             </div>
           );
         }
@@ -60,6 +60,17 @@ export const ShelfRow: React.FC<Props> = ({ row, slotByKey, rowWidth, onDragStar
               : { left: p.x }}
           >
             <BookSpine book={slot.book} style={{ ...spineStyle(slot.book), width: p.w }} onDragStart={onDragStart} onDragEnd={onDragEnd} />
+          </div>
+        );
+      })}
+      {/* Warstwa 2: same tabliczki dekad — ZAWSZE na wierzchu (z-40), nigdy pod deseczką sąsiada. */}
+      {row.map((p) => {
+        const slot = slotByKey.get(p.key)!;
+        if (slot.kind !== "divider") return null;
+        const pl = placement.get(p.key);
+        return (
+          <div key={`plate-${p.key}`} className="absolute bottom-0" style={{ left: p.x, zIndex: 40 }}>
+            <ShelfDivider part="plate" label={slot.label} width={p.w} plate={pl?.level ?? "top"} dir={pl?.dir ?? "right"} />
           </div>
         );
       })}
