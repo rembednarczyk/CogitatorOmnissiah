@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.25.2** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.25.3** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,11 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.25.3** — **Vinted „Kontynuuj": okno 12 h → 24 h.** Audyt potwierdził, że mechanizm wznowienia
+  jest nienaruszony (bloki celowo nie zapisują `scannedAt`, stąd pozorne „189 co przebieg" w czasie
+  fali wykryć). Przy skanach raz dziennie 12 h zawsze wygasało — teraz `RESUME_HOURS = 24`,
+  zdeduplikowane do JEDNEGO eksportu w `VintedScanControls.tsx` (import w `VintedCheckItem`;
+  wcześniej stała była zdublowana w dwóch plikach i mogła się rozjechać).
 - **1.25.2** — **Skanery: odświeżona pula User-Agentów (sierpień 2026).** Audyt regresji po
   refaktorze god-object/god-hook wykazał, że CAŁA konfiguracja skanera Vinted (URL, nagłówki,
   agent, timeout 30 s, retry 3×4 s bez ponawiania 403, throttle 3–5 s, `looksBlocked`, watchdog

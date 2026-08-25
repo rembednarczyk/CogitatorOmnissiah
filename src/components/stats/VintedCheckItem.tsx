@@ -2,7 +2,7 @@ import React from "react";
 import { VintedResult, VintedSearchAttempt } from "../../hooks/useVintedCheck";
 import { useVintedResolveSellers } from "../../hooks/useVintedResolveSellers";
 import { useVintedStored } from "../../hooks/useVintedStored";
-import { VintedScanControls } from "./vinted/VintedScanControls";
+import { VintedScanControls, RESUME_HOURS } from "./vinted/VintedScanControls";
 import { VintedScanProgress } from "./vinted/VintedScanProgress";
 import { VintedDebugLog } from "./vinted/VintedDebugLog";
 import { VintedResolveStatus } from "./vinted/VintedResolveStatus";
@@ -17,8 +17,6 @@ interface VintedCheckItemProps {
   isChecking: boolean;
   progress: any;
 }
-
-const RESUME_HOURS = 12;
 
 export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searchAttempts, onCheck, onStop, isChecking, progress }) => {
   const [showLogs, setShowLogs] = React.useState(false);

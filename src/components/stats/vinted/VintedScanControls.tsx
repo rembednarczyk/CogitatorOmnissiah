@@ -2,7 +2,8 @@ import React from "react";
 import { Loader2, Search, Bug, Database, HardDriveDownload, Trash2 } from "lucide-react";
 import { RitualButton } from "../RitualButton";
 
-const RESUME_HOURS = 12;
+/** Okno „Kontynuuj": pomiń książki skanowane w ostatnich N h. Jedno źródło — importuje je też VintedCheckItem. */
+export const RESUME_HOURS = 24;
 
 interface Props {
   isChecking: boolean;
