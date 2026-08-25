@@ -24,8 +24,8 @@ export interface CyclesHarvest {
 }
 
 /**
- * Zebrane cykle (GET /api/cycles-harvest) — z blobów `CycleCache` uzupełnionych
- * Rytuałem Żniw. Odczyt jest lekki (agregacja po stronie serwera z cache książek).
+ * Zebrane cykle (GET /api/cycles-harvest) — agregacja WIERSZY cykli (pole `Cykl`)
+ * materializowanych Rytuałem Żniw. Odczyt lekki (agregacja serwera z cache książek).
  */
 export function useCyclesHarvest() {
   const [view, setView] = useState<CyclesHarvest | null>(null);
