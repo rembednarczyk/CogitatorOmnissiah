@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.40.2** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.40.3** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,13 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.40.3** — **Rytuał Żniw: spójny opis + summary (audyt spięcia).** Opis przycisku był NIEAKTUALNY
+  („cache, bez dopisywania do bazy") — po CV-PR2 rytuał tworzy wiersze; poprawiono na „Materializacja
+  tomów cykli jako wiersze… oznaczalne i skanowane na Vinted". Summary: dodano listę `updated`
+  (zaktualizowane/dopięte pozycje) obok `added`/`skipped` — parytet z innymi rytuałami (panele + liczniki
+  w `SingleSyncSummary`). Reszta spięcia potwierdzona: endpointy `/api/sync-cycles-harvest(+/stop)`,
+  instancja `useSync` (amber) w tablicy `syncs` (clearOthers/isAnySyncLoading), wynik pokazywany przez
+  `SingleSyncSummary`. Celowo POZA „Wielkim Rytuałem" (pisze wiersze — uruchamiany świadomie, jak duplikaty).
 - **1.40.2** — **Tomy cykli: etykieta Lp = „Nazwa (nr)".** Po teście użytkownika (tomy miały w Lp
   polski tytuł, niespójnie z numerami nagród): kolumna tytułowa `Lp` tomu cyklu = „Mistborn (3)"
   (`cycleLpLabel(cykl, nr)`; tytuł żyje w „Tytuł polski"). Stabilne, nie zależy od przenumerowań.
