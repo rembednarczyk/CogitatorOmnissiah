@@ -76,6 +76,8 @@ export interface AppConfig {
     shelfRowsPerPage: number;
     /** Precyzyjny drag&drop na regale (wstawianie w szczelinę w obrębie dekady). */
     preciseShelfDrop: boolean;
+    /** Kolejność kart w „Analizie Zasobów" (id sekcji). Puste = domyślna kolejność z kodu. */
+    statsOrder: string[];
   };
 }
 
@@ -132,6 +134,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   ui: {
     shelfRowsPerPage: 5,
     preciseShelfDrop: true,
+    statsOrder: [],
   },
 };
 
@@ -159,6 +162,20 @@ const cleanStringList = (v: unknown, dflt: string[], maxItems = 30, maxLen = 400
     .filter((x) => x.length > 0 && x.length <= maxLen)
     .slice(0, maxItems);
   return out.length > 0 ? out : [...dflt];
+};
+
+/** Lista identyfikatorów (np. kolejność kart) — dozwolona pusta, dedup, przycięcie. */
+const cleanIdList = (v: unknown, maxItems = 40, maxLen = 40): string[] => {
+  if (!Array.isArray(v)) return [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const x of v) {
+    if (typeof x !== "string") continue;
+    const s = x.trim();
+    if (s && s.length <= maxLen && !seen.has(s)) { seen.add(s); out.push(s); }
+    if (out.length >= maxItems) break;
+  }
+  return out;
 };
 
 const cleanBranches = (v: unknown, dflt: LibraryBranch[]): LibraryBranch[] => {
@@ -237,6 +254,7 @@ export function mergeConfig(overrides?: unknown): AppConfig {
     ui: {
       shelfRowsPerPage: clampInt(u.shelfRowsPerPage, 1, 12, d.ui.shelfRowsPerPage),
       preciseShelfDrop: cleanBool(u.preciseShelfDrop, d.ui.preciseShelfDrop),
+      statsOrder: cleanIdList(u.statsOrder),
     },
   };
 }

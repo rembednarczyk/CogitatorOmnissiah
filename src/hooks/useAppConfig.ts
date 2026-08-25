@@ -43,6 +43,28 @@ export function publishEffectiveConfig(cfg: AppConfig): void {
   listeners.forEach((l) => l(cfg));
 }
 
+/**
+ * Utrwala kolejność kart statystyk (`ui.statsOrder`) bez otwierania panelu.
+ * Optymistycznie publikuje nową kolejność od razu (płynny reorder), a zapis do
+ * Notion leci w tle — błąd sieci nie cofa układu na tę sesję. Nie klobruje innych
+ * knobów: bierze bieżącą efektywną konfigurację i podmienia tylko to pole.
+ */
+export async function persistStatsOrder(order: string[]): Promise<void> {
+  const current = await loadShared();
+  const next: AppConfig = { ...current, ui: { ...current.ui, statsOrder: order } };
+  publishEffectiveConfig(next);
+  try {
+    const res = await fetch("/api/app-config", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(next),
+    });
+    if (res.ok) publishEffectiveConfig(mergeConfig(await res.json()));
+  } catch {
+    /* zostaje wersja optymistyczna na tę sesję */
+  }
+}
+
 /** Efektywna konfiguracja dla konsumentów — defaulty do czasu pobrania, potem live. */
 export function useEffectiveConfig(): AppConfig {
   const [cfg, setCfg] = useState<AppConfig>(cachedConfig ?? DEFAULT_CONFIG);
