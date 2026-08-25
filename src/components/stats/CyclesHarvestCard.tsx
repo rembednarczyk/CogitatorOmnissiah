@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion } from "motion/react";
-import { Layers, ChevronDown, Check, CheckCheck, Package, AlertTriangle, Award, ExternalLink, Loader2 } from "lucide-react";
+import { Layers, ChevronDown, Check, CheckCheck, Package, AlertTriangle, Award, ExternalLink, Loader2, ShoppingCart } from "lucide-react";
 import { useCyclesHarvest, HarvestVolume } from "../../hooks/useCyclesHarvest";
 
 /** Link do tomu w Archiwum Encyklopedii Fantastyki (ten sam wzorzec co parser/panel). */
@@ -76,6 +76,11 @@ export const CyclesHarvestCard: React.FC = () => {
                       {c.missing} do zdobycia
                     </span>
                   )}
+                  {c.acquireCost != null && (
+                    <span className="shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-full border border-rose-500/25 bg-rose-500/10 text-rose-300 text-[9px] font-bold uppercase tracking-wider" title={`Skompletuj ${c.acquirable} tomów z Vinted`}>
+                      <ShoppingCart className="w-2.5 h-2.5" /> ~{c.acquireCost} zł
+                    </span>
+                  )}
                   <span className="shrink-0 text-[10px] tabular-nums text-slate-500 font-bold">{c.inBase}/{c.total}</span>
                 </button>
 
@@ -90,6 +95,19 @@ export const CyclesHarvestCard: React.FC = () => {
                           <Icon className={`w-3.5 h-3.5 shrink-0 ${s.cls}`} />
                           <span className={`flex-1 min-w-0 text-sm truncate ${v.read || v.owned ? "text-slate-200" : "text-slate-400"}`}>{v.title}</span>
                           {v.awarded && <Award className="w-3.5 h-3.5 text-amber-400 shrink-0" aria-label="nagrodzona" />}
+
+                          {v.vinted && !v.owned && (
+                            <a
+                              href={v.vinted.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="shrink-0 flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-rose-500/10 border border-rose-500/25 text-rose-300 text-[10px] font-bold tabular-nums hover:bg-rose-500/20 transition-colors"
+                              title={`${v.vinted.count} ${v.vinted.count === 1 ? "oferta" : "ofert"} na Vinted — najtańsza`}
+                            >
+                              <ShoppingCart className="w-3 h-3" /> {v.vinted.price} zł
+                            </a>
+                          )}
 
                           {busyId === v.id ? (
                             <Loader2 className="w-3.5 h-3.5 shrink-0 animate-spin text-slate-400" />

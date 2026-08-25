@@ -2,6 +2,7 @@ import { NotionBook } from "../src/types";
 import { sanitizeNotionString, isValidUrl } from "../utils";
 import { buildAuthorTags } from "./bookDiff";
 import { CYCLE_VOLUME_CATEGORY, isCycleVolume } from "./bookCategory";
+import { parseVintedData } from "./vintedStore";
 
 /**
  * Link do strony tomu w Archiwum Encyklopedii Fantastyki — tytuł tomu to nazwa strony
@@ -24,6 +25,14 @@ export function buildCycleTitleProperty(title: string): Record<string, any> {
  * skanować na Vinted. Grupowanie po polu `Cykl`, kolejność po `CyklNr`.
  */
 
+/** Najtańsza oferta Vinted dla tomu (z blobu VintedData, zbieranego skanerem). */
+export interface VolumeOffer {
+  price: number;
+  url: string;
+  /** Liczba ofert łącznie dla tego tomu. */
+  count: number;
+}
+
 /** Widok jednego tomu w Archiwum Cykli (agregacja z wierszy). */
 export interface HarvestVolume {
   /** ID wiersza Notion — do oznaczania (przeczytane/posiadane) z karty. */
@@ -36,6 +45,18 @@ export interface HarvestVolume {
   awarded: boolean;
   /** Czy to pozycja nagrodowa (kotwica), czy poboczny tom cyklu. */
   isAward: boolean;
+  /** Najtańsza oferta Vinted (jeśli skaner coś znalazł). */
+  vinted?: VolumeOffer;
+}
+
+/** Najtańsza oferta z blobu VintedData wiersza (tylko ceny > 0). */
+function cheapestVinted(raw?: string): VolumeOffer | undefined {
+  const data = parseVintedData(raw);
+  if (!data) return undefined;
+  const priced = data.offers.filter((o) => typeof o.price === "number" && (o.price as number) > 0);
+  if (priced.length === 0) return undefined;
+  const best = priced.reduce((a, b) => ((b.price as number) < (a.price as number) ? b : a));
+  return { price: best.price as number, url: best.url, count: data.offers.length };
 }
 export interface HarvestCycle {
   cycle: string;
@@ -47,6 +68,10 @@ export interface HarvestCycle {
   missing: number;
   /** Zachowane dla zgodności kształtu (= liczba tomów, bo wszystkie są wierszami). */
   inBase: number;
+  /** Koszt skompletowania: suma najtańszych ofert Vinted dla tomów „do zdobycia". */
+  acquireCost?: number;
+  /** Ile tomów „do zdobycia" ma ofertę Vinted. */
+  acquirable: number;
 }
 export interface CyclesHarvest {
   cycles: HarvestCycle[];
@@ -116,12 +141,20 @@ export function aggregateCycleRows(books: NotionBook[]): CyclesHarvest {
         owned: zr.includes("Posiadam"),
         awarded: (r.awards || []).length > 0,
         isAward: !isCycleVolume(r),
+        vinted: cheapestVinted(r.vintedData),
       };
     });
     const owned = volumes.filter((v) => v.owned).length;
     const read = volumes.filter((v) => v.read).length;
-    const missing = volumes.filter((v) => !v.owned && !v.read).length;
-    return { cycle: g.name, volumes, total: volumes.length, owned, read, missing, inBase: volumes.length };
+    const toGet = volumes.filter((v) => !v.owned && !v.read);
+    // Koszt kompletacji = suma najtańszych ofert dla tomów „do zdobycia", które są na Vinted.
+    const withOffer = toGet.filter((v) => v.vinted);
+    const acquireCost = withOffer.length > 0 ? Math.round(withOffer.reduce((s, v) => s + v.vinted!.price, 0)) : undefined;
+    return {
+      cycle: g.name, volumes, total: volumes.length, owned, read,
+      missing: toGet.length, inBase: volumes.length,
+      acquireCost, acquirable: withOffer.length,
+    };
   });
   // Najwięcej „do zdobycia" na górze; ukończone (missing 0) spadają na dół.
   cycles.sort((a, b) => b.missing - a.missing || b.total - a.total || a.cycle.localeCompare(b.cycle));

@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.42.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.43.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,13 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.43.0** — **UC1: Vinted dla tomów cykli (dostępność w Archiwum).** Dzięki modelowi wierszy skaner
+  Vinted JUŻ skanuje tomy cykli (są wierszami z pustym Źródło) i zapisuje `VintedData` — UC1 sprowadził
+  się do WYŚWIETLENIA. `aggregateCycleRows` dokłada per-tom najtańszą ofertę (`vinted:{price,url,count}`,
+  z `parseVintedData`, ceny > 0) oraz per-cykl `acquireCost` (suma najtańszych dla tomów „do zdobycia" z
+  ofertą) + `acquirable`. Karta „Archiwum Cykli": pill „🛒 X zł" (link do najtańszej oferty) przy tomach
+  nieposiadanych + badge „~X zł" w nagłówku cyklu (koszt skompletowania). Test agregacji ofert. To ORYGINALNY
+  UC1 z backlogu, ale prostszy — brak „widm", bo tomy to realne wiersze (skaner bierze je za darmo).
 - **1.42.0** — **Tomy cykli: „Tytuł polski" z linkiem do encyklopedii (jak oryginalne rytuały).** Wiersze
   tomów tworzonych żniwami mają teraz polski tytuł jako link do strony tomu w Encyklopedii — ten sam wzorzec
   URL co parser/karta (`cycleVolumeEncyclopediaUrl`: spacje→„_", encode). `buildCycleTitleProperty` (Tytuł
