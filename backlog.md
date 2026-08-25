@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.25.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.25.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -62,6 +62,11 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.25.1** — **Przekładki: tabliczki zawsze nad deseczkami + przytłumiony amber.** (1) Render dwuwarstwowy
+  w `ShelfRow`: najpierw wszystkie deseczki (`ShelfDivider part="board"`, z-20), potem wszystkie tabliczki
+  (`part="plate"`, z-40) — tabliczka nie chowa się już pod deseczką sąsiada (ani własną). `ShelfDivider`
+  dostał prop `part`. (2) Amber dividera przygaszony: deseczka `#cda24c→#b07d2e→#6b3d12` (było `#fcd34d→#f59e0b`),
+  `--noo-glow` przekładki `214,168,92` zamiast pełnego `--sk-frame-accent`, tabliczka/sygil w łagodniejszym tonie.
 - **1.25.0** — **Przekładki dekad: krawędź półki, amber w Holo+, plakietki na deskę, sygil u dołu.**
   (1) **Granica półki**: `assignDividerLevels` → `assignDividerPlacement(row, labelOf, rowWidth)` — zwraca
   `{level, dir}`; gdy tabliczka wyszłaby poza prawą krawędź (`x + plateWidth > rowWidth`), rozwija się
