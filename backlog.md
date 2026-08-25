@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.34.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.35.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,13 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.35.0** — **Statystyki: drag&drop kolejności kart.** Nagłówek „Analizy Zasobów" ma przełącznik
+  trybu układania (ikona `LayoutGrid` → `Check`) + reset (`RotateCcw`). W trybie: karty `draggable`
+  (native HTML5 DnD), inner `pointer-events-none`, dashed amber ring, badge „przeciągnij", drop-target
+  podświetlony cyan. Kolejność = lista id sekcji w `ui.statsOrder` (nowy knob, default `[]` = kolejność
+  z kodu); zapis optymistyczny przez `persistStatsOrder` (PUT /api/app-config, nie klobruje innych
+  knobów). Czyste helpery `orderByIds`/`moveId` w `utils/statsLayout.ts` (nowe karty dopisywane na końcu,
+  martwe id ignorowane) + testy. Karty dostały `id` + `h-full`; grid `items-stretch`.
 - **1.34.1** — **Podgląd cyklu: linki do Encyklopedii.** Każdy tom w `CyclePanel` ma ikonę
   „otwórz w Encyklopedii" (nowa karta) — URL `index.php?title=<tytuł z _>` (wzorzec jak w parserze),
   `stopPropagation` by nie zamykać modala. Wygodny podgląd tomu bez ręcznego szukania.
