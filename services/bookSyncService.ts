@@ -6,6 +6,7 @@ import { calculateSimilarity, countCommonWords, cleanTitle } from "../utils";
 import { Book, NotionBook, SyncEvent, SyncParams } from "../src/types";
 import { normalizeData } from "./dataNormalizer";
 import { buildBookUpdates, buildNewBookProperties } from "./bookDiff";
+import { isCycleVolume, AWARD_CATEGORY } from "./bookCategory";
 import { createLogger } from "../logger";
 import { ConfigService } from "./configService";
 
@@ -134,6 +135,12 @@ export class BookSyncService {
 
           if (existingBook) {
             const updates = buildBookUpdates(existingBook, book);
+            // Promocja: rytuał nagród przetwarza laureatów, więc jeśli trafił na wiersz
+            // oznaczony jako „Tom cyklu", ten tom JEDNAK jest nagrodzony — przenosimy go
+            // do Kategoria=Nagroda (inaczej zostałby ukryty w statystykach nagród).
+            if (isCycleVolume(existingBook)) {
+              updates["Kategoria"] = { select: { name: AWARD_CATEGORY } };
+            }
             if (Object.keys(updates).length > 0) {
               await this.notion.updatePage(existingBook.id, updates);
               updated++;

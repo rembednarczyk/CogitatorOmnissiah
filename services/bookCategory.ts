@@ -7,6 +7,7 @@
  * `isAwardBook`; skaner Vinted celowo bierze WSZYSTKO (tomy cykli też chcemy skanować).
  */
 export const CYCLE_VOLUME_CATEGORY = "Tom cyklu";
+export const AWARD_CATEGORY = "Nagroda";
 
 export function isCycleVolume(b: { kategoria?: string }): boolean {
   return b.kategoria === CYCLE_VOLUME_CATEGORY;
