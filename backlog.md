@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.35.2** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.36.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,18 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.36.0** — **Cykle: Rytuał Żniw (harvest struktury do blobu per-pozycja) — Etap 1 backend (CYH-PR1).**
+  Nowy rytuał `cycles-harvest` (`CycleHarvestService`): iteruje książki z „Część cyklu", reużywa
+  `CycleLookupService` (prev/next + {{Cykl}} + cross-ref) i zapisuje zebrane tomy w blobie `CycleCache`
+  na TEJ pozycji (rich_text, segmenty ≤2000 jak `VintedData`, `saveCycleCache`). To CACHE, NIE nowe
+  wiersze bazy (świadomie). Skip-if-unchanged (`sameCycleContent` ignoruje ts) → mniej zapisów; uczciwy
+  raport (written/unchanged/noSiblings/errors). Czyste helpery `services/cycleHarvest.ts`
+  (build/serialize/parse/sameContent) + testy. Wpięcie: TASK_REGISTRY `cycles-harvest`, controller
+  `runCyclesHarvest`/`stopCyclesHarvest`, routy `/sync-cycles-harvest(+/stop)`, `useSyncManager`
+  `cyclesHarvestSync` + przycisk „Rytuał Żniw Cykli" w OtherToolsCard. Mapper czyta `CycleCache`→`cycleCache`.
+  Decyzja architektoniczna: blob per-pozycja (nie zbiorczy — limit Notion, sentinel-row odpada);
+  dedykowany rytuał (nie doczepka do skanu Vinted — rozdział struktura vs dostępność). NASTĘPNE:
+  CYH-PR2 (karta „Cykle" w Archiwum czytająca bloby) → potem UC1 (skaner Vinted czyta bloby, szuka widm).
 - **1.35.2** — **Statystyki: masonry „wiersz po wierszu" (round-robin).** CSS `columns` czytało
   się kolumnami (cała lewa, potem prawa) — nieintuicyjne przy drag&drop kolejności. Teraz karty
   rozkładane round-robin `distributeColumns(items, cols)` (i % cols) do osobnych kolumn flex:

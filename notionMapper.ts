@@ -72,6 +72,9 @@ export function mapPageToBook(page: NotionPage): NotionBook {
   // Blob składowanych wyników Vinted (rich_text; wiele segmentów jest sklejanych w getPlainText).
   const vintedData = getPlainText(getProp(props, "VintedData")) || undefined;
 
+  // Blob zebranych tomów cyklu (rich_text; ten sam schemat segmentów co VintedData).
+  const cycleCache = getPlainText(getProp(props, "CycleCache")) || undefined;
+
   // Ręczny klucz porządku na regale (number; brak/null → undefined = sort po roku).
   const shelfOrderProp = getProp(props, "ShelfOrder");
   const shelfOrder = shelfOrderProp?.type === "number" && typeof shelfOrderProp.number === "number" ? shelfOrderProp.number : undefined;
@@ -91,6 +94,7 @@ export function mapPageToBook(page: NotionPage): NotionBook {
     plTitleRichText,
     origTitleRichText,
     vintedData,
+    cycleCache,
     shelfOrder
   };
 }

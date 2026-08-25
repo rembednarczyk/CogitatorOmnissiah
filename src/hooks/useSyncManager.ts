@@ -27,13 +27,14 @@ export function useSyncManager() {
   const publisherSync = useSync("/api/sync-publisher", "/api/sync-publisher/stop", { color: "rose" });
   const seriesSync = useSync("/api/sync-series", "/api/sync-series/stop", { color: "indigo" });
   const cyclesSync = useSync("/api/sync-cycles", "/api/sync-cycles/stop", { color: "blue" });
+  const cyclesHarvestSync = useSync("/api/sync-cycles-harvest", "/api/sync-cycles-harvest/stop", { color: "amber" });
   const lpSync = useSync("/api/sync-lp", "/api/sync-lp/stop", { color: "purple" });
   const integritySync = useSync("/api/sync-integrity", "/api/sync-integrity/stop", { color: "cyan" });
   const duplicatesSync = useSync("/api/sync-duplicates", "/api/sync-duplicates/stop", { color: "orange" });
   const purifySync = useSync("/api/sync-purify", "/api/sync-purify/stop", { color: "amber" });
   const schemaSync = useSync("/api/sync-schema", "/api/sync-schema/stop", { color: "emerald" });
 
-  const syncs = [sync, publisherSync, seriesSync, cyclesSync, lpSync, duplicatesSync, purifySync, schemaSync, integritySync];
+  const syncs = [sync, publisherSync, seriesSync, cyclesSync, cyclesHarvestSync, lpSync, duplicatesSync, purifySync, schemaSync, integritySync];
   const anyError = syncs.find(s => s.state.error);
   const isAnySyncLoading = syncs.some(s => s.state.loading);
 
@@ -68,6 +69,7 @@ export function useSyncManager() {
   const handleSyncPublisher = () => handleSyncAction(publisherSync);
   const handleSyncSeries = () => handleSyncAction(seriesSync);
   const handleCyclesSync = () => handleSyncAction(cyclesSync);
+  const handleCyclesHarvest = () => handleSyncAction(cyclesHarvestSync);
   const handleSyncLp = () => handleSyncAction(lpSync);
 
   const handleSync = () => {
@@ -134,7 +136,7 @@ export function useSyncManager() {
 
   return {
     // Instancje rytuałów (przekazywane do komponentów prezentacyjnych)
-    sync, publisherSync, seriesSync, cyclesSync, lpSync, integritySync, duplicatesSync, purifySync, schemaSync,
+    sync, publisherSync, seriesSync, cyclesSync, cyclesHarvestSync, lpSync, integritySync, duplicatesSync, purifySync, schemaSync,
     // Lista nagród z konfiguracji (dropdown w SyncAwards)
     awardOptions,
     // Stan zbiorczy
@@ -143,6 +145,6 @@ export function useSyncManager() {
     // Akcje
     handleAwardChange, handleSync, handleFullSync, handleResetSync,
     handleSyncSchema, handleSyncPurify, handleSyncPublisher, handleSyncSeries,
-    handleCyclesSync, handleSyncLp, handleSyncDuplicates,
+    handleCyclesSync, handleCyclesHarvest, handleSyncLp, handleSyncDuplicates,
   };
 }
