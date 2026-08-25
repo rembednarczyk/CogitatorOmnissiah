@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.40.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.40.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,15 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.40.1** — **Audyt „cykle jako wiersze" + fix promocji.** Przegląd wszystkich konsumentów wierszy.
+  FIX (korektność): `bookSyncService` — gdy rytuał nagród trafi na istniejący wiersz `Tom cyklu`
+  (tom, który JEDNAK zdobył nagrodę), promuje go do `Kategoria=Nagroda` (inaczej zostałby ukryty w
+  statystykach nagród; zapobiega też duplikatowi). Stała `AWARD_CATEGORY`. Audyt potwierdził poprawne
+  filtry (staty/integralność/Regał/Skryptorium/duplikaty/Lp). ODNOTOWANE (nie-bug, decyzje na później):
+  (a) brak w-appowego oznaczania tomów przeczytane/posiadane — Archiwum jest read-only, widoki nagród
+  je wykluczają → oznaczasz w Notion; kandydat do CV-PR3b; (b) skan biblioteki i Vinted CELOWO obejmują
+  tomy (Vinted zbiera dane pod UC1, ale nic ich jeszcze nie wyświetla); (c) cyclesSync/publisher/series/
+  purify/wikiField iterują też tomy — nieszkodliwe wzbogacanie, dodatkowy ruch wiki.
 - **1.40.0** — **Cykle jako wiersze — CV-PR3a (tomy poza numeracją Lp i duplikatami).** Na życzenie:
   poboczne tomy cykli NIE uczestniczą w globalnym numerze porządkowym — `lpSyncService` filtruje
   `isAwardBook` (numery nagród zostają czyste 1..N, tomy się nie wciskają; ich kolejność wewnątrz cyklu
