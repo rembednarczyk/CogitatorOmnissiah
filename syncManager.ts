@@ -12,6 +12,7 @@ import { SchemaValidationService } from "./services/schemaValidationService";
 import { IntegrityService } from "./services/integrityService";
 import { LibraryCheckService } from "./services/libraryCheckService";
 import { VintedSyncService } from "./services/vintedSyncService";
+import { CycleLookupService } from "./services/cycleLookupService";
 import { toSearchIndex } from "./services/bookSearchIndex";
 import { ConfigService } from "./services/configService";
 import { createLogger, classifyHttpError } from "./logger";
@@ -42,6 +43,7 @@ const schemaValidationService = new SchemaValidationService(notionAdapter);
 const integrityService = new IntegrityService(notionAdapter, wikiAdapter, configService);
 const libraryCheckService = new LibraryCheckService(notionAdapter, configService);
 const vintedSyncService = new VintedSyncService(notionAdapter, configService);
+const cycleLookupService = new CycleLookupService(notionAdapter, wikiAdapter);
 
 interface SyncTask {
   name: string;
@@ -169,6 +171,11 @@ class SyncManager {
   /** Odczyt składowanych wyników Vinted (kafelki/paczki z bazy — bez re-scrape). */
   async getVintedStored() {
     return await vintedSyncService.getStoredData();
+  }
+
+  /** Podgląd cyklu dla książki (na żądanie, bez zapisu do bazy). */
+  async getCycle(title: string, author: string) {
+    return await cycleLookupService.lookup(title, author);
   }
 
   /**
