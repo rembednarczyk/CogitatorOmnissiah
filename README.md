@@ -39,12 +39,15 @@ Każda operacja to osobne, anulowalne zadanie strumieniowane do UI przez SSE.
 | **Puryfikacja** | `POST /api/sync-purify` | Czyści tytuły z pozostałości składni wiki i natywnego formatowania Notion. |
 | **Wydawcy / Serie** | `POST /api/sync-publisher`, `POST /api/sync-series` | Dociąga wydawcę i serię ze strony każdej książki (z weryfikacją autora). |
 | **Cykle** | `POST /api/sync-cycles` | Zaznacza „Część cyklu" na podstawie danych ze strony wiki. |
-| **Rekonstrukcja Liczb (Lp)** | `POST /api/sync-lp` | Przenumerowuje kolumnę „Lp" wg roku i tytułu. |
+| **Żniwa Cykli** | `POST /api/sync-cycles-harvest` | Materializuje poboczne tomy cykli jako REALNE wiersze (`Kategoria=Tom cyklu`, `Cykl`/`CyklNr`) — oznaczalne i skanowane na Vinted. Idempotentny. |
+| **Rekonstrukcja Liczb (Lp)** | `POST /api/sync-lp` | Przenumerowuje kolumnę „Lp" wg roku i tytułu (tylko pozycje nagrodowe — tomy cykli pomijane). |
 | **Duplikaty** | `POST /api/sync-duplicates` | Wykrywa potencjalne duplikaty (tytuł + podobieństwo autora). |
 | **Sanctity (Integralność)** | `POST /api/sync-integrity` | Porównuje bazę Notion z wiki: liczby per rok/nagroda, unikalność Lp/tytułów. |
 | **Statystyki** | `GET /api/stats` | Agregaty do dashboardu (postęp autorów, roczników, pokrycie nagród, biblioteki). |
-| **Skryptorium** (wyszukiwarka) | `GET /api/books` | Odchudzony indeks rekordów; front filtruje client-side po tytule (PL+oryg) i autorze, diakrytyki-agnostycznie, na żywo („per" → wiele, „pere" → Perelandra). |
-| **Regał** (wizualizacja) | `POST /api/mark-as-read`, `POST /api/unmark-as-read` | Księgozbiór jako fizyczne półki (grzbiety + okładki „Wyróżnione"); dwa regały „Do przeczytania"/„Przeczytane" z drag&drop, który zapisuje/usuwa tag „Przeczytane" w kolumnie „Źródło". |
+| **Skryptorium** (wyszukiwarka) | `GET /api/books`, `GET /api/cycle` | Odchudzony indeks rekordów; front filtruje client-side po tytule (PL+oryg) i autorze, diakrytyki-agnostycznie, na żywo. Badge „cykl" otwiera podgląd tomów cyklu (`/api/cycle`, na żądanie, bez zapisu). |
+| **Archiwum Cykli** | `GET /api/cycles-harvest` | Zbiorczy widok zebranych cykli (z wierszy `Cykl`): tomy + status, koszt kompletacji z Vinted, oznaczanie przeczytane/posiadane w miejscu. |
+| **Konfiguracja** (Sanktuarium Kalibracji) | `GET/PUT /api/app-config` | Knoby aplikacji (diff od defaultów w opisie kolumny `AppConfig`). Otwiera klik w logo. |
+| **Regał** (wizualizacja) | `POST /api/mark-as-read`, `POST /api/unmark-as-read`, `POST /api/shelf-order` | Księgozbiór jako fizyczne półki (grzbiety + okładki „Wyróżnione"); dwa regały „Do przeczytania"/„Przeczytane" z drag&drop (zapis/usuwa tag „Przeczytane" w „Źródło"); precyzyjne wstawianie w obrębie dekady zapisuje `ShelfOrder`. Skórki `Holo`/`Noospheric`. |
 | **Skan Biblioteki** | `POST /api/library-check` | Sprawdza dostępność w OPAC MBP Lublin (scraping HTML). |
 | **Skan Vinted** | `POST /api/vinted-check` | Szuka fizycznych egzemplarzy na vinted.pl (scraping HTML). |
 
@@ -61,7 +64,7 @@ flowchart TB
     subgraph FE["Frontend — React 19 SPA (src/)"]
         App["App.tsx — 5 zakładek<br/>(Statystyki · Regał · Skryptorium · Liturgie · Vinted)"]
         USM["hooks/useSyncManager<br/>(orkiestracja rytuałów)"]
-        Hooks["useSync · useVintedCheck · useLibraryCheck<br/>useStats · useConfig · useBooks · useMarkRead"]
+        Hooks["useSyncManager · useSync · useVintedCheck · useLibraryCheck<br/>useStats · useAppConfig · useBooks · useMarkRead/useMarkAsRead<br/>useCycle · useCyclesHarvest · useShelfOrder"]
         Stream["hooks/useSSEStream<br/>(wspólny transport: fetch + watchdog + SSE)"]
         SSEc["utils/ consumeSSE · stallWatchdog"]
         App --> USM --> Hooks --> Stream --> SSEc
@@ -178,7 +181,8 @@ Szczegóły zasad architektonicznych: **[`COGITATOR_GUIDELINES.md`](./COGITATOR_
 │   ├── App.tsx  types.ts  constants.ts
 │   ├── components/          # + stats/vinted/ (skaner), search/ (Skryptorium), shelf/ (Regał)
 │   ├── hooks/               # useSyncManager, useSSEStream (transport), useSync, useVintedCheck,
-│   │                        #   useLibraryCheck, useStats, useConfig, useBooks, useMarkRead, …
+│   │                        #   useLibraryCheck, useStats, useAppConfig, useBooks, useCycle,
+│   │                        #   useCyclesHarvest, useShelfOrder, useMarkRead/useMarkAsRead, …
 │   ├── utils/               # sse (consumeSSE), stallWatchdog, time, bookSearch, bookshelf,
 │   │                        #   vintedOffers, vintedSellers, vintedFormat
 │   └── theme/               # ritualColors (motyw kolorów rytuałów)
@@ -207,11 +211,16 @@ Szczegóły zasad architektonicznych: **[`COGITATOR_GUIDELINES.md`](./COGITATOR_
    | Kolumna | Typ |
    | --- | --- |
    | `Lp` | title (kolumna główna) |
-   | `Autor`, `Rok`, `Wydawnictwo`, `Seria`, `Nagroda` | multi_select |
-   | `Tytuł polski`, `Tytuł oryginalny` | rich_text |
+   | `Autor`, `Rok`, `Wydawnictwo`, `Seria`, `Nagroda`, `Źródło` | multi_select |
+   | `Tytuł polski`, `Tytuł oryginalny`, `Cykl`, `VintedData` | rich_text |
    | `Część cyklu` | checkbox |
+   | `Kategoria` | select (`Nagroda` / `Tom cyklu`) |
+   | `CyklNr`, `ShelfOrder` | number |
 
-   Kolumna `Źródło` (multi_select) używana jest przez statystyki i skany do znaczników `Przeczytane`, `Biblioteka`, `Biblioteka 9`, `Posiadam`.
+   - `Źródło` — znaczniki `Przeczytane`, `Posiadam`, `Biblioteka`, `Biblioteka 9` (statystyki, skany, oznaczanie).
+   - `Kategoria`/`Cykl`/`CyklNr` — model cykli-jako-wierszy (poboczne tomy oddzielone od nagród; puste `Kategoria` = pozycja nagrodowa).
+   - `VintedData` — blob wyników skanu Vinted; `ShelfOrder` — ręczny porządek regału.
+   - `AppConfig` (rich_text) — nośnik konfiguracji: knoby żyją w **opisie** tej kolumny, nie w wierszach.
 
 ---
 
@@ -284,13 +293,18 @@ Wszystkie endpointy synchronizacji zwracają strumień **SSE** (`text/event-stre
 | GET | `/api/config` | Obecność kluczy (booleany, bez sekretów). |
 | GET | `/api/diagnostics` | **Diagnostyka end‑to‑end** (Notion + pobranie i parsowanie stron nagród) z podsumowaniem po polsku. |
 | GET | `/api/stats` | Agregaty do dashboardu. |
+| GET | `/api/books` | Odchudzony indeks Skryptorium (wyszukiwarka client-side). |
+| GET | `/api/cycle` | Podgląd tomów cyklu dla książki (`?title&author`, na żądanie, bez zapisu; 404 gdy poza cyklem). |
+| GET | `/api/cycles-harvest` | Zbiorczy widok zebranych cykli (z wierszy) do Archiwum. |
+| GET / PUT | `/api/app-config` | Odczyt / zapis knobów aplikacji (diff od defaultów w opisie kolumny `AppConfig`). |
 | GET | `/api/notion/schema` | Bieżący schemat bazy. |
 | PATCH | `/api/notion/schema` | Modyfikacja opcji właściwości. |
 | GET | `/api/wiki/last-update` | Data ostatniej edycji strony wiki. |
 | POST | `/api/sync` | Synchronizacja nagród (`{ awardName, pageTitle, syncAll }`). |
-| POST | `/api/sync-schema`, `/api/sync-purify`, `/api/sync-publisher`, `/api/sync-series`, `/api/sync-cycles`, `/api/sync-lp`, `/api/sync-duplicates`, `/api/sync-integrity` | Pozostałe rytuały. |
+| POST | `/api/sync-schema`, `/api/sync-purify`, `/api/sync-publisher`, `/api/sync-series`, `/api/sync-cycles`, `/api/sync-cycles-harvest`, `/api/sync-lp`, `/api/sync-duplicates`, `/api/sync-integrity` | Pozostałe rytuały. |
 | POST | `/api/library-check`, `/api/vinted-check` | Skany dostępności. |
-| POST | `/api/mark-as-read` | Oznaczenie książki jako „Przeczytane". |
+| POST | `/api/mark-as-read`, `/api/unmark-as-read` | Dopisanie / usunięcie znacznika `Źródło` (`Przeczytane`/`Posiadam`/`Biblioteka…`). |
+| POST | `/api/shelf-order` | Zapis ręcznego porządku regału (precyzyjny drag&drop). |
 | POST | `/api/*/stop` | Zatrzymanie danego rytuału. |
 | POST | `/api/sync/reset` | Awaryjny reset stanu synchronizacji. |
 
