@@ -6,11 +6,12 @@ import { SearchSection } from "./components/SearchSection";
 import { BookshelfSection } from "./components/BookshelfSection";
 import { VintedSection } from "./components/VintedSection";
 import { LiturgySection } from "./components/LiturgySection";
+import { ConfigSection } from "./components/ConfigSection";
 import { TabNav, TabDef } from "./components/TabNav";
 import { ParticleBackground } from "./components/ParticleBackground";
 import { useSyncManager } from "./hooks/useSyncManager";
 
-type TabId = 'stats' | 'shelf' | 'search' | 'config' | 'vinted';
+type TabId = 'stats' | 'shelf' | 'search' | 'config' | 'vinted' | 'admin';
 
 const tabTransition = { initial: { opacity: 0, y: 20 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -20 }, transition: { duration: 0.3 } };
 
@@ -48,12 +49,19 @@ export default function App() {
           animate={{ opacity: 1, y: 0 }}
           className="flex flex-col md:flex-row items-center gap-8 text-center md:text-left"
         >
-          <motion.div
+          {/* Logo = wejście do Sanktuarium Kalibracji (zakładka admin, poza paskiem). */}
+          <motion.button
             whileHover={{ scale: 1.05, rotate: 5 }}
-            className="p-5 bg-slate-900/80 rounded-2xl border border-cyan-500/30 shadow-2xl shadow-cyan-500/20 backdrop-blur-xl"
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setActiveTab(activeTab === 'admin' ? 'stats' : 'admin')}
+            className={`p-5 bg-slate-900/80 rounded-2xl border shadow-2xl backdrop-blur-xl cursor-pointer transition-colors ${
+              activeTab === 'admin' ? 'border-amber-500/50 shadow-amber-500/20' : 'border-cyan-500/30 shadow-cyan-500/20'
+            }`}
+            title="Sanktuarium Kalibracji (konfiguracja)"
+            aria-label="Otwórz konfigurację"
           >
-            <Database className="w-12 h-12 text-cyan-400" />
-          </motion.div>
+            <Database className={`w-12 h-12 ${activeTab === 'admin' ? 'text-amber-400' : 'text-cyan-400'}`} />
+          </motion.button>
           <div className="flex-1">
             <h1 className="text-4xl md:text-5xl font-bold tracking-tighter font-display mb-2 flex items-center justify-center md:justify-start gap-3 flex-wrap">
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 drop-shadow-[0_0_20px_rgba(34,211,238,0.3)]">
@@ -120,6 +128,8 @@ export default function App() {
             <motion.div key="search" {...tabTransition}><SearchSection /></motion.div>
           ) : activeTab === 'config' ? (
             <motion.div key="config" {...tabTransition} className="space-y-12"><LiturgySection sm={sm} /></motion.div>
+          ) : activeTab === 'admin' ? (
+            <motion.div key="admin" {...tabTransition}><ConfigSection /></motion.div>
           ) : (
             <motion.div key="vinted" {...tabTransition}><VintedSection /></motion.div>
           )}

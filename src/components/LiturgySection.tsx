@@ -47,6 +47,7 @@ export const LiturgySection: React.FC<{ sm: ReturnType<typeof useSyncManager> }>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <SyncAwards
           sync={sync}
+          awardOptions={sm.awardOptions}
           integritySync={integritySync}
           handleAwardChange={handleAwardChange}
           handleSync={handleSync}

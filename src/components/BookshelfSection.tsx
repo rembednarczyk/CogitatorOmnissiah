@@ -5,6 +5,7 @@ import { useBooks } from "../hooks/useBooks";
 import { useMarkRead } from "../hooks/useMarkRead";
 import { ShelfId, ReadOverrides, isRead, splitShelves, featuredReads } from "../utils/bookshelf";
 import { ShelfSkin, SHELF_SKINS, skinClass, loadSkin, saveSkin } from "../utils/shelfSkin";
+import { useEffectiveConfig } from "../hooks/useAppConfig";
 import { Shelf } from "./shelf/Shelf";
 import { CoverCard } from "./shelf/CoverCard";
 import { ShelfFrame } from "./shelf/ShelfFrame";
@@ -18,6 +19,8 @@ export const BookshelfSection: React.FC = () => {
   const [dragging, setDragging] = useState<BookIndexEntry | null>(null);
   const [moveError, setMoveError] = useState<string | null>(null);
   const [skin, setSkin] = useState<ShelfSkin>(loadSkin);
+  // Liczba rzędów regału na stronę — knob `ui.shelfRowsPerPage`.
+  const rowsPerPage = useEffectiveConfig().ui.shelfRowsPerPage;
   useEffect(() => { saveSkin(skin); }, [skin]);
 
   // Zapis stanu „przeczytane" jest SERIALIZOWANY per książka (latest-wins). Backend
@@ -147,13 +150,13 @@ export const BookshelfSection: React.FC = () => {
               „Przeczytane" — drag&drop między nimi. Każdy paginowany (Regał N/M). */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Shelf
-              shelfId="toRead" title="Do przeczytania" accent="cyan" pageSize={5}
+              shelfId="toRead" title="Do przeczytania" accent="cyan" pageSize={rowsPerPage}
               icon={<BookOpen className="w-4 h-4" />}
               books={toRead} dragging={!!dragging}
               onDragStart={setDragging} onDragEnd={() => setDragging(null)} onDropBook={handleDrop}
             />
             <Shelf
-              shelfId="read" title="Przeczytane" accent="emerald" pageSize={5}
+              shelfId="read" title="Przeczytane" accent="emerald" pageSize={rowsPerPage}
               icon={<CheckCircle2 className="w-4 h-4" />}
               books={read} dragging={!!dragging}
               onDragStart={setDragging} onDragEnd={() => setDragging(null)} onDropBook={handleDrop}

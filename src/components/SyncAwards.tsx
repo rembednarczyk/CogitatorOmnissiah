@@ -2,11 +2,13 @@ import React from "react";
 import { BookOpen, Loader2, RefreshCw } from "lucide-react";
 import { motion } from "motion/react";
 import { useSync } from "../hooks/useSync";
-import { PREDEFINED_AWARDS } from "../constants";
+import { AwardPage } from "../configSchema";
 import { IntegrityCheckCard } from "./IntegrityCheckCard";
 
 interface SyncAwardsProps {
   sync: ReturnType<typeof useSync>;
+  /** Lista nagród z konfiguracji (+ „Wszystkie Nagrody") — dropdown. */
+  awardOptions: AwardPage[];
   integritySync: ReturnType<typeof useSync>;
   handleAwardChange: (name: string) => void;
   handleSync: () => void;
@@ -16,6 +18,7 @@ interface SyncAwardsProps {
 
 export const SyncAwards: React.FC<SyncAwardsProps> = ({ 
   sync, 
+  awardOptions,
   integritySync,
   handleAwardChange, 
   handleSync, 
@@ -46,7 +49,7 @@ export const SyncAwards: React.FC<SyncAwardsProps> = ({
             disabled={syncState.loading}
             className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3 text-slate-200 focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 outline-none transition-all disabled:opacity-50 font-medium"
           >
-            {PREDEFINED_AWARDS.map(a => (
+            {awardOptions.map(a => (
               <option key={a.name} value={a.name}>{a.name}</option>
             ))}
             <option value="Inna">Inna (wpisz poniżej)</option>
