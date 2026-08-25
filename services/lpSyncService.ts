@@ -1,6 +1,7 @@
 import { NotionAdapter } from "../notion.adapter";
 import pLimit from "p-limit";
 import { NotionBook, SyncEvent } from "../src/types";
+import { isAwardBook } from "./bookCategory";
 
 export class LpSyncService {
   constructor(private notion: NotionAdapter) {}
@@ -10,8 +11,11 @@ export class LpSyncService {
       sendEvent({ type: "status", message: "Pobieranie listy książek z Notion..." });
       let allBooks: NotionBook[] = await this.notion.queryAllBooks((count) => sendEvent({ type: "status", message: `Pobrano ${count} książek z Notion...` }), checkCancellation);
       
-      // Filter out empty books (ghost rows) to avoid assigning Lp to them
-      allBooks = allBooks.filter(b => b.plTitle || b.origTitle || b.author);
+      // Filter out empty books (ghost rows) to avoid assigning Lp to them.
+      // Numeracja Lp dotyczy TYLKO pozycji nagrodowych — poboczne tomy cykli nie
+      // uczestniczą w globalnym numerze porządkowym (nie przesuwają numerów nagród;
+      // ich kolejność wewnątrz cyklu daje pole CyklNr).
+      allBooks = allBooks.filter(b => isAwardBook(b) && (b.plTitle || b.origTitle || b.author));
 
       if (checkCancellation()) { sendEvent({ type: "error", error: "Przerwano aktualizację Lp." }); return; }
       sendEvent({ type: "status", message: "Sortowanie i aktualizacja kolumny Lp..." });

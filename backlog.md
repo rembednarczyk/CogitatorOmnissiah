@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.39.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.40.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,14 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.40.0** — **Cykle jako wiersze — CV-PR3a (tomy poza numeracją Lp i duplikatami).** Na życzenie:
+  poboczne tomy cykli NIE uczestniczą w globalnym numerze porządkowym — `lpSyncService` filtruje
+  `isAwardBook` (numery nagród zostają czyste 1..N, tomy się nie wciskają; ich kolejność wewnątrz cyklu
+  daje `CyklNr`). `duplicateSyncService` też filtruje `isAwardBook` (tomy cykli to odrębne książki, nie
+  duplikaty). Testy. Uczciwa korekta: read-side (staty/integralność/Regał/Skryptorium) był już czysty
+  (CV-PR1), ale rytuały PISZĄCE iterują wszystkie wiersze — Vinted CELOWO skanuje tomy; publisher/series/
+  purify/biblioteka nieszkodliwie je wzbogacają. NASTĘPNE (CV-PR3b): opcjonalne włączanie cykli w Regale/
+  Skryptorium, sprzątanie kolumny `CycleCache`.
 - **1.39.0** — **Cykle jako wiersze — CV-PR2 (Żniwa tworzą wiersze, bloby wycofane).** Rytuał Żniw
   zamiast blobów robi **idempotentny upsert WIERSZY**: dla każdej kotwicy nagrodowej (`Część cyklu`)
   rozwija cykl (`CycleLookupService`) i dla brakujących tomów tworzy wiersz `Kategoria=Tom cyklu` +
