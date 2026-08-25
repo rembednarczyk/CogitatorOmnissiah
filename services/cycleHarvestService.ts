@@ -3,7 +3,7 @@ import { NotionAdapter } from "../notion.adapter";
 import { SyncEvent, NotionBook } from "../src/types";
 import { ConfigService } from "./configService";
 import { CycleLookupService } from "./cycleLookupService";
-import { buildCycleVolumeProperties } from "./cycleRows";
+import { buildCycleVolumeProperties, cycleLpLabel } from "./cycleRows";
 import { isCycleVolume } from "./bookCategory";
 import { createLogger } from "../logger";
 
@@ -79,14 +79,23 @@ export class CycleHarvestService {
             const nr = i + 1;
             const existing = byTitle.get(normKey(vol.title));
             if (existing) {
-              // Istnieje jako wiersz — dotaguj Cykl/CyklNr, jeśli brak (nie duplikuj).
+              // Istnieje jako wiersz — dotaguj Cykl/CyklNr (nie duplikuj). Dla wierszy
+              // tomów cykli ujednolić też etykietę Lp; kotwic nagrodowych (numer w Lp)
+              // NIE dotykamy.
+              const props: Record<string, any> = {};
               if (existing.cykl !== view.cycleName || existing.cyklNr !== nr) {
-                await this.notion.updatePage(existing.id, {
-                  "Cykl": { rich_text: [{ text: { content: view.cycleName } }] },
-                  "CyklNr": { number: nr },
-                });
+                props["Cykl"] = { rich_text: [{ text: { content: view.cycleName } }] };
+                props["CyklNr"] = { number: nr };
+              }
+              if (isCycleVolume(existing)) {
+                const label = cycleLpLabel(view.cycleName, nr);
+                if (existing.lp !== label) props["Lp"] = { title: [{ text: { content: label } }] };
+              }
+              if (Object.keys(props).length > 0) {
+                await this.notion.updatePage(existing.id, props);
                 tagged++;
                 existing.cykl = view.cycleName; existing.cyklNr = nr;
+                if (isCycleVolume(existing)) existing.lp = cycleLpLabel(view.cycleName, nr);
               }
             } else {
               // Brak wiersza — utwórz poboczny tom cyklu (autor z kotwicy).

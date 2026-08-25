@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
-import { buildCycleVolumeProperties, aggregateCycleRows } from "../cycleRows";
+import { buildCycleVolumeProperties, aggregateCycleRows, cycleLpLabel } from "../cycleRows";
 import { NotionBook } from "../../src/types";
 
 describe("buildCycleVolumeProperties", () => {
@@ -10,8 +10,15 @@ describe("buildCycleVolumeProperties", () => {
     expect(p["Cykl"].rich_text[0].text.content).toBe("Mistborn");
     expect(p["CyklNr"]).toEqual({ number: 3 });
     expect(p["Część cyklu"]).toEqual({ checkbox: true });
-    expect(p["Lp"].title[0].text.content).toBe("Bohater Wieków");
+    // Lp (kolumna tytułowa) = etykieta cyklu, tytuł żyje w „Tytuł polski".
+    expect(p["Lp"].title[0].text.content).toBe("Mistborn (3)");
+    expect(p["Tytuł polski"].rich_text[0].text.content).toBe("Bohater Wieków");
     expect(p["Autor"].multi_select).toEqual([{ name: "Brandon Sanderson" }]);
+  });
+
+  it("cycleLpLabel: 'Nazwa (nr)', fallback gdy brak nazwy", () => {
+    expect(cycleLpLabel("Mistborn", 2)).toBe("Mistborn (2)");
+    expect(cycleLpLabel("", 1)).toBe("Cykl (1)");
   });
 
   it("pomija Autora gdy brak", () => {

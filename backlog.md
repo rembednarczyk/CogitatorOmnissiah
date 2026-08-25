@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.40.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.40.2** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,11 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.40.2** — **Tomy cykli: etykieta Lp = „Nazwa (nr)".** Po teście użytkownika (tomy miały w Lp
+  polski tytuł, niespójnie z numerami nagród): kolumna tytułowa `Lp` tomu cyklu = „Mistborn (3)"
+  (`cycleLpLabel(cykl, nr)`; tytuł żyje w „Tytuł polski"). Stabilne, nie zależy od przenumerowań.
+  Rytuał żniw MIGRUJE istniejące wiersze tomów do nowej etykiety (aktualizuje Lp gdy różne); kotwic
+  nagrodowych (numer w Lp) NIE dotyka. Testy.
 - **1.40.1** — **Audyt „cykle jako wiersze" + fix promocji.** Przegląd wszystkich konsumentów wierszy.
   FIX (korektność): `bookSyncService` — gdy rytuał nagród trafi na istniejący wiersz `Tom cyklu`
   (tom, który JEDNAK zdobył nagrodę), promuje go do `Kategoria=Nagroda` (inaczej zostałby ukryty w
