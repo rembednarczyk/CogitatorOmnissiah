@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.28.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.29.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,14 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.29.0** — **Statystyki: zagregowana dostępność + dług libraryStats (STAT-PR1).** `StatsService`
+  dostaje `ConfigService`. `libraryStats` iteruje teraz `config.library.branches` (koniec hardcode
+  Felin/Bronowice — 3. filia z Kalibracji od razu w statystykach; `id` = `sourceTag`, zachowana
+  zgodność z `addBookToLibrarySection`). Nowy `availabilityStats`: partycja priorytetowa
+  nieprzeczytanych (posiadane > biblioteka(tag filii) > Vinted(≥1 oferta z blobu) > brak śladu),
+  każda książka liczona raz → sumuje do `totalUnread`. Karta `AvailabilityCard` (stacked bar +
+  legenda %/liczby) w StatsSection. Reuse `parseVintedData`. Testy +2 → 332. Pierwsza z 4 kart
+  statystyk (Rynek / Wydawnictwa-Serie-Cykle / Dekady / Dostępność).
 - **1.28.0** — **Precyzyjny drag&drop na regale (DND-PR2).** Sort półek: `byShelfPosition`
   (dekada → `effShelfKey` → tytuł); `effShelfKey` = `shelfOrder` o ile mieści się w dekadzie książki
   (klucz STALE spoza dekady ignorowany → powrót do roku). Czysty planer `shelfInsertion.ts`:
@@ -531,6 +539,14 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
 
 ## Otwarte pozycje
 
+- **Data przeczytania + „Tempo czytania" (velocity)** — ODŁOŻONE (wymaga NOWEGO ZAPISU, nie tylko
+  odczytu). Dziś nie mamy kiedy książka została przeczytana — brak pola. Plan: kolumna „Data
+  przeczytania" (date) stemplowana przy oznaczaniu „Przeczytane" (`markAsRead`/`setRead`), czyszczona
+  przy odznaczeniu; mapper czyta ją do `NotionBook`. Odblokowuje: „przeczytane w tym roku: N",
+  serie/wykresy w czasie (miesiąc/rok), tempo (książki/mies.), prognozę domknięcia kolekcji, streaki.
+  Koszt: zmiana ścieżki zapisu (drag&drop regału + przyciski „oznacz przeczytane" w statystykach/
+  bibliotece) + retro-uzupełnienie historycznych dat niemożliwe (od teraz w przód). Rozważyć po
+  zestawie STAT-PR1..4.
 - (brak) — pipeline persystencji Vinted (ETAP 1–3) kompletny.
 - **Ewentualnie później**: odświeżanie pojedynczej książki/oferty z bazy (re-check
   świeżości), natywna baza „Vinted Offers" (jeśli blob przestanie wystarczać), proxy

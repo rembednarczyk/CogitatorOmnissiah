@@ -11,6 +11,7 @@ import { AuthorProgressItem } from "./stats/AuthorProgressItem";
 import { IdentifiedLibraryItem } from "./stats/IdentifiedLibraryItem";
 import { OwnedUnreadItem } from "./stats/OwnedUnreadItem";
 import { AwardCoverageGrid } from "./stats/AwardCoverageGrid";
+import { AvailabilityCard } from "./stats/AvailabilityCard";
 import { useEffectiveConfig } from "../hooks/useAppConfig";
 
 export const StatsSection: React.FC = () => {
@@ -129,8 +130,11 @@ export const StatsSection: React.FC = () => {
           </div>
         </motion.div>
 
+        {/* Aggregate Availability */}
+        <AvailabilityCard stats={stats.availabilityStats} />
+
         {/* Yearly Progress */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
