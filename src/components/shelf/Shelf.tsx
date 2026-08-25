@@ -95,7 +95,7 @@ export const Shelf: React.FC<Props> = ({ shelfId, title, icon, accent, books, on
         ) : (
           <div ref={wellRef} className="flex flex-col" style={{ rowGap: SHELF_ROW_GAP - SHELF_PLANK_H }}>
             {shown.map((row, ri) => (
-              <ShelfRow key={cur * 1000 + ri} row={row} slotByKey={slotByKey} onDragStart={onDragStart} onDragEnd={onDragEnd} />
+              <ShelfRow key={cur * 1000 + ri} row={row} slotByKey={slotByKey} rowWidth={width} onDragStart={onDragStart} onDragEnd={onDragEnd} />
             ))}
             {Array.from({ length: pad }).map((_, i) => <EmptyShelfRow key={`pad${i}`} />)}
           </div>

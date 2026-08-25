@@ -1,6 +1,6 @@
 import React from "react";
 import { SHELF_ROW_H } from "../../utils/bookshelf";
-import { DividerLevel } from "../../utils/shelfLayout";
+import { DividerLevel, DividerDir } from "../../utils/shelfLayout";
 import { CogSigil } from "./ShelfOrnaments";
 
 interface Props {
@@ -9,6 +9,8 @@ interface Props {
   height?: number;    // wysokość toru rzędu (wyrównanie tabliczki u góry)
   /** Poziom tabliczki: „top" (domyślnie) lub „bottom", gdy górna kolidowałaby z sąsiadem. */
   plate?: DividerLevel;
+  /** Kierunek rozwijania tabliczki: „right" (domyślnie) lub „left" przy prawej krawędzi półki. */
+  dir?: DividerDir;
 }
 
 /** Wysokość widocznej deseczki — spójna z `DIVIDER_H` w `shelfLayout` (podpora fizyki). */
@@ -16,18 +18,21 @@ export const BOARD_H = 168;
 
 /**
  * Generyczna **przekładka sekcji** w stylu noosferycznym: cienka **deseczka** z
- * mosiądzu ze świecącą żyłą danych (na dole toru) + pozioma **tabliczka-runa**
- * rocznika, wyrównana do początku zakresu (wariant A: tylko przy pierwszym
- * pojawieniu dekady) z projekcyjną smużką światła do deseczki. Tabliczka domyślnie
- * u góry; gdy dekada jest wąska (mało książek → następna przekładka blisko) i górna
- * kolidowałaby z sąsiednią, `plate="bottom"` przenosi ją na dół (poziom liczy
- * `assignDividerLevels`). Etykieta jest zwykłym stringiem — ten sam komponent obsłuży
- * literę alfabetu / nazwisko autora itp. Nieprzeciągalna.
+ * mosiądzu ze świecącą żyłą danych + sygilami koła u góry i u dołu + pozioma
+ * **tabliczka-runa** rocznika przy początku zakresu (wariant A: tylko przy pierwszym
+ * pojawieniu dekady) z projekcyjną smużką światła do deseczki. Rozmieszczenie liczy
+ * `assignDividerPlacement`: tabliczka domyślnie u góry i w prawo, ale gdy dekada jest
+ * wąska i górna kolidowałaby z sąsiednią → `plate="bottom"` (siada na krawędzi półki,
+ * by nie zasłaniać tytułów), a przy prawej krawędzi półki → `dir="left"` (rozwija się
+ * w lewo). Klasa `shelf-divider` pozwala skórze przemalować całą przekładkę (Holo+ =
+ * amber, w kolorze oprawy Regału). Etykieta to zwykły string — ten sam komponent
+ * obsłuży literę alfabetu / nazwisko autora itp. Nieprzeciągalna.
  */
-export const ShelfDivider: React.FC<Props> = ({ label, width = 10, height = SHELF_ROW_H, plate = "top" }) => {
+export const ShelfDivider: React.FC<Props> = ({ label, width = 10, height = SHELF_ROW_H, plate = "top", dir = "right" }) => {
   const atBottom = plate === "bottom";
+  const toLeft = dir === "left";
   return (
-  <div className="relative select-none" style={{ width, height }} title={label} aria-hidden>
+  <div className="shelf-divider relative select-none" style={{ width, height }} title={label} aria-hidden>
     {/* cienka deseczka rozgraniczająca (dół toru) */}
     <div
       className="absolute bottom-0 left-0 rounded-[2px_2px_1px_1px]"
@@ -39,6 +44,8 @@ export const ShelfDivider: React.FC<Props> = ({ label, width = 10, height = SHEL
     >
       {/* cog-finial na szczycie deseczki */}
       <CogSigil className="absolute -top-[7px] left-1/2 -translate-x-1/2 w-[13px] h-[13px] drop-shadow-[0_0_3px_rgba(var(--noo-glow),.6)]" />
+      {/* cog-finial u dołu deseczki (na linii półki) */}
+      <CogSigil className="absolute -bottom-[7px] left-1/2 -translate-x-1/2 w-[13px] h-[13px] drop-shadow-[0_0_3px_rgba(var(--noo-glow),.6)]" />
       {/* świecąca żyła danych */}
       <div
         className="noo-data absolute left-1/2 -translate-x-1/2 rounded-[2px]"
@@ -53,24 +60,26 @@ export const ShelfDivider: React.FC<Props> = ({ label, width = 10, height = SHEL
         left: 4, width: 2, height: 150,
         boxShadow: "0 0 6px rgba(var(--noo-glow),.5)",
         ...(atBottom
-          ? { bottom: 24, background: "linear-gradient(0deg, rgba(var(--noo-glow),.55), rgba(var(--noo-glow),0))" }
+          ? { bottom: 30, background: "linear-gradient(0deg, rgba(var(--noo-glow),.55), rgba(var(--noo-glow),0))" }
           : { top: 22, background: "linear-gradient(180deg, rgba(var(--noo-glow),.55), rgba(var(--noo-glow),0))" }),
       }}
     />
 
-    {/* tabliczka-runa rocznika, lewą krawędzią przy deseczce (rozwija się w prawo);
-        u góry domyślnie, u dołu gdy górna kolidowałaby z sąsiednią dekadą */}
+    {/* tabliczka-runa rocznika, krawędzią przy deseczce; u góry domyślnie, u dołu (na
+        linii półki, nachodzi na deskę) gdy górna kolidowałaby z sąsiadem; rozwija się
+        w prawo, a przy prawej krawędzi półki w lewo. z-2 → zawsze nad grzbietami. */}
     <div
-      className="absolute left-0 flex items-center gap-[6px] whitespace-nowrap font-mono rounded-[3px] px-[9px] pt-[3px] pb-[4px]"
+      className="absolute z-[2] flex items-center gap-[6px] whitespace-nowrap font-mono rounded-[3px] px-[9px] pt-[3px] pb-[4px]"
       style={{
-        ...(atBottom ? { bottom: 4 } : { top: 0 }),
+        ...(atBottom ? { bottom: -12 } : { top: 0 }),
+        ...(toLeft ? { right: 0 } : { left: 0 }),
         color: "var(--sk-plate-text)", fontSize: 11, letterSpacing: "0.06em",
         background: "var(--sk-plate-bg)",
         boxShadow: "inset 0 0 0 1.5px var(--sk-plate-edge), inset 0 1px 0 rgba(var(--noo-glow),.30), 0 5px 9px -4px #000, 0 0 12px rgba(var(--noo-glow),.25)",
         textShadow: "0 0 6px rgba(var(--noo-glow),.45)",
       }}
     >
-      <CogSigil className="w-[13px] h-[13px] shrink-0 drop-shadow-[0_0_3px_rgba(63,224,208,.6)]" />
+      <CogSigil className="w-[13px] h-[13px] shrink-0 drop-shadow-[0_0_3px_rgba(var(--noo-glow),.6)]" />
       {label}
     </div>
   </div>

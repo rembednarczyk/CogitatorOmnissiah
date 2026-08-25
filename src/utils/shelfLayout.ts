@@ -7,6 +7,13 @@ export type RenderSlot = ShelfSlot | { kind: "divider"; label: string };
 
 /** Poziom, na którym maluje się pozioma tabliczka dekady: u góry (domyślnie) albo u dołu. */
 export type DividerLevel = "top" | "bottom";
+/** Kierunek rozwijania tabliczki od deseczki: w prawo (domyślnie) albo w lewo (przy prawej krawędzi). */
+export type DividerDir = "right" | "left";
+/** Rozmieszczenie tabliczki przekładki: poziom (góra/dół) + kierunek (lewo/prawo). */
+export interface DividerPlacement { level: DividerLevel; dir: DividerDir; }
+
+/** Footprint deseczki na półce (px) — spójny z `DIVIDER_W` / `ShelfDivider width`. */
+const PLATE_BOARD_W = 10;
 
 /**
  * Estymowana szerokość poziomej tabliczki rocznika (px) — do wykrywania kolizji.
@@ -19,32 +26,41 @@ export function plateWidth(label: string): number {
 }
 
 /**
- * Rozdziela tabliczki dekad w JEDNYM rzędzie na dwa poziomy (góra/dół), tak by
- * sąsiednie nie nachodziły na siebie, gdy dekada jest wąska (mało książek → następna
- * przekładka blisko). Zachłannie od lewej: tabliczka zostaje na górze, jeśli nie
- * zderza się z prawą krawędzią ostatniej górnej; inaczej ląduje na dole; a gdy i dół
- * zajęty (rzadka potrójna kolizja) — wraca na górę (akceptujemy). Zwraca mapę
- * `key→poziom` TYLKO dla przekładek, które muszą zjechać na dół (reszta = góra).
+ * Rozmieszcza tabliczki dekad w JEDNYM rzędzie, tak by nie nachodziły na siebie ani
+ * nie wychodziły poza półkę:
+ *  - **kierunek**: tabliczka rozwija się w prawo od deseczki; jeśli sięgnęłaby poza
+ *    prawą krawędź półki (`rowWidth`), rozwija się w lewo (prawy brzeg przy deseczce);
+ *  - **poziom**: zachłannie od lewej — tabliczka zostaje na górze, o ile jej przedział
+ *    poziomy nie zderza się z ostatnią górną; inaczej ląduje na dole; a gdy i dół zajęty
+ *    (rzadka potrójna kolizja) — wraca na górę (akceptujemy).
+ * Zwraca mapę `key→{level,dir}` dla KAŻDEJ przekładki (domyślnie `{top,right}`).
+ * `rowWidth ≤ 0` (nieznana szerokość) wyłącza detekcję krawędzi — wszystko w prawo.
  */
-export function assignDividerLevels(
+export function assignDividerPlacement(
   row: PlacedItem[],
   labelOf: (key: string) => string | undefined,
+  rowWidth: number,
   gap = 6,
-): Map<string, DividerLevel> {
-  const dividers = row.filter((p) => p.kind === "divider").sort((a, b) => a.x - b.x);
-  const out = new Map<string, DividerLevel>();
+): Map<string, DividerPlacement> {
+  const dividers = row.filter((p) => p.kind === "divider");
+  // Kierunek + przedział poziomy [left,right] każdej tabliczki (uwzględnia zawinięcie w lewo).
+  const spans = dividers.map((d) => {
+    const w = plateWidth(labelOf(d.key) ?? "");
+    const overflow = rowWidth > 0 && d.x + w > rowWidth;
+    const right = overflow ? d.x + PLATE_BOARD_W : d.x + w;
+    return { key: d.key, left: right - w, right, dir: (overflow ? "left" : "right") as DividerDir };
+  });
+  spans.sort((a, b) => a.left - b.left);
+
+  const out = new Map<string, DividerPlacement>();
   let topRight = -Infinity;
   let botRight = -Infinity;
-  for (const d of dividers) {
-    const right = d.x + plateWidth(labelOf(d.key) ?? "");
-    if (d.x >= topRight) {
-      topRight = right + gap;               // góra (domyślna) — nie zapisujemy
-    } else if (d.x >= botRight) {
-      out.set(d.key, "bottom");
-      botRight = right + gap;
-    } else {
-      topRight = right + gap;               // potrójna kolizja → góra
-    }
+  for (const s of spans) {
+    let level: DividerLevel;
+    if (s.left >= topRight) { level = "top"; topRight = s.right + gap; }
+    else if (s.left >= botRight) { level = "bottom"; botRight = s.right + gap; }
+    else { level = "top"; topRight = s.right + gap; } // potrójna kolizja → góra
+    out.set(s.key, { level, dir: s.dir });
   }
   return out;
 }

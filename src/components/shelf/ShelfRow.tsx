@@ -1,7 +1,7 @@
 import React from "react";
 import { BookIndexEntry } from "../../types";
 import { spineStyle, SHELF_ROW_H, SHELF_PLANK_H } from "../../utils/bookshelf";
-import { RenderSlot, assignDividerLevels } from "../../utils/shelfLayout";
+import { RenderSlot, assignDividerPlacement } from "../../utils/shelfLayout";
 import { PlacedItem } from "../../utils/shelfPacking";
 import { BookSpine } from "./BookSpine";
 import { BookStack } from "./BookStack";
@@ -17,27 +17,30 @@ export const PLANK_STYLE: React.CSSProperties = {
 interface Props {
   row: PlacedItem[];
   slotByKey: Map<string, RenderSlot>;
+  /** Szerokość toru (well) — do wykrycia tabliczek wychodzących poza prawą krawędź. */
+  rowWidth: number;
   onDragStart: (book: BookIndexEntry) => void;
   onDragEnd: () => void;
 }
 
 /** Jeden rząd półki: woluminy na pozycjach z fizyki + drewniana deska pod spodem. */
-export const ShelfRow: React.FC<Props> = ({ row, slotByKey, onDragStart, onDragEnd }) => {
-  // Poziom tabliczek dekad (góra/dół) — wąskie dekady zderzałyby napisy u góry.
-  const plateLevels = assignDividerLevels(row, (k) => {
+export const ShelfRow: React.FC<Props> = ({ row, slotByKey, rowWidth, onDragStart, onDragEnd }) => {
+  // Rozmieszczenie tabliczek dekad (góra/dół + lewo/prawo) — unika kolizji i wyjścia poza półkę.
+  const placement = assignDividerPlacement(row, (k) => {
     const s = slotByKey.get(k);
     return s && s.kind === "divider" ? s.label : undefined;
-  });
+  }, rowWidth);
   return (
   <div>
     <div className="relative" style={{ height: SHELF_ROW_H }}>
       {row.map((p) => {
         const slot = slotByKey.get(p.key)!;
         if (slot.kind === "divider") {
-          // z-15: tabliczka + deseczka malują się PONAD granicznymi grzbietami.
+          // z-30: tabliczka + deseczka malują się PONAD grzbietami i deską półki.
+          const pl = placement.get(p.key);
           return (
-            <div key={p.key} className="absolute bottom-0" style={{ left: p.x, zIndex: 15 }}>
-              <ShelfDivider label={slot.label} width={p.w} plate={plateLevels.get(p.key) ?? "top"} />
+            <div key={p.key} className="absolute bottom-0" style={{ left: p.x, zIndex: 30 }}>
+              <ShelfDivider label={slot.label} width={p.w} plate={pl?.level ?? "top"} dir={pl?.dir ?? "right"} />
             </div>
           );
         }
