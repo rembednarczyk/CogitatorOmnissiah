@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.43.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.44.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,13 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.44.0** — **Rytuał Inicjacji Schematu: pełny provisioning (kolumny cykli + domknięcie długu).** Do
+  `requiredProps` doszły: `Kategoria`(select), `Cykl`(rich_text), `CyklNr`(number) — dotąd tworzone leniwie
+  przez Żniwa — oraz stary dług `Źródło`(multi_select), `VintedData`(rich_text), `ShelfOrder`(number) —
+  dotąd tworzone leniwie przez skan/regał. Krok 1 „Wielkiego Rytuału" w pełni przygotowuje świeżą bazę,
+  bez czekania na pierwsze użycie funkcji. Idempotentnie (tylko brakujące), `updateDatabaseProperty`
+  obsługuje select/number/rich_text. Test rozszerzony o nowe kolumny. (AppConfig pominięty — zarządza nim
+  config store przez opis kolumny.)
 - **1.43.0** — **UC1: Vinted dla tomów cykli (dostępność w Archiwum).** Dzięki modelowi wierszy skaner
   Vinted JUŻ skanuje tomy cykli (są wierszami z pustym Źródło) i zapisuje `VintedData` — UC1 sprowadził
   się do WYŚWIETLENIA. `aggregateCycleRows` dokłada per-tom najtańszą ofertę (`vinted:{price,url,count}`,
