@@ -206,6 +206,30 @@ export const markAsRead = async (req: Request, res: Response) => {
   }
 };
 
+/**
+ * Zapis ręcznych kluczy porządku regału (precyzyjny drag&drop). Partia mała
+ * (1 wpis + ewentualna renumeracja remisów roku) — twardy limit 40 chroni Notion.
+ */
+export const updateShelfOrders = async (req: Request, res: Response) => {
+  try {
+    const raw = req.body?.orders;
+    if (!Array.isArray(raw) || raw.length === 0) return res.status(400).json({ error: "Brak wpisów orders." });
+    if (raw.length > 40) return res.status(400).json({ error: "Za duża partia (limit 40 wpisów)." });
+    const entries: { pageId: string; order: number }[] = [];
+    for (const e of raw) {
+      if (!e || typeof e.pageId !== "string" || !e.pageId || typeof e.order !== "number" || !isFinite(e.order)) {
+        return res.status(400).json({ error: "Każdy wpis wymaga pageId (string) i skończonego order (number)." });
+      }
+      entries.push({ pageId: e.pageId, order: e.order });
+    }
+    await syncManager.setShelfOrders(entries);
+    res.json({ success: true, updated: entries.length });
+  } catch (error: any) {
+    log.error("Shelf order error", { message: error.message });
+    res.status(500).json({ error: error.message || "Nie udało się zapisać porządku regału." });
+  }
+};
+
 export const unmarkAsRead = async (req: Request, res: Response) => {
   try {
     const { pageId, tag } = req.body;

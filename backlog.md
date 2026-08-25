@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.27.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.27.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,12 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.27.1** — **Precyzyjny drag&drop na regale — plumbing (DND-PR1).** Kolumna `ShelfOrder`
+  (number, tworzona przy pierwszym zapisie): rzadki, ręczny klucz porządku w skali ułamkowych lat —
+  utrwalamy TYLKO ręcznie wstawione książki, reszta zostaje na deterministycznym auto-układzie
+  (rok → dekada → fizyka). Mapper/typy (`NotionBook.shelfOrder`, `BookIndexEntry.shelfOrder`),
+  indeks wyszukiwarki, adapter `setShelfOrders` (sekwencyjnie, partie małe), `POST /api/shelf-order`
+  (limit 40 wpisów, walidacja). Bez zmiany zachowania — sort i UI dropu w następnym PR.
 - **1.27.0** — **Zakładka „Sanktuarium Kalibracji" (frontend, CFG-PR2).** Klik w LOGO (nagłówek)
   otwiera ukrytą zakładkę `admin` (ponowny klik wraca do statystyk; logo amber gdy aktywna).
   `ConfigSection`: sekcje Vinted / pula UA / filie OPAC (edytor wierszy) / strony nagród (edytor)
