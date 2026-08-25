@@ -3,7 +3,7 @@ import { NotionAdapter } from "../notion.adapter";
 import { SyncEvent, NotionBook } from "../src/types";
 import { ConfigService } from "./configService";
 import { CycleLookupService } from "./cycleLookupService";
-import { buildCycleVolumeProperties, cycleLpLabel } from "./cycleRows";
+import { buildCycleVolumeProperties, cycleLpLabel, cycleVolumeEncyclopediaUrl, buildCycleTitleProperty } from "./cycleRows";
 import { isCycleVolume } from "./bookCategory";
 import { createLogger } from "../logger";
 
@@ -91,6 +91,10 @@ export class CycleHarvestService {
               if (isCycleVolume(existing)) {
                 const label = cycleLpLabel(view.cycleName, nr);
                 if (existing.lp !== label) props["Lp"] = { title: [{ text: { content: label } }] };
+                // Domiguj link do encyklopedii przy polskim tytule, jeśli go brak/inny.
+                const wantLink = cycleVolumeEncyclopediaUrl(existing.plTitle || vol.title);
+                const curLink = existing.plTitleRichText?.[0]?.text?.link?.url;
+                if (curLink !== wantLink) props["Tytuł polski"] = buildCycleTitleProperty(existing.plTitle || vol.title);
               }
               if (Object.keys(props).length > 0) {
                 await this.notion.updatePage(existing.id, props);
