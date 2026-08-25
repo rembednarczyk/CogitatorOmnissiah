@@ -3,6 +3,7 @@ import { WikiAdapter } from "../wiki.adapter";
 import { NotionBook, SyncEvent } from "../src/types";
 import { countCommonWords, calculateSimilarity } from "../utils";
 import { ConfigService } from "./configService";
+import { isAwardBook } from "./bookCategory";
 
 export class DuplicateSyncService {
   constructor(private notion: NotionAdapter, private wiki: WikiAdapter, private config: ConfigService) {}
@@ -16,8 +17,11 @@ export class DuplicateSyncService {
       await this.notion.init();
       console.log("Notion initialized");
       sendEvent({ type: "status", message: "Pobieranie listy książek z Notion..." });
-      const allBooks: NotionBook[] = await this.notion.queryAllBooks((count) => sendEvent({ type: "status", message: `Pobrano ${count} książek z Notion...` }), checkCancellation);
-      console.log(`Fetched ${allBooks.length} books`);
+      const fetched: NotionBook[] = await this.notion.queryAllBooks((count) => sendEvent({ type: "status", message: `Pobrano ${count} książek z Notion...` }), checkCancellation);
+      // Wykrywanie duplikatów dotyczy pozycji nagrodowych — poboczne tomy cykli to
+      // legalne odrębne książki, nie duplikaty (wykluczamy z porównań).
+      const allBooks: NotionBook[] = fetched.filter(isAwardBook);
+      console.log(`Fetched ${fetched.length} books (${allBooks.length} award after category filter)`);
       
       const duplicates: { bookA: string; bookB: string; reason: string }[] = [];
       for (let i = 0; i < allBooks.length; i++) {

@@ -62,4 +62,18 @@ describe('LpSyncService', () => {
     expect(mockNotion.updateLp).toHaveBeenCalledWith('page-2', '2');
     expect(mockSendEvent).toHaveBeenCalledWith(expect.objectContaining({ type: 'complete' }));
   });
+
+  it('does not number cycle-volume rows (Kategoria=Tom cyklu)', async () => {
+    const base = { author: 'A', origTitle: '', awards: [], zrodlo: [], currentWydawnictwo: '', currentSeria: '', currentCzesccyklu: false, plTitleRichText: [], origTitleRichText: [] };
+    mockNotion.queryAllBooks.mockResolvedValue([
+      { ...base, id: 'award', plTitle: 'Nagrodzona', year: '1990', lp: 'x' },
+      { ...base, id: 'vol', plTitle: 'Tom cyklu', year: '1991', lp: 'y', kategoria: 'Tom cyklu' },
+    ] as NotionBook[]);
+
+    await service.runLpSync(mockSendEvent, () => false);
+
+    // Tylko pozycja nagrodowa dostaje numer; tom cyklu pominięty w numeracji.
+    expect(mockNotion.updateLp).toHaveBeenCalledWith('award', '1');
+    expect(mockNotion.updateLp).not.toHaveBeenCalledWith('vol', expect.anything());
+  });
 });
