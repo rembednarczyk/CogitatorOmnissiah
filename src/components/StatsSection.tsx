@@ -75,7 +75,7 @@ export const StatsSection: React.FC = () => {
     {
       id: "authors",
       node: (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-6 rounded-3xl border-cyan-500/10 space-y-6 h-full">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-6 rounded-3xl border-cyan-500/10 space-y-6">
           <h3 className="text-sm font-bold font-display uppercase tracking-widest text-cyan-500 flex items-center gap-2 mb-4">
             <User className="w-4 h-4" />
             Indeks Autorów
@@ -91,7 +91,7 @@ export const StatsSection: React.FC = () => {
     {
       id: "awards",
       node: (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="glass-card p-6 rounded-3xl border-purple-500/10 space-y-6 h-full">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="glass-card p-6 rounded-3xl border-purple-500/10 space-y-6">
           <h3 className="text-sm font-bold font-display uppercase tracking-widest text-purple-500 flex items-center gap-2 mb-4">
             <Award className="w-4 h-4" />
             Progres Archiwum Nagród
@@ -111,7 +111,7 @@ export const StatsSection: React.FC = () => {
     {
       id: "yearly",
       node: (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass-card p-6 rounded-3xl border-orange-500/10 space-y-6 h-full">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass-card p-6 rounded-3xl border-orange-500/10 space-y-6">
           <h3 className="text-sm font-bold font-display uppercase tracking-widest text-orange-500 flex items-center gap-2 mb-4">
             <Calendar className="w-4 h-4" />
             Chronologia Przeczytanych
@@ -127,7 +127,7 @@ export const StatsSection: React.FC = () => {
     {
       id: "ownedUnread",
       node: (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="glass-card p-6 rounded-3xl border-emerald-500/10 space-y-6 h-full">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="glass-card p-6 rounded-3xl border-emerald-500/10 space-y-6">
           <h3 className="text-sm font-bold font-display uppercase tracking-widest text-emerald-500 flex items-center gap-2 mb-4">
             <Package className="w-4 h-4" />
             Zasoby Oczekujące (Posiadane)
@@ -147,7 +147,7 @@ export const StatsSection: React.FC = () => {
     {
       id: "library",
       node: (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="glass-card p-6 rounded-3xl border-blue-500/10 space-y-6 h-full">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="glass-card p-6 rounded-3xl border-blue-500/10 space-y-6">
           <h3 className="text-sm font-bold font-display uppercase tracking-widest text-blue-500 flex items-center gap-2 mb-4">
             <Library className="w-4 h-4" />
             Książki dostępne w bibliotekach
@@ -163,7 +163,7 @@ export const StatsSection: React.FC = () => {
     {
       id: "identified",
       node: (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }} className="glass-card p-6 rounded-3xl border-blue-500/10 space-y-6 h-full">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }} className="glass-card p-6 rounded-3xl border-blue-500/10 space-y-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-bold font-display uppercase tracking-widest text-blue-400 flex items-center gap-2">
               <Search className="w-4 h-4" />
@@ -276,14 +276,17 @@ export const StatsSection: React.FC = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
+      {/* Masonry (multi-column): każda kolumna pakuje się niezależnie, więc krótsza
+          karta nie rozciąga się do wysokości sąsiada i nie zostawia dziury pod sobą.
+          Karta pełnej szerokości (histogram dekad) rozpina się przez `column-span:all`. */}
+      <div className="columns-1 md:columns-2 gap-8">
         {ordered.map((card) => {
           const dragging = dragId === card.id;
           const isOver = arranging && overId === card.id && !!dragId && dragId !== card.id;
           return (
             <div
               key={card.id}
-              className={`relative ${card.span2 ? "md:col-span-2" : ""} ${arranging ? "cursor-move select-none" : ""} ${dragging ? "opacity-40" : ""}`}
+              className={`relative mb-8 break-inside-avoid ${card.span2 ? "md:[column-span:all]" : ""} ${arranging ? "cursor-move select-none" : ""} ${dragging ? "opacity-40" : ""}`}
               draggable={arranging}
               onDragStart={(e) => {
                 if (!arranging) return;

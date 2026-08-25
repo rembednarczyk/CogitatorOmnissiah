@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.35.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.35.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,11 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.35.1** — **Statystyki: masonry zamiast siatki (koniec dziur od wysokości pary).**
+  Kontener `columns-1 md:columns-2` + karty `break-inside-avoid mb-8` — każda kolumna pakuje się
+  niezależnie, więc krótsza karta nie rozciąga się do wysokości wyższego sąsiada i nie zostawia
+  pustego miejsca ani nie przesuwa kafelka niżej. Karta pełnej szerokości (histogram dekad) rozpina
+  się przez `md:[column-span:all]`. Usunięto `h-full`/`items-stretch` (equal-height już zbędne).
 - **1.35.0** — **Statystyki: drag&drop kolejności kart.** Nagłówek „Analizy Zasobów" ma przełącznik
   trybu układania (ikona `LayoutGrid` → `Check`) + reset (`RotateCcw`). W trybie: karty `draggable`
   (native HTML5 DnD), inner `pointer-events-none`, dashed amber ring, badge „przeciągnij", drop-target
