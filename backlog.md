@@ -43,6 +43,13 @@
   1.0.2) był ślepy — skan padał WCZEŚNIEJ (26 vs 28), co wykluczyło watchdog.
 - **NIE skracaj timeout/retry scrapera** — #48 to zrobił (30→15 s) i dał zero trafień
   (ucinał wolne, poprawne odpowiedzi Cloudflare). Cofnięte (#49). Timeout zostaje 30 s.
+- **Bloki Vinted = przestarzała pula UA, NIE scoring IP (potwierdzone 2026-08-25).** Po
+  fali wykryć bota samo odświeżenie puli UA (#173, Chrome 120–122→151/152 itd.) zdjęło
+  bloki na produkcji — reszta konfiguracji była nietknięta (audyt: bajt w bajt). Wniosek
+  operacyjny: gdy Vinted znów zacznie wykrywać, NAJPIERW odśwież pulę UA w
+  `scrapingClient.ts` do bieżących wersji (cadence ~kwartał), zanim sięgniesz po
+  throttle/proxy. Pilnuj realnych formatów (Chrome x.0.0.0, Safari Version/26.0,
+  zamrożone tokeny platform).
 - **Skan na Render free: ~160 poz./przebieg** — długi skan (~214 poz., 15–20 min) bywa
   ucinany, gdy klient się rozłączy (tło karty / blip) → serwer `res close` →
   `stopActiveSync()`, a potem kontener zwija się po idle. To infra (Render free), NIE
