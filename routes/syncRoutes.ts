@@ -41,6 +41,7 @@ router.post("/vinted-check/stop", syncController.stopVintedCheck);
 router.post("/vinted-resolve-sellers", syncController.resolveVintedSellers);
 router.post("/vinted-resolve-sellers/stop", syncController.stopVintedResolveSellers);
 router.get("/vinted-stored", syncController.getVintedStored);
+router.get("/cycle", syncController.getCycle);
 router.post("/library-check", syncController.checkLibraryAvailability);
 
 export default router;

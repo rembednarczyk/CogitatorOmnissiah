@@ -238,4 +238,40 @@ export class WikiParser {
     return "";
   }
 
+  /**
+   * Wyciąga informacje o cyklu z infoboksu `{{Książka}}`: nazwę cyklu (`|cykl=`),
+   * sąsiednie tomy (`|poprzednia=` / `|następna=` — łańcuch prev/next, potwierdzony
+   * na realnym rawie) oraz — oportunistycznie — tytuły z linków w szablonie
+   * nawigacyjnym `{{Cykl…}}`. Wołane w podglądzie cyklu (bez zapisu do bazy).
+   * `|następna=`/`|nastepna=` oba warianty (encyklopedia bywa niespójna w ogonku).
+   */
+  static extractCycleInfo(wikitext: string): { cycleName: string; prev: string | null; next: string | null; templateVolumes: string[] } {
+    if (!wikitext) return { cycleName: "", prev: null, next: null, templateVolumes: [] };
+
+    // Pojedyncza wartość parametru infoboksu (całe [[...]]/{{...}} jako token, ucięcie na następnym `|`).
+    const field = (name: string): string => {
+      const re = new RegExp(`\\|\\s*${name}\\s*=\\s*((?:\\[\\[[^\\]]*\\]\\]|\\{\\{[^{}]*\\}\\}|[^\\n|])+)`, "i");
+      const m = wikitext.match(re);
+      return m ? this.cleanWikitext(m[1]) : "";
+    };
+
+    const cycleName = field("cykl") || field("cykle");
+    const prev = field("poprzednia") || field("poprzedni") || "";
+    const next = field("następna") || field("nastepna") || field("następny") || field("nastepny") || "";
+
+    // Szablon nawigacyjny {{Cykl…}} — zbierz cele wikilinków [[Tytuł]] w kolejności.
+    const templateVolumes: string[] = [];
+    const tplMatch = wikitext.match(/\{\{\s*cykl[^{}]*(?:\{\{[^{}]*\}\}[^{}]*)*\}\}/i);
+    if (tplMatch) {
+      const linkRe = /\[\[([^|\]]+)(?:\|[^\]]*)?\]\]/g;
+      let lm;
+      while ((lm = linkRe.exec(tplMatch[0])) !== null) {
+        const t = lm[1].trim();
+        if (t && !templateVolumes.includes(t)) templateVolumes.push(t);
+      }
+    }
+
+    return { cycleName, prev: prev || null, next: next || null, templateVolumes };
+  }
+
 }

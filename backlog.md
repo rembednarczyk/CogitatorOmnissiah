@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.32.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.33.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,16 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.33.0** — **Podgląd cyklu — backend (CYC-PR1).** Na żądanie, BEZ zapisu do Notion (zgodnie z
+  preferencją: nie zaśmiecamy bazy). `WikiParser.extractCycleInfo` (nazwa `|cykl=`, łańcuch
+  `|poprzednia=`/`|następna=` — potwierdzony format; oba warianty ogonka „następna/nastepna"; +
+  oportunistyczne linki z `{{Cykl}}`). `services/cycleLookupService.ts`: rozwiązuje stronę książki
+  (direct+search+bramka autora), chodzi po łańcuchu prev/next (bounded MAX_HOPS=15, visited-set),
+  dołącza linki `{{Cykl}}`, krzyżuje każdy tom z bazą (inBase/read/owned/awarded), liczy `unreadBefore`
+  (ile tomów przed bieżącym nieprzeczytanych = koszt wejścia w fabułę). Cache w pamięci procesu
+  (title+author). `GET /api/cycle?title&author` (404 = brak cyklu). Testy +8 → 347. UWAGA: host
+  encyklopedii zablokowany przez proxy dev-kontenera (403) — format `{{Cykl}}` nieweryfikowalny lokalnie,
+  dlatego RDZEŃ = pewny łańcuch prev/next; działanie na żywo potwierdzić po deployu.
 - **1.32.0** — **Statystyki: panel „Rynek" (STAT-PR4, ostatnia z 4 kart).** Czysty helper
   `services/marketStats.ts` (`computeMarketStats`) z blobu `VintedData`: koszt skompletowania
   (suma najtańszych ofert po jednej na CHCIANĄ książkę — nieprzeczytana i nieposiadana),

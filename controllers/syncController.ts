@@ -297,6 +297,25 @@ export const getVintedStored = async (_req: Request, res: Response) => {
   }
 };
 
+/**
+ * Podgląd cyklu dla książki (Skryptorium) — pobiera stronę wiki na żądanie, buduje
+ * listę tomów i krzyżuje z bazą. NIE zapisuje niczego do Notion. 404 = książka nie
+ * jest w cyklu / brak danych na wiki.
+ */
+export const getCycle = async (req: Request, res: Response) => {
+  const title = typeof req.query.title === "string" ? req.query.title.trim() : "";
+  const author = typeof req.query.author === "string" ? req.query.author.trim() : "";
+  if (!title) return res.status(400).json({ error: "Brak parametru title." });
+  try {
+    const view = await syncManager.getCycle(title, author);
+    if (!view) return res.status(404).json({ error: "Nie znaleziono cyklu dla tej książki." });
+    res.json(view);
+  } catch (error: any) {
+    log.error("Cycle lookup error", { title, message: error?.message });
+    res.status(500).json({ error: error.message || "Błąd podglądu cyklu." });
+  }
+};
+
 export const checkLibraryAvailability = async (req: Request, res: Response) => {
   const { libraryCode } = req.body;
   if (!libraryCode) return res.status(400).json({ error: "Missing libraryCode parameter" });
