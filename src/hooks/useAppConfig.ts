@@ -2,13 +2,13 @@ import { useCallback, useEffect, useState } from "react";
 import { AppConfig, DEFAULT_CONFIG, mergeConfig } from "../configSchema";
 
 /**
- * Konfiguracja aplikacji po stronie frontu.
+ * Front-end application configuration.
  *
- * - `useEffectiveConfig` — dla KONSUMENTÓW (regał, skanery, nagrody): jedno pobranie
- *   na sesję (cache modułowy współdzielony między hookami), `DEFAULT_CONFIG` do czasu
- *   odpowiedzi, brak stanów błędu (konsument zawsze dostaje działającą konfigurację).
- * - `useAppConfig` — dla PANELU (zakładka Konfiguracja): świeże pobranie, edycja
- *   lokalna, zapis PUT; po zapisie unieważnia cache konsumentów.
+ * - `useEffectiveConfig` — for CONSUMERS (shelf, scanners, awards): a single fetch
+ *   per session (module cache shared between hooks), `DEFAULT_CONFIG` until the
+ *   response arrives, no error states (the consumer always gets a working config).
+ * - `useAppConfig` — for the PANEL (Configuration tab): fresh fetch, local edit,
+ *   PUT save; after saving it invalidates the consumers' cache.
  */
 
 let cachedConfig: AppConfig | null = null;
@@ -18,7 +18,7 @@ const listeners = new Set<(cfg: AppConfig) => void>();
 async function fetchConfig(force = false): Promise<AppConfig> {
   const res = await fetch(`/api/app-config${force ? "?force=1" : ""}`);
   if (!res.ok) throw new Error(`Błąd serwera: ${res.status}`);
-  // mergeConfig = pas bezpieczeństwa po stronie klienta (i clamp starych odpowiedzi).
+  // mergeConfig = client-side safety belt (and clamp for old responses).
   return mergeConfig(await res.json());
 }
 
@@ -31,29 +31,30 @@ function loadShared(): Promise<AppConfig> {
         listeners.forEach((l) => l(cfg));
         return cfg;
       })
-      .catch(() => DEFAULT_CONFIG) // sieć/500 → defaulty; nie zapisujemy do cache, kolejny mount spróbuje znów
+      .catch(() => DEFAULT_CONFIG) // network/500 → defaults; not cached, the next mount tries again
       .finally(() => { inflight = null; });
   }
   return inflight;
 }
 
-/** Po zapisie w panelu: podmień cache i powiadom zamontowanych konsumentów. */
+/** After a save in the panel: swap the cache and notify mounted consumers. */
 export function publishEffectiveConfig(cfg: AppConfig): void {
   cachedConfig = cfg;
   listeners.forEach((l) => l(cfg));
 }
 
 /**
- * Utrwala kolejność kart statystyk (`ui.statsOrder`) bez otwierania panelu.
- * Optymistycznie publikuje nową kolejność od razu (płynny reorder), a zapis do
- * Notion leci w tle — błąd sieci nie cofa układu na tę sesję. Nie klobruje innych
- * knobów: bierze bieżącą efektywną konfigurację i podmienia tylko to pole.
+ * Persists the stats card order (`ui.statsOrder`) without opening the panel.
+ * Optimistically publishes the new order right away (smooth reorder), while the
+ * write to Notion runs in the background — a network error does not revert the
+ * layout for this session. Does not clobber other knobs: it takes the current
+ * effective config and swaps only this field.
  */
 export async function persistStatsOrder(order: string[]): Promise<void> {
   await loadShared();
-  // Jeśli wczytanie configu się nie powiodło (`cachedConfig` puste, `loadShared` zwrócił
-  // DEFAULT_CONFIG), NIE zapisujemy — inaczej PUT defaultów skasowałby realne knoby
-  // (filie, ustawienia) na serwerze. Reorder poczeka na sprawną sesję.
+  // If loading the config failed (`cachedConfig` empty, `loadShared` returned
+  // DEFAULT_CONFIG), DON'T save — otherwise a PUT of defaults would wipe real knobs
+  // (branches, settings) on the server. The reorder waits for a healthy session.
   if (!cachedConfig) return;
   const next: AppConfig = { ...cachedConfig, ui: { ...cachedConfig.ui, statsOrder: order } };
   publishEffectiveConfig(next);
@@ -65,11 +66,11 @@ export async function persistStatsOrder(order: string[]): Promise<void> {
     });
     if (res.ok) publishEffectiveConfig(mergeConfig(await res.json()));
   } catch {
-    /* zostaje wersja optymistyczna na tę sesję */
+    /* the optimistic version stays for this session */
   }
 }
 
-/** Efektywna konfiguracja dla konsumentów — defaulty do czasu pobrania, potem live. */
+/** Effective config for consumers — defaults until fetched, then live. */
 export function useEffectiveConfig(): AppConfig {
   const [cfg, setCfg] = useState<AppConfig>(cachedConfig ?? DEFAULT_CONFIG);
   useEffect(() => {
@@ -81,7 +82,7 @@ export function useEffectiveConfig(): AppConfig {
   return cfg;
 }
 
-/** Stan panelu konfiguracji: draft do edycji + load/save. */
+/** Configuration panel state: editable draft + load/save. */
 export function useAppConfig() {
   const [draft, setDraft] = useState<AppConfig | null>(null);
   const [loading, setLoading] = useState(true);

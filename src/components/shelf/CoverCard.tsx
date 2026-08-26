@@ -8,8 +8,8 @@ function hash(s: string): number {
   return h;
 }
 
-/** Okładka „twarzą" (koncept B) — półka „Wyróżnione". Widok, bez drag&drop.
- *  Kolory zależne od skóry: matowe (Relikwiarz) lub akcenty aplikacji (Holo+). */
+/** Cover shown „face-out" (concept B) — the „Wyróżnione" shelf. View only, no drag&drop.
+ *  Colors depend on the skin: matte (Relikwiarz) or app accents (Holo+). */
 export const CoverCard: React.FC<{ book: BookIndexEntry }> = ({ book }) => {
   const h = hash(displayTitle(book));
   const i1 = h % CLOTH_PALETTE.length;

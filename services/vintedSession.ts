@@ -6,9 +6,9 @@ import { vintedRequestHeaders, VintedSession } from "./vintedHttp";
 const VINTED_HOME = "https://www.vinted.pl/";
 
 /**
- * Sk­leja nagłówek `Cookie` z tablicy `Set-Cookie` odpowiedzi (axios `res.headers["set-cookie"]`).
- * Bierze tylko parę `nazwa=wartość` (część przed pierwszym `;`), pomija atrybuty (Path/Expires/…)
- * i puste/wadliwe wpisy. Czysta funkcja — łatwa do testów.
+ * Assembles the `Cookie` header from a response's `Set-Cookie` array (axios `res.headers["set-cookie"]`).
+ * Takes only the `name=value` pair (the part before the first `;`), skips attributes (Path/Expires/…)
+ * and empty/malformed entries. Pure function — easy to test.
  */
 export function parseSetCookie(setCookie: string[] | undefined | null): string {
   if (!Array.isArray(setCookie)) return "";
@@ -27,12 +27,12 @@ export function parseSetCookie(setCookie: string[] | undefined | null): string {
 }
 
 /**
- * „Rozgrzanie" sesji Vinted: jedno GET strony głównej realną przeglądarkową sygnaturą,
- * by przejąć ciasteczka (m.in. Cloudflare `cf_clearance` + anonimowa sesja Vinted).
- * Zwrócony UA jest STAŁY dla całego skanu — cf_clearance jest związany z UA, więc kolejne
- * żądania katalogu MUSZĄ nieść ten sam UA + Cookie. Odporne: przy błędzie / braku ciasteczek
- * zwraca pustą sesję (skan leci dalej bez primingu — jak dotąd). `validateStatus: () => true`,
- * bo Cloudflare bywa serwuje ciasteczko nawet na stronie-wyzwaniu (403).
+ * „Warming up" a Vinted session: one GET of the home page with a real browser signature,
+ * to pick up cookies (incl. Cloudflare `cf_clearance` + an anonymous Vinted session).
+ * The returned UA is FIXED for the whole scan — cf_clearance is bound to the UA, so subsequent
+ * catalog requests MUST carry the same UA + Cookie. Resilient: on error / missing cookies it
+ * returns an empty session (the scan carries on without priming — as before). `validateStatus: () => true`,
+ * because Cloudflare sometimes serves a cookie even on the challenge page (403).
  */
 export async function primeVintedSession(
   httpsAgent: https.Agent,
@@ -48,14 +48,14 @@ export async function primeVintedSession(
       validateStatus: () => true,
     });
     const cookie = parseSetCookie(res.headers?.["set-cookie"] as string[] | undefined);
-    // Bez ciasteczka priming nic nie daje → pusta sesja (UA wróci do rotacji per-żądanie).
+    // Without a cookie, priming does nothing → empty session (UA falls back to per-request rotation).
     return cookie ? { userAgent, cookie } : { userAgent: "", cookie: "" };
   } catch {
     return { userAgent: "", cookie: "" };
   }
 }
 
-/** Liczba ciasteczek w nagłówku Cookie (do komunikatu statusu). */
+/** Number of cookies in the Cookie header (for the status message). */
 export function cookieCount(cookie: string): number {
   return cookie ? cookie.split(";").filter((c) => c.trim()).length : 0;
 }

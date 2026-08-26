@@ -2,55 +2,55 @@ import { VintedItem, VintedSeller } from "./vintedParser";
 import { NotionBook } from "../src/types";
 
 /**
- * Trwałe składowanie wyników Vinted w Notion (blob JSON w polu tekstowym książki).
- * Rozdziela drogie/limitowane zdobywanie danych (scrape pod Cloudflare) od taniej,
- * powtarzalnej analizy (grupowanie per sprzedawca) — raz zescrapowane oferty żyją w
- * bazie, więc skan jest wznawialny, a analiza nie wymaga ponownego pobierania.
- * Zob. docs/vinted-scanner.md §5.
+ * Persistent storage of Vinted results in Notion (a JSON blob in a book's text field).
+ * Separates the expensive/rate-limited data acquisition (scraping behind Cloudflare) from cheap,
+ * repeatable analysis (grouping per seller) — once scraped, offers live in the
+ * database, so the scan is resumable and analysis needs no re-fetching.
+ * See docs/vinted-scanner.md §5.
  */
 
 export interface StoredOffer {
   url: string;
   title?: string;
-  /** Cena jako liczba (priceValue). null = nieznana. */
+  /** Price as a number (priceValue). null = unknown. */
   price: number | null;
   currency: string;
   photo?: string | null;
-  /** Sprzedawca — null, dopóki nie dociągnięty osobnym krokiem (etap 2). */
+  /** Seller — null until fetched in a separate step (stage 2). */
   seller?: VintedSeller | null;
-  /** Cena z POPRZEDNIEGO skanu (do wykrycia spadku). Ustawiana dla ofert, które przetrwały. */
+  /** Price from the PREVIOUS scan (to detect a drop). Set for offers that survived. */
   prevPrice?: number | null;
-  /** ISO — kiedy ten URL oferty pojawił się po raz pierwszy (do znacznika „nowa"). */
+  /** ISO — when this offer URL first appeared (for the „nowa" marker). */
   firstSeenAt?: string;
 }
 
 export interface StoredVintedData {
-  /** ISO timestamp ostatniego skanu tej książki (świeżość danych). */
+  /** ISO timestamp of this book's last scan (data freshness). */
   scannedAt: string;
-  /** ISO — kiedy zestaw ofert OSTATNIO się zmienił (nowa/zniknięta/inna cena). */
+  /** ISO — when the set of offers LAST changed (new/gone/different price). */
   changedAt?: string;
   offers: StoredOffer[];
 }
 
-/** Widok składowanych danych książki (do renderu kafelków/paczek z bazy — etap 3). */
+/** View of a book's stored data (for rendering tiles/bundles from the database — stage 3). */
 export interface StoredBookView {
   id: string;
   title: string;
   author: string;
-  /** Rok wydania (kolumna „Rok" w Notion) — metadana, prosto z bazy. */
+  /** Publication year (the „Rok" column in Notion) — metadata, straight from the database. */
   year?: string;
-  /** Czy książka jest częścią cyklu (kolumna „Część cyklu", checkbox) — ryzyko „kolejny tom". */
+  /** Whether the book is part of a cycle (the „Część cyklu" column, checkbox) — „next volume" risk. */
   partOfCycle?: boolean;
-  /** Nazwa cyklu (kolumna „Cykl") — jeśli ustalona żniwami. Do etykiety kafelka. */
+  /** Cycle name (the „Cykl" column) — if determined by the harvest. For the tile label. */
   cykl?: string;
-  /** Numer tomu w cyklu (kolumna „CyklNr") — jeśli ustalony żniwami. */
+  /** Volume number in the cycle (the „CyklNr" column) — if determined by the harvest. */
   cyklNr?: number;
   scannedAt: string;
   changedAt?: string;
   offers: StoredOffer[];
 }
 
-/** Podsumowanie zmian jednej książki między poprzednim a świeżym skanem. */
+/** Summary of one book's changes between the previous and the fresh scan. */
 export interface OfferDiff {
   added: number;
   removed: number;
@@ -65,15 +65,15 @@ export function hasChanges(d: OfferDiff): boolean {
 }
 
 /**
- * Polityka znacznika `changedAt`: bump do `scannedAt` TYLKO gdy istnieje poprzedni
- * stan (baseline) I faktycznie coś się zmieniło — inaczej pierwszy skan fałszywie
- * oznaczałby całą książkę jako „zmiana". Bez baseline / bez zmian: zachowaj stary.
+ * `changedAt` marker policy: bump to `scannedAt` ONLY when a previous
+ * state (baseline) exists AND something actually changed — otherwise the first scan would falsely
+ * mark the whole book as „zmiana". Without a baseline / without changes: keep the old one.
  */
 export function computeChangedAt(prevData: StoredVintedData | null, diff: OfferDiff, scannedAt: string): string | undefined {
   return prevData && hasChanges(diff) ? scannedAt : prevData?.changedAt;
 }
 
-/** Projekcja wiersza Notion + składowanych danych → widok kafelka/paczki (etap 3). */
+/** Projection of a Notion row + stored data → a tile/bundle view (stage 3). */
 export function toStoredBookView(book: NotionBook, data: StoredVintedData): StoredBookView {
   return {
     id: book.id,
@@ -89,7 +89,7 @@ export function toStoredBookView(book: NotionBook, data: StoredVintedData): Stor
   };
 }
 
-/** VintedItem (ze skanu) → StoredOffer (do zapisu). */
+/** VintedItem (from the scan) → StoredOffer (for storage). */
 export function offerFromItem(item: VintedItem): StoredOffer {
   return {
     url: item.url,
@@ -105,7 +105,7 @@ export function serializeVintedData(data: StoredVintedData): string {
   return JSON.stringify(data);
 }
 
-/** Parsuje blob z Notion; zwraca null dla pustego/uszkodzonego (nie wywala skanu). */
+/** Parses the blob from Notion; returns null for empty/corrupt (doesn't crash the scan). */
 export function parseVintedData(raw: string | null | undefined): StoredVintedData | null {
   if (!raw) return null;
   try {
@@ -124,10 +124,10 @@ export function parseVintedData(raw: string | null | undefined): StoredVintedDat
 }
 
 /**
- * Scala świeżo zeskanowane oferty ze składowanymi ORAZ liczy diff (nowe / zniknięte /
- * zmiana ceny). ZACHOWUJE rozpoznanego sprzedawcę i `firstSeenAt` dla ofert o niezmienionym
- * URL (re-scan nie kasuje danych sprzedawcy z etapu 2), ustawia `prevPrice` = cena z
- * poprzedniego skanu (do wykrycia spadku), a nowym ofertom stempluje `firstSeenAt = scannedAt`.
+ * Merges freshly scanned offers with the stored ones AND computes a diff (new / gone /
+ * price change). PRESERVES the recognized seller and `firstSeenAt` for offers with an unchanged
+ * URL (a re-scan doesn't wipe stage-2 seller data), sets `prevPrice` = price from the
+ * previous scan (to detect a drop), and stamps new offers with `firstSeenAt = scannedAt`.
  */
 export function mergeAndDiff(
   fresh: StoredOffer[],
@@ -136,8 +136,8 @@ export function mergeAndDiff(
 ): { offers: StoredOffer[]; diff: OfferDiff } {
   const prevByUrl = new Map((prev ?? []).map(o => [o.url, o]));
 
-  // Dedupe świeżych po URL — parser potrafi zwrócić tę samą ofertę dwa razy; bez tego
-  // `added` i lista ofert puchną (duplikat renderowany 2× i liczony jako 2 „nowe").
+  // Dedupe fresh ones by URL — the parser can return the same offer twice; without this
+  // `added` and the offer list balloon (a duplicate rendered 2× and counted as 2 „nowe").
   const uniqueFresh: StoredOffer[] = [];
   const freshUrls = new Set<string>();
   for (const o of fresh) {
@@ -153,9 +153,9 @@ export function mergeAndDiff(
       added++;
       return { ...o, seller: o.seller ?? null, firstSeenAt: scannedAt };
     }
-    // Oferta przetrwała: zachowaj sprzedawcę i ORYGINALNY firstSeenAt (może być undefined
-    // dla starych blobów sprzed tej funkcji — wtedy NIE oznaczamy jej jako „nowa"), zapisz
-    // poprzednią cenę do wykrycia spadku.
+    // Offer survived: keep the seller and the ORIGINAL firstSeenAt (may be undefined
+    // for old blobs from before this function — then we do NOT mark it as „nowa"), record
+    // the previous price to detect a drop.
     const seller = o.seller ?? old.seller ?? null;
     const firstSeenAt = old.firstSeenAt;
     const prevPrice = typeof old.price === "number" ? old.price : null;

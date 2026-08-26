@@ -15,9 +15,9 @@ export const PLANK_STYLE: React.CSSProperties = {
 };
 
 /**
- * Szczelina precyzyjnego dropu: `beforeId` = wstaw przed tą książką; `afterId`
- * (ostatnia granica rzędu) = wstaw za tą książką — Shelf mapuje ją na `beforeId`
- * następnika w globalnej sekwencji (lub koniec półki).
+ * A precise-drop gap: `beforeId` = insert before this book; `afterId`
+ * (the last boundary of the row) = insert after this book — Shelf maps it to the `beforeId`
+ * of the successor in the global sequence (or the end of the shelf).
  */
 export interface GapBoundary {
   x: number;
@@ -25,7 +25,7 @@ export interface GapBoundary {
   afterId?: string;
 }
 
-/** Kursor wstawienia (stan trzymany w Shelf; rząd rysuje swój fragment). */
+/** Insertion caret (state held in Shelf; the row draws its own fragment). */
 export interface GapCaret {
   row: number;
   x: number;
@@ -35,32 +35,32 @@ export interface GapCaret {
 interface Props {
   row: PlacedItem[];
   slotByKey: Map<string, RenderSlot>;
-  /** Szerokość toru (well) — do wykrycia tabliczek wychodzących poza prawą krawędź. */
+  /** Track (well) width — to detect plates extending past the right edge. */
   rowWidth: number;
-  /** Indeks rzędu na stronie (adresowanie kursora wstawienia). */
+  /** Row index on the page (addressing the insertion caret). */
   rowIndex: number;
-  /** Precyzyjny drop aktywny (knob włączony + trwa przeciąganie). */
+  /** Precise drop active (knob enabled + dragging in progress). */
   preciseActive: boolean;
-  /** Kursor wstawienia, jeśli wskazuje ten rząd. */
+  /** Insertion caret, if it points to this row. */
   caret: GapCaret | null;
-  /** Najechanie na szczelinę (rząd, granica) / opuszczenie rzędu / drop w kursor. */
+  /** Hovering over a gap (row, boundary) / leaving the row / dropping into the caret. */
   onGapOver: (rowIndex: number, boundary: GapBoundary) => void;
   onGapLeave: () => void;
-  onGapDrop: () => boolean; // true = obsłużone precyzyjnie (zatrzymaj propagację)
+  onGapDrop: () => boolean; // true = handled precisely (stop propagation)
   onDragStart: (book: BookIndexEntry) => void;
   onDragEnd: () => void;
 }
 
-/** Jeden rząd półki: woluminy na pozycjach z fizyki + drewniana deska pod spodem. */
+/** One shelf row: volumes at physics-computed positions + a wooden plank underneath. */
 export const ShelfRow: React.FC<Props> = ({ row, slotByKey, rowWidth, rowIndex, preciseActive, caret, onGapOver, onGapLeave, onGapDrop, onDragStart, onDragEnd }) => {
-  // Rozmieszczenie tabliczek dekad (góra/dół + lewo/prawo) — unika kolizji i wyjścia poza półkę.
+  // Placement of decade plates (top/bottom + left/right) — avoids collisions and going off the shelf.
   const placement = assignDividerPlacement(row, (k) => {
     const s = slotByKey.get(k);
     return s && s.kind === "divider" ? s.label : undefined;
   }, rowWidth);
 
-  // Granice szczelin: start każdego slotu-książki (wstaw przed pierwszym woluminem
-  // slotu; kupka = jeden slot) + prawa krawędź ostatniego slotu (wstaw za ostatnim).
+  // Gap boundaries: start of each book slot (insert before the slot's first volume;
+  // a stack = one slot) + right edge of the last slot (insert after the last one).
   const boundaries = useMemo<GapBoundary[]>(() => {
     const items = row.filter((p) => p.kind !== "divider").slice().sort((a, b) => a.x - b.x);
     const out: GapBoundary[] = [];
@@ -83,7 +83,7 @@ export const ShelfRow: React.FC<Props> = ({ row, slotByKey, rowWidth, rowIndex, 
   const dragHandlers = preciseActive ? {
     onDragOver: (e: React.DragEvent<HTMLDivElement>) => {
       if (boundaries.length === 0) return;
-      e.preventDefault(); // szczeliny przyjmują drop (bez stopPropagation — rama dalej podświetla cel)
+      e.preventDefault(); // gaps accept the drop (no stopPropagation — the frame keeps highlighting the target)
       const x = e.clientX - e.currentTarget.getBoundingClientRect().left;
       let nearest = boundaries[0];
       for (const b of boundaries) if (Math.abs(b.x - x) < Math.abs(nearest.x - x)) nearest = b;
@@ -93,7 +93,7 @@ export const ShelfRow: React.FC<Props> = ({ row, slotByKey, rowWidth, rowIndex, 
       if (!e.currentTarget.contains(e.relatedTarget as Node)) onGapLeave();
     },
     onDrop: (e: React.DragEvent<HTMLDivElement>) => {
-      // Obsłużone precyzyjnie → zatrzymaj (inaczej rama zrobi globalny drop drugi raz).
+      // Handled precisely → stop (otherwise the frame does the global drop a second time).
       if (onGapDrop()) { e.preventDefault(); e.stopPropagation(); }
     },
   } : {};
@@ -101,7 +101,7 @@ export const ShelfRow: React.FC<Props> = ({ row, slotByKey, rowWidth, rowIndex, 
   return (
   <div>
     <div className="relative" style={{ height: SHELF_ROW_H }} {...dragHandlers}>
-      {/* Warstwa 1: grzbiety/kupki + deseczki przekładek (z-20, nad tłem i deską). */}
+      {/* Layer 1: spines/stacks + divider boards (z-20, above the background and plank). */}
       {row.map((p) => {
         const slot = slotByKey.get(p.key)!;
         if (slot.kind === "divider") {
@@ -131,7 +131,7 @@ export const ShelfRow: React.FC<Props> = ({ row, slotByKey, rowWidth, rowIndex, 
           </div>
         );
       })}
-      {/* Warstwa 2: same tabliczki dekad — ZAWSZE na wierzchu (z-40), nigdy pod deseczką sąsiada. */}
+      {/* Layer 2: just the decade plates — ALWAYS on top (z-40), never under a neighbor's board. */}
       {row.map((p) => {
         const slot = slotByKey.get(p.key)!;
         if (slot.kind !== "divider") return null;
@@ -142,7 +142,7 @@ export const ShelfRow: React.FC<Props> = ({ row, slotByKey, rowWidth, rowIndex, 
           </div>
         );
       })}
-      {/* Kursor wstawienia — neonowa kreska w najbliższej szczelinie (cyan = OK, róż = zła dekada). */}
+      {/* Insertion caret — a neon line at the nearest gap (cyan = OK, pink = wrong decade). */}
       {rowCaret && (
         <div
           className="absolute pointer-events-none rounded-[2px]"
@@ -162,7 +162,7 @@ export const ShelfRow: React.FC<Props> = ({ row, slotByKey, rowWidth, rowIndex, 
   );
 };
 
-/** Pusta półka (dla wyrównania stałej wysokości regału) — sama deska. */
+/** Empty shelf row (to align the shelf's fixed height) — just the plank. */
 export const EmptyShelfRow: React.FC = () => (
   <div>
     <div style={{ height: SHELF_ROW_H }} />

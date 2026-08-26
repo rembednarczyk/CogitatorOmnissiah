@@ -2,9 +2,9 @@ import { useCallback } from "react";
 import { READ_TAG } from "../utils/bookshelf";
 
 /**
- * Zapis stanu „przeczytane" do Notion: `mark-as-read` dodaje tag „Przeczytane"
- * w kolumnie „Źródło", `unmark-as-read` go usuwa. Rzuca przy błędzie — wołający
- * (regał) robi optymistyczny ruch i cofa go, jeśli zapis się nie powiedzie.
+ * Writing the „read" state to Notion: `mark-as-read` adds the „Przeczytane" tag
+ * in the „Źródło" column, `unmark-as-read` removes it. Throws on error — the caller
+ * (shelf) makes an optimistic move and reverts it if the write fails.
  */
 export function useMarkRead() {
   const setRead = useCallback(async (pageId: string, read: boolean): Promise<void> => {

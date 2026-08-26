@@ -6,7 +6,7 @@ import {version} from './metadata.json';
 
 export default defineConfig(() => {
   return {
-    // Wersja aplikacji (źródło prawdy: metadata.json) w kodzie klienta jako __APP_VERSION__.
+    // App version (source of truth: metadata.json) in client code as __APP_VERSION__.
     define: {
       __APP_VERSION__: JSON.stringify(version),
     },

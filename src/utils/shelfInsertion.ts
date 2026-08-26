@@ -2,43 +2,43 @@ import { BookIndexEntry } from "../types";
 import { decadeKeyOf, effShelfKey } from "./bookshelf";
 
 /**
- * Czysty planer precyzyjnego wstawienia na regał.
+ * Pure planner for precise insertion onto the Regał.
  *
- * Wejście: posortowana sekwencja półki docelowej BEZ przeciąganej książki,
- * przeciągana książka i cel (`insertBeforeId` — id książki, przed którą wstawiamy;
- * null = na sam koniec półki). Wyjście: partia zapisów `ShelfOrder` (skala
- * ułamkowych lat) — zwykle 1 wpis (klucz-środek między sąsiadami); przy remisie
- * kluczy (książki z tego samego roku bez ręcznych kluczy) renumerowany jest tylko
- * ZWIĄZANY przedział, nie cała dekada.
+ * Input: the sorted sequence of the target shelf WITHOUT the dragged book,
+ * the dragged book and the target (`insertBeforeId` — id of the book we insert
+ * before; null = at the very end of the shelf). Output: a batch of `ShelfOrder`
+ * writes (fractional-years scale) — usually 1 entry (a midpoint key between
+ * neighbors); on a key tie (books from the same year without manual keys) only
+ * the BOUND range is renumbered, not the whole decade.
  *
- * Walidacja rocznikowa: wstawić można wyłącznie w szczelinę, której sąsiad (lewy
- * lub prawy) należy do dekady przeciąganej książki — czyli wewnątrz jej sekcji
- * albo na jej brzegach. Książki „bez daty" nie mają skali → precyzyjny drop off.
+ * Year validation: you can only insert into a gap whose neighbor (left or
+ * right) belongs to the dragged book's decade — i.e. inside its section or
+ * at its edges. „bez daty" books have no scale → precise drop off.
  */
 
 export interface InsertionPlan {
-  /** Zapisy ShelfOrder do wysłania (id → klucz). Zawsze zawiera przeciąganą książkę. */
+  /** ShelfOrder writes to send (id → key). Always includes the dragged book. */
   orders: { pageId: string; order: number }[];
 }
 
-/** Maks. partia zapisów (spójna z limitem POST /api/shelf-order). */
+/** Max write batch (consistent with the POST /api/shelf-order limit). */
 const MAX_ORDERS = 40;
 
-/** Czy szczelina PRZED książką `insertBeforeId` (null = koniec) przyjmie tę książkę (dekada się zgadza)? */
+/** Will the gap BEFORE book `insertBeforeId` (null = end) accept this book (decade matches)? */
 export function canInsertAt(seq: BookIndexEntry[], dragged: BookIndexEntry, insertBeforeId: string | null): boolean {
   const dec = decadeKeyOf(dragged);
-  if (!isFinite(dec)) return false; // „bez daty" — brak skali porządku
+  if (!isFinite(dec)) return false; // „bez daty" — no ordering scale
   const idx = insertBeforeId === null ? seq.length : seq.findIndex((b) => b.id === insertBeforeId);
   if (insertBeforeId !== null && idx < 0) return false;
   const L = idx > 0 ? seq[idx - 1] : undefined;
   const R = idx < seq.length ? seq[idx] : undefined;
-  if (!L && !R) return true; // pusta półka — zwykły drop, bez klucza
+  if (!L && !R) return true; // empty shelf — plain drop, no key
   return (L !== undefined && decadeKeyOf(L) === dec) || (R !== undefined && decadeKeyOf(R) === dec);
 }
 
 /**
- * Plan zapisów dla wstawienia. `null` gdy szczelina nieprawidłowa (zła dekada /
- * nieznany cel / partia ponad limit) — wołający robi fallback do zwykłego dropu.
+ * Write plan for the insertion. `null` when the gap is invalid (wrong decade /
+ * unknown target / batch over limit) — the caller falls back to a plain drop.
  */
 export function planInsertion(seq: BookIndexEntry[], dragged: BookIndexEntry, insertBeforeId: string | null): InsertionPlan | null {
   if (!canInsertAt(seq, dragged, insertBeforeId)) return null;
@@ -47,29 +47,29 @@ export function planInsertion(seq: BookIndexEntry[], dragged: BookIndexEntry, in
   const L = idx > 0 ? seq[idx - 1] : undefined;
   const R = idx < seq.length ? seq[idx] : undefined;
 
-  if (!L && !R) return { orders: [] }; // pusta półka — pozycja wynika z roku
+  if (!L && !R) return { orders: [] }; // empty shelf — position follows from the year
 
-  // Granice tylko z sąsiadów WEWNĄTRZ dekady; sąsiad z innej dekady = otwarty brzeg sekcji.
+  // Bounds only from neighbors INSIDE the decade; a neighbor from another decade = open section edge.
   const kL = L && decadeKeyOf(L) === dec ? effShelfKey(L) : null;
   const kR = R && decadeKeyOf(R) === dec ? effShelfKey(R) : null;
 
-  const lo = dec;            // dolna krawędź skali dekady
-  const hi = dec + 9.99;     // górna krawędź (klucz musi zostać < dec+10)
+  const lo = dec;            // lower edge of the decade scale
+  const hi = dec + 9.99;     // upper edge (key must stay < dec+10)
 
   if (kL !== null && kR !== null) {
     if (kL < kR) return { orders: [{ pageId: dragged.id, order: (kL + kR) / 2 }] };
-    // Remis kluczy (ten sam rok bez ręcznych kluczy): renumeruj związany przedział
-    // [wszystkie kolejne wpisy o kluczu == kL wokół szczeliny] + wstawiana.
+    // Key tie (same year without manual keys): renumber the bound range
+    // [all consecutive entries with key == kL around the gap] + the inserted one.
     const tie = kL;
     let start = idx - 1;
     while (start - 1 >= 0 && decadeKeyOf(seq[start - 1]) === dec && effShelfKey(seq[start - 1]) === tie) start--;
-    let end = idx; // pierwszy indeks ZA przedziałem
+    let end = idx; // first index PAST the range
     while (end < seq.length && decadeKeyOf(seq[end]) === dec && effShelfKey(seq[end]) === tie) end++;
     const run = seq.slice(start, end);
     const insertPos = idx - start;
     const finalRun: BookIndexEntry[] = [...run.slice(0, insertPos), dragged, ...run.slice(insertPos)];
     if (finalRun.length > MAX_ORDERS) return null;
-    // Rozłóż klucze w [tie, min(tie+0.98, hi)] — poniżej następnego rocznika.
+    // Distribute keys in [tie, min(tie+0.98, hi)] — below the next year.
     const top = Math.min(tie + 0.98, hi);
     const stepSpan = top - tie;
     const orders = finalRun.map((b, i) => ({ pageId: b.id, order: tie + (stepSpan * (i + 1)) / (finalRun.length + 1) }));
@@ -77,9 +77,9 @@ export function planInsertion(seq: BookIndexEntry[], dragged: BookIndexEntry, in
   }
 
   if (kL !== null) {
-    // Koniec sekcji dekady — klucz między kL a górną krawędzią.
+    // End of the decade section — key between kL and the upper edge.
     return { orders: [{ pageId: dragged.id, order: kL + (hi - kL) / 2 }] };
   }
-  // kR !== null: początek sekcji — klucz między dolną krawędzią a kR.
+  // kR !== null: start of the section — key between the lower edge and kR.
   return { orders: [{ pageId: dragged.id, order: lo + ((kR as number) - lo) / 2 }] };
 }

@@ -45,9 +45,9 @@ describe("CycleHarvestService.runCycleHarvest", () => {
 
     const events = await collect();
 
-    // Tom 1 istnieje jako wiersz nagrodowy → dotagowany Cykl/CyklNr (nie duplikowany).
+    // Tom 1 exists as an award row → tagged with Cykl/CyklNr (not duplicated).
     expect(notion.updatePage).toHaveBeenCalledWith("anchor", expect.objectContaining({ CyklNr: { number: 1 } }));
-    // Tom 2 spoza bazy → utworzony jako nowy wiersz.
+    // Tom 2 not in the base → created as a new row.
     expect(notion.addRow).toHaveBeenCalledTimes(1);
     const done = events.find((e) => e.type === "complete");
     expect(done.result).toMatchObject({ added: 1, updated: 1 });
@@ -63,8 +63,8 @@ describe("CycleHarvestService.runCycleHarvest", () => {
 
     const events = await collect();
 
-    expect(notion.addRow).not.toHaveBeenCalled();   // brak duplikatu
-    expect(notion.updatePage).not.toHaveBeenCalled(); // brak zbędnych zapisów
+    expect(notion.addRow).not.toHaveBeenCalled();   // no duplicate
+    expect(notion.updatePage).not.toHaveBeenCalled(); // no unnecessary writes
     const done = events.find((e) => e.type === "complete");
     expect(done.result).toMatchObject({ added: 0, updated: 0 });
   });
@@ -73,7 +73,7 @@ describe("CycleHarvestService.runCycleHarvest", () => {
     notion.getBooksForStats.mockResolvedValue([
       { id: "a", plTitle: "Solo", origTitle: "", currentCzesccyklu: true, awards: [], zrodlo: [] },
     ]);
-    lookup.lookup.mockResolvedValue(view({ volumes: [view().volumes[0]] })); // tylko 1 tom
+    lookup.lookup.mockResolvedValue(view({ volumes: [view().volumes[0]] })); // only 1 volume
 
     const events = await collect();
     expect(notion.addRow).not.toHaveBeenCalled();

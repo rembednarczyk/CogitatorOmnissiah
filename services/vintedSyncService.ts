@@ -15,24 +15,24 @@ import { AppConfig } from "../src/configSchema";
 
 const log = createLogger("VintedScan");
 
-/** URL katalogu Vinted zbudowany z knobów konfiguracji (kategoria/język/cena/waluta/sortowanie). */
+/** Vinted catalog URL built from config knobs (category/language/price/currency/sorting). */
 function buildCatalogUrl(v: AppConfig["vinted"], searchText: string): string {
   return `https://www.vinted.pl/catalog?catalog[]=${v.catalogId}&language_book_ids[]=${v.languageId}&page=1&order=${encodeURIComponent(v.order)}&price_from=${v.priceFrom}&currency=${v.currency}&search_text=${encodeURIComponent(searchText)}`;
 }
 
 /**
- * Skaner ofert na Vinted (bezpośredni scraper HTML — NIE AI). Dla każdej książki,
- * której jeszcze nie posiadamy, wyszukuje oferty w katalogu Vinted i emituje
- * trafienia przez SSE. Cienki orkiestrator — plan skanu (`vintedScanPlanner`),
- * HTTP/throttling (`vintedHttp`), parsowanie (`vintedParser`) i merge/diff
- * (`vintedStore`) żyją w czystych helperach. Zob. docs/vinted-scanner.md.
+ * Vinted offer scanner (a direct HTML scraper — NOT AI). For each book
+ * we don't yet own, it searches the Vinted catalog for offers and emits
+ * hits over SSE. A thin orchestrator — the scan plan (`vintedScanPlanner`),
+ * HTTP/throttling (`vintedHttp`), parsing (`vintedParser`) and merge/diff
+ * (`vintedStore`) live in pure helpers. See docs/vinted-scanner.md.
  */
 export class VintedSyncService {
   constructor(private notion: NotionAdapter, private config: ConfigService) {}
 
   /**
-   * Etap 3: czyta składowane wyniki Vinted ze wszystkich książek (blob VintedData) do
-   * renderu kafelków/paczek z bazy — bez re-scrape. Zwraca tylko książki z ofertami.
+   * Stage 3: reads stored Vinted results from all books (VintedData blob) for
+   * rendering tiles/bundles from the database — no re-scrape. Returns only books with offers.
    */
   async getStoredData(): Promise<{ books: StoredBookView[]; generatedAt: string }> {
     const allBooks = await this.notion.getBooksForStats(undefined, undefined, { cache: true });
@@ -46,9 +46,9 @@ export class VintedSyncService {
   }
 
   /**
-   * Zapisuje świeżo zeskanowane oferty książki do Notion (blob VintedData), scalając ze
-   * składowanymi — zachowuje rozpoznanego sprzedawcę dla ofert, których URL nadal istnieje.
-   * Best-effort: błąd zapisu nie przerywa skanu (dane w bazie to bonus, nie warunek).
+   * Saves a book's freshly scanned offers to Notion (VintedData blob), merging with the
+   * stored ones — preserves the recognized seller for offers whose URL still exists.
+   * Best-effort: a write error doesn't stop the scan (data in the database is a bonus, not a condition).
    */
   private async persistBookOffers(book: NotionBook, items: VintedItem[], scannedAt: string): Promise<OfferDiff> {
     try {
@@ -65,9 +65,9 @@ export class VintedSyncService {
   }
 
   /**
-   * Utrwala PUSTY rekord tylko dla pierwszego skanu tej książki. Gdy coś już było
-   * zapisane, NIE kasuje ofert/sprzedawców (marker „brak wyników"/0 ofert bywa fałszywy
-   * na stronie z ofertami — zachowanie jak przy cichym missie).
+   * Persists an EMPTY record only for this book's first scan. When something was already
+   * stored, it does NOT wipe offers/sellers (the „no results"/0-offers marker is sometimes false
+   * on a page with offers — same behavior as on a silent miss).
    */
   private async persistEmptyIfNew(book: NotionBook, scannedAt: string, persistEnabled: boolean, warnMsg: string): Promise<void> {
     const hadStored = (parseVintedData(book.vintedData)?.offers.length ?? 0) > 0;
@@ -84,11 +84,11 @@ export class VintedSyncService {
     params?: { skipScannedWithinHours?: number },
   ) {
     try {
-      // Knoby skanera (throttle/URL/retry/UA/wykluczenia) czytane raz na przebieg.
+      // Scanner knobs (throttle/URL/retry/UA/exclusions) read once per run.
       const cfg = await this.config.getConfig();
       const v = cfg.vinted;
       sendEvent({ type: "status", message: "Pobieranie listy książek z Notion..." });
-      // cache: współdziel pobranie z sąsiadującymi skanami (biblioteka/Vinted).
+      // cache: share the fetch with neighboring scans (library/Vinted).
       const allBooks = await this.notion.getBooksForStats(undefined, checkCancellation, { cache: true });
 
       const skipHours = params?.skipScannedWithinHours;
@@ -101,8 +101,8 @@ export class VintedSyncService {
       const results: any[] = [];
       const httpsAgent = createScrapingAgent();
 
-      // Rozgrzej sesję (ciasteczko Cloudflare) RAZ na skan — realne żądania niosą wtedy
-      // stały UA + Cookie. Odporne: brak ciasteczek → skan leci bez primingu (jak dotąd).
+      // Warm up the session (Cloudflare cookie) ONCE per scan — real requests then carry
+      // a fixed UA + Cookie. Resilient: no cookies → the scan runs without priming (as before).
       let session: VintedSession = { userAgent: "", cookie: "" };
       if (v.primeSession && candidates.length > 0) {
         sendEvent({ type: "status", message: "Rozgrzewanie sesji Vinted (ciasteczko Cloudflare)..." });
@@ -111,11 +111,11 @@ export class VintedSyncService {
           ? `Sesja Vinted rozgrzana (${cookieCount(session.cookie)} ciasteczek, stały UA). Skanuję...`
           : "Nie udało się rozgrzać sesji (brak ciasteczek) — skanuję bez primingu." });
 
-        // SAMONAPRAWA: rozgrzana sesja (Cookie + stały UA) potrafi zmienić WARIANT strony,
-        // którą Vinted serwuje — jeśli to strona bez struktury katalogu, parser gubiłby
-        // WSZYSTKIE oferty (200 OK, ale 0 książek). Jedna próba walidacyjna: gdy strona nie
-        // jest zablokowana ANI nie ma żadnej struktury katalogu (JSON/feed-grid/`/items/`),
-        // porzucamy sesję i skanujemy bez primingu (priming może pomóc, nigdy nie szkodzić).
+        // SELF-HEAL: a warmed-up session (Cookie + fixed UA) can change the VARIANT of the page
+        // Vinted serves — if it's a page without catalog structure, the parser would drop
+        // ALL offers (200 OK, but 0 books). One validation probe: when the page is
+        // not blocked AND has no catalog structure at all (JSON/feed-grid/`/items/`),
+        // we drop the session and scan without priming (priming may help, never harm).
         if (session.cookie) {
           try {
             const probeUrl = buildCatalogUrl(v, `${candidates[0].plTitle} ${candidates[0].author || ""}`.trim());
@@ -129,12 +129,12 @@ export class VintedSyncService {
             }
             await throttle(v.throttleMinMs, v.throttleJitterMs);
           } catch {
-            // Błąd sondy nie przesądza — zostaw sesję, właściwy skan i tak ma retry/diagnostykę.
+            // A probe error isn't decisive — keep the session, the actual scan has retry/diagnostics anyway.
           }
         }
       }
 
-      // Zapewnij pole składowania raz na skan; gdy się nie uda — persystencja off (skan i tak leci).
+      // Ensure the storage field once per scan; if it fails — persistence off (the scan runs anyway).
       let persistEnabled = true;
       try {
         await this.notion.createColumnIfNeeded("VintedData");
@@ -170,12 +170,12 @@ export class VintedSyncService {
           const html = response.data;
           log.info(`Odpowiedź Vinted`, { title, chars: html.length, ...memMb() });
 
-          // Blokada = MAŁA strona challenge, nie samo słowo w wielkim HTML.
+          // Block = a SMALL challenge page, not just the word in huge HTML.
           if (looksBlocked(html)) {
             log.warn(`Vinted zablokował żądanie (wykrycie bota)`, { title });
             sendEvent({ type: "status", message: `⚠️ Vinted wykrył bota przy "${title}". Próbuję ominąć...` });
             sendEvent({ type: "search_attempt", result: { id: book.id, title, author: book.author, url, status: "blocked", itemCount: 0, debug: { ...vintedDiagnostics(html, 0), ...memMb() } } });
-            // Blok to NIE „brak ofert": nie zapisujemy pustki ani scannedAt, by wznowienie ponowiło tę książkę.
+            // A block is NOT „no offers": we don't store emptiness or scannedAt, so a resume retries this book.
             await throttle(v.throttleMinMs, v.throttleJitterMs);
             continue;
           }
@@ -192,13 +192,13 @@ export class VintedSyncService {
           const debug = { ...vintedDiagnostics(html, items.length), ...memMb() };
 
           if (items.length > 0) {
-            // Utrwal (scala ze składowanymi — zachowuje sprzedawców przy niezmienionym URL) + policz diff.
+            // Persist (merges with the stored ones — keeps sellers on unchanged URLs) + compute the diff.
             const diff = persistEnabled ? await this.persistBookOffers(book, items, scannedAt) : EMPTY_DIFF;
             const matchResult = { id: book.id, title: book.plTitle, author: book.author, searchUrl: url, vintedItems: items, partOfCycle: book.currentCzesccyklu, cykl: book.cykl, cyklNr: book.cyklNr };
             results.push(matchResult);
             sendEvent({ type: "match", result: matchResult });
             sendEvent({ type: "search_attempt", result: { id: book.id, title, author: book.author, url, status: "success", itemCount: items.length, debug: { ...debug, changes: diff } } });
-            // Książka istnieje na Vinted → oznacz źródło tagiem „Vinted" (best-effort, pomiń jeśli już jest).
+            // The book exists on Vinted → tag the source with „Vinted" (best-effort, skip if already present).
             if (!(book.zrodlo || []).includes("Vinted")) {
               try {
                 await this.notion.addTagToMultiSelect(book.id, "Źródło", "Vinted");
@@ -207,7 +207,7 @@ export class VintedSyncService {
               }
             }
           } else {
-            // 0 ofert BEZ markera i bez blokady: realnie pusto ALBO cichy miss parsera.
+            // 0 offers WITHOUT a marker and without a block: genuinely empty OR a silent parser miss.
             await this.persistEmptyIfNew(book, scannedAt, persistEnabled, "0 ofert mimo zapisanych wcześniej — pomijam zapis (możliwy miss/blok), zachowuję dane");
             sendEvent({ type: "search_attempt", result: { id: book.id, title, author: book.author, url, status: "no_results", itemCount: 0, debug } });
           }
@@ -219,7 +219,7 @@ export class VintedSyncService {
           if (waitMs) await new Promise((resolve) => setTimeout(resolve, waitMs));
         }
 
-        // Odstęp między żądaniami (z jitterem) — na KAŻDEJ ścieżce, by nie wywołać bloku.
+        // Gap between requests (with jitter) — on EVERY path, to avoid triggering a block.
         await throttle(v.throttleMinMs, v.throttleJitterMs);
       }
 
@@ -232,18 +232,18 @@ export class VintedSyncService {
   }
 
   /**
-   * Etap 2 (przyrostowo, wznawialnie): dociąga sprzedawcę do SKŁADOWANYCH ofert bez
-   * sprzedawcy i zapisuje z powrotem do Notion. Rozpoznani zostają w blobie, więc kolejny
-   * przebieg bierze tylko wciąż-`null`. Bez capu domyślnie: przebieg ustala WSZYSTKIE
-   * brakujące, ile zdąży zanim padnie (zapis raz na książkę utrwala postęp). Opcjonalny
-   * `cap` ogranicza przebieg (np. z UI).
+   * Stage 2 (incremental, resumable): fetches the seller for STORED offers without
+   * a seller and writes them back to Notion. Recognized ones stay in the blob, so the next
+   * run takes only still-`null` ones. No cap by default: a run resolves ALL
+   * missing ones, as many as it manages before dying (a write per book persists progress). An optional
+   * `cap` limits the run (e.g. from the UI).
    */
   async resolveSellersToStore(
     sendEvent: (data: SyncEvent) => void,
     checkCancellation: () => boolean,
     params?: { cap?: number },
   ) {
-    // Cap: parametr żądania > knob konfiguracji (`sellerResolveCap`; 0 = bez limitu).
+    // Cap: request parameter > config knob (`sellerResolveCap`; 0 = no limit).
     const cfg = await this.config.getConfig();
     const v = cfg.vinted;
     const capKnob = params?.cap && params.cap > 0 ? params.cap : v.sellerResolveCap;
@@ -252,7 +252,7 @@ export class VintedSyncService {
       sendEvent({ type: "status", message: "Wczytywanie składowanych ofert z Notion..." });
       const allBooks = await this.notion.getBooksForStats(undefined, checkCancellation, { cache: true });
 
-      // Książki z ofertami bez sprzedawcy (offer to referencja do data.offers — mutacja wraca do blobu).
+      // Books with offers lacking a seller (offer is a reference into data.offers — the mutation flows back to the blob).
       const pending: { book: NotionBook; data: StoredVintedData; offers: StoredOffer[] }[] = [];
       let totalPending = 0;
       for (const book of allBooks) {
@@ -277,7 +277,7 @@ export class VintedSyncService {
 
       const httpsAgent = createScrapingAgent();
 
-      // Priming sesji też tutaj — strony ofert (`/items/…`) są pod tym samym Cloudflare.
+      // Session priming here too — offer pages (`/items/…`) are behind the same Cloudflare.
       let session: VintedSession = { userAgent: "", cookie: "" };
       if (v.primeSession) {
         sendEvent({ type: "status", message: "Rozgrzewanie sesji Vinted (ciasteczko Cloudflare)..." });
@@ -312,7 +312,7 @@ export class VintedSyncService {
           }
           await throttle(v.throttleMinMs, v.throttleJitterMs);
         }
-        // Zapisz książkę raz, po ustaleniu jej ofert (mniej zapisów do Notion).
+        // Save the book once, after resolving its offers (fewer writes to Notion).
         if (dirty) {
           try {
             await this.notion.saveVintedData(p.book.id, serializeVintedData(p.data));

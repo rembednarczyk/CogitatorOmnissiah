@@ -11,8 +11,8 @@ export class StatsService {
     let books = await this.notion.getBooksForStats();
     const branches = (await this.config.getConfig()).library.branches;
 
-    // Global filter: tylko pozycje NAGRODOWE (poboczne tomy cykli mają własny widok
-    // w „Archiwum Cykli") oraz z niepustym tytułem polskim.
+    // Global filter: only AWARD entries (side cycle volumes have their own view
+    // in „Archiwum Cykli") and with a non-empty Polish title.
     books = books.filter(b => isAwardBook(b) && b.plTitle && b.plTitle.trim() !== "");
     
     // 1. Author progress
@@ -68,9 +68,9 @@ export class StatsService {
     const allAwardsRead = allAwardsBooks.filter(b => (b.zrodlo || []).includes("Przeczytane")).length;
     const allAwardsStats = { read: allAwardsRead, total: allAwardsBooks.length };
 
-    // 5b. Aggregate availability of UNREAD books — jeden „skąd zdobyć" licznik łączący
-    // posiadanie / biblioteki (tagi filii z konfiguracji) / Vinted (blob ofert). Partycja
-    // priorytetowa (posiadane > biblioteka > Vinted > brak śladu) — każda książka liczona raz.
+    // 5b. Aggregate availability of UNREAD books — one „skąd zdobyć" counter combining
+    // ownership / libraries (branch tags from config) / Vinted (offers blob). Priority
+    // partition (owned > library > Vinted > no trace) — each book counted once.
     const branchTags = new Set(branches.map(b => b.sourceTag));
     const hasVintedOffers = (raw?: string) => (parseVintedData(raw)?.offers.length ?? 0) > 0;
     const availability = { owned: 0, library: 0, vinted: 0, none: 0 };
@@ -86,12 +86,12 @@ export class StatsService {
     });
     const availabilityStats = { totalUnread, ...availability };
 
-    // 5c. Wydawnictwa / Serie / Cykle — dane z rytuałów publisher/series/cycles, dotąd
-    // nietknięte przez statystyki. Wszystkie liczą się per książka z niepustym polem.
+    // 5c. Wydawnictwa / Serie / Cykle — data from the publisher/series/cycles rituals, until now
+    // untouched by stats. All are counted per book with a non-empty field.
     const isReadBook = (b: typeof books[number]) => (b.zrodlo || []).includes("Przeczytane");
     const isOwnedBook = (b: typeof books[number]) => (b.zrodlo || []).includes("Posiadam");
 
-    // Top wydawnictwa: liczba tytułów + ile przeczytanych.
+    // Top publishers: number of titles + how many read.
     const publisherMap: Record<string, { count: number; read: number }> = {};
     books.forEach(book => {
       const pub = (book.currentWydawnictwo || "").trim();
@@ -105,7 +105,7 @@ export class StatsService {
       .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "pl"))
       .slice(0, 15);
 
-    // Serie: ile tytułów w serii, ile posiadasz (luki = count − owned).
+    // Series: how many titles in the series, how many you own (gaps = count − owned).
     const seriesMap: Record<string, { count: number; owned: number; read: number }> = {};
     books.forEach(book => {
       const ser = (book.currentSeria || "").trim();
@@ -120,12 +120,12 @@ export class StatsService {
       .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "pl"))
       .slice(0, 15);
 
-    // Cykle: udział książek będących częścią cyklu (currentCzesccyklu) w kolekcji.
+    // Cycles: share of books that are part of a cycle (currentCzesccyklu) in the collection.
     const cyclePart = books.filter(b => b.currentCzesccyklu === true).length;
     const cycleStats = { partOfCycle: cyclePart, standalone: books.length - cyclePart, total: books.length };
 
-    // 5d. Rozkład dekad — rollup roczników do dekad (aplikacja już myśli dekadami przez
-    // regał). Pierwszy 4-cyfrowy rok z pola; wielodatowe → pierwszy rok. Brak roku pomijany.
+    // 5d. Decade distribution — rollup of years into decades (the app already thinks in decades via
+    // the shelf). First 4-digit year from the field; multi-dated → first year. Missing year skipped.
     const decadeMap: Record<number, { total: number; read: number; owned: number }> = {};
     books.forEach(book => {
       const m = (book.year || "").toString().match(/\d{4}/);
@@ -140,7 +140,7 @@ export class StatsService {
       .map(([decade, s]) => ({ decade: parseInt(decade, 10), ...s }))
       .sort((a, b) => a.decade - b.decade);
 
-    // 5e. Rynek — statystyki z blobu VintedData (koszt skompletowania, okazje, spadki, sprzedawcy).
+    // 5e. Market — stats from the VintedData blob (completion cost, deals, drops, sellers).
     const marketStats = computeMarketStats(books);
 
     // 6. Yearly progress
@@ -189,8 +189,8 @@ export class StatsService {
       cycleStats,
       decadeStats,
       marketStats,
-      // Filie z konfiguracji (`library.branches`) — dopisanie 3. filii w Kalibracji od razu
-      // pojawia się w statystykach. `id` = tag „Źródło" filii (dopasowanie po znaczniku).
+      // Branches from config (`library.branches`) — adding a 3rd branch in Kalibracja immediately
+      // shows up in stats. `id` = the branch's „Źródło" tag (matched by the marker).
       libraryStats: branches.map(branch => ({
         id: branch.sourceTag,
         name: branch.name,

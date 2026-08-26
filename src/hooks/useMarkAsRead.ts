@@ -12,13 +12,13 @@ interface Deps {
 }
 
 /**
- * Oznaczanie pozycji jako przeczytanej (`POST /api/mark-as-read`).
- * `markingId` blokuje równoległe zapisy; `markedIds` (klucz „{tag}:{pageId}")
- * trzyma pozycje otagowane w tej sesji — skan biblioteki wyklucza już
- * otagowane książki, więc rekord ma zostać widoczny, lecz z wyłączonym haczykiem.
+ * Marking an item as read (`POST /api/mark-as-read`).
+ * `markingId` blocks parallel writes; `markedIds` (key „{tag}:{pageId}")
+ * holds items tagged in this session — the library scan excludes already
+ * tagged books, so the record should stay visible but with its checkbox off.
  *
- * tag domyślnie „Przeczytane" (zasoby posiadane / statystyki biblioteczne);
- * skaner filii przekazuje znacznik filii („Biblioteka" / „Biblioteka 9").
+ * tag defaults to „Przeczytane" (owned resources / library stats);
+ * the branch scanner passes a branch tag („Biblioteka" / „Biblioteka 9").
  */
 export function useMarkAsRead({ identifiedBooks, addBookToLibrarySection, fetchStats }: Deps) {
   const [markingId, setMarkingId] = useState<string | null>(null);
@@ -37,10 +37,10 @@ export function useMarkAsRead({ identifiedBooks, addBookToLibrarySection, fetchS
       const sourceTag = tag ?? "Przeczytane";
       setMarkedIds(prev => new Set(prev).add(`${sourceTag}:${pageId}`));
 
-      // Tag filii dopisuje pozycję wyłącznie do sekcji „Książki dostępne w
-      // bibliotekach" — aktualizujemy ją optymistycznie (natychmiast, odporne na
-      // opóźnienie odczytu Notiona). „Przeczytane" zmienia wiele przekrojów
-      // (autorzy, chronologia, posiadane), więc tam robimy pełny refetch.
+      // A branch tag adds the item only to the „Książki dostępne w
+      // bibliotekach" section — we update it optimistically (immediately, resilient to
+      // Notion's read lag). „Przeczytane" changes many cross-sections
+      // (authors, chronology, owned), so there we do a full refetch.
       if (LIBRARY_TAGS.includes(sourceTag)) {
         const book = Object.values(identifiedBooks).flat().find(b => b.id === pageId);
         if (book) addBookToLibrarySection(sourceTag, book);

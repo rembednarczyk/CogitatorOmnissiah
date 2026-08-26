@@ -6,7 +6,7 @@ import request from "supertest";
 
 process.env.NODE_ENV = "test";
 
-// Sterowalna implementacja runBookSync — każdy test podstawia własną przez holder.
+// A controllable runBookSync implementation — each test injects its own via a holder.
 const h = vi.hoisted(() => ({
   runBook: null as null | ((params: any, send: (e: any) => void, checkCancel: () => boolean) => Promise<void>),
 }));
@@ -38,7 +38,7 @@ describe("SyncManager lifecycle", () => {
     h.runBook = null;
     process.env.NOTION_API_KEY = "test-key";
     process.env.NOTION_DATABASE_ID = "test-db";
-    // Upewnij się, że nie zostało nic z poprzedniego testu
+    // Make sure nothing is left from the previous test
     syncManager.resetSyncState();
   });
 
@@ -56,13 +56,13 @@ describe("SyncManager lifecycle", () => {
     };
 
     const running = syncManager.run("book", vi.fn(), {});
-    // executeTask ustawia currentTask synchronicznie, zanim odda sterowanie
+    // executeTask sets currentTask synchronously, before yielding control
     expect(syncManager.isSyncing).toBe(true);
     expect(syncManager.activeTask).toBe("book");
 
     await expect(syncManager.run("purify", vi.fn())).rejects.toThrow(/już w toku/);
 
-    // stopActiveSync ustawia flagę anulowania widoczną przez token zadania
+    // stopActiveSync sets a cancellation flag visible through the task token
     expect(captured()).toBe(false);
     expect(syncManager.stopActiveSync()).toBe(true);
     expect(captured()).toBe(true);
@@ -70,7 +70,7 @@ describe("SyncManager lifecycle", () => {
     release();
     await running;
 
-    // Blokada zwolniona po zakończeniu zadania
+    // Lock released after the task finishes
     expect(syncManager.isSyncing).toBe(false);
     expect(syncManager.activeTask).toBe(null);
   });
@@ -87,13 +87,13 @@ describe("SyncManager lifecycle", () => {
     expect(syncManager.isSyncing).toBe(true);
 
     syncManager.resetSyncState();
-    // Anulowanie zasygnalizowane, ale blokada TRZYMANA — brak okna równoległych
-    // zapisów: osierocone zadanie wciąż jest właścicielem locka aż do wyjścia.
+    // Cancellation signaled, but the lock is HELD — no window for concurrent
+    // writes: the orphaned task still owns the lock until it exits.
     expect(captured()).toBe(true);
     expect(syncManager.isSyncing).toBe(true);
     await expect(syncManager.run("purify", vi.fn())).rejects.toThrow(/już w toku/);
 
-    release(); // zadanie zauważa anulowanie i wychodzi → finally zwalnia lock
+    release(); // the task notices the cancellation and exits → finally releases the lock
     await running;
     expect(syncManager.isSyncing).toBe(false);
     expect(syncManager.activeTask).toBe(null);
@@ -214,14 +214,14 @@ describe("SSE event stream (POST /api/sync)", () => {
 
     const frames = parseFrames(res.text);
     const types = frames.map((f) => f.type);
-    // Pierwsze zdarzenie to handshake serwera, ostatnie to complete
+    // The first event is the server handshake, the last is complete
     expect(frames[0]).toMatchObject({ type: "status" });
     expect(frames[0].message).toMatch(/Połączono/);
     expect(types).toContain("progress");
     expect(types[types.length - 1]).toBe("complete");
     expect(frames[frames.length - 1].result).toEqual({ success: true });
 
-    // Lock zwolniony po zamknięciu strumienia
+    // Lock released after the stream closes
     expect(syncManager.isSyncing).toBe(false);
   });
 
@@ -229,13 +229,13 @@ describe("SSE event stream (POST /api/sync)", () => {
     let release!: () => void;
     h.runBook = () => new Promise<void>((r) => { release = r; });
 
-    // .then() faktycznie wysyła żądanie supertest (jest leniwe) — trzymamy je w locie
+    // .then() actually sends the supertest request (it's lazy) — we keep it in flight
     const firstDone = request(app)
       .post("/api/sync")
       .send({ awardName: "A", pageTitle: "B" })
       .then((r) => r);
 
-    // Poczekaj aż pierwszy sync przejmie blokadę
+    // Wait until the first sync takes the lock
     await vi.waitFor(() => expect(syncManager.isSyncing).toBe(true));
 
     const second = await request(app).post("/api/sync").send({ awardName: "C", pageTitle: "D" });

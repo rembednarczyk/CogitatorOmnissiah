@@ -5,7 +5,7 @@ import { useBooks } from "../hooks/useBooks";
 import { matchBooks, buildSearchVocab, didYouMean, replaceLastToken } from "../utils/bookSearch";
 import { BookResultCard } from "./search/BookResultCard";
 
-/** Ile kart maksymalnie rysujemy (ochrona DOM przy „pustym" zapytaniu = cały zbiór). */
+/** Max number of cards we render (DOM guard for an „empty" query = the whole set). */
 const RENDER_CAP = 150;
 
 export const SearchSection: React.FC = () => {
@@ -22,7 +22,7 @@ export const SearchSection: React.FC = () => {
   const shown = results.slice(0, RENDER_CAP);
   const total = books?.length ?? 0;
 
-  // „Czy chodziło Ci o…" — słownik liczony raz na zbiór; podpowiedzi tylko przy 0 trafień.
+  // „Czy chodziło Ci o…" — vocab computed once per set; suggestions only on 0 hits.
   const vocab = useMemo(() => buildSearchVocab(books ?? []), [books]);
   const suggestions = useMemo(
     () => (results.length === 0 && deferredQuery.trim() ? didYouMean(deferredQuery, vocab) : []),
@@ -31,7 +31,7 @@ export const SearchSection: React.FC = () => {
 
   return (
     <div className="space-y-8">
-      {/* Nagłówek sekcji */}
+      {/* Section header */}
       <div className="flex items-center gap-6">
         <div className="h-px flex-1 bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent" />
         <div className="flex items-center gap-4">
@@ -47,7 +47,7 @@ export const SearchSection: React.FC = () => {
         Przeszukiwanie zapisów archiwum — tytuł, tytuł oryginalny, autor
       </p>
 
-      {/* Pole wyszukiwania */}
+      {/* Search field */}
       <div className="relative max-w-2xl mx-auto">
         <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-cyan-400/50 pointer-events-none" />
         <input
@@ -71,7 +71,7 @@ export const SearchSection: React.FC = () => {
         )}
       </div>
 
-      {/* Licznik */}
+      {/* Counter */}
       {books && !loading && (
         <p className="text-center text-xs text-slate-500 font-bold tracking-widest uppercase">
           {query.trim()
@@ -81,7 +81,7 @@ export const SearchSection: React.FC = () => {
         </p>
       )}
 
-      {/* Stany: ładowanie / błąd / brak trafień / siatka */}
+      {/* States: loading / error / no hits / grid */}
       {loading ? (
         <div className="flex items-center justify-center gap-3 py-16 text-slate-500">
           <Loader2 className="w-5 h-5 animate-spin" />

@@ -12,9 +12,9 @@ export class LpSyncService {
       let allBooks: NotionBook[] = await this.notion.queryAllBooks((count) => sendEvent({ type: "status", message: `Pobrano ${count} książek z Notion...` }), checkCancellation);
       
       // Filter out empty books (ghost rows) to avoid assigning Lp to them.
-      // Numeracja Lp dotyczy TYLKO pozycji nagrodowych — poboczne tomy cykli nie
-      // uczestniczą w globalnym numerze porządkowym (nie przesuwają numerów nagród;
-      // ich kolejność wewnątrz cyklu daje pole CyklNr).
+      // Lp numbering applies ONLY to award entries — side cycle volumes don't
+      // participate in the global ordinal number (they don't shift award numbers;
+      // their order within a cycle comes from the CyklNr field).
       allBooks = allBooks.filter(b => isAwardBook(b) && (b.plTitle || b.origTitle || b.author));
 
       if (checkCancellation()) { sendEvent({ type: "error", error: "Przerwano aktualizację Lp." }); return; }

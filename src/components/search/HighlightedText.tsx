@@ -1,7 +1,7 @@
 import React from "react";
 import { highlight } from "../../utils/bookSearch";
 
-/** Renderuje tekst z podświetlonymi fragmentami trafionymi zapytaniem. */
+/** Renders text with fragments matched by the query highlighted. */
 export const HighlightedText: React.FC<{ text: string; query: string; className?: string }> = ({ text, query, className }) => {
   const segments = highlight(text, query);
   return (

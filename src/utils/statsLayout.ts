@@ -1,15 +1,15 @@
 /**
- * Czyste helpery kolejności kart statystyk (drag&drop w „Analizie Zasobów").
+ * Pure helpers for stat-card ordering (drag&drop in „Analiza Zasobów").
  *
- * Kolejność użytkownika trzymamy jako listę id sekcji (`ui.statsOrder`). Kod jest
- * odporny na dryf: nowe karty dodane w kodzie, których nie ma w zapisanej liście,
- * dopisujemy na końcu w kolejności kodu; id z zapisu, których już nie ma w kodzie,
- * ignorujemy. Dzięki temu zapisany blob nigdy nie „gubi" ani nie duplikuje karty.
+ * The user's order is kept as a list of section ids (`ui.statsOrder`). The code is
+ * resilient to drift: new cards added in code that aren't in the saved list are
+ * appended at the end in code order; ids from the save that no longer exist in code
+ * are ignored. So the saved blob never „loses" or duplicates a card.
  */
 
 /**
- * Ustala finalną kolejność id: najpierw zapisane (przefiltrowane do istniejących,
- * bez duplikatów), potem pozostałe z `allIds` w kolejności kodu.
+ * Determines the final id order: first the saved ones (filtered to existing,
+ * no duplicates), then the rest from `allIds` in code order.
  */
 export function orderByIds(allIds: string[], savedOrder: string[]): string[] {
   const known = new Set(allIds);
@@ -25,10 +25,10 @@ export function orderByIds(allIds: string[], savedOrder: string[]): string[] {
 }
 
 /**
- * Rozkłada elementy na `cols` kolumn round-robin (element i → kolumna i % cols),
- * zachowując czytanie „wiersz po wierszu": 0 i 2 i 4 w lewej, 1 i 3 i 5 w prawej.
- * Każda kolumna pakuje się potem niezależnie (brak sprzężenia wysokości = brak dziur),
- * a kolejność odczytu lewo→prawo, góra→dół pozostaje 0,1,2,3,... Zwraca `cols` list.
+ * Distributes items across `cols` columns round-robin (item i → column i % cols),
+ * preserving „row by row" reading: 0 and 2 and 4 on the left, 1 and 3 and 5 on the right.
+ * Each column then packs independently (no height coupling = no gaps),
+ * while the reading order left→right, top→bottom stays 0,1,2,3,... Returns `cols` lists.
  */
 export function distributeColumns<T>(items: T[], cols: number): T[][] {
   const n = Math.max(1, Math.floor(cols));
@@ -38,9 +38,9 @@ export function distributeColumns<T>(items: T[], cols: number): T[][] {
 }
 
 /**
- * Przenosi `dragId` na pozycję `targetId` (wstawienie przed elementem docelowym w
- * jego bieżącym miejscu). Zwraca nową listę; wejście pozostaje nietknięte.
- * No-op gdy któreś id nie istnieje lub są równe.
+ * Moves `dragId` to the position of `targetId` (inserting before the target element at
+ * its current place). Returns a new list; the input stays untouched.
+ * No-op when either id doesn't exist or they're equal.
  */
 export function moveId(order: string[], dragId: string, targetId: string): string[] {
   if (dragId === targetId) return order.slice();

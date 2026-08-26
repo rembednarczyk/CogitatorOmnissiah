@@ -1,6 +1,6 @@
 import { VintedResult } from "../hooks/useVintedCheck";
 
-/** Sprzedawca Vinted (dociągany ze strony oferty, nie z katalogu). */
+/** Vinted seller (fetched from the offer page, not from the catalog). */
 export interface VintedSeller {
   id: string;
   login: string;
@@ -10,30 +10,30 @@ export interface VintedSeller {
 export interface SellerBundleEntry {
   bookTitle: string;
   bookAuthor: string;
-  /** Rok wydania (metadana z Notion). */
+  /** Publication year (metadata from Notion). */
   bookYear?: string;
-  /** Czy książka jest częścią cyklu (metadana z Notion) — ryzyko „kolejny tom". */
+  /** Whether the book is part of a cycle (metadata from Notion) — risk of „another volume". */
   bookPartOfCycle?: boolean;
-  /** Nazwa cyklu (metadana z Notion, z żniw) — do etykiety kafelka cyklu. */
+  /** Cycle name (metadata from Notion, from the harvest) — for the cycle tile label. */
   bookCykl?: string;
-  /** Numer tomu w cyklu (metadana z Notion, z żniw). */
+  /** Volume number within the cycle (metadata from Notion, from the harvest). */
   bookCyklNr?: number;
-  /** Najtańsza kopia tej książki U TEGO sprzedawcy. */
+  /** The cheapest copy of this book FROM THIS seller. */
   item: VintedResult["vintedItems"][number];
-  /** Dopłata vs najtańsza kopia tej książki globalnie (0, gdy to właśnie najtańsza). */
+  /** Surcharge vs the cheapest copy of this book globally (0 when it is the cheapest). */
   premium: number;
 }
 
 export interface SellerBundle {
   seller: VintedSeller;
   entries: SellerBundleEntry[];
-  /** Suma cen (najtańsze kopie u tego sprzedawcy). */
+  /** Sum of prices (cheapest copies from this seller). */
   totalValue: number;
-  /** Łączna dopłata za konsolidację vs kupno każdej książki u najtańszego sprzedawcy. */
+  /** Total consolidation surcharge vs buying each book from the cheapest seller. */
   totalPremium: number;
 }
 
-/** Payload składowanej książki z `GET /api/vinted-stored` (etap 3). */
+/** Payload of a stored book from `GET /api/vinted-stored` (stage 3). */
 export interface StoredBookPayload {
   id: string;
   title: string;
@@ -50,15 +50,15 @@ export interface StoredBookPayload {
 export interface StoredView {
   results: VintedResult[];
   sellersByUrl: Record<string, VintedSeller | null>;
-  /** Najstarszy / najświeższy `scannedAt` w zbiorze (znacznik świeżości). */
+  /** Oldest / newest `scannedAt` in the set (freshness marker). */
   oldest: string | null;
   newest: string | null;
 }
 
 /**
- * Czysta transformacja składowanego payloadu → widok renderowalny tym samym UI co skan
- * live (VintedResult[] + mapa url→sprzedawca + zakres świeżości). Dzięki temu kafelki i
- * paczki lecą z bazy bez re-scrape, reużywając `groupBySeller` i istniejący render.
+ * Pure transformation of the stored payload → a view renderable by the same UI as the
+ * live scan (VintedResult[] + url→seller map + freshness range). This way tiles and
+ * bundles come from the DB without a re-scrape, reusing `groupBySeller` and the existing render.
  */
 export function storedToView(books: StoredBookPayload[]): StoredView {
   const results: VintedResult[] = [];
@@ -97,19 +97,19 @@ export function storedToView(books: StoredBookPayload[]): StoredView {
 }
 
 /**
- * Nakłada mapę `url → sprzedawca` (dociągniętą on-demand) na wyniki skanu i zwraca
- * paczki: sprzedawców mających ≥2 RÓŻNE książki. Dla każdej książki bierze NAJTAŃSZĄ
- * kopię danego sprzedawcy i liczy dopłatę vs najtańsza globalnie — dzięki temu widać
- * tradeoff „dopłacam grosze, ale konsoliduję przesyłkę". Czysta funkcja (bez I/O).
+ * Applies the `url → seller` map (fetched on-demand) onto the scan results and returns
+ * bundles: sellers having ≥2 DIFFERENT books. For each book it takes the CHEAPEST
+ * copy from the given seller and computes the surcharge vs the global cheapest — this way you see
+ * the tradeoff „I pay pennies extra but consolidate the shipment". Pure function (no I/O).
  *
- * Działa w obu trybach: „najtańsze" (tylko najtańsza oferta/książkę ma sprzedawcę →
- * dopłaty = 0) i „wszystkie oferty" (każda oferta ma sprzedawcę → ujawnia many-to-many).
+ * Works in both modes: „najtańsze" (only the cheapest offer/book has a seller →
+ * surcharges = 0) and „wszystkie oferty" (every offer has a seller → reveals many-to-many).
  */
 export function groupBySeller(
   results: VintedResult[],
   sellersByUrl: Record<string, VintedSeller | null>,
 ): SellerBundle[] {
-  // Najtańsza cena każdej książki GLOBALNIE (ze wszystkich jej ofert w skanie).
+  // The cheapest price of each book GLOBALLY (from all its offers in the scan).
   const globalMin = new Map<string, number>();
   for (const r of results) {
     const prices = r.vintedItems
@@ -118,7 +118,7 @@ export function groupBySeller(
     if (prices.length) globalMin.set(r.id, Math.min(...prices));
   }
 
-  // seller.id → (book id → najtańszy wpis tego sprzedawcy dla tej książki)
+  // seller.id → (book id → the cheapest entry from this seller for this book)
   const byId = new Map<string, { seller: VintedSeller; books: Map<string, SellerBundleEntry> }>();
   for (const r of results) {
     for (const item of r.vintedItems) {
@@ -156,17 +156,17 @@ export function groupBySeller(
       totalPremium: entries.reduce((sum, e) => sum + e.premium, 0),
     });
   }
-  // Domyślnie: najpierw najwięcej książek, potem najtańsza suma.
+  // By default: most books first, then the cheapest sum.
   return sortBundles(bundles, "count");
 }
 
-/** Kryterium sortowania paczek w UI. */
+/** Sort criterion for bundles in the UI. */
 export type BundleSortMode = "count" | "price";
 
 /**
- * Zwraca KOPIĘ paczek posortowaną wg trybu:
- * - `count`  — najwięcej książek, remis → najtańsza suma (domyślny);
- * - `price`  — najtańsza suma (`totalValue`), remis → najwięcej książek.
+ * Returns a COPY of the bundles sorted by mode:
+ * - `count`  — most books, tie → cheapest sum (default);
+ * - `price`  — cheapest sum (`totalValue`), tie → most books.
  */
 export function sortBundles(bundles: SellerBundle[], mode: BundleSortMode): SellerBundle[] {
   const copy = [...bundles];

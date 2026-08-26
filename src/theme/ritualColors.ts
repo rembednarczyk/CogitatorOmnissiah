@@ -1,13 +1,13 @@
 /**
- * Centralny motyw kolorów rytuałów.
+ * Central ritual color theme.
  *
- * Każdy rytuał (synchronizacja) niesie swój kolor w `SyncState.color`; paski
- * postępu, karty podsumowań i kropki kroków dziedziczą go, by wzmacniać tożsamość
- * rytuału (zob. COGITATOR_GUIDELINES §2 "Dynamic UI"). Wcześniej te same mapy
- * klas Tailwinda były duplikowane w kilku komponentach — tutaj są w jednym miejscu.
+ * Every ritual (sync) carries its color in `SyncState.color`; progress bars,
+ * summary cards and step dots inherit it to reinforce the ritual's identity
+ * (see COGITATOR_GUIDELINES §2 "Dynamic UI"). Previously these same Tailwind
+ * class maps were duplicated across several components — here they live in one place.
  *
- * UWAGA: klasy muszą być pełnymi literałami (`text-cyan-400`, nie `text-${c}-400`),
- * inaczej skaner JIT Tailwinda ich nie wykryje i nie trafią do builda.
+ * NOTE: classes must be full literals (`text-cyan-400`, not `text-${c}-400`),
+ * otherwise Tailwind's JIT scanner won't detect them and they won't reach the build.
  */
 
 export type RitualColor =
@@ -21,17 +21,17 @@ export type RitualColor =
   | "emerald";
 
 export interface RitualTheme {
-  /** Tekst akcentu, np. nagłówki (text-*-400). */
+  /** Accent text, e.g. headings (text-*-400). */
   text: string;
-  /** Obramowanie kart (border-*-500/20). */
+  /** Card border (border-*-500/20). */
   border: string;
-  /** Miękkie tło panelu/karty (bg-*-500/10). */
+  /** Soft panel/card background (bg-*-500/10). */
   bgSoft: string;
-  /** Pełne tło, np. wypełnienie paska postępu (bg-*-500). */
+  /** Solid background, e.g. progress bar fill (bg-*-500). */
   bgSolid: string;
-  /** Poświata paska postępu (shadow-[…0.4]). */
+  /** Progress bar glow (shadow-[…0.4]). */
   glow: string;
-  /** Kropka kroku na osi rytuałów (bg-*-500 + mniejsza poświata). */
+  /** Step dot on the ritual timeline (bg-*-500 + smaller glow). */
   dot: string;
 }
 
@@ -46,14 +46,14 @@ export const ritualTheme: Record<RitualColor, RitualTheme> = {
   emerald: { text: "text-emerald-400", border: "border-emerald-500/20", bgSoft: "bg-emerald-500/10", bgSolid: "bg-emerald-500", glow: "shadow-[0_0_15px_rgba(16,185,129,0.4)]",  dot: "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" },
 };
 
-/** Pełny motyw rytuału z bezpiecznym fallbackiem do cyan. */
+/** Full ritual theme with a safe fallback to cyan. */
 export const getRitualTheme = (color?: string | null): RitualTheme =>
   ritualTheme[(color as RitualColor)] ?? ritualTheme.cyan;
 
 /**
- * Klasy przycisku-rytuału (styl „liturgii synchronizacji": ciemna baza slate-950,
- * kolorowy akcent border/glow na hover, ikona w boxie). Pełne literały — patrz uwaga
- * o skanerze JIT Tailwinda na górze pliku. Używane przez komponent `RitualButton`.
+ * Ritual-button classes (the „liturgii synchronizacji" style: dark slate-950 base,
+ * colored border/glow accent on hover, icon in a box). Full literals — see the note
+ * about Tailwind's JIT scanner at the top of the file. Used by the `RitualButton` component.
  */
 export interface RitualButtonTheme {
   hoverBorder: string;
@@ -77,13 +77,13 @@ export const ritualButtonTheme: Record<RitualColor, RitualButtonTheme> = {
 export const getRitualButtonTheme = (color?: string | null): RitualButtonTheme =>
   ritualButtonTheme[(color as RitualColor)] ?? ritualButtonTheme.cyan;
 
-/** Sama kropka kroku (z fallbackiem do cyan). */
+/** Just the step dot (with a fallback to cyan). */
 export const getRitualDot = (color?: string | null): string => getRitualTheme(color).dot;
 
 /**
- * Gradientowe paski postępu (ProgressBar / AuthorProgressItem). Osobna mapa, bo
- * gradient ma inny kolor docelowy niż nazwa rytuału (cyan→blue, purple→indigo,
- * orange→red, emerald→teal). Fallback: emerald (zgodnie z poprzednim zachowaniem).
+ * Gradient progress bars (ProgressBar / AuthorProgressItem). Separate map because
+ * the gradient's target color differs from the ritual name (cyan→blue, purple→indigo,
+ * orange→red, emerald→teal). Fallback: emerald (matching prior behavior).
  */
 export interface RitualGradient {
   gradient: string;

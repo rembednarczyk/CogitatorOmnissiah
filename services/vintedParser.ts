@@ -6,37 +6,37 @@ export interface VintedItem {
   id?: string | number;
   title: string;
   price: string | number;
-  /** Cena jako liczba (do sortowania). null, gdy nieznana (placeholder „Sprawdź"/„??"). */
+  /** Price as a number (for sorting). null when unknown (placeholder „Sprawdź"/„??"). */
   priceValue: number | null;
   currency: string;
   url: string;
-  /** Miniatura oferty z katalogu Vinted (tylko ścieżka JSON — fallbacki HTML jej nie mają). */
+  /** Offer thumbnail from the Vinted catalog (JSON path only — the HTML fallbacks don't have it). */
   photo?: string | null;
-  /** Sprzedawca — dociągany on-demand ze strony oferty (nie ma go w katalogu). */
+  /** Seller — fetched on-demand from the offer page (not present in the catalog). */
   seller?: VintedSeller | null;
 }
 
 export interface VintedSeller {
-  /** Numeryczne ID profilu (`/member/{id}`) — klucz grupowania. */
+  /** Numeric profile ID (`/member/{id}`) — the grouping key. */
   id: string;
-  /** Widoczny login sprzedawcy. */
+  /** Visible seller login. */
   login: string;
-  /** Link do profilu. */
+  /** Link to the profile. */
   url: string;
 }
 
 /**
- * Normalizuje surową cenę Vinted do liczby: „15" → 15, „25,00" → 25, „12.90" → 12.9,
- * liczba → liczba. Placeholdery („??", „Sprawdź", puste) i wartości nieliczbowe → null,
- * żeby oferty bez ceny dało się posortować na koniec zamiast psuć porównania.
+ * Normalizes a raw Vinted price to a number: „15" → 15, „25,00" → 25, „12.90" → 12.9,
+ * number → number. Placeholders („??", „Sprawdź", empty) and non-numeric values → null,
+ * so offers without a price can be sorted to the end instead of breaking comparisons.
  */
 /**
- * Odcina string od rodzica. V8 NIE kopiuje podstringów: `str.match()`/`.split()` na
- * wielkim HTML (~7 MB) zwraca SlicedString trzymający wskaźnik do CAŁEGO rodzica.
- * Gdy takie pole trafia do długo żyjącej tablicy (`results` skanera), pinuje cały
- * HTML — po ~26 stronach to OOM (potwierdzone logami Rendera). `Buffer.from(...)`
- * tworzy samodzielną kopię bajtów, odcinając referencję do 7 MB rodzica. Pola oferty
- * są krótkie, więc koszt kopii jest pomijalny.
+ * Detaches a string from its parent. V8 does NOT copy substrings: `str.match()`/`.split()` on
+ * huge HTML (~7 MB) returns a SlicedString holding a pointer to the WHOLE parent.
+ * When such a field lands in a long-lived array (the scanner's `results`), it pins the whole
+ * HTML — after ~26 pages that's OOM (confirmed by Render logs). `Buffer.from(...)`
+ * makes a standalone copy of the bytes, cutting the reference to the 7 MB parent. Offer fields
+ * are short, so the copy cost is negligible.
  */
 function detach(s: string): string {
   return Buffer.from(s, "utf8").toString("utf8");
@@ -52,34 +52,34 @@ export function parseVintedPrice(raw: string | number | null | undefined): numbe
 }
 
 /**
- * Czysty parser wyników katalogu Vinted (HTML → oferty). Bez I/O ani zdarzeń SSE —
- * skaner tylko podaje surowy HTML, tytuł i autora, a dostaje do 5 dopasowanych
- * ofert. Cztery kaskadowe ścieżki: (1) blob JSON `data-component-name="Catalog"`,
- * (2) fallback po regexie `"items":[…]` z domykaniem nawiasów, (3) bloki
- * `feed-grid__item`, (4) globalny regex `href=/items/…`. Wyodrębnione, by tę
- * kruchą logikę dało się testować jednostkowo na utrwalonym HTML.
+ * Pure parser of Vinted catalog results (HTML → offers). No I/O or SSE events —
+ * the scanner only supplies the raw HTML, title and author, and gets back up to 5 matched
+ * offers. Four cascading paths: (1) JSON blob `data-component-name="Catalog"`,
+ * (2) regex fallback `"items":[…]` with bracket closing, (3) `feed-grid__item`
+ * blocks, (4) global regex `href=/items/…`. Extracted so this
+ * fragile logic can be unit-tested on captured HTML.
  */
 export interface VintedDebug {
-  /** Długość odpowiedzi HTML (znaki). Bardzo mała = możliwy blok/challenge. */
+  /** HTML response length (chars). Very small = possible block/challenge. */
   chars: number;
-  /** Czy strona zawiera blob JSON katalogu (ścieżka „bogata"). */
+  /** Whether the page contains the catalog JSON blob (the „rich" path). */
   hasCatalogJson: boolean;
-  /** Czy są bloki feed-grid (ścieżka fallback). */
+  /** Whether there are feed-grid blocks (the fallback path). */
   hasFeedGrid: boolean;
-  /** Ile linków /items/ jest w HTML (są oferty, nawet jeśli parser ich nie złapał). */
+  /** How many /items/ links are in the HTML (offers exist, even if the parser didn't catch them). */
   itemLinks: number;
-  /** Markery blokady bota (cloudflare/captcha/robot). */
+  /** Bot-block markers (cloudflare/captcha/robot). */
   blockedMarker: boolean;
-  /** Markery „brak wyników" Vinted. */
+  /** Vinted „no results" markers. */
   noResultsMarker: boolean;
-  /** Ile ofert faktycznie wyłuskał parser. */
+  /** How many offers the parser actually extracted. */
   parsed: number;
 }
 
-// Realna strona wyników Vinted to megabajty HTML. Strona challenge/blokady
-// Cloudflare jest MAŁA i niesie konkretny marker. Samo słowo „cloudflare"/
-// „robot" występuje w normalnym HTML (analytics, meta), więc było fałszywym
-// alarmem na każdej stronie — dlatego bramkujemy rozmiarem i frazą challenge.
+// A real Vinted results page is megabytes of HTML. The Cloudflare challenge/block
+// page is SMALL and carries a specific marker. The word „cloudflare"/
+// „robot" alone appears in normal HTML (analytics, meta), so it was a false
+// alarm on every page — hence we gate by size and the challenge phrase.
 const CHALLENGE_RE = /just a moment|attention required|cf-mitigated|checking your browser|verify you are human|enable javascript and cookies|please complete the security check/i;
 
 export function looksBlocked(html: string): boolean {
@@ -88,32 +88,32 @@ export function looksBlocked(html: string): boolean {
 }
 
 /**
- * Marker „brak wyników" na stronie katalogu. UWAGA: to naiwny substring w ~7 MB
- * markupie i bywa fałszywy na stronie Z ofertami — wołający NIE kasuje wtedy
- * zapisanych danych (patrz vintedSyncService: persist tylko gdy nic nie było).
+ * „No results" marker on the catalog page. NOTE: this is a naive substring in ~7 MB
+ * of markup and is sometimes false on a page WITH offers — the caller then does NOT wipe
+ * stored data (see vintedSyncService: persist only when there was nothing).
  */
 export function looksEmpty(html: string): boolean {
   const h = html || "";
   return h.includes("Brak wyników") || h.includes("Nie znaleźliśmy żadnych przedmiotów");
 }
 
-// Kafelek oferty w siatce katalogu. Vinted hashuje nazwy klas CSS-modules
-// (`Grid-module-scss-module__HmDNda__feed-grid__item`), więc celujemy w stabilny
-// suffiks `feed-grid__item"`. Trailing `"` odcina wariant `feed-grid__item-content`.
+// Offer tile in the catalog grid. Vinted hashes CSS-modules class names
+// (`Grid-module-scss-module__HmDNda__feed-grid__item`), so we target the stable
+// suffix `feed-grid__item"`. The trailing `"` cuts off the `feed-grid__item-content` variant.
 const FEED_GRID_RE = /feed-grid__item"/;
 
 /**
- * Lekka diagnostyka odpowiedzi Vinted (bez I/O) — pomaga odróżnić realny brak
- * ofert od cichej blokady lub gubienia ofert przez parser. `itemLinks > 0` przy
- * `parsed === 0` i braku markerów = mocny sygnał, że parser coś przeoczył.
+ * Lightweight diagnostics of a Vinted response (no I/O) — helps tell a genuine lack
+ * of offers from a silent block or the parser dropping offers. `itemLinks > 0` with
+ * `parsed === 0` and no markers = a strong signal the parser missed something.
  */
 export function vintedDiagnostics(html: string, parsed: number): VintedDebug {
   const h = html || "";
   return {
     chars: h.length,
     hasCatalogJson: h.includes('data-component-name="Catalog"'),
-    // Vinted hashuje klasy CSS-modules (np. `Grid-module-scss-module__…__feed-grid__item`),
-    // więc dopasowujemy stabilny suffiks `feed-grid__item"`, nie całą klasę.
+    // Vinted hashes CSS-modules classes (e.g. `Grid-module-scss-module__…__feed-grid__item`),
+    // so we match the stable suffix `feed-grid__item"`, not the whole class.
     hasFeedGrid: FEED_GRID_RE.test(h),
     itemLinks: (h.match(/\/items\//g) || []).length,
     blockedMarker: looksBlocked(h),
@@ -126,13 +126,13 @@ export function parseVintedItems(html: string, title: string, author: string): V
   const items: VintedItem[] = [];
   let rawItems: any[] = [];
 
-  // 1. Blob JSON w atrybucie data-props / treści skryptu Catalog
+  // 1. JSON blob in the data-props attribute / Catalog script content
   const catalogMatch = html.match(/data-component-name="Catalog"[^>]*data-props="([^"]+)"/s) ||
                        html.match(/data-component-name="Catalog"[^>]*>\s*({.*?})\s*<\/script>/s);
 
   if (catalogMatch) {
     try {
-      // Atrybuty HTML używają &quot; zamiast "
+      // HTML attributes use &quot; instead of "
       let jsonStr = catalogMatch[1];
       if (jsonStr.includes('&quot;')) {
         jsonStr = jsonStr.replace(/&quot;/g, '"')
@@ -153,7 +153,7 @@ export function parseVintedItems(html: string, title: string, author: string): V
     }
   }
 
-  // 2. Fallback po starym regexie "items" (z domykaniem nawiasów tablicy)
+  // 2. Fallback via the old "items" regex (with array-bracket closing)
   if (rawItems.length === 0) {
     const jsonMatch = html.match(/"items":\s*(\[.*?\])/);
     if (jsonMatch) {
@@ -174,7 +174,7 @@ export function parseVintedItems(html: string, title: string, author: string): V
         const jsonStr = endIndex !== -1 ? str.substring(0, endIndex) : str;
         rawItems = JSON.parse(jsonStr);
       } catch (e) {
-        // Regex bywa zbyt prosty — trudno; przejdź do fallbacków HTML
+        // The regex is sometimes too simple — never mind; move on to the HTML fallbacks
       }
     }
   }
@@ -187,8 +187,8 @@ export function parseVintedItems(html: string, title: string, author: string): V
       const searchTitle = title.toLowerCase();
       const searchAuthor = (author || "").toLowerCase();
 
-      // Elastyczne dopasowanie: tytuł oferty zawiera tytuł książki (lub odwrotnie),
-      // albo tytuł oferty zawiera nazwisko autora.
+      // Flexible matching: the offer title contains the book title (or vice versa),
+      // or the offer title contains the author's name.
       const hasTitle = itemTitle.includes(searchTitle) || searchTitle.includes(itemTitle);
       const hasAuthor = searchAuthor && itemTitle.includes(searchAuthor);
 
@@ -208,10 +208,10 @@ export function parseVintedItems(html: string, title: string, author: string): V
     }
   }
 
-  // 3. Fallback po kafelkach siatki feed-grid (aktualny DOM Vinted, klasy hashowane).
-  // Dzielimy na `feed-grid__item"` — łapie stary `class="feed-grid__item"` i nowy
-  // `class="Grid-module-scss-module__…__feed-grid__item"`. Z każdego kafelka bierzemy
-  // URL, tytuł, cenę strukturalną i miniaturę (`images1.vinted.net`).
+  // 3. Fallback via feed-grid tiles (current Vinted DOM, hashed classes).
+  // We split on `feed-grid__item"` — catches the old `class="feed-grid__item"` and the new
+  // `class="Grid-module-scss-module__…__feed-grid__item"`. From each tile we take
+  // the URL, title, structured price and thumbnail (`images1.vinted.net`).
   if (items.length === 0) {
     const itemBlocks = html.split(FEED_GRID_RE);
     if (itemBlocks.length > 1) {
@@ -219,11 +219,11 @@ export function parseVintedItems(html: string, title: string, author: string): V
       const searchAuthor = (author || "").toLowerCase();
       for (let j = 1; j < itemBlocks.length && items.length < 5; j++) {
         const block = itemBlocks[j];
-        // URL bez query (`?referrer=catalog`) — spójny z kanonicznym linkiem oferty.
+        // URL without query (`?referrer=catalog`) — consistent with the canonical offer link.
         const urlMatch = block.match(/href="(\/items\/[^"?]+)/);
         const titleMatch = block.match(/title="([^"]+)"/);
-        // Oba warianty mają group1 = kwota, group2 = waluta. Pierwsze trafienie
-        // w kafelku to cena przedmiotu (drugie = cena z ochroną kupującego).
+        // Both variants have group1 = amount, group2 = currency. The first hit
+        // in a tile is the item price (the second = price with buyer protection).
         const priceMatch = block.match(/aria-label="[^"]*?(\d+[.,]\d+)\s*([A-Z]{3}|zł)"/i) ||
                            block.match(/>(\d+[.,]\d+)\s*([A-Z]{3}|zł)</i);
         const photoMatch = block.match(/<img[^>]+?src="(https?:\/\/[^"]*vinted\.net\/[^"]+)"/i);
@@ -235,7 +235,7 @@ export function parseVintedItems(html: string, title: string, author: string): V
           const hasAuthor = !!searchAuthor && lower.includes(searchAuthor);
           if (hasTitle || hasAuthor) {
             const rawPrice = priceMatch ? priceMatch[1] : "Sprawdź";
-            // detach: wszystkie te pola to podstringi 7 MB HTML — bez kopii pinują rodzica.
+            // detach: all these fields are substrings of the 7 MB HTML — without a copy they pin the parent.
             items.push({
               title: detach(itemTitle),
               url: detach(`https://www.vinted.pl${urlMatch[1]}`),
@@ -250,7 +250,7 @@ export function parseVintedItems(html: string, title: string, author: string): V
     }
   }
 
-  // 4. Ostateczność: prosty globalny regex
+  // 4. Last resort: a simple global regex
   if (items.length === 0) {
     const itemRegex = /href="(\/items\/[^"]+)"[^>]*title="([^"]+)"/g;
     let match;
@@ -258,16 +258,16 @@ export function parseVintedItems(html: string, title: string, author: string): V
       const itemUrl = `https://www.vinted.pl${match[1]}`;
       const itemTitle = match[2];
       if (itemTitle.toLowerCase().includes(title.toLowerCase())) {
-        // detach: itemTitle/itemUrl to podstringi HTML — bez kopii pinują 7 MB rodzica.
+        // detach: itemTitle/itemUrl are substrings of the HTML — without a copy they pin the 7 MB parent.
         items.push({ title: detach(itemTitle), url: detach(itemUrl), price: "Sprawdź", priceValue: null, currency: "PLN" });
       }
     }
   }
 
-  // Ostatnia deska ratunku dla ceny: ścieżki HTML łapią atrybut title aukcji,
-  // który Vinted buduje jako „Tytuł, Marka, Stan: …, {cena} zł, {cena z ochroną} zł".
-  // Gdy nie mamy ceny strukturalnej, wyłuskujemy ją z tego tekstu (niższa z dwóch
-  // = cena przedmiotu, wyższa = z ochroną kupującego).
+  // Last-ditch fallback for price: the HTML paths catch the listing's title attribute,
+  // which Vinted builds as „Tytuł, Marka, Stan: …, {cena} zł, {cena z ochroną} zł".
+  // When we lack a structured price, we extract it from that text (the lower of the two
+  // = item price, the higher = with buyer protection).
   for (const item of items) {
     if (item.priceValue === null) {
       const fromText = extractPriceFromText(item.title);
@@ -283,11 +283,11 @@ export function parseVintedItems(html: string, title: string, author: string): V
 }
 
 /**
- * Wyłuskuje sprzedawcę ze strony pojedynczej oferty Vinted (`/items/{id}`).
- * Sprzedawcy NIE ma w kafelkach katalogu — pojawia się dopiero na stronie oferty.
- * Dwa stabilne, unikalne uchwyty (zweryfikowane na realnym HTML): link profilu
- * `/member/{id}` (ID) oraz `data-testid="profile-username"` (login). `detach` na
- * loginie — strona oferty to ~2 MB, podstring bez kopii pinowałby ją (jak w skanie).
+ * Extracts the seller from a single Vinted offer page (`/items/{id}`).
+ * The seller is NOT in the catalog tiles — it appears only on the offer page.
+ * Two stable, unique handles (verified on real HTML): the profile link
+ * `/member/{id}` (ID) and `data-testid="profile-username"` (login). `detach` on
+ * the login — the offer page is ~2 MB, a substring without a copy would pin it (as in the scan).
  */
 export function extractVintedSeller(html: string): VintedSeller | null {
   const idMatch = html.match(/href="\/member\/(\d+)"/);
@@ -299,12 +299,12 @@ export function extractVintedSeller(html: string): VintedSeller | null {
 }
 
 /**
- * Wyłuskuje najniższą kwotę „NN[.,]NN zł/PLN" z tekstu (np. z atrybutu title
- * oferty). Zwraca cenę przedmiotu (niższą z pary cena/total) albo null.
+ * Extracts the lowest amount „NN[.,]NN zł/PLN" from text (e.g. from an offer's title
+ * attribute). Returns the item price (the lower of the price/total pair) or null.
  */
 export function extractPriceFromText(text: string): number | null {
   if (!text) return null;
-  // Uwaga: bez \b po „zł" — „ł" to nie-słowny znak, więc granica słowa nie zachodzi.
+  // Note: no \b after „zł" — „ł" is a non-word character, so the word boundary doesn't hold.
   const re = /(\d+(?:[.,]\d+)?)\s*(?:zł|PLN)/gi;
   const values: number[] = [];
   let m: RegExpExecArray | null;

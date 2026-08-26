@@ -2,7 +2,7 @@ import { VintedResult, VintedSearchAttempt } from "../hooks/useVintedCheck";
 
 type Offer = VintedResult["vintedItems"][number];
 
-/** Krótka data „DD.MM" ze znacznika ISO (świeżość danych z bazy). */
+/** Short date „DD.MM" from an ISO timestamp (data freshness from the DB). */
 export function shortDate(iso?: string | null): string {
   if (!iso) return "";
   const d = new Date(iso);
@@ -11,9 +11,9 @@ export function shortDate(iso?: string | null): string {
 }
 
 /**
- * Zwięzła jednolinijkowa diagnostyka próby skanu (Krok 2). Kluczowy sygnał:
- * itemLinks>0 przy parsed:0 i bez markerów = parser zgubił oferty. Rosnące
- * rssMb ku limitowi hostingu = zbliżający się OOM.
+ * Concise one-line diagnostics of a scan attempt (Step 2). Key signal:
+ * itemLinks>0 with parsed:0 and no markers = the parser lost the offers. Rising
+ * rssMb toward the hosting limit = an approaching OOM.
  */
 export function formatDebug(d: NonNullable<VintedSearchAttempt["debug"]>): string {
   if (d.error) return `⚠ ${d.error}${d.httpStatus ? ` (${d.httpStatus})` : d.code ? ` (${d.code})` : ""}`;
@@ -38,18 +38,18 @@ export function formatDebug(d: NonNullable<VintedSearchAttempt["debug"]>): strin
 }
 
 /**
- * Czy kafelek książki zmienił się w OSTATNIM skanie (`changedAt === scannedAt`).
- * Wymaga baseline — pierwszy skan (bez `changedAt`) nie liczy się jako zmiana.
+ * Whether the book tile changed in the LAST scan (`changedAt === scannedAt`).
+ * Requires a baseline — the first scan (without `changedAt`) doesn't count as a change.
  */
 export function isBookChanged(result: VintedResult): boolean {
   return !!result.changedAt && result.changedAt === result.scannedAt;
 }
 
 export interface OfferBadges {
-  /** „nowa" — oferta pojawiła się w ostatnim skanie, ale tylko gdy ten skan w ogóle
-   * wykrył zmianę (inaczej pierwszy skan oznaczałby wszystkie oferty jako nowe). */
+  /** New — the offer appeared in the last scan, but only when that scan actually
+   * detected a change (otherwise the first scan would mark all offers as new). */
   isNew: boolean;
-  /** Spadek ceny vs poprzedni skan (zł), lub null. */
+  /** Price drop vs the previous scan (zł), or null. */
   drop: number | null;
 }
 

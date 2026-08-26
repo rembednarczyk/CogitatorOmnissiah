@@ -12,15 +12,15 @@ describe("bookshelf.effShelfKey / byShelfPosition", () => {
   it("uses shelfOrder within the book's decade, falls back to year otherwise", () => {
     expect(effShelfKey(mk("a", "1954"))).toBe(1954);
     expect(effShelfKey(mk("a", "1954", 1955.5))).toBe(1955.5);
-    // Klucz STALE (spoza dekady książki) — ignorowany.
+    // A STALE key (outside the book's decade) — ignored.
     expect(effShelfKey(mk("a", "1964", 1955.5))).toBe(1964);
   });
 
   it("sorts by decade, then manual key interleaved with years, then title", () => {
-    const a = mk("a", "1954");            // klucz 1954
-    const b = mk("b", "1957", 1954.5);    // ręcznie między 1954 a 1955
+    const a = mk("a", "1954");            // key 1954
+    const b = mk("b", "1957", 1954.5);    // manually between 1954 and 1955
     const c = mk("c", "1955");
-    const d = mk("d", "1949");            // inna dekada — zawsze przed
+    const d = mk("d", "1949");            // different decade — always before
     const sorted = [a, b, c, d].sort(byShelfPosition).map((x) => x.id);
     expect(sorted).toEqual(["d", "a", "b", "c"]);
   });
@@ -31,15 +31,15 @@ describe("shelfInsertion.canInsertAt", () => {
 
   it("allows gaps inside and at the edges of the book's decade section", () => {
     const dragged = mk("x", "1953");
-    expect(canInsertAt(seq, dragged, "b")).toBe(true);  // przed 1952 (start sekcji 1950s — lewy sąsiad 1948)
-    expect(canInsertAt(seq, dragged, "c")).toBe(true);  // między 1952 a 1955
-    expect(canInsertAt(seq, dragged, "d")).toBe(true);  // koniec sekcji 1950s (lewy sąsiad 1955)
+    expect(canInsertAt(seq, dragged, "b")).toBe(true);  // before 1952 (start of the 1950s section — left neighbor 1948)
+    expect(canInsertAt(seq, dragged, "c")).toBe(true);  // between 1952 and 1955
+    expect(canInsertAt(seq, dragged, "d")).toBe(true);  // end of the 1950s section (left neighbor 1955)
   });
 
   it("rejects gaps in a foreign decade and unknown targets", () => {
     const dragged = mk("x", "1953");
-    expect(canInsertAt(seq, dragged, "a")).toBe(false); // przed 1948 — sąsiedzi 1940s/undefined
-    expect(canInsertAt(seq, dragged, null)).toBe(false); // koniec półki — lewy sąsiad 1969 (1960s)
+    expect(canInsertAt(seq, dragged, "a")).toBe(false); // before 1948 — neighbors 1940s/undefined
+    expect(canInsertAt(seq, dragged, null)).toBe(false); // end of the shelf — left neighbor 1969 (1960s)
     expect(canInsertAt(seq, dragged, "zzz")).toBe(false);
   });
 
@@ -70,12 +70,12 @@ describe("shelfInsertion.planInsertion", () => {
   it("tie of same-year keys renumbers only the tied run, preserving final order", () => {
     const seq = [mk("a", "1954"), mk("b", "1954"), mk("c", "1957")];
     const plan = planInsertion(seq, mk("x", "1954"), "b")!;
-    // renumeracja: a, x, b (+x) — 3 wpisy; c nietknięte
+    // renumbering: a, x, b (+x) — 3 entries; c untouched
     expect(plan.orders.map((o) => o.pageId)).toEqual(["a", "x", "b"]);
     const byId = Object.fromEntries(plan.orders.map((o) => [o.pageId, o.order]));
     expect(byId.a).toBeLessThan(byId.x);
     expect(byId.x).toBeLessThan(byId.b);
-    expect(byId.b).toBeLessThan(1955); // poniżej następnego rocznika
+    expect(byId.b).toBeLessThan(1955); // below the next year
     for (const o of plan.orders) expect(o.order).toBeGreaterThanOrEqual(1954);
   });
 

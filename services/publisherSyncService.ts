@@ -4,8 +4,8 @@ import { SyncEvent } from "../src/types";
 import { WikiFieldSyncService, PUBLISHER_FIELD } from "./wikiFieldSyncService";
 
 /**
- * Synchronizacja wydawcy ze stron książek. Cienkie opakowanie nad
- * WikiFieldSyncService (wspólny potok, konfiguracja pola "Wydawnictwo").
+ * Publisher sync from book pages. A thin wrapper over
+ * WikiFieldSyncService (shared pipeline, config for the "Wydawnictwo" field).
  */
 export class PublisherSyncService {
   private field: WikiFieldSyncService;

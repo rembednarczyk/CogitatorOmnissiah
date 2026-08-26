@@ -4,9 +4,9 @@ import { Compass, Package, Library, ShoppingCart, HelpCircle } from "lucide-reac
 import { AvailabilityStats } from "../../hooks/useStats";
 
 /**
- * Zagregowana dostępność nieprzeczytanych — „skąd zdobyć" w jednym miejscu.
- * Partycja priorytetowa (posiadane > biblioteka > Vinted > brak śladu), więc słupek
- * sumuje się do `totalUnread`. Łączy trzy skanery (posiadanie / OPAC / Vinted).
+ * Aggregated availability of unread books — „where to get it" in one place.
+ * A priority partition (owned > library > Vinted > no trace), so the bar
+ * sums to `totalUnread`. Combines three scanners (ownership / OPAC / Vinted).
  */
 
 const SEGMENTS: { key: keyof Omit<AvailabilityStats, "totalUnread">; label: string; icon: typeof Package; bar: string; text: string; dot: string }[] = [
@@ -41,7 +41,7 @@ export const AvailabilityCard: React.FC<{ stats: AvailabilityStats }> = ({ stats
             <span className="text-xs text-slate-500 uppercase tracking-widest font-bold">woluminów do zdobycia</span>
           </div>
 
-          {/* Słupek zbiorczy (partycja) */}
+          {/* Aggregate bar (partition) */}
           <div className="h-3 w-full rounded-full overflow-hidden flex bg-slate-950 border border-slate-800">
             {SEGMENTS.map((s) => {
               const w = pct(stats[s.key]);
@@ -49,7 +49,7 @@ export const AvailabilityCard: React.FC<{ stats: AvailabilityStats }> = ({ stats
             })}
           </div>
 
-          {/* Legenda + liczby */}
+          {/* Legend + numbers */}
           <div className="grid grid-cols-2 gap-3">
             {SEGMENTS.map((s) => {
               const Icon = s.icon;

@@ -9,8 +9,8 @@ export function useLibraryCheck() {
   const [checkingLibrary, setCheckingLibrary] = useState<string | null>(null);
   const [checkProgress, setCheckProgress] = useState<{ current: number; total: number; message: string; startTime: number | null } | null>(null);
   const [libraryError, setLibraryError] = useState<string | null>(null);
-  // Ref zamiast stanu w strażniku — stan w domknięciu bywa nieaktualny
-  // (dwa kliknięcia w tym samym ticku uruchamiały dwa równoległe skany)
+  // Ref instead of state in the guard — state in the closure can be stale
+  // (two clicks in the same tick launched two parallel scans)
   const isCheckingRef = useRef(false);
   const { run } = useSSEStream("/api/library-check");
 
@@ -50,7 +50,7 @@ export function useLibraryCheck() {
       }
     });
 
-    // Błąd nie przerywa całości — `checkAllLibraries` leci dalej do kolejnej filii.
+    // An error does not abort the whole thing — `checkAllLibraries` moves on to the next branch.
     if (!result.ok && result.error) setLibraryError(result.error);
     isCheckingRef.current = false;
     setCheckingLibrary(null);
@@ -69,10 +69,10 @@ export function useLibraryCheck() {
     if (isCheckingRef.current) return;
 
     for (const branch of branches) {
-      // checkLibrary jest teraz zwykłym async i rozwiązuje się po zakończeniu strumienia
-      // (bez ręcznego opakowania w Promise) — czekamy na każdą filię po kolei.
+      // checkLibrary is now a plain async and resolves once the stream ends
+      // (no manual Promise wrapping) — we wait for each branch in turn.
       await checkLibrary(branch.id, branch.code);
-      // Krótka przerwa między filiami.
+      // Short pause between branches.
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
   }, [checkLibrary]);

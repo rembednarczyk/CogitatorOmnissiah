@@ -17,8 +17,8 @@ export interface CycleView {
 }
 
 /**
- * Podgląd cyklu na żądanie (GET /api/cycle). Cache per (tytuł|autor) w ref — ponowne
- * otwarcie panelu dla tej samej książki nie odpytuje serwera. Backend też cache'uje.
+ * On-demand cycle preview (GET /api/cycle). Cache per (title|author) in a ref — reopening
+ * the panel for the same book does not re-query the server. The backend caches too.
  */
 export function useCycle() {
   const [view, setView] = useState<CycleView | null>(null);

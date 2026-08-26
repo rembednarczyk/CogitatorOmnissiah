@@ -21,9 +21,9 @@ const wikiAxios = axios.create({
 });
 
 /**
- * Błąd pobierania z encyklopedii z rozpoznaną klasą przyczyny.
- * Serwisy i diagnostyka mogą odczytać `classification` i `userHint`,
- * żeby pokazać użytkownikowi konkretną, użyteczną informację.
+ * A fetch error from the encyclopedia with a recognized cause class.
+ * Services and diagnostics can read `classification` and `userHint`
+ * to show the user a specific, useful message.
  */
 export class WikiFetchError extends Error {
   classification: ErrorClass;
@@ -44,10 +44,10 @@ export class WikiAdapter {
   private readonly baseUrl = "https://encyklopediafantastyki.pl/api.php";
 
   /**
-   * Zwraca wikitext strony lub "" gdy strona nie istnieje.
-   * Rzuca błąd przy awarii infrastruktury (blokada IP, timeout po retry) —
-   * brak strony i awaria sieci to różne sytuacje i serwisy muszą je rozróżniać,
-   * inaczej pełna awaria raportuje się jako pusty, "udany" sync.
+   * Returns a page's wikitext or "" when the page doesn't exist.
+   * Throws on infrastructure failure (IP block, timeout after retry) —
+   * a missing page and a network failure are different situations and services must
+   * distinguish them, otherwise a full failure reports as an empty, "successful" sync.
    */
   async fetchPageContent(title: string): Promise<string> {
     try {
@@ -63,8 +63,8 @@ export class WikiAdapter {
         }
       }), 3, 2000);
 
-      // Z formatversion=2 pages jest tablicą, a treść leży w rev.content;
-      // obsłuż oba kształty (starsze MediaWiki ignorują formatversion)
+      // With formatversion=2 pages is an array, and the content is in rev.content;
+      // handle both shapes (older MediaWiki ignore formatversion)
       const pages = response.data.query?.pages;
       const page = Array.isArray(pages) ? pages[0] : pages?.[Object.keys(pages ?? {})[0]];
 
@@ -119,9 +119,9 @@ export class WikiAdapter {
   }
 
   /**
-   * Pobiera treść wielu stron. Zwraca mapę treści oraz listę tytułów,
-   * których nie udało się pobrać (awaria chunka) — serwisy raportują je
-   * w podsumowaniu zamiast cicho pomijać książki.
+   * Fetches the content of multiple pages. Returns a content map plus a list of titles
+   * that couldn't be fetched (chunk failure) — services report them in the
+   * summary instead of silently skipping books.
    */
   async fetchPagesContentBulk(titles: string[]): Promise<{ contents: Record<string, string>, failedTitles: string[] }> {
     const results: Record<string, string> = {};
@@ -134,8 +134,8 @@ export class WikiAdapter {
       const titlesParam = chunk.join('|');
 
       try {
-        // MediaWiki tnie duże odpowiedzi (limity rozmiaru rewizji) i zwraca
-        // token continue — podążaj za nim, inaczej część stron cicho przepada
+        // MediaWiki truncates large responses (revision size limits) and returns
+        // a continue token — follow it, otherwise some pages silently disappear
         let continueParams: Record<string, string> = {};
         do {
           const response = await withRetry(() => wikiAxios.get(this.baseUrl, {
@@ -254,7 +254,7 @@ export class WikiAdapter {
     } catch (error: any) {
       const info = classifyHttpError(error);
       log.warn(`Pobieranie kategorii "${category}" nieudane (zwracam ${allTitles.length} zebranych)`, { class: info.class, status: info.status, code: info.code, message: error?.message });
-      // Zwróć to, co udało się zebrać przed awarią, zamiast wyrzucać częściowe wyniki
+      // Return what was collected before the failure, instead of discarding partial results
       return allTitles;
     }
   }

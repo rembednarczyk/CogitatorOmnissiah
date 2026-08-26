@@ -1,9 +1,9 @@
 /**
- * Pozycjonowanie popovera „w miejscu kliknięcia" (podgląd cyklu). Zakotwiczony pod
- * (lub nad) triggerem, przycięty do viewportu. Stronę (nad/pod) wybiera wg tego, gdzie
- * jest więcej miejsca, a `maxHeight` = dostępna przestrzeń — treść krótsza kurczy się
- * do liczby pozycji, dłuższa scrolluje wewnątrz (nic nie ucieka poza ekran / nie jest
- * ucinane). Czysta funkcja (bez DOM) — łatwa do przetestowania.
+ * Positioning of the popover „at the click location" (cycle preview). Anchored below
+ * (or above) the trigger, clamped to the viewport. Picks the side (above/below) by
+ * where there's more room, and `maxHeight` = available space — shorter content shrinks
+ * to the number of items, longer scrolls inside (nothing escapes the screen / gets
+ * truncated). Pure function (no DOM) — easy to test.
  */
 
 export interface AnchorRect {
@@ -23,11 +23,11 @@ export interface PopoverPosition {
   left: number;
   width: number;
   placement: "below" | "above";
-  /** px od GÓRY viewportu — ustawione, gdy placement === "below". */
+  /** px from the TOP of the viewport — set when placement === "below". */
   top?: number;
-  /** px od DOŁU viewportu — ustawione, gdy placement === "above". */
+  /** px from the BOTTOM of the viewport — set when placement === "above". */
   bottom?: number;
-  /** Górny limit wysokości; dłuższa lista scrolluje w środku. */
+  /** Upper height limit; a longer list scrolls inside. */
   maxHeight: number;
 }
 

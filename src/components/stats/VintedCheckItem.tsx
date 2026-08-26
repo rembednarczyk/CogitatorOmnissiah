@@ -21,23 +21,23 @@ interface VintedCheckItemProps {
 
 export const VintedCheckItem: React.FC<VintedCheckItemProps> = ({ results, searchAttempts, onCheck, onStop, isChecking, progress }) => {
   const [showLogs, setShowLogs] = React.useState(false);
-  // Okno „Kontynuuj" z konfiguracji (knob `vinted.resumeHours`).
+  // The „Kontynuuj" window from config (knob `vinted.resumeHours`).
   const resumeHours = useEffectiveConfig().vinted.resumeHours;
-  // Wznawianie: domyślnie pomijamy książki skanowane < RESUME_HOURS h (bieżąca partia),
-  // resztę skanujemy od najstarszych — kontynuacja przerwanego przebiegu, nie od zera.
+  // Resuming: by default we skip books scanned < RESUME_HOURS h ago (current batch),
+  // and scan the rest from oldest first — continuation of an interrupted run, not from scratch.
   const [resumeScan, setResumeScan] = React.useState(true);
   const { isResolving, resolveProgress, resolveResult, resolveError, runResolve, stopResolve } = useVintedResolveSellers();
   const { stored, isLoadingStored, storedError, loadStored, clearStored } = useVintedStored();
 
-  // Źródło danych: baza (jeśli wczytana) lub bieżący skan. Kafelki i paczki renderują to samo UI.
+  // Data source: the database (if loaded) or the current scan. Tiles and bundles render the same UI.
   const usingStored = !!stored && stored.results.length > 0;
   const displayResults = usingStored ? stored!.results : results;
-  // Sprzedawcy (do paczek) pochodzą wyłącznie z bazy — live scan pokazuje same kafelki.
+  // Sellers (for bundles) come solely from the database — a live scan shows only tiles.
   const displaySellers = usingStored ? stored!.sellersByUrl : {};
 
   const onScanToggle = () => {
     if (isChecking) { onStop(); return; }
-    // Wyjdź z widoku bazy, żeby świeże wyniki skanu były widoczne (nie pinowane do stored).
+    // Exit the database view so fresh scan results are visible (not pinned to stored).
     clearStored();
     onCheck(resumeScan ? { skipScannedWithinHours: resumeHours } : undefined);
   };

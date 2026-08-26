@@ -6,37 +6,37 @@ import { createLogger } from "../logger";
 const log = createLogger("SSE");
 
 /**
- * Plumbing strumienia SSE dla długich rytuałów — nagłówki, hardening pod proxy,
- * keepalive, anulowanie przy rozłączeniu klienta. Wydzielone z kontrolera, który
- * powinien trzymać tylko parsowanie żądań i delegację; tu żyje transport.
+ * SSE stream plumbing for long rituals — headers, proxy hardening,
+ * keepalive, cancellation on client disconnect. Split out of the controller, which
+ * should hold only request parsing and delegation; the transport lives here.
  */
 
-/** Ustaw nagłówki SSE + hardening pod buforujące proxy; zwróć funkcję `sendEvent`. */
+/** Set SSE headers + hardening for buffering proxies; return a `sendEvent` function. */
 export const setupSSE = (res: Response) => {
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache, no-transform");
   res.setHeader("Connection", "keep-alive");
-  // Wyłącz buforowanie po stronie proxy (nginx/Render) — bez tego zdarzenia SSE
-  // nie docierają do klienta na bieżąco i UI "nie reaguje" na hostingu.
+  // Disable proxy-side buffering (nginx/Render) — without it SSE events
+  // don't reach the client in real time and the UI "doesn't react" on hosting.
   res.setHeader("X-Accel-Buffering", "no");
-  // Wyślij nagłówki natychmiast, żeby połączenie było otwarte zanim ruszy zadanie.
+  // Send headers immediately so the connection is open before the task starts.
   res.flushHeaders?.();
-  // Padding ~2KB komentarza: niektóre proxy (Render) buforują odpowiedź do progu
-  // kilku KB zanim zaczną strumieniować — to wypycha bufor i wymusza flush,
-  // dzięki czemu klient dostaje zdarzenia na bieżąco (a nie dopiero na końcu).
+  // ~2KB comment padding: some proxies (Render) buffer the response up to a
+  // few-KB threshold before they start streaming — this fills the buffer and forces a flush,
+  // so the client gets events in real time (not only at the end).
   res.write(`:${" ".repeat(2048)}\n\n`);
   return (data: SyncEvent) => {
-    // Po abort klienta socket bywa `destroyed` przy wciąż `writableEnded === false`
-    // — sam guard writableEnded przepuszczał zapis do martwego socketu, co rzucało
-    // nieobsłużony 'error' na strumieniu. Sprawdzaj też destroyed.
+    // After a client abort the socket can be `destroyed` while still `writableEnded === false`
+    // — a writableEnded-only guard let a write through to a dead socket, which threw
+    // an unhandled 'error' on the stream. Check destroyed too.
     if (!res.writableEnded && !res.destroyed) res.write(`data: ${JSON.stringify(data)}\n\n`);
   };
 };
 
 /**
- * Uruchom zadanie sync jako strumień SSE: guard pojedynczego rytuału, keepalive
- * co 5 s, anulowanie przy rozłączeniu klienta (na `res`, nie `req`) i mapowanie
- * błędu na zdarzenie `error`.
+ * Run a sync task as an SSE stream: single-ritual guard, keepalive
+ * every 5 s, cancellation on client disconnect (on `res`, not `req`) and mapping
+ * an error to an `error` event.
  */
 export const executeSyncTask = async (
   req: Request,
@@ -47,24 +47,24 @@ export const executeSyncTask = async (
   if (syncManager.isSyncing) return res.status(400).json({ error: "Inna synchronizacja jest już w toku." });
 
   const sendEvent = setupSSE(res);
-  // Natychmiastowy sygnał, że połączenie żyje — użytkownik widzi reakcję od razu,
-  // nawet jeśli pierwszy krok zadania (pobranie z wiki) trwa kilka sekund.
+  // Immediate signal that the connection is alive — the user sees a reaction right away,
+  // even if the task's first step (fetching from the wiki) takes a few seconds.
   sendEvent({ type: "status", message: "Połączono z serwerem. Inicjacja rytuału..." });
   log.info("Sync task started", { endpoint: req.path });
 
-  // Częstszy keepalive (5s) utrzymuje strumień "gorący" u proxy, które inaczej
-  // zbierają dane w bufor między rzadkimi zapisami długiego zadania.
+  // A more frequent keepalive (5s) keeps the stream "hot" at proxies that otherwise
+  // collect data into a buffer between the long task's infrequent writes.
   const keepAlive = setInterval(() => {
     if (!res.writableEnded && !res.destroyed) res.write(": keepalive\n\n");
   }, 5000);
 
-  // Rozłączenie klienta (zamknięta karta, utrata sieci) — anuluj zadanie,
-  // żeby osierocony sync nie blokował kolejnych rytuałów godzinami.
-  // UWAGA: nasłuchujemy na res, nie req. Dla POST z ciałem req emituje "close"
-  // po skonsumowaniu ciała przez express.json() — nie przy rozłączeniu klienta —
-  // co anulowało aktywny sync tuż po starcie. res "close" odpala się dopiero gdy
-  // odpowiedź faktycznie się zamyka; przy normalnym końcu writableEnded==true,
-  // więc guard poniżej nie anuluje niczego przez pomyłkę.
+  // Client disconnect (closed tab, network loss) — cancel the task,
+  // so an orphaned sync doesn't block subsequent rituals for hours.
+  // NOTE: we listen on res, not req. For a POST with a body, req emits "close"
+  // after express.json() consumes the body — not on client disconnect —
+  // which cancelled the active sync right after start. res "close" fires only when
+  // the response actually closes; on a normal end writableEnded==true,
+  // so the guard below doesn't cancel anything by mistake.
   res.on("close", () => {
     if (!res.writableEnded) {
       clearInterval(keepAlive);
@@ -73,9 +73,9 @@ export const executeSyncTask = async (
     }
   });
 
-  // Zapis do strumienia (sendEvent/keepalive) ma wyścig check-then-write: reset TCP między
-  // guardem `!writableEnded` a `res.write` emituje 'error'. Bez listenera stałby się to
-  // nieobsłużony uncaughtException. Połknij i zaloguj — `res.on('close')` i tak sprząta.
+  // Writing to the stream (sendEvent/keepalive) has a check-then-write race: a TCP reset between
+  // the `!writableEnded` guard and `res.write` emits 'error'. Without a listener this would become
+  // an unhandled uncaughtException. Swallow and log — `res.on('close')` cleans up anyway.
   res.on("error", (err: any) => {
     log.warn("Błąd strumienia SSE (klient prawdopodobnie się rozłączył).", { endpoint: req.path, error: err?.message });
   });
@@ -94,7 +94,7 @@ export const executeSyncTask = async (
       status: error?.status,
       stack: error?.stack?.split("\n").slice(0, 4).join(" | "),
     });
-    // WikiFetchError niesie userHint z konkretną wskazówką — pokaż ją użytkownikowi.
+    // WikiFetchError carries userHint with a concrete tip — show it to the user.
     const userMessage = error?.userHint
       ? `${error.message}`
       : error?.message || errorMessage;

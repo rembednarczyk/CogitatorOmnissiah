@@ -11,13 +11,13 @@ function safeEqual(a: string, b: string): boolean {
 /**
  * Opt-in HTTP Basic Auth.
  *
- * Aktywne tylko gdy ustawiono OBIE zmienne BASIC_AUTH_USER i
- * BASIC_AUTH_PASSWORD — w przeciwnym razie middleware przepuszcza wszystko
- * (zachowanie domyślne, brak lockoutu istniejącego wdrożenia).
- * `/api/health` jest zawsze otwarte (health check hostingu).
+ * Active only when BOTH BASIC_AUTH_USER and BASIC_AUTH_PASSWORD are set —
+ * otherwise the middleware lets everything through
+ * (default behavior, no lockout of an existing deployment).
+ * `/api/health` is always open (hosting health check).
  *
- * Chroni cały serwis (SPA + API): przeglądarka pokazuje natywny prompt, a
- * same-origin `fetch` z SPA automatycznie dołącza poświadczenia po zalogowaniu.
+ * Protects the whole service (SPA + API): the browser shows the native prompt, and
+ * same-origin `fetch` from the SPA automatically attaches credentials after login.
  */
 export function basicAuth(getEnv: () => NodeJS.ProcessEnv = () => process.env) {
   return (req: Request, res: Response, next: NextFunction) => {
@@ -25,10 +25,10 @@ export function basicAuth(getEnv: () => NodeJS.ProcessEnv = () => process.env) {
     const user = env.BASIC_AUTH_USER;
     const pass = env.BASIC_AUTH_PASSWORD;
 
-    // Opt-in: bez skonfigurowanych poświadczeń nie wymuszamy autoryzacji.
+    // Opt-in: without configured credentials we don't enforce authorization.
     if (!user || !pass) return next();
 
-    // Health check musi być osiągalny bez logowania (monitoring hostingu).
+    // The health check must be reachable without logging in (hosting monitoring).
     if (req.path === "/api/health") return next();
 
     const header = req.headers.authorization || "";

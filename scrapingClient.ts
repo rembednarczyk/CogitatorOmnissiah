@@ -1,17 +1,17 @@
 import https from "https";
 
 /**
- * Wspólna infrastruktura dla skanerów scrapujących HTML (Biblioteka OPAC, Vinted).
- * Adaptery i serwisy sync korzystają z Notion/Wiki API; skanery uderzają w publiczne
- * strony HTML, więc potrzebują rotacji User-Agent i keep-alive agenta HTTPS.
+ * Shared infrastructure for the HTML-scraping scanners (library OPAC, Vinted).
+ * Adapters and sync services use the Notion/Wiki API; the scanners hit public
+ * HTML pages, so they need User-Agent rotation and a keep-alive HTTPS agent.
  */
 
-// Pula bieżących wersji przeglądarek (stan: sierpień 2026 — Chrome 151/152,
-// Firefox 154, Edge 151, Safari 26). Anty-boty punktują przestarzałe UA (rozjazd
-// z resztą fingerprintu), więc odświeżaj pulę co kilka miesięcy. Format ma znaczenie:
-// Chrome/Edge raportują zredukowane wersje x.0.0.0, Safari 26 zamrożone Version/26.0,
-// a tokeny platform (Windows NT 10.0, Mac OS X 10_15_7 / 10.15) są celowo zamrożone
-// przez przeglądarki — nie „unowocześniać" ich.
+// Pool of current browser versions (as of: August 2026 — Chrome 151/152,
+// Firefox 154, Edge 151, Safari 26). Anti-bots penalize outdated UAs (mismatch
+// with the rest of the fingerprint), so refresh the pool every few months. The format matters:
+// Chrome/Edge report reduced versions x.0.0.0, Safari 26 a frozen Version/26.0,
+// and the platform tokens (Windows NT 10.0, Mac OS X 10_15_7 / 10.15) are intentionally frozen
+// by the browsers — don't „modernize" them.
 const USER_AGENTS = [
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36',
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36',
@@ -22,26 +22,26 @@ const USER_AGENTS = [
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15'
 ];
 
-/** Losowy UA z przekazanej puli (konfig `scraping.userAgents`); bez argumentu — z wbudowanej. */
+/** Random UA from the passed pool (config `scraping.userAgents`); without an argument — from the built-in one. */
 export const getRandomUserAgent = (pool?: string[]) => {
   const list = pool && pool.length > 0 ? pool : USER_AGENTS;
   return list[Math.floor(Math.random() * list.length)];
 };
 
 export interface ScrapingAgentOptions {
-  /** Maks. równoległych połączeń do jednego hosta (domyślnie 5). */
+  /** Max concurrent connections to a single host (default 5). */
   maxSockets?: number;
   /**
-   * Domyślnie `true` (pełna weryfikacja TLS). Ustaw `false` TYLKO dla hostów,
-   * które błędnie konfigurują łańcuch certyfikatów (np. nie wysyłają certyfikatu
-   * pośredniego → Node zgłasza „unable to verify the first certificate"). Skanery
-   * czytają WYŁĄCZNIE publiczne dane (katalog biblioteki) i nie wysyłają żadnych
-   * sekretów, więc ryzyko jest znikome; mimo to trzymaj to per-host, nie globalnie.
+   * Defaults to `true` (full TLS verification). Set `false` ONLY for hosts
+   * that misconfigure their certificate chain (e.g. don't send the intermediate
+   * certificate → Node reports „unable to verify the first certificate"). The scanners
+   * read EXCLUSIVELY public data (the library catalog) and don't send any
+   * secrets, so the risk is negligible; still, keep it per-host, not global.
    */
   rejectUnauthorized?: boolean;
 }
 
-/** Keep-alive agent współdzielony przez skanery HTML. */
+/** Keep-alive agent shared by the HTML scanners. */
 export const createScrapingAgent = (opts: ScrapingAgentOptions = {}) => new https.Agent({
   keepAlive: true,
   keepAliveMsecs: 1000,

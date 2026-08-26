@@ -34,7 +34,7 @@ describe("ConfigService", () => {
     await svc.saveConfig({ ui: { shelfRowsPerPage: 8 } });
     const stored = JSON.parse(notion.saveAppConfigRaw.mock.calls[0][0]);
     expect(stored.ui.shelfRowsPerPage).toBe(8);
-    expect(stored.library).toBeUndefined(); // niezmienione sekcje nie są składowane
+    expect(stored.library).toBeUndefined(); // unchanged sections are not stored
   });
 
   it("stores empty string when nothing differs from defaults", async () => {

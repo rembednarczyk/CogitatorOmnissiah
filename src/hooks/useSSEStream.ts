@@ -4,25 +4,25 @@ import { consumeSSE } from "../utils/sse";
 import { createStallWatchdog } from "../utils/stallWatchdog";
 
 export interface SSEStreamResult {
-  /** Strumień przebiegł bez błędu HTTP / rzutu / stalla. (complete vs error rozstrzyga `onEvent`.) */
+  /** The stream ran without an HTTP error / throw / stall. (complete vs error is decided by `onEvent`.) */
   ok: boolean;
-  /** Komunikat błędu (HTTP, rzucony przez `onEvent`, lub domyślny stall) — null gdy `ok`. */
+  /** Error message (HTTP, thrown by `onEvent`, or the default stall) — null when `ok`. */
   error: string | null;
-  /** Czy watchdog przerwał połączenie z powodu ciszy (pozwala nadpisać komunikat po stronie wołającego). */
+  /** Whether the watchdog aborted the connection due to silence (lets the caller override the message). */
   stalled: boolean;
 }
 
-/** Domyślny komunikat o zawieszeniu strumienia (sekundy z `timeoutMs`). */
+/** Default stream-stall message (seconds from `timeoutMs`). */
 export function defaultStallMessage(timeoutMs: number): string {
   return `Połączenie z serwerem zawisło (brak odpowiedzi przez ${Math.round(timeoutMs / 1000)} s). Możliwe buforowanie strumienia przez hosting. Odśwież i spróbuj ponownie.`;
 }
 
 /**
- * Wspólny transport SSE dla hooków (useSync, useVintedCheck, useLibraryCheck): jeden
- * POST, sprawdzenie `res.ok`, `consumeSSE` z watchdogiem przeciw zawieszeniu i
- * derywacja komunikatu błędu (HTTP / rzut z `onEvent` / stall). NIE trzyma stanu UI —
- * wołający posiada swój stan i ustawia go w `onEvent` oraz wokół `run`, decydując co
- * zrobić z wynikiem. Dzięki temu każdy hook różni się tylko routingiem zdarzeń.
+ * Shared SSE transport for hooks (useSync, useVintedCheck, useLibraryCheck): one
+ * POST, `res.ok` check, `consumeSSE` with a stall watchdog and derivation of the
+ * error message (HTTP / throw from `onEvent` / stall). Does NOT hold UI state —
+ * the caller owns its state and sets it in `onEvent` and around `run`, deciding what
+ * to do with the result. This way each hook differs only in its event routing.
  */
 export function useSSEStream(endpoint: string, opts?: { timeoutMs?: number }) {
   const timeoutMs = opts?.timeoutMs ?? 30000;
@@ -44,11 +44,11 @@ export function useSSEStream(endpoint: string, opts?: { timeoutMs?: number }) {
       const res = await fetch(endpoint, fetchOptions);
       if (!res.ok) {
         let message = `Błąd serwera: ${res.status}`;
-        try { const j = await res.json(); message = j.error || message; } catch { /* nie-JSON */ }
+        try { const j = await res.json(); message = j.error || message; } catch { /* non-JSON */ }
         throw new Error(message);
       }
 
-      // onChunk = watchdog.arm (keepalive też liczy się jako aktywność).
+      // onChunk = watchdog.arm (keepalive also counts as activity).
       await consumeSSE(res.body, onEvent, watchdog.arm);
       return { ok: true, error: null, stalled: false };
     } catch (err: any) {

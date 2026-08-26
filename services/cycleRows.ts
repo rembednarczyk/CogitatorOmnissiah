@@ -5,43 +5,43 @@ import { CYCLE_VOLUME_CATEGORY, isCycleVolume } from "./bookCategory";
 import { parseVintedData } from "./vintedStore";
 import { encyclopediaUrl } from "../src/utils/encyclopedia";
 
-/** Właściwość „Tytuł polski" z linkiem do encyklopedii (jak w oryginalnych rytuałach). */
+/** „Tytuł polski" property with a link to the encyclopedia (as in the original rituals). */
 export function buildCycleTitleProperty(title: string): Record<string, any> {
   const link = encyclopediaUrl(title);
   return { rich_text: [{ text: { content: sanitizeNotionString(title || ""), ...(isValidUrl(link) ? { link: { url: link } } : {}) } }] };
 }
 
 /**
- * Wiersze tomów cykli w bazie (opcja A). Poboczne tomy cyklu są REALNYMI wierszami
- * z `Kategoria=Tom cyklu`, dzięki czemu można je oznaczać (przeczytane/posiadane) i
- * skanować na Vinted. Grupowanie po polu `Cykl`, kolejność po `CyklNr`.
+ * Cycle-volume rows in the database (option A). Side cycle volumes are REAL rows
+ * with `Kategoria=Tom cyklu`, so they can be tagged (read/owned) and
+ * scanned on Vinted. Grouped by the `Cykl` field, ordered by `CyklNr`.
  */
 
-/** Najtańsza oferta Vinted dla tomu (z blobu VintedData, zbieranego skanerem). */
+/** Cheapest Vinted offer for a volume (from the VintedData blob collected by the scanner). */
 export interface VolumeOffer {
   price: number;
   url: string;
-  /** Liczba ofert łącznie dla tego tomu. */
+  /** Total number of offers for this volume. */
   count: number;
 }
 
-/** Widok jednego tomu w Archiwum Cykli (agregacja z wierszy). */
+/** View of a single volume in Archiwum Cykli (aggregated from rows). */
 export interface HarvestVolume {
-  /** ID wiersza Notion — do oznaczania (przeczytane/posiadane) z karty. */
+  /** Notion row ID — for tagging (read/owned) from the card. */
   id: string;
   title: string;
-  /** Zawsze true — tom jest wierszem bazy (zachowane dla zgodności z kartą). */
+  /** Always true — the volume is a database row (kept for card compatibility). */
   inBase: boolean;
   read: boolean;
   owned: boolean;
   awarded: boolean;
-  /** Czy to pozycja nagrodowa (kotwica), czy poboczny tom cyklu. */
+  /** Whether this is an award entry (anchor) or a side cycle volume. */
   isAward: boolean;
-  /** Najtańsza oferta Vinted (jeśli skaner coś znalazł). */
+  /** Cheapest Vinted offer (if the scanner found something). */
   vinted?: VolumeOffer;
 }
 
-/** Najtańsza oferta z blobu VintedData wiersza (tylko ceny > 0). */
+/** Cheapest offer from a row's VintedData blob (only prices > 0). */
 function cheapestVinted(raw?: string): VolumeOffer | undefined {
   const data = parseVintedData(raw);
   if (!data) return undefined;
@@ -56,13 +56,13 @@ export interface HarvestCycle {
   total: number;
   owned: number;
   read: number;
-  /** „Do zdobycia" = ani posiadane, ani przeczytane. */
+  /** „Do zdobycia" = neither owned nor read. */
   missing: number;
-  /** Zachowane dla zgodności kształtu (= liczba tomów, bo wszystkie są wierszami). */
+  /** Kept for shape compatibility (= number of volumes, since all are rows). */
   inBase: number;
-  /** Koszt skompletowania: suma najtańszych ofert Vinted dla tomów „do zdobycia". */
+  /** Cost to complete: sum of the cheapest Vinted offers for „do zdobycia" volumes. */
   acquireCost?: number;
-  /** Ile tomów „do zdobycia" ma ofertę Vinted. */
+  /** How many „do zdobycia" volumes have a Vinted offer. */
   acquirable: number;
 }
 export interface CyclesHarvest {
@@ -72,19 +72,19 @@ export interface CyclesHarvest {
 }
 
 /**
- * Etykieta kolumny „Lp" (tytułowej) dla tomu cyklu: „Nazwa cyklu (nr)", np. „Mistborn (3)".
- * Stabilna (nie zależy od przenumerowań Lp), czytelna, jasno odróżnia tom od numeru nagrody.
+ * Label of the „Lp" (title) column for a cycle volume: „Nazwa cyklu (nr)", e.g. „Mistborn (3)".
+ * Stable (independent of Lp renumbering), readable, clearly distinguishes a volume from an award number.
  */
 export function cycleLpLabel(cycleName: string, nr: number): string {
   return `${(cycleName || "Cykl").trim()} (${nr})`;
 }
 
-/** Payload nowego wiersza pobocznego tomu cyklu. */
+/** Payload for a new side cycle-volume row. */
 export function buildCycleVolumeProperties(input: { title: string; author?: string; cycleName: string; nr: number }): Record<string, any> {
   const title = sanitizeNotionString(input.title || "");
   const properties: Record<string, any> = {
     "Lp": { title: [{ text: { content: sanitizeNotionString(cycleLpLabel(input.cycleName, input.nr)) } }] },
-    // Tytuł polski z linkiem do encyklopedii — jak w oryginalnych rytuałach.
+    // „Tytuł polski" with a link to the encyclopedia — as in the original rituals.
     "Tytuł polski": buildCycleTitleProperty(input.title),
     "Kategoria": { select: { name: CYCLE_VOLUME_CATEGORY } },
     "Cykl": { rich_text: [{ text: { content: sanitizeNotionString(input.cycleName || "") } }] },
@@ -100,9 +100,9 @@ export function buildCycleVolumeProperties(input: { title: string; author?: stri
 const normKey = (s: string): string => (s || "").toLowerCase().replace(/\s+/g, " ").trim();
 
 /**
- * Agreguje wiersze należące do cykli (pole `Cykl` niepuste) w listę cykli do Archiwum.
- * Grupuje po nazwie cyklu, sortuje po `CyklNr` (potem po tytule), liczy statusy z pól
- * Źródło/Nagroda. Zawiera zarówno kotwice nagrodowe, jak i poboczne tomy cyklu.
+ * Aggregates rows belonging to cycles (non-empty `Cykl` field) into a cycle list for Archiwum.
+ * Groups by cycle name, sorts by `CyklNr` (then by title), computes statuses from the
+ * „Źródło"/„Nagroda" fields. Includes both award anchors and side cycle volumes.
  */
 export function aggregateCycleRows(books: NotionBook[]): CyclesHarvest {
   const groups = new Map<string, { name: string; rows: NotionBook[] }>();
@@ -139,7 +139,7 @@ export function aggregateCycleRows(books: NotionBook[]): CyclesHarvest {
     const owned = volumes.filter((v) => v.owned).length;
     const read = volumes.filter((v) => v.read).length;
     const toGet = volumes.filter((v) => !v.owned && !v.read);
-    // Koszt kompletacji = suma najtańszych ofert dla tomów „do zdobycia", które są na Vinted.
+    // Completion cost = sum of the cheapest offers for „do zdobycia" volumes that are on Vinted.
     const withOffer = toGet.filter((v) => v.vinted);
     const acquireCost = withOffer.length > 0 ? Math.round(withOffer.reduce((s, v) => s + v.vinted!.price, 0)) : undefined;
     return {
@@ -148,7 +148,7 @@ export function aggregateCycleRows(books: NotionBook[]): CyclesHarvest {
       acquireCost, acquirable: withOffer.length,
     };
   });
-  // Najwięcej „do zdobycia" na górze; ukończone (missing 0) spadają na dół.
+  // Most „do zdobycia" on top; completed ones (missing 0) fall to the bottom.
   cycles.sort((a, b) => b.missing - a.missing || b.total - a.total || a.cycle.localeCompare(b.cycle));
 
   return { cycles, totalCycles: cycles.length, harvestedAt: null };

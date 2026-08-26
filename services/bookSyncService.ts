@@ -20,7 +20,7 @@ export class BookSyncService {
     const wikitext = await this.wiki.fetchPageContent(pageTitle);
 
     if (!wikitext) {
-      // Strona istnieje w kodzie, ale wiki zwróciła pustą treść (brak strony / zmieniony tytuł)
+      // Page exists in code, but wiki returned empty content (missing page / changed title)
       log.warn(`Pusta treść strony "${pageTitle}" — 0 książek dla ${awardName}`, { pageTitle, awardName });
     }
 
@@ -36,7 +36,7 @@ export class BookSyncService {
       await this.notion.init();
       let allBooksToSync: Book[] = [];
       if (params.syncAll) {
-        // Lista stron nagród z konfiguracji (knob `sync.awards`) — bez kopii w kodzie.
+        // List of award pages from config (knob `sync.awards`) — no copy in code.
         const awards = (await this.config.getConfig()).sync.awards;
         for (const aw of awards) {
           if (checkCancellation()) break;
@@ -135,9 +135,9 @@ export class BookSyncService {
 
           if (existingBook) {
             const updates = buildBookUpdates(existingBook, book);
-            // Promocja: rytuał nagród przetwarza laureatów, więc jeśli trafił na wiersz
-            // oznaczony jako „Tom cyklu", ten tom JEDNAK jest nagrodzony — przenosimy go
-            // do Kategoria=Nagroda (inaczej zostałby ukryty w statystykach nagród).
+            // Promotion: the award ritual processes laureates, so if it hit a row
+            // tagged as „Tom cyklu", that volume IS in fact awarded — we move it
+            // to Kategoria=Nagroda (otherwise it would stay hidden in award stats).
             if (isCycleVolume(existingBook)) {
               updates["Kategoria"] = { select: { name: AWARD_CATEGORY } };
             }

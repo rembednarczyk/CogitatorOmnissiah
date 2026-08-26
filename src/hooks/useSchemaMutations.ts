@@ -1,9 +1,9 @@
 import { useState, useCallback } from "react";
 
 /**
- * Mutacje opcji schematu Notion (dodanie/usunięcie w kolumnie select/multi_select).
- * Trzyma stan operacji (`updatingProperty`, `error`, wpisywane nazwy) i wspólny
- * `PATCH /api/notion/schema` — add/delete to cienkie przypadki na jednym zapisie.
+ * Notion schema option mutations (add/remove in a select/multi_select column).
+ * Holds the operation state (`updatingProperty`, `error`, entered names) and a shared
+ * `PATCH /api/notion/schema` — add/delete are thin cases over a single write.
  */
 export function useSchemaMutations(schema: any, onSchemaUpdated: () => void) {
   const [updatingProperty, setUpdatingProperty] = useState<string | null>(null);

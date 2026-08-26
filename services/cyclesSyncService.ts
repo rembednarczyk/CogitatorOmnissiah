@@ -18,14 +18,14 @@ export class CyclesSyncService {
       await this.notion.createColumnIfNeeded("Część cyklu", "checkbox");
       sendEvent({ type: "status", message: "Pobieranie listy książek z Notion..." });
       const rawBooks: NotionBook[] = await this.notion.queryAllBooks((count) => sendEvent({ type: "status", message: `Pobrano ${count} książek z Notion...` }), checkCancellation);
-      // Wykrywanie przynależności do cyklu dotyczy pozycji NAGRODOWYCH — poboczne
-      // tomy cykli (Kategoria="Tom cyklu") są z definicji częścią cyklu i mają
-      // własny rytuał żniw, więc pomijamy je zamiast redundantnie taggować.
+      // Cycle-membership detection concerns AWARD entries — side
+      // cycle volumes (Kategoria="Tom cyklu") are by definition part of a cycle and have
+      // their own harvest ritual, so we skip them instead of redundantly tagging.
       const allBooks = rawBooks.filter(isAwardBook);
 
       if (checkCancellation()) { sendEvent({ type: "status", message: "Przerwano synchronizację cykli." }); return; }
 
-      // Zbieranie unikalnych tytułów do pobrania (zarówno polskie jak i oryginalne)
+      // Collect unique titles to fetch (both Polish and original)
       const titlesToFetch = Array.from(new Set([
         ...allBooks.map(b => b.plTitle).filter(Boolean),
         ...allBooks.map(b => b.origTitle).filter(Boolean)
@@ -46,14 +46,14 @@ export class CyclesSyncService {
 
       const checkCycleInWikitext = (wikitext: string): boolean => {
         if (!wikitext) return false;
-        // Wykrywanie cyklu: NIEPUSTE pole |cykl= / |cykle= w infoboksie {{Książka}}
-        // (potwierdzone na realnym rawie: „| cykl = Childe"). Świadomie WYKLUCZAMY
-        // |seria= — na Encyklopedii to imprint wydawcy (np. „Kanon science fiction"),
-        // nie cykl fabularny → inaczej byłyby false-positive.
+        // Cycle detection: NON-EMPTY |cykl= / |cykle= field in the {{Książka}} infobox
+        // (confirmed on real raw: „| cykl = Childe"). We deliberately EXCLUDE
+        // |seria= — on the Encyclopedia it's a publisher imprint (e.g. „Kanon science fiction"),
+        // not a story cycle → otherwise it would be a false positive.
         const hasCycleParam = /\|\s*cykl(e)?\s*=\s*[^\s|}]/i.test(wikitext);
-        // Szablon nawigacyjny cyklu. Poszerzone vs stare `\{\{Cykl\s*\|` — łapie też
-        // `{{Cykl}}` (bez parametrów) i `{{Cykl nawigacja|…}}`, a wciąż odrzuca np.
-        // `{{Cyklista}}` (po „cykl" musi iść spacja / pipe / zamknięcie).
+        // Cycle navigation template. Widened vs the old `\{\{Cykl\s*\|` — also catches
+        // `{{Cykl}}` (no parameters) and `{{Cykl nawigacja|…}}`, while still rejecting e.g.
+        // `{{Cyklista}}` (after „cykl" there must be a space / pipe / closing).
         const hasCycleTemplate = /\{\{\s*cykl[\s|}]/i.test(wikitext);
         return hasCycleParam || hasCycleTemplate;
       };
@@ -75,10 +75,10 @@ export class CyclesSyncService {
         try {
           let wikitext = "";
           let foundSource = "";
-          // Czy w OGÓLE natrafiliśmy na treść strony (choćby odrzuconą przez bramkę
-          // autora). Rozróżnia dwie przyczyny pominięcia: „strony nie ma" vs „strona
-          // jest, ale autor się nie zgadza" — inaczej pominięcie było niewidoczne i
-          // wyglądało jak „książka nie należy do cyklu".
+          // Whether we hit page content AT ALL (even if rejected by the author
+          // gate). Distinguishes two skip causes: „page missing" vs „page
+          // exists, but author doesn't match" — otherwise the skip was invisible and
+          // looked like „book doesn't belong to a cycle".
           let sawPage = false;
 
           // 1. Try Bulk Fetch results (Polish title first, then Original)
@@ -126,11 +126,11 @@ export class CyclesSyncService {
           }
 
           // 4. Direct Fetch Fallback (Exact title from Notion)
-          // Bez wewnętrznego catch — fetchPageContent zwraca "" dla brakującej
-          // strony, ale RZUCA przy awarii infrastruktury (blokada IP/timeout).
-          // Połykanie tego rzutu zamieniało "sieć padła" w "brak danych → pomiń",
-          // przez co awaria widoczna tylko w tej ścieżce znikała po cichu. Teraz
-          // propaguje do per-book catch niżej i trafia do errors[].
+          // No inner catch — fetchPageContent returns "" for a missing
+          // page, but THROWS on infrastructure failure (IP block/timeout).
+          // Swallowing that throw turned "network down" into "no data → skip",
+          // so a failure visible only on this path vanished silently. Now it
+          // propagates to the per-book catch below and lands in errors[].
           if (!wikitext && plTitle) {
             const content = await this.wiki.fetchPageContent(plTitle);
             if (content) sawPage = true;
@@ -142,9 +142,9 @@ export class CyclesSyncService {
           }
 
           if (!wikitext) {
-            // Honest reporting: książka pominięta, cykl NIE oceniony. Bez tego
-            // „complete" raportował sam sukces i user nie wiedział, że część
-            // pozycji w ogóle nie sprawdzono (root cause „czasem nie łapie cykli").
+            // Honest reporting: book skipped, cycle NOT evaluated. Without this
+            // „complete" reported only success and the user didn't know that some
+            // entries weren't checked at all (root cause of "sometimes misses cycles").
             syncSummary.skipped.push(
               `${plTitle || origTitle}${sawPage ? " (autor się nie zgadza — strona pominięta)" : " (nie znaleziono strony w encyklopedii)"}`
             );

@@ -38,7 +38,7 @@ describe("marketStats.computeMarketStats", () => {
     const books = [
       mk("1", { vintedData: blob([{ url: "u", price: 18, prevPrice: 25, currency: "PLN" }]) }),
       mk("2", { vintedData: blob([{ url: "u", price: 40, prevPrice: 100, currency: "PLN" }]) }),
-      mk("3", { vintedData: blob([{ url: "u", price: 10, prevPrice: 8, currency: "PLN" }]) }), // wzrost — pomijany
+      mk("3", { vintedData: blob([{ url: "u", price: 10, prevPrice: 8, currency: "PLN" }]) }), // price rise — skipped
     ];
     const m = computeMarketStats(books);
     expect(m.priceDrops.map((d) => d.bookId)).toEqual(["2", "1"]);
@@ -50,7 +50,7 @@ describe("marketStats.computeMarketStats", () => {
     const books = [
       mk("1", { vintedData: blob([{ url: "u", price: 20, currency: "PLN", seller: seller("s1", "ala") }]) }),
       mk("2", { vintedData: blob([{ url: "u", price: 30, currency: "PLN", seller: seller("s1", "ala") }]) }),
-      mk("3", { vintedData: blob([{ url: "u", price: 15, currency: "PLN", seller: seller("s2", "bob") }]) }), // tylko 1 książka
+      mk("3", { vintedData: blob([{ url: "u", price: 15, currency: "PLN", seller: seller("s2", "bob") }]) }), // only 1 book
     ];
     const m = computeMarketStats(books);
     expect(m.topSellers).toHaveLength(1);
@@ -59,9 +59,9 @@ describe("marketStats.computeMarketStats", () => {
 
   it("ignores books without offers / without prices / without blob", () => {
     const books = [
-      mk("1", {}),                                                   // brak blobu
-      mk("2", { vintedData: blob([]) }),                             // pusto
-      mk("3", { vintedData: blob([{ url: "u", price: null, currency: "PLN" }]) }), // bez ceny
+      mk("1", {}),                                                   // no blob
+      mk("2", { vintedData: blob([]) }),                             // empty
+      mk("3", { vintedData: blob([{ url: "u", price: null, currency: "PLN" }]) }), // no price
     ];
     const m = computeMarketStats(books);
     expect(m).toMatchObject({ completionCost: 0, booksWithOffers: 0, totalOffers: 0 });

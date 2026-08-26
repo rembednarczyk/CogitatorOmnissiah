@@ -16,7 +16,7 @@ const SORTS: { mode: BundleSortMode; label: string }[] = [
   { mode: "price", label: "Najtańsza paczka" },
 ];
 
-/** Paczki od jednego sprzedawcy (z bazy) + przełącznik sortowania. */
+/** Bundles from a single seller (from the database) + sort toggle. */
 export const VintedBundleList: React.FC<Props> = ({ results, sellers, usingStored }) => {
   const [bundleSort, setBundleSort] = useState<BundleSortMode>("count");
   const rawBundles = useMemo(() => groupBySeller(results, sellers), [results, sellers]);

@@ -3,12 +3,12 @@ import { CheckCircle2, Loader2 } from "lucide-react";
 
 interface Props {
   book: { id: string; title: string; author: string; year?: number | null };
-  marking: boolean;      // czy trwa oznaczanie tej konkretnej pozycji
-  disabled: boolean;     // czy jakiekolwiek oznaczanie jest w toku (blokada)
+  marking: boolean;      // whether this specific item is being marked
+  disabled: boolean;     // whether any marking is in progress (lock)
   onMarkAsRead: (pageId: string) => void;
 }
 
-/** Wiersz pozycji posiadanej, lecz nieprzeczytanej, z akcją „oznacz jako przeczytane". */
+/** A row for an owned but unread item, with a „mark as read" action. */
 export const OwnedUnreadItem: React.FC<Props> = ({ book, marking, disabled, onMarkAsRead }) => (
   <div className="flex items-start gap-3 p-3 bg-slate-950/30 rounded-xl border border-slate-800/50 group/book">
     <div className="flex-1">

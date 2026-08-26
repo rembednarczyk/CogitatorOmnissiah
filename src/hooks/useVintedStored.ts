@@ -2,13 +2,13 @@ import { useState, useCallback, useRef } from "react";
 import { storedToView, StoredView } from "../utils/vintedSellers";
 
 /**
- * Etap 3: wczytuje SKŁADOWANE wyniki Vinted z Notion (`GET /api/vinted-stored`) i mapuje
- * na widok renderowalny tym samym UI co skan live — kafelki i paczki lecą z bazy, bez
- * re-scrape. Zwykły GET (odczyt Notion, nie Cloudflare), więc bez SSE/watchdoga.
+ * Stage 3: loads STORED Vinted results from Notion (`GET /api/vinted-stored`) and maps
+ * them to a view renderable by the same UI as a live scan — tiles and bundles come from the
+ * database, without re-scrape. A plain GET (Notion read, not Cloudflare), so no SSE/watchdog.
  *
- * Ochrona przed wyścigiem: `genRef` + AbortController — gdy w trakcie wolnego GET-a
- * użytkownik ruszy skan/resolucję (które wołają `clearStored`), przestarzała odpowiedź
- * jest porzucana i nie „porywa" widoku (nie ustawia `stored` po fakcie).
+ * Race protection: `genRef` + AbortController — if during a slow GET the
+ * user starts a scan/resolution (which call `clearStored`), the stale response
+ * is dropped and doesn't „hijack" the view (doesn't set `stored` after the fact).
  */
 export function useVintedStored() {
   const [stored, setStored] = useState<StoredView | null>(null);
@@ -27,13 +27,13 @@ export function useVintedStored() {
     setStoredError(null);
     try {
       const res = await fetch("/api/vinted-stored", { signal: ac.signal });
-      if (gen !== genRef.current) return; // unieważnione (clear/nowe żądanie)
+      if (gen !== genRef.current) return; // invalidated (clear/new request)
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
         throw new Error(errorData.error || `Błąd serwera: ${res.status}`);
       }
       const data = await res.json();
-      if (gen !== genRef.current) return; // sprawdź ponownie po await
+      if (gen !== genRef.current) return; // re-check after await
       setStored(storedToView(data.books || []));
     } catch (err: any) {
       if (err?.name === "AbortError" || gen !== genRef.current) return;
@@ -44,7 +44,7 @@ export function useVintedStored() {
   }, []);
 
   const clearStored = useCallback(() => {
-    // Unieważnij każdy load w locie (bump pokolenia + abort) i wyjdź z widoku bazy.
+    // Invalidate any in-flight load (bump the generation + abort) and leave the database view.
     genRef.current++;
     abortRef.current?.abort();
     setIsLoadingStored(false);

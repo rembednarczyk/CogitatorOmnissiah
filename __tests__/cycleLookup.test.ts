@@ -56,7 +56,7 @@ describe("CycleLookupService.lookup", () => {
     const notion = makeNotion([
       { id: "a", plTitle: "Tom 1", origTitle: "", zrodlo: ["Posiadam"], awards: [] },
       { id: "b", plTitle: "Tom 2", origTitle: "", zrodlo: ["Przeczytane", "Posiadam"], awards: ["Nagroda Hugo"] },
-      // Tom 3 poza bazą
+      // Tom 3 not in the base
     ]);
     const svc = new CycleLookupService(notion, wiki);
     const view = await svc.lookup("Tom 2", "");
@@ -79,19 +79,19 @@ describe("CycleLookupService.lookup", () => {
     const notion = makeNotion([{ id: "1", plTitle: "T1", origTitle: "", zrodlo: [], awards: [] }]);
     const svc = new CycleLookupService(notion, wiki);
     const view = await svc.lookup("T3", "");
-    expect(view!.unreadBefore).toBe(2); // T1 i T2 nieprzeczytane
+    expect(view!.unreadBefore).toBe(2); // T1 and T2 unread
   });
 
   it("names a nameless (chain-only) cycle by its first volume, not the generic 'Cykl'", async () => {
-    // Łańcuch prev/next BEZ pola |cykl= — dawniej cycleName spadał do „Cykl", przez co
-    // wszystkie bezimienne cykle zlewały się w jedną grupę i były pomijane w żniwach.
+    // A prev/next chain WITHOUT a |cykl= field — cycleName used to fall back to „Cykl", which made
+    // all nameless cycles merge into one group and get skipped in the harvest.
     const wiki = makeWiki({
       "Alfa": page({ następna: "Beta" }),
       "Beta": page({ poprzednia: "Alfa" }),
     });
     const svc = new CycleLookupService(makeNotion([]), wiki);
     const view = await svc.lookup("Beta", "");
-    expect(view!.cycleName).toBe("Alfa"); // tytuł pierwszego tomu, stabilny między kotwicami
+    expect(view!.cycleName).toBe("Alfa"); // the first volume's title, stable between anchors
   });
 
   it("returns null when the book is not part of any cycle", async () => {
@@ -106,6 +106,6 @@ describe("CycleLookupService.lookup", () => {
     await svc.lookup("T1", "");
     const calls = (wiki.fetchPageContent as any).mock.calls.length;
     await svc.lookup("T1", "");
-    expect((wiki.fetchPageContent as any).mock.calls.length).toBe(calls); // brak nowych fetchy
+    expect((wiki.fetchPageContent as any).mock.calls.length).toBe(calls); // no new fetches
   });
 });

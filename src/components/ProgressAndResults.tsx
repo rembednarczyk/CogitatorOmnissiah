@@ -21,8 +21,8 @@ export const ProgressAndResults: React.FC<ProgressAndResultsProps> = ({
   const progress = state.progress || { current: 0, total: 1 };
   const percent = progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0;
 
-  // Motyw rytuału (patrz src/theme/ritualColors.ts). bg = pełne wypełnienie paska,
-  // shadow = poświata paska.
+  // Ritual theme (see src/theme/ritualColors.ts). bg = full bar fill,
+  // shadow = bar glow.
   const t = getRitualTheme(color);
   const theme = { text: t.text, border: t.border, bg: t.bgSolid, shadow: t.glow };
 

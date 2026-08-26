@@ -5,7 +5,7 @@ import { BookIndexEntry } from "../../types";
 import { HighlightedText } from "./HighlightedText";
 import { CycleTile } from "../CycleTile";
 
-/** Kolor tagu źródła — spójny język wizualny z resztą aplikacji. */
+/** Source tag color — consistent visual language with the rest of the app. */
 function zrodloTheme(tag: string): string {
   const t = tag.toLowerCase();
   if (t.includes("posiadam")) return "bg-emerald-500/10 border-emerald-500/25 text-emerald-300";
@@ -15,7 +15,7 @@ function zrodloTheme(tag: string): string {
   return "bg-slate-500/10 border-slate-500/25 text-slate-400";
 }
 
-/** Nagroda vs Nominacja — złoto dla zwycięstwa, chłodniej dla nominacji. */
+/** „Nagroda" vs „Nominacja" — gold for a win, cooler for a nomination. */
 function awardTheme(award: string): string {
   return award.toLowerCase().startsWith("nagroda")
     ? "bg-amber-500/10 border-amber-500/25 text-amber-300"
@@ -28,7 +28,7 @@ interface Props {
 }
 
 export const BookResultCard: React.FC<Props> = ({ book, query }) => {
-  // Tytuł główny = polski, a gdy go brak — oryginalny (książki nieprzetłumaczone).
+  // Primary title = Polish, and when missing — the original (untranslated books).
   const primaryTitle = book.plTitle?.trim() ? book.plTitle : book.origTitle;
   const showOrig = book.origTitle && book.origTitle.trim() && book.origTitle !== primaryTitle;
 

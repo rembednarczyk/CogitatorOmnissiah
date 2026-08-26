@@ -19,8 +19,8 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<TabId>('stats');
   const [showScrollTop, setShowScrollTop] = useState(false);
 
-  // Jedna instancja managera — jej `anyError` zasila globalną kartę błędu (widoczną
-  // na każdej zakładce), a ten sam egzemplarz idzie do LiturgySection propem `sm`.
+  // A single manager instance — its `anyError` feeds the global error card (visible
+  // on every tab), and the same instance goes to LiturgySection via the `sm` prop.
   const sm = useSyncManager();
   const { anyError, isAnySyncLoading, handleResetSync } = sm;
 
@@ -49,7 +49,7 @@ export default function App() {
           animate={{ opacity: 1, y: 0 }}
           className="flex flex-col md:flex-row items-center gap-8 text-center md:text-left"
         >
-          {/* Logo = wejście do Sanktuarium Kalibracji (zakładka admin, poza paskiem). */}
+          {/* Logo = entry to the Sanktuarium Kalibracji (admin tab, outside the nav bar). */}
           <motion.button
             whileHover={{ scale: 1.05, rotate: 5 }}
             whileTap={{ scale: 0.95 }}

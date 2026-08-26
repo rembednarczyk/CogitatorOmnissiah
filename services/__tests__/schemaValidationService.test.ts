@@ -50,7 +50,7 @@ describe('SchemaValidationService', () => {
 
     expect(mockNotion.updateDatabaseProperty).toHaveBeenCalledWith('actual-id', 'Autor', 'multi_select');
     expect(mockNotion.updateDatabaseProperty).toHaveBeenCalledWith('actual-id', 'Tytuł polski', 'rich_text');
-    // Kolumny cykli + domknięcie starego długu też są provisionowane.
+    // Cycle columns + closing the old debt are provisioned too.
     expect(mockNotion.updateDatabaseProperty).toHaveBeenCalledWith('actual-id', 'Kategoria', 'select');
     expect(mockNotion.updateDatabaseProperty).toHaveBeenCalledWith('actual-id', 'Cykl', 'rich_text');
     expect(mockNotion.updateDatabaseProperty).toHaveBeenCalledWith('actual-id', 'CyklNr', 'number');

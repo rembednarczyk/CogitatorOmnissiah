@@ -9,14 +9,14 @@ interface Props {
   onDragEnd: () => void;
 }
 
-/** Sygnatura katalogowa holo (deterministyczna z id) — cyfrowy detal na grzbiecie. */
+/** Holo catalog signature (deterministic from id) — a digital detail on the spine. */
 function catalogSig(id: string): string {
   let h = 0;
   for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
   return "M" + (1000 + (h % 9000));
 }
 
-/** Grzbiet książki (koncept A) — przeciągalny element regału. */
+/** Book spine (concept A) — a draggable shelf element. */
 export const BookSpine: React.FC<Props> = ({ book, style, onDragStart, onDragEnd }) => (
   <div
     draggable

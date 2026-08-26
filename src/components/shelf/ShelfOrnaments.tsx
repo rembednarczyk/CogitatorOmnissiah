@@ -1,16 +1,16 @@
 import React from "react";
 
 /**
- * Ozdoby regału w klimacie Adeptus Mechanicus („atrybuty z fabuły" + kwiatki):
- * mosiężne narożniki, pieczęć czystości na wstędze, sygil koła zębatego.
- * Czysto dekoracyjne (aria-hidden) — nie wpływają na drag&drop.
+ * Shelf ornaments in the Adeptus Mechanicus vibe („lore attributes" + flourishes):
+ * brass corners, purity seal on a ribbon, cog-wheel sigil.
+ * Purely decorative (aria-hidden) — they don't affect drag&drop.
  */
 
 type Corner = "tl" | "tr" | "bl" | "br";
 
 /**
- * Sygil koła zębatego Mechanicus (cog-skull). Kolory pochodzą ze zmiennych skóry
- * (`--sk-cog-*`), więc przełączenie skóry przemalowuje go bez zmiany komponentu.
+ * Mechanicus cog-wheel sigil (cog-skull). Colors come from the skin variables
+ * (`--sk-cog-*`), so switching the skin repaints it without changing the component.
  */
 export const CogSigil: React.FC<{ className?: string }> = ({ className = "" }) => (
   <svg aria-hidden viewBox="0 0 48 48" className={className}>
@@ -21,7 +21,7 @@ export const CogSigil: React.FC<{ className?: string }> = ({ className = "" }) =
       <circle cx="24" cy="24" r="15.5" />
     </g>
     <circle cx="24" cy="24" r="11" style={{ fill: "var(--sk-cog-disc)" }} />
-    {/* Stylizowana czaszka Mechanicus — pół twarz, pół czacha */}
+    {/* Stylized Mechanicus skull — half face, half cranium */}
     <circle cx="24" cy="21" r="6" style={{ fill: "var(--sk-cog-skull)" }} />
     <circle cx="21.6" cy="21" r="1.4" style={{ fill: "var(--sk-cog-disc)" }} />
     <circle cx="26.4" cy="21" r="1.4" style={{ fill: "var(--sk-cog-disc)" }} />
@@ -29,15 +29,15 @@ export const CogSigil: React.FC<{ className?: string }> = ({ className = "" }) =
   </svg>
 );
 
-/* ===================== Warstwa cyfrowa / noosferyczna ===================== */
-/* Kolor poświaty pochodzi ze zmiennej skóry `--noo-glow` (triplet RGB). */
+/* ===================== Digital / noospheric layer ===================== */
+/* The glow color comes from the skin variable `--noo-glow` (RGB triplet). */
 const GLOW = (a: number) => `rgba(var(--noo-glow), ${a})`;
 const ACCENT2 = (a: number) => `rgba(var(--noo-accent2), ${a})`;
 
 /**
- * Godło Mechanicus jako **projekcja holo**: cog-skull + wolno obracająca się
- * przerywana aureola noosfery (drugi pierścień w akcencie skóry) + pulsujący glow.
- * Czysto dekoracyjne.
+ * Mechanicus emblem as a **holo projection**: cog-skull + a slowly rotating
+ * dashed noosphere halo (a second ring in the skin accent) + a pulsing glow.
+ * Purely decorative.
  */
 export const NoosphericCrest: React.FC<{ size?: number; className?: string }> = ({ size = 46, className = "" }) => (
   <div className={className} aria-hidden style={{ width: size, height: size }}>
@@ -53,7 +53,7 @@ export const NoosphericCrest: React.FC<{ size?: number; className?: string }> = 
   </div>
 );
 
-/** Przewijający się (marquee) ticker danych — inkantacje binarne / machine-cant. */
+/** Scrolling (marquee) data ticker — binary incantations / machine-cant. */
 export const DataTicker: React.FC<{ text: string; tone?: "glow" | "accent"; slow?: boolean; className?: string }> = ({ text, tone = "glow", slow, className = "" }) => {
   const color = tone === "accent" ? ACCENT2(1) : GLOW(1);
   return (
@@ -71,7 +71,7 @@ export const DataTicker: React.FC<{ text: string; tone?: "glow" | "accent"; slow
   );
 };
 
-/** Nakładka: subtelna siatka noosfery + przesuwający się skanline (CRT). */
+/** Overlay: subtle noosphere grid + a moving scanline (CRT). */
 export const HoloField: React.FC<{ className?: string }> = ({ className = "" }) => (
   <div className={`pointer-events-none absolute inset-0 overflow-hidden ${className}`} aria-hidden>
     <div
@@ -90,8 +90,8 @@ export const HoloField: React.FC<{ className?: string }> = ({ className = "" }) 
   </div>
 );
 
-/** Narożnik HUD (celownik) — w kolorze OPRAWY Regału (`--sk-frame-accent`, amber),
- *  pulsujący. Lokalnie nadpisuje `--noo-glow`, by pulsujący glow też był w akcencie ramki. */
+/** HUD corner (reticle) — in the color of the Regał FRAME (`--sk-frame-accent`, amber),
+ *  pulsing. Locally overrides `--noo-glow` so the pulsing glow is also in the frame accent. */
 export const HudCorner: React.FC<{ corner: Corner }> = ({ corner }) => {
   const base = "absolute w-4 h-4 z-20 pointer-events-none noo-pulse";
   const c = "rgb(var(--sk-frame-accent))";

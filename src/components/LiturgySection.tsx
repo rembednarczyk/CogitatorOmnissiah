@@ -14,10 +14,10 @@ import { formatETA } from "../utils/time";
 import { IntegrityCheckResult } from "../types";
 
 /**
- * Zawartość zakładki „Liturgie Synchronizacji" — rytuały + ich wyniki + schemat.
- * `useSyncManager` żyje w `App` (jego `anyError` zasila globalną kartę błędu), więc
- * ten sam jego egzemplarz przychodzi propem `sm`; własny stan konfiguracji (schemat)
- * pobieramy lokalnie przez `useConfig`.
+ * Contents of the „Liturgie Synchronizacji" tab — rituals + their results + schema.
+ * `useSyncManager` lives in `App` (its `anyError` feeds the global error card), so
+ * that same instance arrives via the `sm` prop; its own config state (schema)
+ * is fetched locally via `useConfig`.
  */
 export const LiturgySection: React.FC<{ sm: ReturnType<typeof useSyncManager> }> = ({ sm }) => {
   const { configStatus, schema, schemaLoading, schemaError, fetchSchema } = useConfig();

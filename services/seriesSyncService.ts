@@ -4,8 +4,8 @@ import { SyncEvent } from "../src/types";
 import { WikiFieldSyncService, SERIES_FIELD } from "./wikiFieldSyncService";
 
 /**
- * Synchronizacja serii ze stron książek. Cienkie opakowanie nad
- * WikiFieldSyncService (wspólny potok, konfiguracja pola "Seria").
+ * Series sync from book pages. A thin wrapper over
+ * WikiFieldSyncService (shared pipeline, config for the "Seria" field).
  */
 export class SeriesSyncService {
   private field: WikiFieldSyncService;

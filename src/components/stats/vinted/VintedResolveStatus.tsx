@@ -16,7 +16,7 @@ interface Props {
   displayCount: number;
 }
 
-/** Paski/banery statusu: identyfikacja sprzedawców + źródło danych z bazy. */
+/** Status bars/banners: seller identification + data source from the database. */
 export const VintedResolveStatus: React.FC<Props> = ({
   isResolving, resolveProgress, resolveError, resolveResult, storedError, stored, isLoadingStored, usingStored, displayCount,
 }) => (

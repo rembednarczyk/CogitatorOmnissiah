@@ -2,16 +2,16 @@ import { NotionBook, BookIndexEntry } from "../src/types";
 import { isAwardBook } from "./bookCategory";
 
 /**
- * Czysta projekcja pełnych rekordów Notion → odchudzony indeks wyszukiwarki.
- * Odcina ciężkie pola (`vintedData` blob, `*RichText`), zostawia tylko to, po
- * czym filtruje/renderuje „Skryptorium". Zostawia rekord mający JAKIKOLWIEK
- * tytuł — polski LUB oryginalny; nieprzetłumaczone książki (tylko tytuł oryg.)
- * też mają być wyszukiwalne. Odpada dopiero rekord bez żadnego tytułu (szkielet).
+ * Pure projection of full Notion records → a slimmed-down search index.
+ * Cuts heavy fields (`vintedData` blob, `*RichText`), keeps only what
+ * „Skryptorium" filters/renders on. Keeps a record having ANY
+ * title — Polish OR original; untranslated books (original title only)
+ * should be searchable too. Only a record with no title at all is dropped (a skeleton).
  */
 export function toSearchIndex(books: NotionBook[]): BookIndexEntry[] {
   return books
-    // Regał i Skryptorium pozostają nagrodowe — poboczne tomy cykli wykluczamy
-    // (mają własny widok „Archiwum Cykli"); włączenie opcjonalne dojdzie później.
+    // Regał and Skryptorium stay award-only — side cycle volumes are excluded
+    // (they have their own „Archiwum Cykli" view); optional inclusion will come later.
     .filter((b) => isAwardBook(b))
     .filter((b) => (b.plTitle && b.plTitle.trim().length > 0) || (b.origTitle && b.origTitle.trim().length > 0))
     .map((b) => ({

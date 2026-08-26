@@ -72,7 +72,7 @@ describe('StatsService', () => {
     ] as NotionBook[]);
 
     const stats = await service.getStats();
-    // Tylko pozycja nagrodowa liczona; tom cyklu pominięty w awardBooks i autorach.
+    // Only the award entry is counted; the cycle volume is skipped in awardBooks and authors.
     expect(stats.awardBooksStats).toEqual({ read: 1, total: 1 });
     expect(stats.authorStats).toEqual([expect.objectContaining({ name: 'Autor X', total: 1 })]);
   });
@@ -85,12 +85,12 @@ describe('StatsService', () => {
       plTitleRichText: [], origTitleRichText: [], vintedData,
     });
     mockNotion.getBooksForStats.mockResolvedValue([
-      mk("1", ["Przeczytane"]),                    // przeczytana — poza licznikiem
+      mk("1", ["Przeczytane"]),                    // read — excluded from the counter
       mk("2", ["Posiadam"]),                       // owned
       mk("3", ["Biblioteka"]),                     // library (default sourceTag)
       mk("4", [], vintedBlob),                     // vinted
       mk("5", []),                                 // none
-      mk("6", ["Posiadam", "Biblioteka"], vintedBlob), // owned wygrywa priorytet
+      mk("6", ["Posiadam", "Biblioteka"], vintedBlob), // owned wins priority
     ]);
 
     const { availabilityStats: a } = await service.getStats();
@@ -124,8 +124,8 @@ describe('StatsService', () => {
     mockNotion.getBooksForStats.mockResolvedValue([
       mk("1", "1954", ["Przeczytane"]),
       mk("2", "1959", ["Posiadam"]),
-      mk("3", "1965/1966"),        // wielodatowe → 1960
-      mk("4", "brak"),             // bez roku → pominięta
+      mk("3", "1965/1966"),        // multi-dated → 1960
+      mk("4", "brak"),             // no year → skipped
     ]);
     const { decadeStats } = await service.getStats();
     expect(decadeStats).toEqual([

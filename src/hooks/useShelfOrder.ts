@@ -1,9 +1,9 @@
 import { useCallback } from "react";
 
 /**
- * Zapis ręcznych kluczy porządku regału (precyzyjny drag&drop → POST /api/shelf-order).
- * Sam transport sieciowy — optymistyczny override i rollback zostają w komponencie
- * (to stan UI). Wydzielone z `BookshelfSection`, by komponent nie robił własnego I/O (§2).
+ * Persists manual shelf order keys (precise drag&drop → POST /api/shelf-order).
+ * Network transport only — the optimistic override and rollback stay in the component
+ * (that's UI state). Extracted from `BookshelfSection` so the component does no I/O of its own (§2).
  */
 export function useShelfOrder() {
   const saveOrders = useCallback(async (orders: { pageId: string; order: number }[]): Promise<void> => {

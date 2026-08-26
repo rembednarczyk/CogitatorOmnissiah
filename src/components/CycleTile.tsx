@@ -6,22 +6,22 @@ import { AnchorRect } from "../utils/popoverPosition";
 interface Props {
   title: string;
   author: string;
-  /** Renderuje kafelek tylko dla książek należących do cyklu. */
+  /** Renders the tile only for books belonging to a cycle. */
   partOfCycle?: boolean;
-  /** Nazwa cyklu (kolumna „Cykl", z żniw) — tylko w tooltipie (hover), nie na chipie. */
+  /** Cycle name (column „Cykl", from harvest) — only in the tooltip (hover), not on the chip. */
   cykl?: string;
-  /** Numer tomu w cyklu (kolumna „CyklNr", z żniw) — pokazywany jako „Cykl · N". */
+  /** Volume number in the cycle (column „CyklNr", from harvest) — shown as „Cykl · N". */
   cyklNr?: number;
-  /** Rozmiar: „sm" (kafelki), „xs" (ciasne wiersze paczek). */
+  /** Size: „sm" (tiles), „xs" (tight bundle rows). */
   size?: "sm" | "xs";
 }
 
 /**
- * Interaktywny kafelek cyklu: klik → `CyclePanel` z listą tomów (kolejność czytania +
- * status w bazie), zakotwiczony w miejscu kliknięcia. Reużywa istniejący podgląd cyklu
- * (`useCycle` + `GET /api/cycle`) ze Skryptorium — jedyny wymagany wkład to (title,
- * author). Renderuje się tylko dla `partOfCycle`. Etykieta: „Cykl · N", gdy numer tomu
- * ustalono żniwami; inaczej samo „cykl". Pełna nazwa cyklu żyje w tooltipie (hover).
+ * Interactive cycle tile: click → `CyclePanel` with the volume list (reading order +
+ * status in the DB), anchored at the click point. Reuses the existing cycle preview
+ * (`useCycle` + `GET /api/cycle`) from Skryptorium — the only required input is (title,
+ * author). Renders only for `partOfCycle`. Label: „Cykl · N" when the volume number
+ * was determined by harvest; otherwise just „cykl". The full cycle name lives in the tooltip (hover).
  */
 export const CycleTile: React.FC<Props> = ({ title, author, partOfCycle, cykl, cyklNr, size = "sm" }) => {
   const [anchor, setAnchor] = useState<AnchorRect | null>(null);

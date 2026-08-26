@@ -3,9 +3,9 @@ import { consumeSSE } from "../utils/sse";
 import { createStallWatchdog } from "../utils/stallWatchdog";
 
 /**
- * Etap 2: przyrostowe dociąganie sprzedawców do SKŁADOWANYCH ofert (Notion), wznawialne
- * między przebiegami. Nie zależy od bieżącego skanu — działa na bazie. Wzorzec SSE jak
- * w useVintedCheck (watchdog 120 s). Zwraca postęp i podsumowanie (resolved/remaining).
+ * Stage 2: incrementally fetching sellers for STORED offers (Notion), resumable
+ * between runs. Doesn't depend on the current scan — works off the database. SSE pattern
+ * like in useVintedCheck (120 s watchdog). Returns progress and a summary (resolved/remaining).
  */
 export function useVintedResolveSellers() {
   const [isResolving, setIsResolving] = useState(false);

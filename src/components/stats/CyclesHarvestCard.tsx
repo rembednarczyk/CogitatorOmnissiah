@@ -13,15 +13,15 @@ const SORTS: { mode: CycleSortMode; label: string }[] = [
 const volStatus = (v: HarvestVolume) => {
   if (v.read) return { icon: Check, cls: "text-cyan-400", label: "przeczytana" };
   if (v.owned) return { icon: Package, cls: "text-emerald-400", label: "posiadana" };
-  // Tomy są teraz wierszami bazy — brak posiadania/przeczytania = „do zdobycia".
-  // Łagodny znacznik (dashed circle) zamiast trójkąta ostrzegawczego — poboczne
-  // tomy to zaproszenie do skompletowania, nie błąd.
+  // Volumes are now database rows — not owned/not read = „do zdobycia".
+  // A gentle marker (dashed circle) instead of a warning triangle — sibling
+  // volumes are an invitation to complete the set, not an error.
   return { icon: CircleDashed, cls: "text-amber-400/70", label: "do zdobycia" };
 };
 
 /**
- * Archiwum Cykli — zbiorczy widok tomów cykli (wiersze bazy z pola `Cykl`). Pokazuje
- * ile tomów masz / do zdobycia i pozwala oznaczać tomy przeczytane/posiadane w miejscu.
+ * Archiwum Cykli — an aggregate view of cycle volumes (database rows from the `Cykl` field). Shows
+ * how many volumes you have / still need, and lets you mark volumes read/owned in place.
  */
 export const CyclesHarvestCard: React.FC<{ refreshSignal?: number }> = ({ refreshSignal }) => {
   const { view, loading, error, busyId, fetchHarvest, toggleSource } = useCyclesHarvest();
@@ -29,9 +29,9 @@ export const CyclesHarvestCard: React.FC<{ refreshSignal?: number }> = ({ refres
   const [sortMode, setSortMode] = useState<CycleSortMode>("easywins");
   const sortedCycles = useMemo(() => (view ? sortCycles(view.cycles, sortMode) : []), [view, sortMode]);
 
-  // „Odśwież Dane" (StatsSection) inkrementuje refreshSignal → dociągnij świeże cykle
-  // (silent = bez migania kartą, fresh = pomiń cache). Pomiń pierwszy przebieg (mount
-  // już pobiera w hooku), by nie dublować żądania.
+  // „Odśwież Dane" (StatsSection) increments refreshSignal → pull fresh cycles
+  // (silent = no card flicker, fresh = skip cache). Skip the first run (mount
+  // already fetches in the hook), to avoid duplicating the request.
   const firstRun = useRef(true);
   useEffect(() => {
     if (firstRun.current) { firstRun.current = false; return; }
@@ -94,10 +94,10 @@ export const CyclesHarvestCard: React.FC<{ refreshSignal?: number }> = ({ refres
         <div className="space-y-2 max-h-[460px] overflow-y-auto pr-2 custom-scrollbar">
           {sortedCycles.map((c) => {
             const isOpen = open === c.cycle;
-            // Cykl przeczytany w całości → wygaszony (nic nie zostało do nadrobienia).
+            // Cycle read in full → dimmed (nothing left to catch up on).
             const done = c.total > 0 && c.read === c.total;
-            // Dwie NIEZALEŻNE luki (dotąd zlane w jeden licznik „missing"):
-            // do zdobycia = nieposiadane; do przeczytania = nieprzeczytane.
+            // Two INDEPENDENT gaps (previously merged into one „missing" counter):
+            // to acquire = not owned; to read = not read.
             const toAcquire = c.total - c.owned;
             const toRead = c.total - c.read;
             return (

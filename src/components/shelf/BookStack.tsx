@@ -3,17 +3,17 @@ import { BookIndexEntry } from "../../types";
 import { spineStyle, layoutStack, displayTitle, awardWins } from "../../utils/bookshelf";
 
 interface Props {
-  books: BookIndexEntry[];          // każda warstwa to OSOBNA prawdziwa książka
+  books: BookIndexEntry[];          // each layer is a SEPARATE real book
   onDragStart: (book: BookIndexEntry) => void;
   onDragEnd: () => void;
 }
 
 /**
- * Kupka leżących książek — każda warstwa to osobny wolumin z PEŁNĄ nazwą (max 2
- * linie). Ułożenie liczy `layoutStack`: sortowanie od największej (dół) do
- * najmniejszej (góra), wyrównanie do lewej / do prawej / (rzadko) symetryczne,
- * plus opcjonalny „chaos" (poziomy rozjazd warstw). Każda warstwa ma własny
- * kolor, znacznik nagrody i przeciąganie.
+ * A pile of lying books — each layer is a separate volume with its FULL title (max 2
+ * lines). The arrangement is computed by `layoutStack`: sorting from largest (bottom) to
+ * smallest (top), aligned left / right / (rarely) symmetric,
+ * plus optional „chaos" (horizontal layer offset). Each layer has its own
+ * color, award marker and dragging.
  */
 export const BookStack: React.FC<Props> = ({ books, onDragStart, onDragEnd }) => {
   const { cellW, layers } = layoutStack(books);
@@ -42,9 +42,9 @@ export const BookStack: React.FC<Props> = ({ books, onDragStart, onDragEnd }) =>
               boxShadow: "inset 0 1.5px 0 rgba(255,255,255,.12), 0 2px 4px -1px rgba(0,0,0,.5)",
             } as React.CSSProperties}
           >
-            {/* Krawędź kartek (fore-edge) po prawej */}
+            {/* Page edge (fore-edge) on the right */}
             <span className="fore-edge absolute top-[2px] bottom-[2px] right-[2px] w-[3px] rounded-[1px]" aria-hidden />
-            {/* PEŁNY tytuł wzdłuż grzbietu — zawijany do max 2 linii zamiast poszerzania */}
+            {/* FULL title along the spine — wrapped to max 2 lines instead of widening */}
             <span
               className="spine-title absolute inset-y-0 right-3 flex items-center font-bold"
               style={{ left: wins.length ? 6 + wins.length * 7 : 8 }}

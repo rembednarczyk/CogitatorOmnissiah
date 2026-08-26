@@ -12,15 +12,15 @@ import { createLogger } from "../logger";
 const log = createLogger("CycleHarvest");
 
 /**
- * Rytuał „Żniwa Cykli": dla każdej książki oznaczonej jako część cyklu zbiera
- * sąsiednie tomy (reużywa `CycleLookupService`) i materializuje je jako REALNE
- * wiersze bazy (`Kategoria=Tom cyklu`, pole `Cykl`/`CyklNr`). Dzięki temu tomy można
- * oznaczać (przeczytane/posiadane) i skanować na Vinted — poprzednio siedziały w
- * blobie i nie dało się ich oznaczyć (opcja A wybrana przez użytkownika).
+ * The „Żniwa Cykli" ritual: for each book tagged as part of a cycle it collects
+ * neighboring volumes (reuses `CycleLookupService`) and materializes them as REAL
+ * database rows (`Kategoria=Tom cyklu`, `Cykl`/`CyklNr` fields). This lets volumes be
+ * tagged (read/owned) and scanned on Vinted — previously they sat in a
+ * blob and couldn't be tagged (option A chosen by the user).
  *
- * Idempotentny: istniejący wiersz (po znorm. tytule) nie jest duplikowany, a tylko
- * dotagowany polem `Cykl`/`CyklNr`, jeśli go nie miał. Cykl przetwarzany raz, nawet
- * gdy ma kilka kotwic nagrodowych.
+ * Idempotent: an existing row (by normalized title) is not duplicated, only
+ * tagged with `Cykl`/`CyklNr` if it lacked them. A cycle is processed once, even
+ * when it has several award anchors.
  */
 export class CycleHarvestService {
   constructor(
@@ -40,10 +40,10 @@ export class CycleHarvestService {
       sendEvent({ type: "status", message: "Pobieranie listy książek z Notion..." });
       const books: NotionBook[] = await this.notion.getBooksForStats(undefined, checkCancellation, { cache: true });
 
-      // Indeks istniejących wierszy po znorm. tytule (polski + oryginalny) — żeby nie
-      // tworzyć duplikatów i móc dotagować istniejące pozycje polem Cykl.
-      // Indeks po TEJ SAMEJ normalizacji co cross-ref w lookup (normTitle) — inaczej
-      // „inBase" z lookup i dopasowanie tutaj się rozjeżdżają i tworzymy duplikat.
+      // Index of existing rows by normalized title (Polish + original) — so we don't
+      // create duplicates and can tag existing entries with the Cykl field.
+      // Index by the SAME normalization as the cross-ref in lookup (normTitle) — otherwise
+      // „inBase" from lookup and the match here diverge and we create a duplicate.
       const byTitle = new Map<string, NotionBook>();
       for (const b of books) {
         for (const t of [b.plTitle, b.origTitle]) if (t && t.trim()) byTitle.set(normTitle(t), b);
@@ -57,7 +57,7 @@ export class CycleHarvestService {
       }
 
       const limit = pLimit(Math.min(3, Math.max(1, (await this.config.getConfig()).sync.writeConcurrency)));
-      const processedCycles = new Set<string>(); // nazwy cykli już rozwinięte (dedup po kotwicach)
+      const processedCycles = new Set<string>(); // cycle names already expanded (dedup across anchors)
       const createdTitles: string[] = [];
       const taggedTitles: string[] = [];
       const noSiblingTitles: string[] = [];
@@ -71,12 +71,12 @@ export class CycleHarvestService {
           const view = await this.cycleLookup.lookup(anchorTitle, anchor.author || "");
           if (!view || view.volumes.length <= 1) { noSiblingTitles.push(anchorTitle); return; }
 
-          // Nazwa cyklu ustalona RAZ i sanityzowana — tak jak przy tworzeniu wiersza,
-          // inaczej guard `existing.cykl !== …` porównywałby surowe vs zsanityzowane i
-          // przepisywał Cykl co przebieg.
+          // Cycle name determined ONCE and sanitized — same as when creating the row,
+          // otherwise the `existing.cykl !== …` guard would compare raw vs sanitized and
+          // rewrite Cykl every run.
           const cyc = sanitizeNotionString(view.cycleName);
           const cycleKey = normTitle(cyc);
-          // Cykl rozwijamy raz — kolejna kotwica tego samego cyklu tylko się dotaguje.
+          // A cycle is expanded once — another anchor of the same cycle only gets tagged.
           if (cycleKey && processedCycles.has(cycleKey)) return;
           if (cycleKey) processedCycles.add(cycleKey);
 
@@ -84,16 +84,16 @@ export class CycleHarvestService {
           for (const vol of view.volumes) {
             if (checkCancellation()) return;
             const title = (vol.title || "").trim();
-            if (!title) continue;              // pomiń puste tytuły (brak junk-wiersza)
+            if (!title) continue;              // skip empty titles (no junk row)
             nr++;
             const key = normTitle(title);
             const existing = byTitle.get(key);
             if (existing && !existing.id) {
-              // Rezerwacja innego zadania (wiersz w trakcie tworzenia) — nie duplikuj.
+              // Reservation by another task (row being created) — don't duplicate.
               continue;
             } else if (existing) {
-              // Istnieje realny wiersz — dotaguj Cykl/CyklNr (nie duplikuj). Dla wierszy
-              // tomów cykli ujednolić też Lp i link; kotwic nagrodowych (numer w Lp) NIE.
+              // A real row exists — tag Cykl/CyklNr (don't duplicate). For cycle-volume
+              // rows also normalize Lp and the link; award anchors (number in Lp) are NOT touched.
               const props: Record<string, any> = {};
               if (existing.cykl !== cyc || existing.cyklNr !== nr) {
                 props["Cykl"] = { rich_text: [{ text: { content: cyc } }] };
@@ -113,8 +113,8 @@ export class CycleHarvestService {
                 if (isCycleVolume(existing)) existing.lp = cycleLpLabel(cyc, nr);
               }
             } else {
-              // Brak wiersza — REZERWUJ slot SYNCHRONICZNIE (przed await), potem utwórz.
-              // Równoległe zadanie zobaczy rezerwację (id="") i pominie ten tytuł.
+              // No row — RESERVE the slot SYNCHRONOUSLY (before await), then create it.
+              // A parallel task will see the reservation (id="") and skip this title.
               const reserved = { id: "", plTitle: title, origTitle: "", cykl: cyc, cyklNr: nr } as NotionBook;
               byTitle.set(key, reserved);
               const created = await this.notion.addRow(buildCycleVolumeProperties({
@@ -142,12 +142,12 @@ export class CycleHarvestService {
         result: {
           success: !checkCancellation(),
           found: cycleAnchors.length,
-          added: createdTitles.length,          // nowe wiersze tomów cykli
-          updated: taggedTitles.length,         // istniejące pozycje dopięte do cyklu / migracja Lp
+          added: createdTitles.length,          // new cycle-volume rows
+          updated: taggedTitles.length,         // existing entries attached to a cycle / Lp migration
           summary: {
-            added: createdTitles,               // panel „Nowe Zapisy"
-            updated: taggedTitles,              // panel „Zaktualizowane"
-            skipped: noSiblingTitles,           // panel „Pominięte" — kotwice bez sąsiednich tomów
+            added: createdTitles,               // „Nowe Zapisy" panel
+            updated: taggedTitles,              // „Zaktualizowane" panel
+            skipped: noSiblingTitles,           // „Pominięte" panel — anchors with no neighboring volumes
           },
           errors: errors.length > 0 ? errors : undefined,
         },

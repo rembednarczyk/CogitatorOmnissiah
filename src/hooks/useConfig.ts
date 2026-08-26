@@ -24,7 +24,7 @@ export function useConfig() {
       setConfigStatus({ ...configData, isSyncing: health.isSyncing, loading: false });
     } catch (err) {
       console.error("Config fetch error:", err);
-      // Nie zostawiaj karty statusu w wiecznej "Inicjalizacji Duchów Maszyny"
+      // Don't leave the status card stuck forever in "Inicjalizacji Duchów Maszyny"
       setConfigStatus(prev => ({ ...prev, loading: false }));
     }
   }, []);

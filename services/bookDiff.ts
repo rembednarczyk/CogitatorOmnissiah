@@ -3,21 +3,21 @@ import { sanitizeNotionString, sanitizeNotionTag, isValidUrl } from "../utils";
 import { normalizeData } from "./dataNormalizer";
 
 /**
- * Warstwa diffu książek: czyste funkcje budujące payloady dla Notion z pary
- * (rekord w Notion, książka z wiki). Bez I/O — BookSyncService tylko woła te
- * buildery i wysyła wynik do adaptera, dzięki czemu logika idempotencji jest
- * testowalna w izolacji i nie zaśmieca orkiestratora.
+ * Book diff layer: pure functions building Notion payloads from a pair
+ * (Notion record, wiki book). No I/O — BookSyncService only calls these
+ * builders and sends the result to the adapter, so the idempotency logic is
+ * testable in isolation and doesn't clutter the orchestrator.
  */
 
 /**
- * Buduje listę tagów autora dla pola multi_select. KOLEJNOŚĆ MA ZNACZENIE:
- * najpierw normalizacja (mapowania potrafią rozwinąć jedno nazwisko w kilka
- * rozdzielonych przecinkiem, np. "Liu Cixin" → "Liu Cixin, Ken Liu"), potem
- * podział po przecinku, a sanitizacja NA KOŃCU. `sanitizeNotionTag` usuwa
- * przecinki (Notion nie dopuszcza ich w opcjach select/multi_select) — gdy
- * sanitizacja biegła PRZED normalizacją, wstrzyknięty przez mapowanie przecinek
- * trafiał do nazwy opcji i Notion odrzucał cały wiersz (laureat gubiony w ciszy).
- * Deduplikacja jest case-insensitive, z zachowaniem pierwszej napotkanej pisowni.
+ * Builds the author tag list for a multi_select field. ORDER MATTERS:
+ * normalization first (mappings can expand one name into several
+ * comma-separated ones, e.g. "Liu Cixin" → "Liu Cixin, Ken Liu"), then
+ * split on comma, and sanitization LAST. `sanitizeNotionTag` strips
+ * commas (Notion doesn't allow them in select/multi_select options) — when
+ * sanitization ran BEFORE normalization, a comma injected by a mapping
+ * ended up in the option name and Notion rejected the whole row (laureate silently lost).
+ * Deduplication is case-insensitive, keeping the first encountered spelling.
  */
 export function buildAuthorTags(raw: string): string[] {
   if (!raw) return [];
@@ -36,7 +36,7 @@ export function buildAuthorTags(raw: string): string[] {
   return tags;
 }
 
-/** Case-insensitive union nagród + reguła "Wszystkie" (Hugo+Nebula+Locus). */
+/** Case-insensitive union of awards + the "Wszystkie" rule (Hugo+Nebula+Locus). */
 function mergeAwards(existing: string[], incoming: string[]): { awards: string[]; changed: boolean } {
   const lower = new Set(existing.map(a => a.toLowerCase()));
   const combined = [...existing];
@@ -57,9 +57,9 @@ function mergeAwards(existing: string[], incoming: string[]): { awards: string[]
 }
 
 /**
- * Diff istniejącego rekordu Notion względem książki z wiki → payload aktualizacji
- * (tylko zmienione pola). Puste = brak zmian. Autorzy/nagrody scalane (union),
- * porównania case-insensitive po obu stronach (Notion zachowuje własną pisownię).
+ * Diff of an existing Notion record against a wiki book → update payload
+ * (only changed fields). Empty = no changes. Authors/awards merged (union),
+ * comparisons case-insensitive on both sides (Notion keeps its own spelling).
  */
 export function buildBookUpdates(existingBook: NotionBook, book: Book): Record<string, any> {
   const updates: Record<string, any> = {};
@@ -84,7 +84,7 @@ export function buildBookUpdates(existingBook: NotionBook, book: Book): Record<s
     updates["Tytuł oryginalny"] = { rich_text: [{ text: { content: cleanExistingOrig } }] };
   }
 
-  // Autorzy — union (nigdy nie gub ręcznie dodanych w Notion), case-insensitive
+  // Authors — union (never lose ones manually added in Notion), case-insensitive
   const newAuthors = buildAuthorTags(book.author || "");
   const existingAuthors = buildAuthorTags(existingBook.author || "");
   const existingLower = new Set(existingAuthors.map(a => a.toLowerCase()));
@@ -99,7 +99,7 @@ export function buildBookUpdates(existingBook: NotionBook, book: Book): Record<s
     updates["Autor"] = { multi_select: combinedAuthors.slice(0, 100).map(name => ({ name })) };
   }
 
-  // Nagrody — union case-insensitive (zob. GUIDELINES §3)
+  // Awards — case-insensitive union (see GUIDELINES §3)
   const newAwards = (book.awards || []).map(sanitizeNotionTag).filter(Boolean);
   const existingAwards = (existingBook.awards || []).map(sanitizeNotionTag).filter(Boolean);
   const { awards: combinedAwards, changed: awardsUpdated } = mergeAwards(existingAwards, newAwards);
@@ -107,7 +107,7 @@ export function buildBookUpdates(existingBook: NotionBook, book: Book): Record<s
     updates["Nagroda"] = { multi_select: combinedAwards.slice(0, 100).map(name => ({ name })) };
   }
 
-  // Rok — dołóż nowy rok do zbioru (multi_select), posortowany
+  // Rok — add the new year to the set (multi_select), sorted
   const newYear = (book.year || "").trim();
   const existingYears = (existingBook.year || "").split(',').map((y: string) => y.trim()).filter(Boolean);
   if (newYear && !existingYears.includes(newYear)) {
@@ -118,7 +118,7 @@ export function buildBookUpdates(existingBook: NotionBook, book: Book): Record<s
   return updates;
 }
 
-/** Payload dla nowego wiersza Notion z książki z wiki. */
+/** Payload for a new Notion row from a wiki book. */
 export function buildNewBookProperties(book: Book): Record<string, any> {
   const properties: Record<string, any> = {
     "Lp": { title: [{ text: { content: sanitizeNotionString(book.polishTitle || book.originalTitle || "Nowy") } }] },

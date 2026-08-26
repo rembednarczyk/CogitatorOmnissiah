@@ -1,11 +1,11 @@
 export class DiffEngine {
   /**
-   * Porównuje dwie wartości typu multi_select (np. "Zysk, MAG" i "MAG, Zysk").
-   * Rozdziela po przecinku, usuwa białe znaki, sortuje i porównuje.
-   * Porównanie jest case-insensitive: Notion dopasowuje opcje multi_select bez
-   * względu na wielkość liter i zachowuje własną pisownię, więc różnica samej
-   * wielkości liter (np. "Zysk i S-ka" vs "Zysk i s-ka") nie jest realną zmianą
-   * i nie może wywoływać aktualizacji przy każdym sync.
+   * Compares two multi_select values (e.g. "Zysk, MAG" and "MAG, Zysk").
+   * Splits on comma, strips whitespace, sorts and compares.
+   * The comparison is case-insensitive: Notion matches multi_select options
+   * regardless of case and keeps its own spelling, so a difference in case
+   * alone (e.g. "Zysk i S-ka" vs "Zysk i s-ka") is not a real change
+   * and must not trigger an update on every sync.
    */
   static isMultiSelectEqual(val1: string, val2: string): boolean {
     const normalize = (s: string) =>
@@ -20,7 +20,7 @@ export class DiffEngine {
   }
 
   /**
-   * Standardowe porównanie stringów z pominięciem spacji brzegowych.
+   * Standard string comparison ignoring leading/trailing whitespace.
    */
   static isStringEqual(val1: string, val2: string): boolean {
     return (val1 || "").trim() === (val2 || "").trim();

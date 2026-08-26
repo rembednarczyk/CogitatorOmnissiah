@@ -47,8 +47,8 @@ const MAPPINGS: Record<NormalizationContext, Record<string, string>> = {
 };
 
 /**
- * Normalizuje dane na podstawie zdefiniowanych mapowań wyjątków.
- * Jeśli wartość nie znajduje się w mapowaniu, zwraca wartość oryginalną.
+ * Normalizes data based on the defined exception mappings.
+ * If the value isn't in the mapping, returns the original value.
  */
 export function normalizeData(value: string, context: NormalizationContext): string {
     if (!value) return value;
@@ -72,11 +72,11 @@ export function normalizeData(value: string, context: NormalizationContext): str
 }
 
 /**
- * Sprawdza, czy autor ze strony wiki pasuje do autora z Notion.
- * Chroni przed pobraniem danych z niewłaściwej strony o tym samym tytule
- * (inna książka, film, strona ujednoznaczniająca).
- * Brak autora po którejkolwiek stronie jest akceptowany (strony wiki nie
- * zawsze mają infobox z autorem).
+ * Checks whether the author from the wiki page matches the author from Notion.
+ * Guards against pulling data from the wrong page with the same title
+ * (a different book, a film, a disambiguation page).
+ * A missing author on either side is accepted (wiki pages don't
+ * always have an author infobox).
  */
 export function isWikiAuthorMatch(wikiAuthor: string, notionAuthor: string): boolean {
     if (!wikiAuthor || !notionAuthor) return true;
@@ -85,11 +85,11 @@ export function isWikiAuthorMatch(wikiAuthor: string, notionAuthor: string): boo
     if (!normWiki || !normNotion) return true;
     if (normWiki === normNotion) return true;
 
-    // Dopasowanie na poziomie CAŁYCH SŁÓW, nie surowego substringa. Wcześniej
-    // `normNotion.includes(normWiki)` akceptowało kolizje prefiksowe — "lem"
-    // pasowało do "lemański", "ann" do "anna" — przepuszczając stronę o innym
-    // dziele. Wymagamy, by krótsze nazwisko było PEŁNYM imieniem (≥2 słowa)
-    // w całości zawartym w drugim.
+    // Matching at the level of WHOLE WORDS, not a raw substring. Previously
+    // `normNotion.includes(normWiki)` accepted prefix collisions — "lem"
+    // matched "lemański", "ann" matched "anna" — letting through a page about a different
+    // work. We require the shorter name to be a FULL name (≥2 words)
+    // fully contained in the other.
     const words = (s: string) => new Set(s.split(/[\s,]+/).filter(Boolean));
     const a = words(normWiki);
     const b = words(normNotion);

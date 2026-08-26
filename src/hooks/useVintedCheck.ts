@@ -6,17 +6,17 @@ export interface VintedResult {
   title: string;
   author: string;
   searchUrl?: string;
-  /** Rok wydania (kolumna „Rok"; dane z bazy). */
+  /** Publication year (the „Rok" column; from the database). */
   year?: string;
-  /** Część cyklu (kolumna „Część cyklu"; dane z bazy) — ryzyko „kolejny tom". */
+  /** Part of a cycle (the „Część cyklu" column; from the database) — risk of the „next volume". */
   partOfCycle?: boolean;
-  /** Nazwa cyklu (kolumna „Cykl"; z żniw) — do etykiety kafelka cyklu. */
+  /** Cycle name (the „Cykl" column; from harvest) — for the cycle tile label. */
   cykl?: string;
-  /** Numer tomu w cyklu (kolumna „CyklNr"; z żniw). */
+  /** Volume number in the cycle (the „CyklNr" column; from harvest). */
   cyklNr?: number;
-  /** Znacznik świeżości — kiedy skanowano tę książkę (tylko dla danych z bazy, etap 3). */
+  /** Freshness marker — when this book was scanned (only for database data, stage 3). */
   scannedAt?: string;
-  /** Kiedy zestaw ofert ostatnio się zmienił (dane z bazy). Gdy == scannedAt → zmiana w ostatnim skanie. */
+  /** When the offer set last changed (from the database). When == scannedAt → changed in the last scan. */
   changedAt?: string;
   vintedItems: {
     id?: string;
@@ -26,9 +26,9 @@ export interface VintedResult {
     currency: string;
     url: string;
     photo?: string | null;
-    /** Cena z poprzedniego skanu (dane z bazy) — spadek, gdy priceValue < prevPrice. */
+    /** Price from the previous scan (from the database) — a drop when priceValue < prevPrice. */
     prevPrice?: number | null;
-    /** Kiedy oferta pojawiła się po raz pierwszy (dane z bazy) — „nowa", gdy == scannedAt książki. */
+    /** When the offer first appeared (from the database) — „new" when == the book's scannedAt. */
     firstSeenAt?: string;
   }[];
 }
@@ -40,8 +40,8 @@ export interface VintedSearchAttempt {
   url: string;
   status: "pending" | "success" | "no_results" | "blocked" | "error";
   itemCount: number;
-  // Diagnostyka (Krok 2) — pomaga odróżnić realny brak ofert od bloku / gubienia
-  // ofert przez parser. Kształt zależny od ścieżki (HTML vs błąd sieci).
+  // Diagnostics (Step 2) — helps tell a genuine lack of offers from a block / the parser
+  // dropping offers. Shape depends on the path (HTML vs network error).
   debug?: {
     chars?: number;
     hasCatalogJson?: boolean;
@@ -53,11 +53,11 @@ export interface VintedSearchAttempt {
     error?: string;
     code?: string;
     httpStatus?: number;
-    // Diagnostyka OOM (Krok 2): pamięć procesu po każdej próbie. Rosnące rssMb ku
-    // limitowi hostingu (Render free = 512 MB) tuż przed śmiercią skanu = OOM-kill.
+    // OOM diagnostics (Step 2): process memory after each attempt. rssMb rising toward
+    // the hosting limit (Render free = 512 MB) right before the scan dies = OOM-kill.
     rssMb?: number;
     heapMb?: number;
-    // Diff względem poprzedniego skanu (wykrywanie zmian): nowe/zniknięte/spadek/wzrost ceny.
+    // Diff against the previous scan (change detection): added/removed/price drop/price rise.
     changes?: { added: number; removed: number; priceDropped: number; priceRaised: number };
   };
 }
@@ -68,13 +68,13 @@ export function useVintedCheck() {
   const [isChecking, setIsChecking] = useState(false);
   const [checkProgress, setCheckProgress] = useState<{ current: number; total: number; message: string; startTime: number | null } | null>(null);
   const [vintedError, setVintedError] = useState<string | null>(null);
-  // Ref zamiast stanu w strażniku — stan w domknięciu bywa nieaktualny
+  // Ref instead of state in the guard — state in the closure can be stale
   const isCheckingRef = useRef(false);
 
-  // Skaner Vinted potrafi milczeć długo na jednej książce: withRetry(3, 4000) przy
-  // timeout 30 s daje worst-case ~102 s ciszy na wolnej/blokowanej pozycji (serwer
-  // śle tylko keepalive, a Render go buforuje). 120 s pokrywa ten worst-case bez
-  // ruszania timingu scrapera (nie zmniejsza trafień).
+  // The Vinted scanner can go silent for a long time on a single book: withRetry(3, 4000)
+  // with a 30 s timeout gives a worst-case ~102 s of silence on a slow/blocked item (the
+  // server sends only keepalive, and Render buffers it). 120 s covers that worst-case without
+  // touching the scraper's timing (doesn't reduce hits).
   const { run } = useSSEStream("/api/vinted-check", { timeoutMs: 120000 });
 
   const runVintedCheck = useCallback(async (opts?: { skipScannedWithinHours?: number }) => {

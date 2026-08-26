@@ -72,7 +72,7 @@ describe('LpSyncService', () => {
 
     await service.runLpSync(mockSendEvent, () => false);
 
-    // Tylko pozycja nagrodowa dostaje numer; tom cyklu pominięty w numeracji.
+    // Only the award entry gets a number; the cycle volume is skipped in numbering.
     expect(mockNotion.updateLp).toHaveBeenCalledWith('award', '1');
     expect(mockNotion.updateLp).not.toHaveBeenCalledWith('vol', expect.anything());
   });

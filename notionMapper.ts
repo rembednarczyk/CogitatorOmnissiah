@@ -1,12 +1,12 @@
 import { NotionPage, NotionProperty, NotionPageProperties, NotionBook } from "./src/types";
 
 /**
- * Mapowanie strony Notion → domenowy `NotionBook`. To logika domenowa (nie czyste
- * opakowanie API), więc mieszka poza `NotionAdapter` — czysta funkcja, testowalna
- * bez klienta Notion. Adapter tylko pobiera strony i woła `mapPageToBook`.
+ * Maps a Notion page → domain `NotionBook`. This is domain logic (not a pure
+ * API wrapper), so it lives outside `NotionAdapter` — a pure function, testable
+ * without a Notion client. The adapter only fetches pages and calls `mapPageToBook`.
  */
 
-/** Pobierz właściwość po nazwie, case-insensitive (Notion bywa niespójny w wielkości liter). */
+/** Get a property by name, case-insensitive (Notion is sometimes inconsistent about casing). */
 function getProp(props: NotionPageProperties, name: string): NotionProperty | undefined {
   if (props[name]) return props[name];
   const lowerName = name.toLowerCase();
@@ -16,7 +16,7 @@ function getProp(props: NotionPageProperties, name: string): NotionProperty | un
   return undefined;
 }
 
-/** Wyciągnij tekst z dowolnego typu właściwości Notion. */
+/** Extract text from any Notion property type. */
 function getPlainText(prop?: NotionProperty): string {
   if (!prop) return "";
   const type = prop.type;
@@ -30,7 +30,7 @@ function getPlainText(prop?: NotionProperty): string {
   return "";
 }
 
-/** Wartości multi_select (lub pojedynczy select) jako lista nazw. */
+/** multi_select values (or a single select) as a list of names. */
 function multiSelectNames(prop?: NotionProperty): string[] {
   if (prop?.type === "multi_select") return prop.multi_select?.map((x) => x.name) || [];
   if (prop?.type === "select" && prop.select?.name) return [prop.select.name];
@@ -64,24 +64,24 @@ export function mapPageToBook(page: NotionPage): NotionBook {
   const currentWydawnictwo = getPlainText(getProp(props, "Wydawnictwo"));
   const currentSeria = getPlainText(getProp(props, "Seria"));
   const currentCzesccyklu = getProp(props, "Część cyklu")?.checkbox || false;
-  // Kategoria wiersza: „Nagroda" (domyślnie, gdy pusto) vs „Tom cyklu" (poboczny tom
-  // cyklu dodany rytuałem żniw). Rozdziela pozycje nagrodowe od reszty.
+  // Row category: „Nagroda" (default, when empty) vs „Tom cyklu" (sibling cycle
+  // volume added by the harvest ritual). Separates award entries from the rest.
   const kategoria = getProp(props, "Kategoria")?.select?.name || undefined;
   const lp = getPlainText(getProp(props, "Lp"));
 
   const awards = multiSelectNames(getProp(props, "Nagroda"));
   const zrodlo = multiSelectNames(getProp(props, "Źródło"));
 
-  // Blob składowanych wyników Vinted (rich_text; wiele segmentów jest sklejanych w getPlainText).
+  // Stored Vinted results blob (rich_text; multiple segments are joined in getPlainText).
   const vintedData = getPlainText(getProp(props, "VintedData")) || undefined;
 
-  // Grupowanie cyklu: nazwa cyklu (rich_text) + pozycja w cyklu (number). Ustawiane
-  // rytuałem żniw na kotwicy nagrodowej ORAZ na wierszach pobocznych tomów.
+  // Cycle grouping: cycle name (rich_text) + position within the cycle (number). Set
+  // by the harvest ritual on the award anchor AND on the sibling volume rows.
   const cykl = getPlainText(getProp(props, "Cykl")) || undefined;
   const cyklNrProp = getProp(props, "CyklNr");
   const cyklNr = cyklNrProp?.type === "number" && typeof cyklNrProp.number === "number" ? cyklNrProp.number : undefined;
 
-  // Ręczny klucz porządku na regale (number; brak/null → undefined = sort po roku).
+  // Manual shelf ordering key (number; missing/null → undefined = sort by year).
   const shelfOrderProp = getProp(props, "ShelfOrder");
   const shelfOrder = shelfOrderProp?.type === "number" && typeof shelfOrderProp.number === "number" ? shelfOrderProp.number : undefined;
 

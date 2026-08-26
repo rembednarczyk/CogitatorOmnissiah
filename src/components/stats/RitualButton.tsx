@@ -8,18 +8,18 @@ interface RitualButtonProps {
   title: string;
   subtitle: string;
   onClick: () => void;
-  /** Animuj ikonę: „spin" (loader) lub „pulse" (aktywny rytuał). */
+  /** Animate the icon: „spin" (loader) or „pulse" (active ritual). */
   animate?: "spin" | "pulse";
   disabled?: boolean;
-  /** Dodatkowe klasy układu, np. `sm:col-span-2`. */
+  /** Extra layout classes, e.g. `sm:col-span-2`. */
   className?: string;
 }
 
 /**
- * Przycisk w stylu rytuału z liturgii synchronizacji (zob. OtherToolsCard): ciemna baza
- * slate-950, ikona w boxie, kolorowy akcent border/glow/scale na hover, tytuł „Rytuał X"
- * + uppercase podtytuł. Kolor bierze z centralnego motywu `ritualButtonTheme`. Stan
- * (bieg/stop/loader) ustala wołający, podając odpowiedni kolor/ikonę/tytuł.
+ * A ritual-style button from the sync liturgies (see OtherToolsCard): dark
+ * slate-950 base, icon in a box, colored border/glow/scale accent on hover, „Rytuał X" title
+ * + uppercase subtitle. Color comes from the central `ritualButtonTheme`. The state
+ * (run/stop/loader) is set by the caller, passing the right color/icon/title.
  */
 export const RitualButton: React.FC<RitualButtonProps> = ({
   color, icon: Icon, title, subtitle, onClick, animate, disabled, className,
