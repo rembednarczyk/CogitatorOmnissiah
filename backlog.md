@@ -757,6 +757,36 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
 
 ## Otwarte pozycje
 
+- **Sortowanie „Archiwum Cykli" po najmniejszej liczbie książek do przeczytania (easy wins)** — NOWE, do zrobienia.
+  Cel: domyślnie na górze cykle, którym najmniej brakuje do ukończenia CZYTANIA („szybkie zwycięstwa") —
+  motywacja + naturalna kolejność „domknij prawie skończone". Dziś `aggregateCycleRows` sortuje po
+  `missing` (ani posiadane, ani przeczytane) malejąco → najwięcej-do-zdobycia na górze (odwrotnie). Plan:
+  metryka „do przeczytania" = `total − read` (już liczone jako `toRead` w UI); sort rosnąco po `toRead`,
+  ukończone (`toRead===0`) na dół. Rozważyć przełącznik trybu sortu w karcie (jak w paczkach Vinted:
+  „najbliżej ukończenia" vs „najwięcej do zdobycia") zamiast twardej zmiany. Czysto UI/`cycleRows` +
+  testy `aggregateCycleRows`. Tani PR.
+- **Vinted znowu zablokował skaner — alternatywy w zanadrzu** — NOTATKA (Vinted ubił skan z IP Render/datacenter).
+  Co JUŻ mamy (obrona pasywna): throttle 3–5 s + jitter na każdej ścieżce, pula User-Agent (rotacja,
+  konfigurowalna), keep-alive `https.Agent`, skan oldest-first + wznawialny (rozłożenie w czasie),
+  obsługa 429/403 (403 = blok Cloudflare). To nie wystarcza, gdy Cloudflare flaguje samo IP datacenter.
+  Alternatywy w kolejności koszt/skuteczność:
+  1. **Priming ciasteczka Cloudflare** — najpierw GET strony głównej Vinted, przejąć `cf_clearance` (+ inne
+     cookie), reużyć w kolejnych żądaniach (mamy keep-alive agent). Najtańszy pierwszy strzał; często sam
+     wystarcza, bo blok leci na „gołe" żądania bez sesji.
+  2. **Headless browser (Playwright — JEST w środowisku)** — renderuje JS i przechodzi wyzwanie Cloudflare
+     jak realna przeglądarka. Wariant lekki: użyć TYLKO do primingu cookie (pkt 1), potem dalej lekki fetch;
+     wariant ciężki: cały scrape przez przeglądarkę (wolniej, więcej pamięci — uwaga na OOM 512 MB Render).
+  3. **Wewnętrzne API katalogu** (`/api/v2/catalog/items`, JSON) — dużo mniej pamięci niż 7 MB HTML +
+     stabilniejszy parsing, ale wymaga tokenu/cookie z sesji i też pod Cloudflare. Wcześniej odrzucone DLA
+     SPRZEDAWCY („brak wjazdu"), lecz z primingiem (pkt 1) warto przetestować dla katalogu.
+  4. **Zmiana IP**: (a) proxy rezydencjalne / rotacja (płatne, najskuteczniejsze — omija flagę datacenter);
+     (b) uruchamiać skan z innego miejsca niż Render (lokalnie / domowe IP), a do Notion pisać wynik.
+  5. **Zewnętrzny scraping-API** (ScraperAPI / ZenRows / BrightData) — oddaje anty-bota dostawcy; koszt +
+     zależność, ale zero utrzymania anty-Cloudflare po naszej stronie.
+  6. **Podkręcić obronę pasywną** (najtańsze od razu): dłuższy throttle + rozłożyć skan na więcej dni
+     (knob), mniejsze batche — kupuje czas, nie rozwiązuje twardego bloku IP.
+  REKOMENDACJA startu: pkt 1 (priming cookie) → jeśli mało, pkt 2 lekki (Playwright tylko do cookie).
+
 - **Cykle UC1: skaner Vinted szuka BRAKUJĄCYCH tomów cykli („widm")** — ODŁOŻONE (na życzenie, po Etapie 1).
   Kontekst: Etap 1 gotowy (1.36.0–1.37.1) — Rytuał Żniw zbiera tomy cykli do blobów `CycleCache` per-pozycja;
   karta „Archiwum Cykli" je wyświetla (UC2). UC1 = wykorzystać te bloby do KUPOWANIA brakujących tomów.
