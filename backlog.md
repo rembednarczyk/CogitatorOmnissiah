@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.44.2** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.44.3** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,11 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.44.3** — **Rytuały Oficyny/Serie/Cykle pomijają poboczne tomy cykli.** `WikiFieldSyncService`
+  (wydawca+seria) i `CyclesSyncService` iterowały `queryAllBooks()` bez filtra `isAwardBook` →
+  wzbogacały/taggowały też wiersze `Kategoria="Tom cyklu"` (zbędne pobrania stron + zapisy na
+  wierszach, których żaden konsument nagrodowy nie czyta). Filtr `rawBooks.filter(isAwardBook)` na
+  wejściu obu rytuałów — spójne z modelem kategorii wierszy. +2 testy (pomijanie tomów).
 - **1.44.2** — **Audyt integralności — remediacja kodu (front B).** Werdykt: kod jednolity (architektura
   wytrzymała), dryf głównie w DOKUMENTACJI (→ osobny PR). Fixy jednolitości: wspólny `encyclopediaUrl`
   (`src/utils/encyclopedia.ts`) zamiast 3 identycznych kopii (CyclePanel/CyclesHarvestCard/cycleRows;
