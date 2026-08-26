@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.45.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.45.2** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,14 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.45.2** — **„Odśwież Dane" pokrywa też Archiwum Cykli (audyt + fix).** Audyt: wszystkie karty
+  statystyk czytają z `stats` (fetchStats), OPRÓCZ `CyclesHarvestCard` — miała własny `useCyclesHarvest`
+  i przycisk „Odśwież Dane" jej NIE przeładowywał (jedyna luka; reszta modułów OK). Fix: `StatsSection`
+  trzyma `refreshTick` — klik odświeża `fetchStats()` I inkrementuje sygnał; karta refetchuje na sygnał
+  (guard pomija mount, silent = bez migania). Dodatkowo świeżość: `/api/cycles-harvest?fresh=1` omija
+  5-min `booksCache` (`getCyclesHarvest(fresh)` → `{cache:!fresh}`), więc ręczny refresh jest tak świeży
+  jak `/api/stats`. +2 testy (routing fresh flag). Uwaga: `useEffectiveConfig` (filie) świadomie poza
+  refreshem — to konfiguracja, nie dane statystyk.
 - **1.45.1** — **Podgląd cyklu: popover w miejscu kliknięcia (fix pozycjonowania) + etykieta „Cykl · N".**
   ROOT CAUSE: `CyclePanel` (`position: fixed`) renderowany WEWNĄTRZ transformowanych przodków
   (framer-motion `motion.div`) → fixed liczył się względem karty, nie viewportu (na długiej liście
@@ -757,14 +765,6 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
 
 ## Otwarte pozycje
 
-- **Weryfikacja: „Odśwież dane" pokrywa WSZYSTKIE nowe moduły statystyk archiwum** — DO SPRAWDZENIA.
-  Po dołożeniu kafelków (Oficyny/Serie/Cykle, Oś czasu/dekady, Rynek Vinted, Archiwum Cykli, kafelki
-  Vinted z cyklem) upewnić się, że przycisk „Odśwież dane" faktycznie przeładowuje KAŻDY z nich, a nie
-  tylko część. Sprawdzić w `useSyncManager`/hookach statystyk (`useStats`, `useCyclesHarvest`,
-  `useVintedStored`, market/`useAppConfig`), które źródła są invalidowane/refetchowane po kliknięciu, a
-  które trzymają własny cache (np. modułowy cache `useEffectiveConfig`, ref-cache `useCycle`,
-  `booksCache` w adapterze) i mogą serwować nieświeże dane. Wynik: albo potwierdzić pełne pokrycie, albo
-  domknąć luki (jeden refetch orchestrujący wszystkie moduły). Tani audyt + ewentualny fix.
 - **Sortowanie „Archiwum Cykli" po najmniejszej liczbie książek do przeczytania (easy wins)** — NOWE, do zrobienia.
   Cel: domyślnie na górze cykle, którym najmniej brakuje do ukończenia CZYTANIA („szybkie zwycięstwa") —
   motywacja + naturalna kolejność „domknij prawie skończone". Dziś `aggregateCycleRows` sortuje po

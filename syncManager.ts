@@ -180,8 +180,9 @@ class SyncManager {
 
   /** Podgląd cyklu dla książki (na żądanie, bez zapisu do bazy). */
   /** Zagregowany widok cykli (z wierszy oznaczonych polem `Cykl`) dla Archiwum. */
-  async getCyclesHarvest() {
-    const books = await this.notion.getBooksForStats(undefined, undefined, { cache: true });
+  /** `fresh` (ręczne „Odśwież Dane") pomija 5-min cache książek → dane jak w /api/stats. */
+  async getCyclesHarvest(fresh = false) {
+    const books = await this.notion.getBooksForStats(undefined, undefined, { cache: !fresh });
     return aggregateCycleRows(books);
   }
 

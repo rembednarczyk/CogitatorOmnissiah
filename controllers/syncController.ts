@@ -318,9 +318,10 @@ export const getCycle = async (req: Request, res: Response) => {
   }
 };
 
-export const getCyclesHarvest = async (_req: Request, res: Response) => {
+export const getCyclesHarvest = async (req: Request, res: Response) => {
   try {
-    res.json(await syncManager.getCyclesHarvest());
+    const fresh = req.query.fresh === "1" || req.query.fresh === "true";
+    res.json(await syncManager.getCyclesHarvest(fresh));
   } catch (error: any) {
     log.error("Cycles harvest read error", { message: error?.message });
     res.status(500).json({ error: error.message || "Błąd odczytu zebranych cykli." });

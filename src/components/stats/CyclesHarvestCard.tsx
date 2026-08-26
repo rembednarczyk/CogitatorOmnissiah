@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion } from "motion/react";
 import { Layers, ChevronDown, Check, CheckCheck, Package, PackageOpen, Book, CircleDashed, AlertTriangle, Award, ExternalLink, Loader2, ShoppingCart } from "lucide-react";
 import { useCyclesHarvest, HarvestVolume } from "../../hooks/useCyclesHarvest";
@@ -17,9 +17,18 @@ const volStatus = (v: HarvestVolume) => {
  * Archiwum Cykli — zbiorczy widok tomów cykli (wiersze bazy z pola `Cykl`). Pokazuje
  * ile tomów masz / do zdobycia i pozwala oznaczać tomy przeczytane/posiadane w miejscu.
  */
-export const CyclesHarvestCard: React.FC = () => {
-  const { view, loading, error, busyId, toggleSource } = useCyclesHarvest();
+export const CyclesHarvestCard: React.FC<{ refreshSignal?: number }> = ({ refreshSignal }) => {
+  const { view, loading, error, busyId, fetchHarvest, toggleSource } = useCyclesHarvest();
   const [open, setOpen] = useState<string | null>(null);
+
+  // „Odśwież Dane" (StatsSection) inkrementuje refreshSignal → dociągnij świeże cykle
+  // (silent = bez migania kartą, fresh = pomiń cache). Pomiń pierwszy przebieg (mount
+  // już pobiera w hooku), by nie dublować żądania.
+  const firstRun = useRef(true);
+  useEffect(() => {
+    if (firstRun.current) { firstRun.current = false; return; }
+    fetchHarvest(true, true);
+  }, [refreshSignal, fetchHarvest]);
 
   return (
     <motion.div

@@ -42,11 +42,12 @@ export function useCyclesHarvest() {
   const [busyId, setBusyId] = useState<string | null>(null);
 
   // `silent` = odświeżenie w tle (po oznaczeniu tomu) bez migania całą kartą.
-  const fetchHarvest = useCallback(async (silent = false) => {
+  // `fresh` = pomiń 5-min cache książek na serwerze (ręczne „Odśwież Dane").
+  const fetchHarvest = useCallback(async (silent = false, fresh = false) => {
     if (!silent) setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/cycles-harvest");
+      const res = await fetch(`/api/cycles-harvest${fresh ? "?fresh=1" : ""}`);
       if (!res.ok) throw new Error(`Błąd serwera: ${res.status}`);
       setView(await res.json());
     } catch (e: any) {
