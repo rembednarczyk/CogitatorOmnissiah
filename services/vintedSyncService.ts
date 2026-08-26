@@ -160,7 +160,7 @@ export class VintedSyncService {
           if (items.length > 0) {
             // Utrwal (scala ze składowanymi — zachowuje sprzedawców przy niezmienionym URL) + policz diff.
             const diff = persistEnabled ? await this.persistBookOffers(book, items, scannedAt) : EMPTY_DIFF;
-            const matchResult = { id: book.id, title: book.plTitle, author: book.author, searchUrl: url, vintedItems: items };
+            const matchResult = { id: book.id, title: book.plTitle, author: book.author, searchUrl: url, vintedItems: items, partOfCycle: book.currentCzesccyklu, cykl: book.cykl, cyklNr: book.cyklNr };
             results.push(matchResult);
             sendEvent({ type: "match", result: matchResult });
             sendEvent({ type: "search_attempt", result: { id: book.id, title, author: book.author, url, status: "success", itemCount: items.length, debug: { ...debug, changes: diff } } });
