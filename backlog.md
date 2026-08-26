@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.47.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.47.2** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,14 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.47.2** — **Audyt skanera Vinted: samonaprawa primingu w resolve sprzedawców + widoczność wznawialności.**
+  (1) `resolveSellersToStore` primował sesję BEZ samonaprawy — jeśli rozgrzana sesja psuła wariant strony
+  oferty, `extractVintedSeller` po cichu zawodził. Dodana sonda na 1. ofercie (jak w skanie): niezablokowana,
+  ale bez sprzedawcy → porzuć sesję, ustalaj bez primingu. (2) Wznawialność: LOGIKA jest poprawna (planner
+  oldest-first + skip-N-h testowany; `saveVintedData` invaliduje cache; `scannedAt` stemplowany przy match/
+  pierwszym empty). Książki BLOKOWANE/BŁĘDNE świadomie NIE są stemplowane → wznowienie je ponawia; przy
+  masowym bloku Cloudflare wygląda to jak „resume nie działa". Dodane liczniki `blocked`/`errors` w evencie
+  `complete` + dopisek w podsumowaniu („Nie zeskanowano N…"), żeby było widać, że to blok, nie logika.
 - **1.47.1** — **Priming Vinted: samonaprawa (nie może zaniżyć trafień).** Regresja: rozgrzana sesja
   (stały UA + Cookie) potrafi zmienić WARIANT strony serwowanej przez Vinted na taki bez inline'owanego
   katalogu → parser gubił WSZYSTKIE oferty (200 OK „dobry strzał", 0 książek). Fix: po primingu jedna

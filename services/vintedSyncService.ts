@@ -143,6 +143,10 @@ export class VintedSyncService {
         log.warn("Nie udało się zapewnić pola VintedData — persystencja wyłączona", { error: e?.message });
       }
 
+      // Books that BLOCK or ERROR are intentionally not stamped with scannedAt (so a resume
+      // retries them) — counting them lets the summary explain why a resumed run isn't advancing.
+      let blockedCount = 0, errorCount = 0;
+
       for (let i = 0; i < candidates.length; i++) {
         if (checkCancellation()) {
           sendEvent({ type: "status", message: "Skanowanie Vinted przerwane przez użytkownika." });
@@ -175,6 +179,7 @@ export class VintedSyncService {
             log.warn(`Vinted zablokował żądanie (wykrycie bota)`, { title });
             sendEvent({ type: "status", message: `⚠️ Vinted wykrył bota przy "${title}". Próbuję ominąć...` });
             sendEvent({ type: "search_attempt", result: { id: book.id, title, author: book.author, url, status: "blocked", itemCount: 0, debug: { ...vintedDiagnostics(html, 0), ...memMb() } } });
+            blockedCount++;
             // A block is NOT „no offers": we don't store emptiness or scannedAt, so a resume retries this book.
             await throttle(v.throttleMinMs, v.throttleJitterMs);
             continue;
@@ -214,6 +219,7 @@ export class VintedSyncService {
         } catch (err: any) {
           log.warn(`Błąd sprawdzania Vinted`, { title, error: err.message || "Nieznany błąd" });
           sendEvent({ type: "search_attempt", result: { id: book.id, title, author: book.author, url, status: "error", itemCount: 0, debug: { error: err.message, code: err.code, httpStatus: err.response?.status, ...memMb() } } });
+          errorCount++;
           const { message, waitMs } = classifyVintedError(err, title);
           sendEvent({ type: "status", message });
           if (waitMs) await new Promise((resolve) => setTimeout(resolve, waitMs));
@@ -224,7 +230,11 @@ export class VintedSyncService {
       }
 
       const wasCancelled = checkCancellation();
-      sendEvent({ type: "complete", result: { success: !wasCancelled, cancelled: wasCancelled, results, message: wasCancelled ? `Skanowanie Vinted przerwane. Znaleziono oferty dla ${results.length} książek przed przerwaniem.` : `Zakończono skanowanie Vinted. Znaleziono oferty dla ${results.length} książek.` } });
+      // Blocked/errored books aren't stamped, so a resume retries them — surface the counts
+      // so a run that seems "not to resume" is explained (books blocked, not scanned).
+      const stuck = blockedCount + errorCount;
+      const stuckNote = stuck > 0 ? ` Nie zeskanowano ${stuck} (zablokowane: ${blockedCount}, błędy: ${errorCount}) — zostaną ponowione przy wznowieniu.` : "";
+      sendEvent({ type: "complete", result: { success: !wasCancelled, cancelled: wasCancelled, results, blocked: blockedCount, errors: errorCount, message: (wasCancelled ? `Skanowanie Vinted przerwane. Znaleziono oferty dla ${results.length} książek przed przerwaniem.` : `Zakończono skanowanie Vinted. Znaleziono oferty dla ${results.length} książek.`) + stuckNote } });
     } catch (error: any) {
       log.error("Błąd inicjalizacji Vinted", { message: error.message });
       sendEvent({ type: "error", error: `Błąd inicjalizacji Vinted: ${error.message}` });
@@ -282,6 +292,25 @@ export class VintedSyncService {
       if (v.primeSession) {
         sendEvent({ type: "status", message: "Rozgrzewanie sesji Vinted (ciasteczko Cloudflare)..." });
         session = await primeVintedSession(httpsAgent, { uaPool: cfg.scraping.userAgents, timeoutMs: v.requestTimeoutMs });
+
+        // SELF-HEAL (as in the scan): a primed session can change the offer-page VARIANT so the
+        // seller markers vanish → extractVintedSeller would silently fail on every page. Validate
+        // on the first pending offer; if it's not blocked yet yields no parseable seller, drop the
+        // session and resolve unprimed. Dropping is always safe (= previous behavior).
+        const firstOffer = pending[0]?.offers[0];
+        if (session.cookie && firstOffer) {
+          try {
+            const probe = await axios.get(firstOffer.url, { httpsAgent, headers: vintedRequestHeaders(cfg.scraping.userAgents, session), timeout: v.requestTimeoutMs });
+            const ph: string = probe.data;
+            if (!looksBlocked(ph) && !extractVintedSeller(ph)) {
+              session = { userAgent: "", cookie: "" };
+              sendEvent({ type: "status", message: "Rozgrzana sesja zwraca stronę oferty bez sprzedawcy — porzucam priming, ustalam bez sesji." });
+            }
+            await throttle(v.throttleMinMs, v.throttleJitterMs);
+          } catch {
+            // A probe error isn't decisive — keep the session; the per-offer loop has retry anyway.
+          }
+        }
       }
 
       let fetched = 0, resolved = 0;
