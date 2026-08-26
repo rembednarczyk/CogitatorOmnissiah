@@ -230,7 +230,7 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
   + `GET /api/cycles-harvest`. Front: `useCyclesHarvest` + `CyclesHarvestCard` (rozwijane cykle,
   liczniki inBase/total + badge „N do zdobycia", statusy tomów jak Skryptorium, link do Encyklopedii,
   ikona nagrody) wpięta jako karta „cyclesHarvest" w Analizie Zasobów. Testy agregacji. Zweryfikowane
-  zrzutem. NASTĘPNE: UC1 — skaner Vinted czyta bloby i szuka widmowych tomów do kupienia.
+  zrzutem. (Później model zmieniony: tomy cykli = REALNE WIERSZE, bloby `CycleCache`/„widma" porzucone — zob. Otwarte pozycje.)
 - **1.36.0** — **Cykle: Rytuał Żniw (harvest struktury do blobu per-pozycja) — Etap 1 backend (CYH-PR1).**
   Nowy rytuał `cycles-harvest` (`CycleHarvestService`): iteruje książki z „Część cyklu", reużywa
   `CycleLookupService` (prev/next + {{Cykl}} + cross-ref) i zapisuje zebrane tomy w blobie `CycleCache`
@@ -241,8 +241,8 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
   `runCyclesHarvest`/`stopCyclesHarvest`, routy `/sync-cycles-harvest(+/stop)`, `useSyncManager`
   `cyclesHarvestSync` + przycisk „Rytuał Żniw Cykli" w OtherToolsCard. Mapper czyta `CycleCache`→`cycleCache`.
   Decyzja architektoniczna: blob per-pozycja (nie zbiorczy — limit Notion, sentinel-row odpada);
-  dedykowany rytuał (nie doczepka do skanu Vinted — rozdział struktura vs dostępność). NASTĘPNE:
-  CYH-PR2 (karta „Cykle" w Archiwum czytająca bloby) → potem UC1 (skaner Vinted czyta bloby, szuka widm).
+  dedykowany rytuał (nie doczepka do skanu Vinted — rozdział struktura vs dostępność).
+  (Później: blob `CycleCache` zastąpiony REALNYMI WIERSZAMI `Kategoria="Tom cyklu"` — bloby/widma porzucone.)
 - **1.35.2** — **Statystyki: masonry „wiersz po wierszu" (round-robin).** CSS `columns` czytało
   się kolumnami (cała lewa, potem prawa) — nieintuicyjne przy drag&drop kolejności. Teraz karty
   rozkładane round-robin `distributeColumns(items, cols)` (i % cols) do osobnych kolumn flex:
@@ -792,31 +792,6 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
      (knob), mniejsze batche — kupuje czas, nie rozwiązuje twardego bloku IP.
   REKOMENDACJA startu: pkt 1 (priming cookie) → jeśli mało, pkt 2 lekki (Playwright tylko do cookie).
 
-- **Cykle UC1: skaner Vinted szuka BRAKUJĄCYCH tomów cykli („widm")** — ODŁOŻONE (na życzenie, po Etapie 1).
-  Kontekst: Etap 1 gotowy (1.36.0–1.37.1) — Rytuał Żniw zbiera tomy cykli do blobów `CycleCache` per-pozycja;
-  karta „Archiwum Cykli" je wyświetla (UC2). UC1 = wykorzystać te bloby do KUPOWANIA brakujących tomów.
-  - **Cel**: dla tomów cykli, których NIE ma w bazie (albo są, ale nieposiadane+nieprzeczytane), szukać ofert
-    na Vinted — jak zwykłej książki — i pokazać dostępność, nie dodając ich jako wiersze bazy.
-  - **Dane wejściowe**: `mergeCycleCaches(books)` daje już listę tomów per cykl ze statusami. Widma =
-    `volumes.filter(v => !inBase || (inBase && !owned && !read))`, dedup po znorm. `tytuł|autor` (autor = autor
-    książki-kotwicy cyklu — tomy nie mają własnego pola autora w blobie; ewentualnie dołożyć `a` do `CycleBlobVol`).
-    Czysty helper `buildPhantomTargets(harvest, baseBooks)` + testy; wyklucza tomy będące już wierszami bazy
-    (te skanuje normalny Vinted).
-  - **Szukanie**: reużyć `buildCatalogUrl` + ścieżkę scrape'owania z `vintedSyncService` (ten sam httpsAgent,
-    UA pool, retry, diagnostyka blokad, `search_attempt`/`match` SSE). NIE duplikować — wydzielić wspólny
-    „search one query → items" z `runVintedCheck` i użyć w obu.
-  - **Zapis dostępności**: NIE ma wiersza bazy dla widma → zapisać do... (DECYZJA) albo (a) osobny agregat-blob
-    (np. opis kolumny `CyclePhantoms`, jeśli zmieści się limit — raczej nie przy wielu ofertach), albo (b) dopisać
-    najtańszą ofertę do wpisu tomu w blobie `CycleCache` książki-kotwicy (`mkt:{price,url,at}` w `CycleBlobVol`).
-    REKOMENDACJA: (b) — self-contained, karta „Archiwum Cykli" czyta to samo źródło. Uwaga: skan widm i harvest
-    struktury piszą wtedy w ten sam blob — trzymać rozłącznie (harvest nie kasuje `mkt`, skan nie kasuje struktury).
-  - **Trigger** (DECYZJA, odłożona): osobny rytuał „Vinted Cykli" (rekomendacja — rozdział odpowiedzialności,
-    kontrola obciążenia) vs knob `vinted.scanCyclePhantoms` doczepiający widma do głównego skanu vs oba.
-  - **Ryzyko**: więcej zapytań do Vinted = większe ryzyko blokad (świeżo naprawiona pula UA). Dać opt-in +
-    limit (`vinted.maxPhantomsPerRun`), uczciwy raport pominięć, respektować istniejące okno wznowienia.
-  - **UI**: w karcie „Archiwum Cykli" pokazać przy tomie dostępność (cena + link „kup"), gdy `mkt` obecne.
-  - **Kolejność PR**: (UC1-PR1) czysty `buildPhantomTargets` + `CycleBlobVol.mkt` + ekstrakcja wspólnego
-    „searchOne" z Vinted; (UC1-PR2) rytuał/knob + zapis dostępności; (UC1-PR3) UI dostępności w karcie.
 - **Data przeczytania + „Tempo czytania" (velocity)** — ODŁOŻONE (wymaga NOWEGO ZAPISU, nie tylko
   odczytu). Dziś nie mamy kiedy książka została przeczytana — brak pola. Plan: kolumna „Data
   przeczytania" (date) stemplowana przy oznaczaniu „Przeczytane" (`markAsRead`/`setRead`), czyszczona
@@ -829,40 +804,15 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
 - **Ewentualnie później**: odświeżanie pojedynczej książki/oferty z bazy (re-check
   świeżości), natywna baza „Vinted Offers" (jeśli blob przestanie wystarczać), proxy
   rezydencjalne dla ominięcia 403.
-- **Cykle: sąsiednie tomy — ZREALIZOWANE (1.33.0/1.34.0), wariant on-demand bez persystencji.**
-  Zamiast blobu `CycleData` + rytuału (poniższy plan): lazy `GET /api/cycle` na klik badge'a
-  „cykl" w Skryptorium → panel tomów krzyżowany z bazą. NIC nie zapisujemy do Notion (zgodnie z
-  preferencją użytkownika). Poniższy plan persystencji ZOSTAWIONY jako referencja, gdyby kiedyś
-  potrzebny był offline/statystyki cykli. Oryginalny pomysł/analiza 1.11.1:
-  - **Kluczowy finding**: `cyclesSyncService` już parsuje `|cykl=` / `{{Cykl|…}}` z wikitekstu,
-    ale zapisuje TYLKO boolean „Część cyklu" (linie 41–131) — nazwę cyklu i listę tomów
-    z szablonu `{{Cykl}}` wyrzucamy. Tu jest źródło danych: rozszerzyć ten sam rytuał,
-    nie dokładać nowego fetchu.
-  - **NOWY finding (1.11.2, realny raw „Inny"/Dickson)**: infobox `{{Książka}}` ma pola
-    `|poprzednia=` i `|następna=` z tytułami SĄSIEDNICH tomów (np. poprzednia „Młody Bleys",
-    następna „Gildia Orędowników") + `|cykl=` z nazwą cyklu. To gotowy łańcuch prev/next —
-    dużo prostszy niż parsowanie `{{Cykl}}`: krok 1 persystencji może zapisać
-    `{cykl, poprzednia, następna}` wprost z tych pól.
-  - **Zasada nadrzędna**: NIE fetchować na żywo w widoku „Wczytaj z bazy" — to łamie
-    „scrapuj raz, analizuj wiele" i wskrzesza rate-limit/Cloudflare + fetch wiki przy renderze.
-  - **Projekt (3 warstwy, każda w istniejącym flow)**:
-    1. Persystencja struktury: `cyclesSyncService` zapisuje nazwę cyklu + uporządkowaną listę
-       tomów do bloba `CycleData` (wzorzec `VintedData`). Wtedy „sąsiednie tomy" = lookup z bazy.
-    2. Render bez scrapowania: kafelek czyta listę z bloba, krzyżuje z wierszami Notion →
-       oznacza tom `masz` / `w bazie` / `brak`. Czysto ze store.
-    3. Dostępność brakujących na Vinted = osobny opt-in rytuał („Skan sąsiednich tomów", jak
-       „Ustal sprzedawców"): traktuje brakujące tomy jak tymczasowe cele, dopisuje oferty do
-       `CycleData` rodzica. NIGDY w ścieżce renderu.
-  - **Otwarta decyzja produktowa — jak trzymać brakujące tomy**:
-    - Wariant B: realne wiersze Notion (tag np. `Cykl-Discovered`) → pełny pipeline
-      (kandydat→skan→kafelek→paczki→dedup), ale baza puchnie + trzeba wykluczyć ze
-      statystyk/nagród + ryzyko dubli.
-    - Wariant C (rekomendowany na start): kontekst w blobie `CycleData` rodzica → zero
-      zaśmiecania bazy, pasuje 1:1 do `VintedData`; koszt: dane Vinted „drugiej kategorii"
-      (poza głównym flow kafelków/paczek), tom wspólny dla 2 cykli zapisany 2× (brak cross-dedup).
-      Furtka: promocja tomu do realnego wiersza (→ wariant B) jednym klikiem, gdy user zdecyduje.
-  - **Kolejność startu**: najpierw sam krok 1 (persystencja struktury cyklu), żeby zobaczyć
-    dane, zanim dołożymy skan dostępności.
+- **Cykle: struktura + sąsiednie tomy + dostępność Vinted — ZREALIZOWANE jako REALNE WIERSZE bazy.**
+  Bloby (`CycleData`/`CycleCache`) i „widma" PORZUCONE — wybrano wariant „realne wiersze" (dawny wariant B).
+  Aktualny model: podgląd on-demand `GET /api/cycle` (Skryptorium + kafelki Vinted); tomy cykli materializowane
+  Rytuałem Żniw jako wiersze `Kategoria="Tom cyklu"` (+ `Cykl`/`CyklNr`); karta „Archiwum Cykli" agreguje je
+  (`aggregateCycleRows`). **UC1 (dostępność brakujących tomów na Vinted) tym samym ZREALIZOWANE za darmo**:
+  skoro tomy to wiersze z pustym `Źródło`, normalny skaner Vinted zbiera ich oferty, a karta pokazuje
+  `acquireCost` + pill „🛒 X zł" per tom — bez osobnego skanu widm i bez blobów. Szczegóły: `docs/cycles-rows.md`.
+  Jedyne residuum (opcjonalne): tom z łańcucha wiki, którego Żniwa nie zmaterializowały (urwanie MAX_HOPS /
+  nieudany sąsiad) nie ma wiersza → brak dostępności; fix = poprawić POKRYCIE Żniw, nie osobny mechanizm.
 
 ## Zrobione (skrót)
 
