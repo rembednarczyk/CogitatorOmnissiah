@@ -5,6 +5,7 @@ import { WikiParser } from "../wiki.parser";
 import { NotionBook, SyncEvent } from "../src/types";
 import { normalizeData, isWikiAuthorMatch, NormalizationContext } from "./dataNormalizer";
 import { DiffEngine } from "./diffEngine";
+import { isAwardBook } from "./bookCategory";
 
 /**
  * Konfiguracja jednego pola wzbogacanego ze strony książki w encyklopedii.
@@ -43,10 +44,15 @@ export class WikiFieldSyncService {
     const cfg = this.config;
     try {
       sendEvent({ type: "status", message: "Pobieranie listy książek z Notion..." });
-      const allBooks: NotionBook[] = await this.notion.queryAllBooks(
+      const rawBooks: NotionBook[] = await this.notion.queryAllBooks(
         (count) => sendEvent({ type: "status", message: `Pobrano ${count} książek z Notion...` }),
         checkCancellation
       );
+      // Wzbogacanie wydawcy/serii to koncern NAGRODOWY — poboczne tomy cykli
+      // (Kategoria="Tom cyklu") mają własny rytuał żniw i widok „Archiwum Cykli",
+      // więc pomijamy je (bez zbędnych pobrań stron i zapisów na wierszach,
+      // których żaden konsument nagrodowy nie czyta).
+      const allBooks = rawBooks.filter(isAwardBook);
 
       if (checkCancellation()) { sendEvent({ type: "status", message: `Przerwano ${cfg.ritualName}.` }); return; }
 

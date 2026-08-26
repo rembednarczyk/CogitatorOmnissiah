@@ -61,6 +61,38 @@ describe('PublisherSyncService', () => {
     expect(mockSendEvent).toHaveBeenCalledWith(expect.objectContaining({ type: 'complete' }));
   });
 
+  it('skips cycle-volume rows (Kategoria="Tom cyklu")', async () => {
+    const mockBooks: NotionBook[] = [
+      {
+        id: 'award-1', plTitle: 'Solaris', origTitle: 'Solaris', author: 'Stanisław Lem',
+        year: '1961', currentWydawnictwo: 'Stare', awards: [], zrodlo: [], currentSeria: '',
+        currentCzesccyklu: false, lp: '1', plTitleRichText: [], origTitleRichText: [],
+      },
+      {
+        id: 'vol-1', plTitle: 'Poboczny Tom', origTitle: 'Poboczny Tom', author: 'Stanisław Lem',
+        year: '1970', currentWydawnictwo: 'Stare', awards: [], zrodlo: [], currentSeria: '',
+        currentCzesccyklu: false, lp: 'Cykl (2)', plTitleRichText: [], origTitleRichText: [],
+        kategoria: 'Tom cyklu',
+      },
+    ];
+
+    mockNotion.queryAllBooks.mockResolvedValue(mockBooks);
+    mockWiki.fetchPagesContentBulk.mockResolvedValue({
+      contents: {
+        'solaris': '{{Książka infobox\n|wydawca = Nowe Wydawnictwo\n}}',
+        'poboczny tom': '{{Książka infobox\n|wydawca = Nowe Wydawnictwo\n}}',
+      },
+      failedTitles: [],
+    });
+
+    await service.runPublisherSync(mockSendEvent, () => false);
+
+    // Only the cycle volume's page must never be fetched nor written.
+    expect(mockWiki.fetchPagesContentBulk).toHaveBeenCalledWith(['Solaris']);
+    expect(mockNotion.updatePage).toHaveBeenCalledTimes(1);
+    expect(mockNotion.updatePage).toHaveBeenCalledWith('award-1', expect.anything());
+  });
+
   it('handles cancellation', async () => {
     mockNotion.queryAllBooks.mockResolvedValue([]);
     

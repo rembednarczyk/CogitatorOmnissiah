@@ -5,6 +5,7 @@ import { WikiParser } from "../wiki.parser";
 import { NotionBook, SyncEvent } from "../src/types";
 import { isWikiAuthorMatch } from "./dataNormalizer";
 import { ConfigService } from "./configService";
+import { isAwardBook } from "./bookCategory";
 
 export class CyclesSyncService {
   constructor(private notion: NotionAdapter, private wiki: WikiAdapter, private config: ConfigService) {}
@@ -16,8 +17,12 @@ export class CyclesSyncService {
       sendEvent({ type: "status", message: "Sprawdzanie struktury bazy Notion..." });
       await this.notion.createColumnIfNeeded("Część cyklu", "checkbox");
       sendEvent({ type: "status", message: "Pobieranie listy książek z Notion..." });
-      const allBooks: NotionBook[] = await this.notion.queryAllBooks((count) => sendEvent({ type: "status", message: `Pobrano ${count} książek z Notion...` }), checkCancellation);
-      
+      const rawBooks: NotionBook[] = await this.notion.queryAllBooks((count) => sendEvent({ type: "status", message: `Pobrano ${count} książek z Notion...` }), checkCancellation);
+      // Wykrywanie przynależności do cyklu dotyczy pozycji NAGRODOWYCH — poboczne
+      // tomy cykli (Kategoria="Tom cyklu") są z definicji częścią cyklu i mają
+      // własny rytuał żniw, więc pomijamy je zamiast redundantnie taggować.
+      const allBooks = rawBooks.filter(isAwardBook);
+
       if (checkCancellation()) { sendEvent({ type: "status", message: "Przerwano synchronizację cykli." }); return; }
 
       // Zbieranie unikalnych tytułów do pobrania (zarówno polskie jak i oryginalne)

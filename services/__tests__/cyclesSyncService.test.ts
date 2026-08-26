@@ -101,6 +101,26 @@ describe('CyclesSyncService', () => {
     expect(mockNotion.updatePage).toHaveBeenCalledWith('p2', { 'Część cyklu': { checkbox: true } });
   });
 
+  it('skips cycle-volume rows (Kategoria="Tom cyklu") — they are not re-evaluated', async () => {
+    const raw = `{{Książka\n | autor = Anna Nowak\n | cykl = Saga\n}}`;
+    mockNotion.queryAllBooks.mockResolvedValue([
+      bookOf({ id: 'award', plTitle: 'Nagroda', author: 'Anna Nowak' }),
+      bookOf({ id: 'vol', plTitle: 'Poboczny Tom', author: 'Anna Nowak', kategoria: 'Tom cyklu' }),
+    ]);
+    mockWiki.fetchPagesContentBulk.mockResolvedValue({
+      contents: { 'nagroda': raw, 'poboczny tom': raw },
+      failedTitles: [],
+    });
+
+    await service.runCyclesSync(mockSendEvent, () => false);
+
+    // The cycle volume must never be re-tagged; only the award anchor is processed.
+    expect(mockNotion.updatePage).toHaveBeenCalledTimes(1);
+    expect(mockNotion.updatePage).toHaveBeenCalledWith('award', { 'Część cyklu': { checkbox: true } });
+    const complete = mockSendEvent.mock.calls.map((c: any[]) => c[0]).find((e: any) => e.type === 'complete');
+    expect(complete.result.found).toBe(1);
+  });
+
   it('reports a book as skipped (not silently) when no wiki page is found', async () => {
     mockNotion.queryAllBooks.mockResolvedValue([bookOf({ id: 'p3', plTitle: 'Widmo', author: 'Zenon Test' })]);
     mockWiki.fetchPagesContentBulk.mockResolvedValue({ contents: {}, failedTitles: [] });
