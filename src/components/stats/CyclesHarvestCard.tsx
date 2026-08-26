@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion } from "motion/react";
-import { Layers, ChevronDown, Check, CheckCheck, Package, AlertTriangle, Award, ExternalLink, Loader2, ShoppingCart } from "lucide-react";
+import { Layers, ChevronDown, Check, CheckCheck, Package, PackageOpen, Book, CircleDashed, AlertTriangle, Award, ExternalLink, Loader2, ShoppingCart } from "lucide-react";
 import { useCyclesHarvest, HarvestVolume } from "../../hooks/useCyclesHarvest";
 import { encyclopediaUrl } from "../../utils/encyclopedia";
 
@@ -8,7 +8,9 @@ const volStatus = (v: HarvestVolume) => {
   if (v.read) return { icon: Check, cls: "text-cyan-400", label: "przeczytana" };
   if (v.owned) return { icon: Package, cls: "text-emerald-400", label: "posiadana" };
   // Tomy są teraz wierszami bazy — brak posiadania/przeczytania = „do zdobycia".
-  return { icon: AlertTriangle, cls: "text-amber-400", label: "do zdobycia" };
+  // Łagodny znacznik (dashed circle) zamiast trójkąta ostrzegawczego — poboczne
+  // tomy to zaproszenie do skompletowania, nie błąd.
+  return { icon: CircleDashed, cls: "text-amber-400/70", label: "do zdobycia" };
 };
 
 /**
@@ -62,6 +64,10 @@ export const CyclesHarvestCard: React.FC = () => {
             const isOpen = open === c.cycle;
             // Cykl przeczytany w całości → wygaszony (nic nie zostało do nadrobienia).
             const done = c.total > 0 && c.read === c.total;
+            // Dwie NIEZALEŻNE luki (dotąd zlane w jeden licznik „missing"):
+            // do zdobycia = nieposiadane; do przeczytania = nieprzeczytane.
+            const toAcquire = c.total - c.owned;
+            const toRead = c.total - c.read;
             return (
               <div key={c.cycle} className={`rounded-2xl border border-white/5 bg-slate-950/40 overflow-hidden transition-opacity ${done && !isOpen ? "opacity-45" : ""}`}>
                 <button
@@ -74,10 +80,25 @@ export const CyclesHarvestCard: React.FC = () => {
                     <span className="shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-full border border-cyan-500/25 bg-cyan-500/10 text-cyan-300/90 text-[9px] font-bold uppercase tracking-wider">
                       <CheckCheck className="w-2.5 h-2.5" /> ukończony
                     </span>
-                  ) : c.missing > 0 && (
-                    <span className="shrink-0 px-2 py-0.5 rounded-full border border-amber-500/25 bg-amber-500/10 text-amber-300 text-[9px] font-bold uppercase tracking-wider">
-                      {c.missing} do zdobycia
-                    </span>
+                  ) : (
+                    <>
+                      {toAcquire > 0 && (
+                        <span
+                          className="shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-full border border-emerald-500/25 bg-emerald-500/10 text-emerald-300 text-[9px] font-bold tabular-nums uppercase tracking-wider"
+                          title={`${toAcquire} do zdobycia (nieposiadane)`}
+                        >
+                          <PackageOpen className="w-2.5 h-2.5" /> {toAcquire}
+                        </span>
+                      )}
+                      {toRead > 0 && (
+                        <span
+                          className="shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-full border border-cyan-500/25 bg-cyan-500/10 text-cyan-300 text-[9px] font-bold tabular-nums uppercase tracking-wider"
+                          title={`${toRead} do przeczytania`}
+                        >
+                          <Book className="w-2.5 h-2.5" /> {toRead}
+                        </span>
+                      )}
+                    </>
                   )}
                   {c.acquireCost != null && (
                     <span className="shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-full border border-rose-500/25 bg-rose-500/10 text-rose-300 text-[9px] font-bold uppercase tracking-wider" title={`Skompletuj ${c.acquirable} tomów z Vinted`}>

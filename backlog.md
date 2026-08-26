@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.44.4** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.44.5** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,12 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.44.5** — **Archiwum Cykli: rozdzielone luki + łagodniejszy znacznik tomu.** Nagłówek cyklu
+  zamiast jednego chipa „X do zdobycia" (missing = ani posiadane, ani przeczytane) pokazuje dwie
+  NIEZALEŻNE luki: zielony chip `<PackageOpen> X` (do zdobycia = nieposiadane, `total−owned`) i
+  niebieski `<Book> X` (do przeczytania = nieprzeczytane, `total−read`). Per-tom znacznik „do
+  zdobycia" zmieniony z ostrzegawczego `AlertTriangle` (amber) na łagodny `CircleDashed`
+  (amber/70). Tylko UI (`CyclesHarvestCard`), backend bez zmian.
 - **1.44.4** — **Fix: paski „Top Oficyny" pokazywały rozmiar zamiast read-rate.** `PublishingCard`
   rysował pasek oficyny jako `count/maxPub` (rozmiar względem największej), a etykieta mówiła
   `read/count` → największa oficyna (Mag) miała pełny pasek przy „26/82 przecz.". Pasek liczy teraz
