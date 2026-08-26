@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.46.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.47.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,15 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.47.0** — **Skaner Vinted: priming ciasteczka Cloudflare (anty-blok, pkt 1 z listy alternatyw).**
+  Przed skanem (i przed resolve sprzedawców) jedno GET strony głównej Vinted → przejęcie `Set-Cookie`
+  (`cf_clearance` + sesja anon), niesione w `Cookie` na kolejnych żądaniach. **Stały UA na cały przebieg**
+  (cf_clearance wiąże się z UA — rotacja by je unieważniła). Odporne: brak ciasteczek / błąd → pusta sesja,
+  skan leci bez primingu (rotacja UA jak dotąd); priming pomijany przy zerze kandydatów. Nowy
+  `services/vintedSession.ts` (`parseSetCookie` czysty + `primeVintedSession` + `cookieCount`),
+  `vintedRequestHeaders(uaPool, session)` (stały UA + `Cookie`), knob `vinted.primeSession` (default on) +
+  checkbox w panelu Kalibracji. +6 testów. Doc `vinted-scanner.md §3`. Następny fallback (jeśli mało):
+  Playwright tylko do cookie (pkt 2).
 - **1.46.0** — **Archiwum Cykli: sortowanie „Blisko końca" (najmniej do przeczytania) + przełącznik.**
   Domyślnie cykle sortowane po `total − read` rosnąco („szybkie zwycięstwa"), ukończone (przeczytane w
   całości) na dół. Przełącznik trybu w karcie (jak w paczkach Vinted): „Blisko końca" (easywins) vs
@@ -775,9 +784,10 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
   konfigurowalna), keep-alive `https.Agent`, skan oldest-first + wznawialny (rozłożenie w czasie),
   obsługa 429/403 (403 = blok Cloudflare). To nie wystarcza, gdy Cloudflare flaguje samo IP datacenter.
   Alternatywy w kolejności koszt/skuteczność:
-  1. **Priming ciasteczka Cloudflare** — najpierw GET strony głównej Vinted, przejąć `cf_clearance` (+ inne
-     cookie), reużyć w kolejnych żądaniach (mamy keep-alive agent). Najtańszy pierwszy strzał; często sam
-     wystarcza, bo blok leci na „gołe" żądania bez sesji.
+  1. **Priming ciasteczka Cloudflare** — ✅ ZREALIZOWANE (1.47.0). GET strony głównej Vinted przed skanem
+     (i przed resolve sprzedawców) → przejęcie `Set-Cookie` (`cf_clearance` + sesja anon Vinted), niesione
+     w `Cookie` + STAŁY UA na kolejnych żądaniach. Knob `vinted.primeSession` (default on). Jeśli okaże się
+     niewystarczające → pkt 2.
   2. **Headless browser (Playwright — JEST w środowisku)** — renderuje JS i przechodzi wyzwanie Cloudflare
      jak realna przeglądarka. Wariant lekki: użyć TYLKO do primingu cookie (pkt 1), potem dalej lekki fetch;
      wariant ciężki: cały scrape przez przeglądarkę (wolniej, więcej pamięci — uwaga na OOM 512 MB Render).
@@ -790,7 +800,8 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
      zależność, ale zero utrzymania anty-Cloudflare po naszej stronie.
   6. **Podkręcić obronę pasywną** (najtańsze od razu): dłuższy throttle + rozłożyć skan na więcej dni
      (knob), mniejsze batche — kupuje czas, nie rozwiązuje twardego bloku IP.
-  REKOMENDACJA startu: pkt 1 (priming cookie) → jeśli mało, pkt 2 lekki (Playwright tylko do cookie).
+  REKOMENDACJA: pkt 1 ZROBIONY (1.47.0) → obserwować, czy blok ustępuje; jeśli nie, pkt 2 lekki
+  (Playwright tylko do cookie — realny challenge-solve, nie tylko puste GET).
 
 - **Data przeczytania + „Tempo czytania" (velocity)** — ODŁOŻONE (wymaga NOWEGO ZAPISU, nie tylko
   odczytu). Dziś nie mamy kiedy książka została przeczytana — brak pola. Plan: kolumna „Data

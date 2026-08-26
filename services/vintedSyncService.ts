@@ -8,7 +8,8 @@ import { parseVintedItems, vintedDiagnostics, looksBlocked, looksEmpty, extractV
 import { NotionBook } from "../src/types";
 import { offerFromItem, parseVintedData, mergeAndDiff, serializeVintedData, computeChangedAt, toStoredBookView, StoredVintedData, StoredOffer, StoredBookView, OfferDiff, EMPTY_DIFF } from "./vintedStore";
 import { selectAndOrderCandidates } from "./vintedScanPlanner";
-import { vintedRequestHeaders, memMb, throttle, classifyVintedError } from "./vintedHttp";
+import { vintedRequestHeaders, memMb, throttle, classifyVintedError, VintedSession } from "./vintedHttp";
+import { primeVintedSession, cookieCount } from "./vintedSession";
 import { ConfigService } from "./configService";
 import { AppConfig } from "../src/configSchema";
 
@@ -100,6 +101,17 @@ export class VintedSyncService {
       const results: any[] = [];
       const httpsAgent = createScrapingAgent();
 
+      // Rozgrzej sesję (ciasteczko Cloudflare) RAZ na skan — realne żądania niosą wtedy
+      // stały UA + Cookie. Odporne: brak ciasteczek → skan leci bez primingu (jak dotąd).
+      let session: VintedSession = { userAgent: "", cookie: "" };
+      if (v.primeSession && candidates.length > 0) {
+        sendEvent({ type: "status", message: "Rozgrzewanie sesji Vinted (ciasteczko Cloudflare)..." });
+        session = await primeVintedSession(httpsAgent, { uaPool: cfg.scraping.userAgents, timeoutMs: v.requestTimeoutMs });
+        sendEvent({ type: "status", message: session.cookie
+          ? `Sesja Vinted rozgrzana (${cookieCount(session.cookie)} ciasteczek, stały UA). Skanuję...`
+          : "Nie udało się rozgrzać sesji (brak ciasteczek) — skanuję bez primingu." });
+      }
+
       // Zapewnij pole składowania raz na skan; gdy się nie uda — persystencja off (skan i tak leci).
       let persistEnabled = true;
       try {
@@ -131,7 +143,7 @@ export class VintedSyncService {
         sendEvent({ type: "search_attempt", result: { id: book.id, title: book.plTitle, author: book.author, url, status: "pending", itemCount: 0 } });
 
         try {
-          const response = await withRetry(async () => axios.get(url, { httpsAgent, headers: vintedRequestHeaders(cfg.scraping.userAgents), timeout: v.requestTimeoutMs }), v.retryAttempts, v.retryBackoffMs);
+          const response = await withRetry(async () => axios.get(url, { httpsAgent, headers: vintedRequestHeaders(cfg.scraping.userAgents, session), timeout: v.requestTimeoutMs }), v.retryAttempts, v.retryBackoffMs);
 
           const html = response.data;
           log.info(`Odpowiedź Vinted`, { title, chars: html.length, ...memMb() });
@@ -242,6 +254,14 @@ export class VintedSyncService {
       });
 
       const httpsAgent = createScrapingAgent();
+
+      // Priming sesji też tutaj — strony ofert (`/items/…`) są pod tym samym Cloudflare.
+      let session: VintedSession = { userAgent: "", cookie: "" };
+      if (v.primeSession) {
+        sendEvent({ type: "status", message: "Rozgrzewanie sesji Vinted (ciasteczko Cloudflare)..." });
+        session = await primeVintedSession(httpsAgent, { uaPool: cfg.scraping.userAgents, timeoutMs: v.requestTimeoutMs });
+      }
+
       let fetched = 0, resolved = 0;
 
       for (const p of pending) {
@@ -252,7 +272,7 @@ export class VintedSyncService {
           fetched++;
           sendEvent({ type: "progress", message: `Sprzedawca: ${p.book.plTitle} (${fetched}/${target})`, current: fetched, total: target });
           try {
-            const response = await withRetry(async () => axios.get(offer.url, { httpsAgent, headers: vintedRequestHeaders(cfg.scraping.userAgents), timeout: v.requestTimeoutMs }), v.retryAttempts, v.retryBackoffMs);
+            const response = await withRetry(async () => axios.get(offer.url, { httpsAgent, headers: vintedRequestHeaders(cfg.scraping.userAgents, session), timeout: v.requestTimeoutMs }), v.retryAttempts, v.retryBackoffMs);
             const html = response.data;
             if (looksBlocked(html)) {
               log.warn("Vinted zablokował stronę oferty (sprzedawca, baza)", { url: offer.url });

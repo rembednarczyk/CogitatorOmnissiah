@@ -145,6 +145,12 @@ export const ConfigSection: React.FC = () => {
         </div>
         <ListField label="Źródła wykluczające ze skanu" hint={'Tag „Źródło” = książka pomijana. Jeden tag na linię.'}
           value={draft.vinted.excludedSources} onChange={(v) => upd("vinted", { excludedSources: v })} />
+        <Field label="Rozgrzewanie sesji (ciasteczko Cloudflare)" hint="Przed skanem pobiera stronę główną Vinted, przejmuje ciasteczka (m.in. cf_clearance) i niesie je + stały User-Agent w kolejnych żądaniach. Zwykle zmniejsza blokady 403. Wyłącz, jeśli sprawia problemy.">
+          <label className="flex items-center gap-2 px-3 py-2 text-sm text-slate-300 cursor-pointer select-none">
+            <input type="checkbox" checked={draft.vinted.primeSession} onChange={(e) => upd("vinted", { primeSession: e.target.checked })} className="accent-rose-500 w-4 h-4" />
+            Włączone
+          </label>
+        </Field>
       </SectionCard>
 
       {/* Pula UA */}
