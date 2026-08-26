@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.45.2** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.46.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,11 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.46.0** — **Archiwum Cykli: sortowanie „Blisko końca" (najmniej do przeczytania) + przełącznik.**
+  Domyślnie cykle sortowane po `total − read` rosnąco („szybkie zwycięstwa"), ukończone (przeczytane w
+  całości) na dół. Przełącznik trybu w karcie (jak w paczkach Vinted): „Blisko końca" (easywins) vs
+  „Najwięcej braków" (`missing` malejąco — dawne zachowanie). Czysty helper `src/utils/cycleSort.ts`
+  (`sortCycles`, +4 testy); sort client-side (`useMemo`), backend `aggregateCycleRows` bez zmian.
 - **1.45.2** — **„Odśwież Dane" pokrywa też Archiwum Cykli (audyt + fix).** Audyt: wszystkie karty
   statystyk czytają z `stats` (fetchStats), OPRÓCZ `CyclesHarvestCard` — miała własny `useCyclesHarvest`
   i przycisk „Odśwież Dane" jej NIE przeładowywał (jedyna luka; reszta modułów OK). Fix: `StatsSection`
@@ -765,14 +770,6 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
 
 ## Otwarte pozycje
 
-- **Sortowanie „Archiwum Cykli" po najmniejszej liczbie książek do przeczytania (easy wins)** — NOWE, do zrobienia.
-  Cel: domyślnie na górze cykle, którym najmniej brakuje do ukończenia CZYTANIA („szybkie zwycięstwa") —
-  motywacja + naturalna kolejność „domknij prawie skończone". Dziś `aggregateCycleRows` sortuje po
-  `missing` (ani posiadane, ani przeczytane) malejąco → najwięcej-do-zdobycia na górze (odwrotnie). Plan:
-  metryka „do przeczytania" = `total − read` (już liczone jako `toRead` w UI); sort rosnąco po `toRead`,
-  ukończone (`toRead===0`) na dół. Rozważyć przełącznik trybu sortu w karcie (jak w paczkach Vinted:
-  „najbliżej ukończenia" vs „najwięcej do zdobycia") zamiast twardej zmiany. Czysto UI/`cycleRows` +
-  testy `aggregateCycleRows`. Tani PR.
 - **Vinted znowu zablokował skaner — alternatywy w zanadrzu** — NOTATKA (Vinted ubił skan z IP Render/datacenter).
   Co JUŻ mamy (obrona pasywna): throttle 3–5 s + jitter na każdej ścieżce, pula User-Agent (rotacja,
   konfigurowalna), keep-alive `https.Agent`, skan oldest-first + wznawialny (rozłożenie w czasie),

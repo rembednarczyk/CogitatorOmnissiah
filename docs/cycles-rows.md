@@ -33,6 +33,6 @@ Rozdział egzekwuje `services/bookCategory.ts` (`isAwardBook`/`isCycleVolume`). 
 
 ## 3. Archiwum + dostępność Vinted (`aggregateCycleRows`)
 
-`GET /api/cycles-harvest` → `aggregateCycleRows(books)` (czysty): grupuje wiersze z niepustym `Cykl`, sortuje po `CyklNr`, liczy `owned`/`read`/`missing` („do zdobycia" = ani posiadane, ani przeczytane) i `acquireCost` (suma najtańszych ofert Vinted dla tomów do zdobycia; z blobu `VintedData` przez `parseVintedData`). Karta „Archiwum Cykli" pokazuje tomy + status + pill „🛒 X zł" (link do oferty) + oznaczanie przeczytane/posiadane w miejscu (`toggleSource` → `/api/mark-as-read` / `/api/unmark-as-read`).
+`GET /api/cycles-harvest` → `aggregateCycleRows(books)` (czysty): grupuje wiersze z niepustym `Cykl`, sortuje po `CyklNr`, liczy `owned`/`read`/`missing` („do zdobycia" = ani posiadane, ani przeczytane) i `acquireCost` (suma najtańszych ofert Vinted dla tomów do zdobycia; z blobu `VintedData` przez `parseVintedData`). Karta „Archiwum Cykli" pokazuje tomy + status + pill „🛒 X zł" (link do oferty) + oznaczanie przeczytane/posiadane w miejscu (`toggleSource` → `/api/mark-as-read` / `/api/unmark-as-read`). Kolejność cykli w karcie ustala client-side `sortCycles` (`src/utils/cycleSort.ts`) z przełącznikiem: domyślnie **„Blisko końca"** (`total − read` rosnąco, ukończone na dół — „szybkie zwycięstwa"), alternatywnie **„Najwięcej braków"** (`missing` malejąco).
 
 Ponieważ tomy to wiersze, **skaner Vinted zbiera ich oferty za darmo** (wiersze z pustym `Źródło`); UC1 to tylko wyświetlenie zebranych danych.
