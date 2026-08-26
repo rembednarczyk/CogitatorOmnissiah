@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.44.6** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.45.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,14 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.45.0** — **Vinted: interaktywny kafelek cyklu + numer tomu (frontend, część 2/2 feature).**
+  Współdzielony `CycleTile` (`src/components/CycleTile.tsx`): klik → `CyclePanel` (`useCycle`
+  + `/api/cycle`), reużyty podgląd tomów ze Skryptorium; etykieta = nazwa cyklu + `· t.N` (z żniw),
+  fallback „cykl". Wpięty w kafelki (`VintedBookResultList`) i wiersze paczek (`VintedBundleList`,
+  wyjęty z `<a>` oferty → osobny link cena/koszyk). `cykl`/`cyklNr` przepuszczone przez
+  `VintedResult`/`StoredBookPayload`/`storedToView`/`SellerBundleEntry`/`groupBySeller`.
+  `BookResultCard` (Skryptorium) też zrefaktorowany na wspólny `CycleTile` (jedno źródło prawdy).
+  +1 test (propagacja cyklu do paczek). Doc `vinted-scanner.md` zaktualizowany.
 - **1.44.6** — **Vinted: propagacja cyklu przez pipeline (backend, część 1/2 feature).** `StoredBookView`
   + `toStoredBookView` niosą teraz `cykl`/`cyklNr` (obok `partOfCycle`/`year`); wynik `match` z żywego
   skanu też (`partOfCycle`/`cykl`/`cyklNr`) — więc `/api/vinted-stored` i skan na żywo mają nazwę cyklu

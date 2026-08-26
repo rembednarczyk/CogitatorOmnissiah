@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from "react";
-import { Package, Users, ExternalLink, ShoppingCart, Layers } from "lucide-react";
+import { Package, Users, ExternalLink, ShoppingCart } from "lucide-react";
 import { VintedResult } from "../../../hooks/useVintedCheck";
 import { formatVintedPrice } from "../../../utils/vintedOffers";
 import { groupBySeller, sortBundles, BundleSortMode, VintedSeller } from "../../../utils/vintedSellers";
+import { CycleTile } from "../../CycleTile";
 
 interface Props {
   results: VintedResult[];
@@ -67,28 +68,26 @@ export const VintedBundleList: React.FC<Props> = ({ results, sellers, usingStore
             </div>
             <div className="flex flex-col gap-1.5">
               {b.entries.map((e, i) => (
-                <a key={i} href={e.item.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-3 py-2 rounded-xl border border-purple-500/10 bg-slate-900/40 hover:bg-purple-500/10 transition-all">
+                <div key={i} className="flex items-center gap-3 px-3 py-2 rounded-xl border border-purple-500/10 bg-slate-900/40 hover:bg-purple-500/10 transition-all">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 min-w-0">
                       <span className="text-[12px] text-slate-200 font-semibold truncate">{e.bookTitle}</span>
-                      {e.bookPartOfCycle && (
-                        <span className="shrink-0 flex items-center gap-0.5 px-1 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[8px] font-bold uppercase tracking-wider" title="Część cyklu — może być kolejnym tomem w kolekcji (ryzyko duplikatu/luki w serii)">
-                          <Layers className="w-2 h-2" /> cykl
-                        </span>
-                      )}
+                      <CycleTile title={e.bookTitle} author={e.bookAuthor} partOfCycle={e.bookPartOfCycle} cykl={e.bookCykl} cyklNr={e.bookCyklNr} size="xs" />
                     </div>
                     <div className="text-[9px] text-slate-500 uppercase tracking-widest font-bold truncate">{e.bookAuthor}{e.bookYear ? ` · ${e.bookYear}` : ""}</div>
                   </div>
-                  <div className="shrink-0 text-right tabular-nums font-bold text-purple-200 text-sm">
-                    {e.item.priceValue != null ? formatVintedPrice(e.item.priceValue, e.item.currency) : "—"}
-                    {e.premium > 0 ? (
-                      <div className="text-[8px] text-amber-400/80 uppercase tracking-widest font-bold mt-0.5">+{formatVintedPrice(e.premium)}</div>
-                    ) : e.item.priceValue != null ? (
-                      <div className="text-[8px] text-emerald-400/80 uppercase tracking-widest font-bold mt-0.5">najtańsza</div>
-                    ) : null}
-                  </div>
-                  <ShoppingCart className="w-3.5 h-3.5 shrink-0 text-purple-400 opacity-50" />
-                </a>
+                  <a href={e.item.url} target="_blank" rel="noopener noreferrer" className="shrink-0 flex items-center gap-3 group/offer" title="Otwórz ofertę na Vinted">
+                    <div className="shrink-0 text-right tabular-nums font-bold text-purple-200 text-sm">
+                      {e.item.priceValue != null ? formatVintedPrice(e.item.priceValue, e.item.currency) : "—"}
+                      {e.premium > 0 ? (
+                        <div className="text-[8px] text-amber-400/80 uppercase tracking-widest font-bold mt-0.5">+{formatVintedPrice(e.premium)}</div>
+                      ) : e.item.priceValue != null ? (
+                        <div className="text-[8px] text-emerald-400/80 uppercase tracking-widest font-bold mt-0.5">najtańsza</div>
+                      ) : null}
+                    </div>
+                    <ShoppingCart className="w-3.5 h-3.5 shrink-0 text-purple-400 opacity-50 group-hover/offer:opacity-100 transition-opacity" />
+                  </a>
+                </div>
               ))}
             </div>
           </div>
