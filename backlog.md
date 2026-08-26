@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.47.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.47.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,12 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.47.1** — **Priming Vinted: samonaprawa (nie może zaniżyć trafień).** Regresja: rozgrzana sesja
+  (stały UA + Cookie) potrafi zmienić WARIANT strony serwowanej przez Vinted na taki bez inline'owanego
+  katalogu → parser gubił WSZYSTKIE oferty (200 OK „dobry strzał", 0 książek). Fix: po primingu jedna
+  sonda walidacyjna (URL katalogu 1. kandydata) — jeśli strona nie jest zablokowana ANI nie ma struktury
+  katalogu (`data-component-name="Catalog"` / feed-grid / `/items/` / marker braku wyników) → sesja
+  porzucona, skan leci bez primingu. Priming może pomóc na blok, nigdy nie zaszkodzić trafieniom. +1 test.
 - **1.47.0** — **Skaner Vinted: priming ciasteczka Cloudflare (anty-blok, pkt 1 z listy alternatyw).**
   Przed skanem (i przed resolve sprzedawców) jedno GET strony głównej Vinted → przejęcie `Set-Cookie`
   (`cf_clearance` + sesja anon), niesione w `Cookie` na kolejnych żądaniach. **Stały UA na cały przebieg**
