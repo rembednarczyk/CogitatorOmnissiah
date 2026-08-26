@@ -1,8 +1,14 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { motion } from "motion/react";
 import { Layers, ChevronDown, Check, CheckCheck, Package, PackageOpen, Book, CircleDashed, AlertTriangle, Award, ExternalLink, Loader2, ShoppingCart } from "lucide-react";
 import { useCyclesHarvest, HarvestVolume } from "../../hooks/useCyclesHarvest";
 import { encyclopediaUrl } from "../../utils/encyclopedia";
+import { sortCycles, CycleSortMode } from "../../utils/cycleSort";
+
+const SORTS: { mode: CycleSortMode; label: string }[] = [
+  { mode: "easywins", label: "Blisko końca" },
+  { mode: "acquire", label: "Najwięcej braków" },
+];
 
 const volStatus = (v: HarvestVolume) => {
   if (v.read) return { icon: Check, cls: "text-cyan-400", label: "przeczytana" };
@@ -20,6 +26,8 @@ const volStatus = (v: HarvestVolume) => {
 export const CyclesHarvestCard: React.FC<{ refreshSignal?: number }> = ({ refreshSignal }) => {
   const { view, loading, error, busyId, fetchHarvest, toggleSource } = useCyclesHarvest();
   const [open, setOpen] = useState<string | null>(null);
+  const [sortMode, setSortMode] = useState<CycleSortMode>("easywins");
+  const sortedCycles = useMemo(() => (view ? sortCycles(view.cycles, sortMode) : []), [view, sortMode]);
 
   // „Odśwież Dane" (StatsSection) inkrementuje refreshSignal → dociągnij świeże cykle
   // (silent = bez migania kartą, fresh = pomiń cache). Pomiń pierwszy przebieg (mount
@@ -67,9 +75,24 @@ export const CyclesHarvestCard: React.FC<{ refreshSignal?: number }> = ({ refres
         </p>
       )}
 
+      {view && !loading && view.totalCycles > 1 && (
+        <div className="flex items-center gap-1 p-0.5 rounded-xl bg-slate-900/60 border border-amber-500/15 w-fit">
+          {SORTS.map(({ mode, label }) => (
+            <button
+              key={mode}
+              onClick={() => setSortMode(mode)}
+              className={`px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-colors ${sortMode === mode ? "bg-amber-500/20 text-amber-200 border border-amber-500/30" : "text-slate-500 hover:text-slate-300 border border-transparent"}`}
+              title={mode === "easywins" ? "Najmniej tomów do przeczytania na górze (szybkie zwycięstwa)" : "Najwięcej tomów do zdobycia na górze"}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {view && !loading && view.totalCycles > 0 && (
         <div className="space-y-2 max-h-[460px] overflow-y-auto pr-2 custom-scrollbar">
-          {view.cycles.map((c) => {
+          {sortedCycles.map((c) => {
             const isOpen = open === c.cycle;
             // Cykl przeczytany w całości → wygaszony (nic nie zostało do nadrobienia).
             const done = c.total > 0 && c.read === c.total;
