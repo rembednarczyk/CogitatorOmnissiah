@@ -1,8 +1,34 @@
 import { describe, it, expect } from "vitest";
-import { offerFromItem, serializeVintedData, parseVintedData, mergeAndDiff, hasChanges, StoredOffer } from "../vintedStore";
+import { offerFromItem, serializeVintedData, parseVintedData, mergeAndDiff, hasChanges, toStoredBookView, StoredOffer, StoredVintedData } from "../vintedStore";
 import { VintedItem } from "../vintedParser";
+import { NotionBook } from "../../src/types";
 
 describe("vintedStore", () => {
+  it("toStoredBookView carries cycle metadata (cykl/cyklNr/partOfCycle) from the book", () => {
+    const book = {
+      id: "b1", plTitle: "Tom II", origTitle: "Vol II", author: "Autor", year: "2000",
+      currentCzesccyklu: true, cykl: "Wielka Saga", cyklNr: 2,
+      awards: [], zrodlo: [], plTitleRichText: [], origTitleRichText: [],
+    } as unknown as NotionBook;
+    const data: StoredVintedData = { scannedAt: "2020-01-01T00:00:00Z", offers: [] };
+
+    const view = toStoredBookView(book, data);
+    expect(view.partOfCycle).toBe(true);
+    expect(view.cykl).toBe("Wielka Saga");
+    expect(view.cyklNr).toBe(2);
+    expect(view.title).toBe("Tom II");
+  });
+
+  it("toStoredBookView leaves cycle fields undefined when the book has none", () => {
+    const book = {
+      id: "b2", plTitle: "Samotnik", origTitle: "Loner", author: "Autor",
+      awards: [], zrodlo: [], plTitleRichText: [], origTitleRichText: [],
+    } as unknown as NotionBook;
+    const view = toStoredBookView(book, { scannedAt: "2020-01-01T00:00:00Z", offers: [] });
+    expect(view.cykl).toBeUndefined();
+    expect(view.cyklNr).toBeUndefined();
+  });
+
   it("offerFromItem maps VintedItem fields (priceValue → price)", () => {
     const item: VintedItem = {
       title: "T", price: "10", priceValue: 10, currency: "zł", url: "u", photo: "p",

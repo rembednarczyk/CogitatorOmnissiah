@@ -41,6 +41,10 @@ export interface StoredBookView {
   year?: string;
   /** Czy książka jest częścią cyklu (kolumna „Część cyklu", checkbox) — ryzyko „kolejny tom". */
   partOfCycle?: boolean;
+  /** Nazwa cyklu (kolumna „Cykl") — jeśli ustalona żniwami. Do etykiety kafelka. */
+  cykl?: string;
+  /** Numer tomu w cyklu (kolumna „CyklNr") — jeśli ustalony żniwami. */
+  cyklNr?: number;
   scannedAt: string;
   changedAt?: string;
   offers: StoredOffer[];
@@ -77,6 +81,8 @@ export function toStoredBookView(book: NotionBook, data: StoredVintedData): Stor
     author: book.author || "",
     year: book.year,
     partOfCycle: book.currentCzesccyklu,
+    cykl: book.cykl,
+    cyklNr: book.cyklNr,
     scannedAt: data.scannedAt,
     changedAt: data.changedAt,
     offers: data.offers,

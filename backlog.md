@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.44.5** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.44.6** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,11 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.44.6** — **Vinted: propagacja cyklu przez pipeline (backend, część 1/2 feature).** `StoredBookView`
+  + `toStoredBookView` niosą teraz `cykl`/`cyklNr` (obok `partOfCycle`/`year`); wynik `match` z żywego
+  skanu też (`partOfCycle`/`cykl`/`cyklNr`) — więc `/api/vinted-stored` i skan na żywo mają nazwę cyklu
+  i numer tomu prosto z wiersza Notion. +2 testy (`toStoredBookView`). Frontend (interaktywny kafelek
+  + wyświetlenie tomu) w kolejnym PR.
 - **1.44.5** — **Archiwum Cykli: rozdzielone luki + łagodniejszy znacznik tomu.** Nagłówek cyklu
   zamiast jednego chipa „X do zdobycia" (missing = ani posiadane, ani przeczytane) pokazuje dwie
   NIEZALEŻNE luki: zielony chip `<PackageOpen> X` (do zdobycia = nieposiadane, `total−owned`) i
