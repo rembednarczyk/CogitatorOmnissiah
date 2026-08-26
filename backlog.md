@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.44.3** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.44.4** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,11 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.44.4** — **Fix: paski „Top Oficyny" pokazywały rozmiar zamiast read-rate.** `PublishingCard`
+  rysował pasek oficyny jako `count/maxPub` (rozmiar względem największej), a etykieta mówiła
+  `read/count` → największa oficyna (Mag) miała pełny pasek przy „26/82 przecz.". Pasek liczy teraz
+  `read/count` (emerald przy komplecie), spójnie z sekcją Serie i własną etykietą. Usunięty martwy
+  `maxPub`/`maxSer`. County zbierane poprawnie — błąd był tylko w proporcji paska (UI).
 - **1.44.3** — **Rytuały Oficyny/Serie/Cykle pomijają poboczne tomy cykli.** `WikiFieldSyncService`
   (wydawca+seria) i `CyclesSyncService` iterowały `queryAllBooks()` bez filtra `isAwardBook` →
   wzbogacały/taggowały też wiersze `Kategoria="Tom cyklu"` (zbędne pobrania stron + zapisy na

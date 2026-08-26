@@ -5,8 +5,9 @@ import { PublisherStat, SeriesStat, CycleStats } from "../../hooks/useStats";
 
 /**
  * Wydawnictwa / Serie / Cykle — dane z rytuałów publisher/series/cycles, dotąd
- * niepokazywane. Wydawnictwa: liczba tytułów + read-rate. Serie: posiadane/total
- * (luki). Cykle: udział „części cyklu" w kolekcji (donut-bar).
+ * niepokazywane. Każdy pasek pokazuje POSTĘP wg swojej etykiety, nie rozmiar:
+ * Wydawnictwa = przeczytane/tytuły, Serie = posiadane/total (luki), Cykle =
+ * udział „części cyklu" w kolekcji. Lista i tak posortowana malejąco po liczbie.
  */
 
 const barRow = (label: string, value: number, max: number, sub: string, color: string) => (
@@ -22,8 +23,6 @@ const barRow = (label: string, value: number, max: number, sub: string, color: s
 );
 
 export const PublishingCard: React.FC<{ publishers: PublisherStat[]; series: SeriesStat[]; cycles: CycleStats }> = ({ publishers, series, cycles }) => {
-  const maxPub = Math.max(1, ...publishers.map((p) => p.count));
-  const maxSer = Math.max(1, ...series.map((s) => s.count));
   const cyclePct = cycles.total > 0 ? Math.round((cycles.partOfCycle / cycles.total) * 100) : 0;
 
   return (
@@ -59,7 +58,7 @@ export const PublishingCard: React.FC<{ publishers: PublisherStat[]; series: Ser
           <p className="text-slate-500 text-xs italic">Brak danych — uruchom Rytuał Wydania.</p>
         ) : (
           <div className="space-y-2.5 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
-            {publishers.slice(0, 8).map((p) => barRow(p.name, p.count, maxPub, `${p.read}/${p.count} przecz.`, "bg-indigo-500"))}
+            {publishers.slice(0, 8).map((p) => barRow(p.name, p.read, p.count, `${p.read}/${p.count} przecz.`, p.read >= p.count ? "bg-emerald-500" : "bg-indigo-500"))}
           </div>
         )}
       </div>
