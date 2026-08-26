@@ -111,6 +111,28 @@ describe("SyncManager lifecycle", () => {
   afterAll(() => closeServer());
 });
 
+describe("GET /api/cycles-harvest", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    process.env.NOTION_API_KEY = "test-key";
+    process.env.NOTION_DATABASE_ID = "test-db";
+  });
+
+  it("passes fresh=false by default (may reuse the books cache)", async () => {
+    const spy = vi.spyOn(syncManager, "getCyclesHarvest").mockResolvedValue({ cycles: [], totalCycles: 0, harvestedAt: null } as any);
+    const res = await request(app).get("/api/cycles-harvest");
+    expect(res.status).toBe(200);
+    expect(spy).toHaveBeenCalledWith(false);
+  });
+
+  it("threads fresh=1 (manual refresh) through to bypass the cache", async () => {
+    const spy = vi.spyOn(syncManager, "getCyclesHarvest").mockResolvedValue({ cycles: [], totalCycles: 0, harvestedAt: null } as any);
+    const res = await request(app).get("/api/cycles-harvest?fresh=1");
+    expect(res.status).toBe(200);
+    expect(spy).toHaveBeenCalledWith(true);
+  });
+});
+
 describe("POST /api/mark-as-read", () => {
   beforeEach(() => {
     vi.restoreAllMocks();

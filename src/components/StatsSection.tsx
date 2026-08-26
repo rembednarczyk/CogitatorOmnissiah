@@ -34,6 +34,11 @@ export const StatsSection: React.FC = () => {
   const { identifiedBooks, checkingLibrary, checkProgress, libraryError, checkLibrary, checkAllLibraries, stopLibraryCheck } = useLibraryCheck();
   const { markingId, markedIds, markAsRead } = useMarkAsRead({ identifiedBooks, addBookToLibrarySection, fetchStats });
 
+  // „Odśwież Dane" odświeża `stats` (fetchStats) ORAZ karty z własnym fetchem
+  // (Archiwum Cykli) — inkrement sygnału zmusza je do świeżego pobrania.
+  const [refreshTick, setRefreshTick] = useState(0);
+  const refreshAll = () => { fetchStats(); setRefreshTick((t) => t + 1); };
+
   // Tryb układania kart (drag&drop) + stan bieżącego przeciągania.
   const [arranging, setArranging] = useState(false);
   const [dragId, setDragId] = useState<string | null>(null);
@@ -119,7 +124,7 @@ export const StatsSection: React.FC = () => {
     { id: "availability", node: <AvailabilityCard stats={stats.availabilityStats} /> },
     { id: "market", node: <MarketCard market={stats.marketStats} /> },
     { id: "publishing", node: <PublishingCard publishers={stats.publisherStats} series={stats.seriesStats} cycles={stats.cycleStats} /> },
-    { id: "cyclesHarvest", node: <CyclesHarvestCard /> },
+    { id: "cyclesHarvest", node: <CyclesHarvestCard refreshSignal={refreshTick} /> },
     { id: "decades", span2: true, node: <DecadeHistogram decades={stats.decadeStats} /> },
     {
       id: "yearly",
@@ -315,7 +320,7 @@ export const StatsSection: React.FC = () => {
         </button>
 
         <button
-          onClick={fetchStats}
+          onClick={refreshAll}
           disabled={loading}
           className="p-2 hover:bg-slate-900 rounded-lg text-slate-500 hover:text-cyan-400 transition-colors disabled:opacity-50"
           title="Odśwież Dane"
