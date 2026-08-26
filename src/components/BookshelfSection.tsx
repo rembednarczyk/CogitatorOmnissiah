@@ -22,21 +22,21 @@ export const BookshelfSection: React.FC = () => {
   const [dragging, setDragging] = useState<BookIndexEntry | null>(null);
   const [moveError, setMoveError] = useState<string | null>(null);
   const [skin, setSkin] = useState<ShelfSkin>(loadSkin);
-  // Knoby UI: liczba rzędów regału na stronę + precyzyjny drop.
+  // UI knobs: number of „Regał" rows per page + precise drop.
   const uiCfg = useEffectiveConfig().ui;
   const rowsPerPage = uiCfg.shelfRowsPerPage;
-  // Optymistyczne nadpisania ręcznych kluczy porządku (precyzyjny drop) do czasu refetch.
+  // Optimistic overrides of manual order keys (precise drop) until refetch.
   const [orderOverrides, setOrderOverrides] = useState<Record<string, number>>({});
   useEffect(() => { saveSkin(skin); }, [skin]);
 
-  // Zapis stanu „przeczytane" jest SERIALIZOWANY per książka (latest-wins). Backend
-  // `mutateMultiSelect` to nieatomowy retrieve→modify→update, więc dwa nakładające się
-  // zapisy tej samej książki mogłyby przeczytać ten sam stan i rozjechać Notion z UI.
-  // `pendingRef` trzyma najświeższy żądany stan, `runningRef` — książki z aktywnym runnerem.
+  // Saving the „przeczytane" state is SERIALIZED per book (latest-wins). The backend
+  // `mutateMultiSelect` is a non-atomic retrieve→modify→update, so two overlapping
+  // writes of the same book could read the same state and drift Notion from the UI.
+  // `pendingRef` holds the freshest requested state, `runningRef` — books with an active runner.
   const pendingRef = useRef<Record<string, boolean>>({});
   const runningRef = useRef<Set<string>>(new Set());
 
-  // Księgozbiór z nadpisanymi kluczami porządku (optymistycznie, do czasu refetch).
+  // Book collection with overridden order keys (optimistically, until refetch).
   const all = useMemo(() => {
     const src = books ?? [];
     return src.map((b) => (orderOverrides[b.id] !== undefined ? { ...b, shelfOrder: orderOverrides[b.id] } : b));
@@ -44,12 +44,12 @@ export const BookshelfSection: React.FC = () => {
   const { read, toRead } = useMemo(() => splitShelves(all, overrides), [all, overrides]);
   const featured = useMemo(() => featuredReads(all, overrides), [all, overrides]);
 
-  /** Optymistyczna zmiana „przeczytane" + serializowany zapis (latest-wins per książka). */
+  /** Optimistic „przeczytane" change + serialized save (latest-wins per book). */
   const applyReadChange = useCallback((book: BookIndexEntry, targetRead: boolean) => {
     setOverrides((prev) => ({ ...prev, [book.id]: targetRead }));
     setMoveError(null);
 
-    // Zapisz najświeższy żądany stan; jeśli runner tej książki już działa, weźmie go sam.
+    // Store the freshest requested state; if this book's runner is already running, it will pick it up itself.
     pendingRef.current[book.id] = targetRead;
     if (runningRef.current.has(book.id)) return;
     runningRef.current.add(book.id);
@@ -61,7 +61,7 @@ export const BookshelfSection: React.FC = () => {
           await setRead(book.id, desired);
         }
       } catch (e: any) {
-        // Zapis nie doszedł — wróć do stanu z bazy i pokaż błąd.
+        // Save didn't go through — revert to the DB state and show the error.
         delete pendingRef.current[book.id];
         setOverrides((prev) => { const next = { ...prev }; delete next[book.id]; return next; });
         setMoveError(`Nie udało się zapisać „${book.plTitle || book.origTitle}": ${e.message}`);
@@ -77,15 +77,15 @@ export const BookshelfSection: React.FC = () => {
     if (!book) return;
 
     const targetRead = target === "read";
-    if (isRead(book, overrides) === targetRead) return; // upuszczono na tę samą półkę — nic
+    if (isRead(book, overrides) === targetRead) return; // dropped on the same shelf — nothing
     applyReadChange(book, targetRead);
   }, [dragging, overrides, applyReadChange]);
 
   /**
-   * Precyzyjny drop: wstaw książkę przed `insertBeforeId` (null = koniec półki).
-   * Klucze liczy czysty `planInsertion` (zwykle 1 wpis; remis roku → mała renumeracja);
-   * zapis optymistyczny + POST /api/shelf-order z rollbackiem. Przy zmianie półki
-   * dokłada się standardowa zmiana „przeczytane".
+   * Precise drop: insert the book before `insertBeforeId` (null = end of shelf).
+   * Keys are computed by the pure `planInsertion` (usually 1 entry; year tie → small renumbering);
+   * optimistic save + POST /api/shelf-order with rollback. On a shelf change
+   * the standard „przeczytane" change is added on top.
    */
   const handlePreciseDrop = useCallback((target: ShelfId, insertBeforeId: string | null) => {
     const book = dragging;
@@ -122,7 +122,7 @@ export const BookshelfSection: React.FC = () => {
 
   return (
     <div className="space-y-8">
-      {/* Nagłówek */}
+      {/* Header */}
       <div className="flex items-center gap-6">
         <div className="h-px flex-1 bg-gradient-to-r from-transparent via-amber-500/20 to-transparent" />
         <div className="flex items-center gap-4">
@@ -135,7 +135,7 @@ export const BookshelfSection: React.FC = () => {
         Przeciągnij wolumin między regałami · strzałkami przełączasz segmenty „Regał N"
       </p>
 
-      {/* Przełącznik skóry regału (Holo+ / Relikwiarz) — wybór trwa w localStorage */}
+      {/* „Regał" skin switch (Holo+ / Relikwiarz) — choice persists in localStorage */}
       <div className="flex items-center justify-center gap-2 -mt-3">
         <span className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Skóra</span>
         <div className="inline-flex rounded-lg border border-white/10 overflow-hidden">
@@ -178,7 +178,7 @@ export const BookshelfSection: React.FC = () => {
       ) : (
         <div className={skinClass(skin)}>
         <RoomDecor>
-          {/* Półka „Wyróżnione" (okładki twarzą) */}
+          {/* „Wyróżnione" shelf (covers facing out) */}
           {featured.length > 0 && (
             <div className="mb-8">
               <ShelfFrame
@@ -197,8 +197,8 @@ export const BookshelfSection: React.FC = () => {
             </div>
           )}
 
-          {/* Dwa regały stałej wysokości: lewy „Do przeczytania", prawy zawsze
-              „Przeczytane" — drag&drop między nimi. Każdy paginowany (Regał N/M). */}
+          {/* Two fixed-height shelves: left „Do przeczytania", right always
+              „Przeczytane" — drag&drop between them. Each paginated (Regał N/M). */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Shelf
               shelfId="toRead" title="Do przeczytania" accent="cyan" pageSize={rowsPerPage}

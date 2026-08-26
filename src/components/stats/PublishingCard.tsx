@@ -4,10 +4,10 @@ import { Building2, Layers, Repeat } from "lucide-react";
 import { PublisherStat, SeriesStat, CycleStats } from "../../hooks/useStats";
 
 /**
- * Wydawnictwa / Serie / Cykle — dane z rytuałów publisher/series/cycles, dotąd
- * niepokazywane. Każdy pasek pokazuje POSTĘP wg swojej etykiety, nie rozmiar:
- * Wydawnictwa = przeczytane/tytuły, Serie = posiadane/total (luki), Cykle =
- * udział „części cyklu" w kolekcji. Lista i tak posortowana malejąco po liczbie.
+ * Publishers / Series / Cycles — data from the publisher/series/cycles rituals, not
+ * shown until now. Each bar shows PROGRESS by its own label, not size:
+ * Publishers = read/titles, Series = owned/total (gaps), Cycles =
+ * the share of „części cyklu" in the collection. The list is sorted descending by count anyway.
  */
 
 const barRow = (label: string, value: number, max: number, sub: string, color: string) => (
@@ -37,7 +37,7 @@ export const PublishingCard: React.FC<{ publishers: PublisherStat[]; series: Ser
         Oficyny, Serie i Cykle
       </h3>
 
-      {/* Cykle — pasek udziału */}
+      {/* Cycles — share bar */}
       <div className="p-3 rounded-2xl bg-slate-950/40 border border-white/5 space-y-2">
         <div className="flex items-center gap-2 text-xs text-slate-400">
           <Repeat className="w-3.5 h-3.5 text-purple-400" />
@@ -51,7 +51,7 @@ export const PublishingCard: React.FC<{ publishers: PublisherStat[]; series: Ser
         </div>
       </div>
 
-      {/* Top wydawnictwa */}
+      {/* Top publishers */}
       <div className="space-y-3">
         <h4 className="text-[11px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-1.5"><Building2 className="w-3 h-3" /> Top oficyny</h4>
         {publishers.length === 0 ? (
@@ -63,7 +63,7 @@ export const PublishingCard: React.FC<{ publishers: PublisherStat[]; series: Ser
         )}
       </div>
 
-      {/* Serie z lukami */}
+      {/* Series with gaps */}
       <div className="space-y-3">
         <h4 className="text-[11px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-1.5"><Layers className="w-3 h-3" /> Serie (posiadane/total)</h4>
         {series.length === 0 ? (

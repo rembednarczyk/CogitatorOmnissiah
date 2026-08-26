@@ -5,9 +5,9 @@ import { AppConfig, DEFAULT_CONFIG, LibraryBranch, AwardPage } from "../configSc
 import { useAppConfig } from "../hooks/useAppConfig";
 
 /**
- * Zakładka „Kalibracja" (wejście: klik w logo) — knoby konfiguracji aplikacji.
- * Draft edytowany lokalnie; „Zapisz" wysyła PUT /api/app-config (backend clampuje
- * i składuje diff od defaultów w Notion). Sekcja „Zaawansowane" zwijana.
+ * „Kalibracja" tab (entry: click the logo) — app configuration knobs.
+ * Draft edited locally; „Zapisz" sends PUT /api/app-config (backend clamps
+ * and stores the diff from defaults in Notion). The „Zaawansowane" section is collapsible.
  */
 
 const inputCls = "w-full px-3 py-2 text-sm bg-slate-950/60 border border-white/10 text-slate-200 rounded-xl focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/10 transition-all font-medium";
@@ -35,7 +35,7 @@ const TextField: React.FC<{ label: string; hint?: string; value: string; onChang
   </Field>
 );
 
-/** Lista tekstowa (jeden wpis na linię) — wykluczone źródła, pula UA. */
+/** Text list (one entry per line) — excluded sources, UA pool. */
 const ListField: React.FC<{ label: string; hint?: string; rows?: number; value: string[]; onChange: (v: string[]) => void }> = ({ label, hint, rows = 4, value, onChange }) => (
   <Field label={label} hint={hint}>
     <textarea
@@ -70,7 +70,7 @@ export const ConfigSection: React.FC = () => {
     );
   }
 
-  // Pojedyncze settery per sekcja — draft jest zawsze pełnym AppConfig.
+  // Single setters per section — draft is always a full AppConfig.
   const upd = <S extends keyof AppConfig>(section: S, patch: Partial<AppConfig[S]>) =>
     setDraft({ ...draft, [section]: { ...draft[section], ...patch } });
 
@@ -85,7 +85,7 @@ export const ConfigSection: React.FC = () => {
 
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-      {/* Nagłówek + akcje */}
+      {/* Header + actions */}
       <div className="glass-card rounded-3xl p-6 flex flex-col sm:flex-row sm:items-center gap-4">
         <div className="flex-1">
           <h2 className="text-xl font-bold font-display uppercase tracking-widest text-cyan-400 flex items-center gap-3">
@@ -153,14 +153,14 @@ export const ConfigSection: React.FC = () => {
         </Field>
       </SectionCard>
 
-      {/* Pula UA */}
+      {/* UA pool */}
       <SectionCard icon={<Globe className="w-4 h-4" />} title="Kamuflaż noosferyczny (User-Agent)" accent="text-cyan-400">
         <ListField label="Pula User-Agentów" rows={7}
           hint={'Rotacja per żądanie (Vinted + biblioteka). Odświeżaj co ~kwartał do bieżących wersji przeglądarek — przestarzałe UA ściągają wykrycie bota. Jeden wpis na linię.'}
           value={draft.scraping.userAgents} onChange={(v) => upd("scraping", { userAgents: v })} />
       </SectionCard>
 
-      {/* Filie biblioteczne */}
+      {/* Library branches */}
       <SectionCard icon={<LibraryBig className="w-4 h-4" />} title="Filie biblioteczne (OPAC)" accent="text-indigo-400">
         <div className="space-y-3">
           {draft.library.branches.map((b, i) => (
@@ -183,7 +183,7 @@ export const ConfigSection: React.FC = () => {
         </div>
       </SectionCard>
 
-      {/* Nagrody */}
+      {/* Awards */}
       <SectionCard icon={<Trophy className="w-4 h-4" />} title="Strony nagród (Archiwum Encyklopedii)" accent="text-amber-400">
         <div className="space-y-3">
           {draft.sync.awards.map((a, i) => (
@@ -204,7 +204,7 @@ export const ConfigSection: React.FC = () => {
         </div>
       </SectionCard>
 
-      {/* Zaawansowane */}
+      {/* Advanced */}
       <div className="glass-card rounded-3xl p-6 space-y-5">
         <button onClick={() => setShowAdvanced(!showAdvanced)}
           className="w-full flex items-center justify-between text-sm font-display font-bold uppercase tracking-[0.2em] text-purple-400">

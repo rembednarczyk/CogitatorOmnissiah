@@ -1,47 +1,47 @@
 import { MAX_LEAN_DEG } from "./bookshelf";
 
 /**
- * Fizyczne rozłożenie woluminów na półkach regału.
+ * Physical arrangement of volumes on the Regał shelves.
  *
- * Zasady „fizyki":
- * - **Każda półka jest wypełniona bez pustych dziur** — luz rzędu pochłaniają w
- *   pierwszej kolejności pochyłe (oparcie), a resztę wchłania POGRUBIENIE stojących
- *   grzbietów (grubsze książki), bo nikt nie stawia książek z przerwami między
- *   nimi. Dopiero gdyby pogrubienie osiągnęło limity, znikomy resztek luzu idzie
- *   równo w szczeliny.
- * - **Książka pochyla się tylko wtedy, gdy ma się o co oprzeć.** Kąt wynika z
- *   geometrii: `θ = atan(szczelina / wysokość_podpory)`, więc wierzch dokładnie
- *   dosięga górnej krawędzi sąsiada/kupki (opiera się o niego), a nie wisi
- *   bezwładnie pod kątem. Brak szczeliny → książka stoi prosto. Kąt ≤ MAX_LEAN.
+ * „Physics" rules:
+ * - **Every shelf is filled with no empty gaps** — a row's slack is absorbed
+ *   first by tilts (leaning), and the rest is absorbed by THICKENING the
+ *   standing spines (thicker books), because nobody stands books with gaps
+ *   between them. Only if thickening hits its limits does a tiny slack remnant
+ *   go evenly into the gaps.
+ * - **A book tilts only when it has something to lean on.** The angle follows
+ *   from geometry: `θ = atan(gap / support_height)`, so the top exactly
+ *   reaches the top edge of the neighbor/pile (leans on it), rather than
+ *   hanging limply at an angle. No gap → the book stands upright. Angle ≤ MAX_LEAN.
  */
 
 export interface PackItem {
   key: string;
   kind: "spine" | "stack" | "divider";
-  bw: number;          // szerokość podstawy (footprint na półce), px
-  h: number;           // wysokość widoczna (jako podpora dla sąsiada), px
-  leanDir: -1 | 0 | 1; // zamierzony kierunek pochylenia (−1 w lewo, +1 w prawo, 0 brak)
-  stretch?: number;    // ile px grzbiet MOŻE zgrubieć, by wypełnić luz (0 = nie pogrubiamy)
+  bw: number;          // base width (footprint on the shelf), px
+  h: number;           // visible height (as support for a neighbor), px
+  leanDir: -1 | 0 | 1; // intended tilt direction (−1 left, +1 right, 0 none)
+  stretch?: number;    // how many px the spine MAY thicken to fill slack (0 = don't thicken)
 }
 
 export interface PlacedItem {
   key: string;
   kind: "spine" | "stack" | "divider";
   bw: number;
-  w: number;           // szerokość do wyrenderowania (≥ bw — po ewentualnym pogrubieniu)
-  x: number;           // lewa krawędź, px
-  deg: number;         // rzeczywisty kąt pochylenia (0 = prosto)
+  w: number;           // width to render (≥ bw — after any thickening)
+  x: number;           // left edge, px
+  deg: number;         // actual tilt angle (0 = upright)
 }
 
 export interface PackOpts {
   rowWidth: number;
-  minGap?: number;     // minimalny odstęp rezerwowany przy pakowaniu
+  minGap?: number;     // minimum spacing reserved during packing
   maxLeanDeg?: number;
 }
 
 const DEG = Math.PI / 180;
 
-/** Zachłanne pakowanie woluminów w rzędy o zadanej szerokości. */
+/** Greedy packing of volumes into rows of the given width. */
 export function packRows(items: PackItem[], rowWidth: number, minGap = 2): PackItem[][] {
   const rows: PackItem[][] = [];
   let row: PackItem[] = [];
@@ -61,8 +61,8 @@ export function packRows(items: PackItem[], rowWidth: number, minGap = 2): PackI
 }
 
 /**
- * Rozkłada jeden rząd na całą szerokość i liczy kąty pochylenia „z podparciem".
- * Zwraca pozycje `x` (lewa krawędź) i kąt `deg` każdego woluminu.
+ * Lays out one row across the full width and computes „supported" tilt angles.
+ * Returns each volume's `x` position (left edge) and `deg` angle.
  */
 export function layoutRow(row: PackItem[], rowWidth: number, maxLeanDeg = MAX_LEAN_DEG): PlacedItem[] {
   const n = row.length;
@@ -74,10 +74,10 @@ export function layoutRow(row: PackItem[], rowWidth: number, maxLeanDeg = MAX_LE
   }
 
   const gaps = new Array(n - 1).fill(0);
-  const extra = new Array(n).fill(0); // pogrubienie każdego grzbietu (px)
+  const extra = new Array(n).fill(0); // thickening of each spine (px)
   const tanMax = Math.tan(maxLeanDeg * DEG);
 
-  // Która szczelina jest „szczeliną oparcia" (książka pochyla się w nią na sąsiada).
+  // Which gap is a „lean gap" (a book tilts into it onto a neighbor).
   type Lean = { leaner: number; support: number; cap: number };
   const leanAt: (Lean | undefined)[] = new Array(n - 1).fill(undefined);
   for (let i = 0; i < n; i++) {
@@ -91,22 +91,22 @@ export function layoutRow(row: PackItem[], rowWidth: number, maxLeanDeg = MAX_LE
   const leanIdx = leanAt.map((l, i) => (l ? i : -1)).filter((i) => i >= 0);
   const freeIdx = gaps.map((_, i) => i).filter((i) => !leanAt[i]);
 
-  // Rozdział luzu.
+  // Slack distribution.
   let rem = slack;
   const leanCapSum = leanIdx.reduce((s, i) => s + leanAt[i]!.cap, 0);
   if (leanCapSum <= rem) {
-    // 1) Pochyłe książki opierają się o sąsiada (szczelina oparcia do limitu).
+    // 1) Tilted books lean on a neighbor (lean gap up to the limit).
     for (const i of leanIdx) gaps[i] = leanAt[i]!.cap;
     rem -= leanCapSum;
-    // 2) Resztę WCHŁANIA pogrubienie stojących grzbietów — grubsze książki
-    //    wypełniają rząd zamiast zostawiać nienaturalne przerwy. Nie pogrubiamy
-    //    kupek ani książek, które się pochylają.
+    // 2) The rest is ABSORBED by thickening the standing spines — thicker books
+    //    fill the row instead of leaving unnatural gaps. We don't thicken
+    //    piles or books that tilt.
     const leaners = new Set(leanIdx.map((i) => leanAt[i]!.leaner));
     const widenable = row
       .map((it, i) => (it.kind === "spine" && !leaners.has(i) ? i : -1))
       .filter((i) => i >= 0 && (row[i].stretch ?? 0) > 0);
     rem = widenEvenly(rem, widenable, (i) => row[i].stretch ?? 0, extra);
-    // 3) Znikomy resztek (gdy pogrubienie osiągnęło limity) — równo w szczeliny.
+    // 3) A tiny remnant (when thickening hit its limits) — evenly into the gaps.
     if (rem > 1e-6) {
       if (freeIdx.length) {
         const per = rem / freeIdx.length;
@@ -117,12 +117,12 @@ export function layoutRow(row: PackItem[], rowWidth: number, maxLeanDeg = MAX_LE
       }
     }
   } else {
-    // luz mniejszy niż suma limitów oparcia — skalujemy szczeliny proporcjonalnie
+    // slack smaller than the sum of lean limits — scale the gaps proportionally
     const scale = leanCapSum > 0 ? rem / leanCapSum : 0;
     for (const i of leanIdx) gaps[i] = leanAt[i]!.cap * scale;
   }
 
-  // Pozycje (szerokość = podstawa + pogrubienie).
+  // Positions (width = base + thickening).
   const placed: PlacedItem[] = [];
   let x = 0;
   for (let i = 0; i < n; i++) {
@@ -131,7 +131,7 @@ export function layoutRow(row: PackItem[], rowWidth: number, maxLeanDeg = MAX_LE
     if (i < n - 1) x += w + gaps[i];
   }
 
-  // Kąty oparcia: θ = atan(szczelina / wysokość_podpory), znak wg strony podpory.
+  // Lean angles: θ = atan(gap / support_height), sign per the support's side.
   for (const i of leanIdx) {
     const { leaner, support } = leanAt[i]!;
     const gap = gaps[i];
@@ -148,9 +148,9 @@ function strip(it: PackItem): Omit<PlacedItem, "x" | "deg" | "w"> {
 }
 
 /**
- * Rozdziela `rem` px na pogrubienie grzbietów `idx`, każdy do limitu `capOf(i)`.
- * Water-filling: równe dokładanie do jeszcze-nienasyconych, aż zabraknie luzu lub
- * miejsca. Zapisuje przyrost do `extra` i zwraca niewykorzystany luz.
+ * Distributes `rem` px across thickening of spines `idx`, each up to the `capOf(i)` limit.
+ * Water-filling: adding equally to the not-yet-saturated ones until slack or room
+ * runs out. Writes the increment into `extra` and returns the unused slack.
  */
 function widenEvenly(rem: number, idx: number[], capOf: (i: number) => number, extra: number[]): number {
   let active = idx.filter((i) => capOf(i) - extra[i] > 1e-6);
@@ -173,7 +173,7 @@ function widenEvenly(rem: number, idx: number[], capOf: (i: number) => number, e
   return rem;
 }
 
-/** Pakuje i rozkłada wszystkie woluminy na wypełnione rzędy. */
+/** Packs and lays out all volumes into filled rows. */
 export function packAndLayout(items: PackItem[], opts: PackOpts): PlacedItem[][] {
   if (opts.rowWidth <= 0) return [];
   const rows = packRows(items, opts.rowWidth, opts.minGap ?? 2);

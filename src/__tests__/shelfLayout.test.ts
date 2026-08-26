@@ -26,7 +26,7 @@ describe("shelfLayout.decade", () => {
 });
 
 describe("shelfLayout.buildShelfItems (tabliczki dekad)", () => {
-  // Posortowane po dacie (jak z splitShelves): 1948, 1952, 1955, 1969, brak.
+  // Sorted by date (as from splitShelves): 1948, 1952, 1955, 1969, none.
   const books = [
     mk({ id: "a", year: "1948" }),
     mk({ id: "b", year: "1952" }),
@@ -38,7 +38,7 @@ describe("shelfLayout.buildShelfItems (tabliczki dekad)", () => {
   it("inserts one divider per decade section, before its books", () => {
     const { items, slotByKey } = buildShelfItems(books);
     const dividers = items.filter((it) => it.kind === "divider");
-    // dekady: 1940, 1950, 1960, bez daty → 4 tabliczki
+    // decades: 1940, 1950, 1960, no date → 4 plates
     expect(dividers.length).toBe(4);
     const labels = dividers.map((d) => (slotByKey.get(d.key) as { label: string }).label);
     expect(labels).toEqual(["1940–1949", "1950–1959", "1960–1969", "bez daty"]);
@@ -47,7 +47,7 @@ describe("shelfLayout.buildShelfItems (tabliczki dekad)", () => {
   it("keeps every book exactly once and dividers precede their decade", () => {
     const { items } = buildShelfItems(books);
     const seq = items.map((it) => (it.kind === "divider" ? "|" : it.key));
-    // pierwszy item to tabliczka; każda książka pojawia się raz
+    // the first item is a plate; each book appears once
     expect(seq[0]).toBe("|");
     expect(seq.filter((s) => s !== "|")).toEqual(["a", "b", "c", "d", "e"]);
   });
@@ -60,7 +60,7 @@ describe("shelfLayout.plateWidth / assignDividerPlacement", () => {
     a: "1940–1949", b: "1950–1959", c: "1960–1969", d: "1970–1979",
   };
   const labelOf = (k: string) => labels[k];
-  const W = 2000; // szeroka półka — bez zawijania przy prawej krawędzi
+  const W = 2000; // wide shelf — no wrapping at the right edge
 
   it("estimates plate width from label length (mono 11px)", () => {
     expect(plateWidth("1950–1959")).toBe(103); // 37 + 9·7.3
@@ -75,7 +75,7 @@ describe("shelfLayout.plateWidth / assignDividerPlacement", () => {
   });
 
   it("drops a plate to the bottom when the previous decade is too narrow", () => {
-    // b sits only 40px past a → górna tabliczka a (szer. ~103) zderza się z b.
+    // b sits only 40px past a → the top plate a (width ~103) collides with b.
     const row = [div("a", 0), div("b", 40), div("c", 420)];
     const pl = assignDividerPlacement(row, labelOf, W);
     expect(pl.get("b")?.level).toBe("bottom");
@@ -84,7 +84,7 @@ describe("shelfLayout.plateWidth / assignDividerPlacement", () => {
   });
 
   it("alternates top/bottom greedily and only the middle plate flips in a tight chain", () => {
-    // a(0) top; b(40) collides top → bottom; c(80) collides both → góra (fallback).
+    // a(0) top; b(40) collides top → bottom; c(80) collides both → top (fallback).
     const row = [div("a", 0), div("b", 40), div("c", 80)];
     const pl = assignDividerPlacement(row, labelOf, W);
     expect(pl.get("a")?.level).toBe("top");
@@ -93,7 +93,7 @@ describe("shelfLayout.plateWidth / assignDividerPlacement", () => {
   });
 
   it("extends a plate leftward when it would overflow the right shelf edge", () => {
-    // rowWidth 300; b przy 240 → 240+103=343 > 300 → rozwija się w lewo (bez kolizji z a).
+    // rowWidth 300; b at 240 → 240+103=343 > 300 → extends leftward (no collision with a).
     const row = [div("a", 0), div("b", 240)];
     const pl = assignDividerPlacement(row, labelOf, 300);
     expect(pl.get("a")?.dir).toBe("right");

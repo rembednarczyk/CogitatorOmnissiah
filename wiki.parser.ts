@@ -4,10 +4,10 @@ import { normalizeData } from "./services/dataNormalizer";
 
 export class WikiParser {
   /**
-   * Parsuje tabelę wyników nagrody z wikitekstu ({{tabela wydania}} / wikitable)
-   * na listę książek. Czysta funkcja (bez I/O) — pobranie strony i zdarzenia SSE
-   * zostają w BookSyncService.fetchBooksFromMediaWiki. `awardName` decyduje o
-   * etykiecie Nagroda/Nominacja i o wykluczeniu kategorii YA dla Locusa.
+   * Parses an award results table from wikitext ({{tabela wydania}} / wikitable)
+   * into a list of books. A pure function (no I/O) — page fetching and SSE events
+   * stay in BookSyncService.fetchBooksFromMediaWiki. `awardName` determines the
+   * Nagroda/Nominacja label and the exclusion of the YA category for Locus.
    */
   static parseAwardTable(wikitext: string, awardName: string): Book[] {
     const books: Book[] = [];
@@ -90,8 +90,8 @@ export class WikiParser {
         const cellText = parseCell(cells[0]) as string;
         const yearOnly = cellText.replace(/['\[\]]/g, '').trim().match(/^(\d{4})$/);
         if (yearOnly) {
-          // Wiersz zawierający wyłącznie rok (rowspan) — to nowy rocznik,
-          // nie dodatkowy autor poprzedniej książki
+          // A row containing only a year (rowspan) — this is a new year,
+          // not an additional author of the previous book
           lastYear = yearOnly[1];
         } else if (books.length > 0) {
           const extraAuthor = cellText.replace(/\s*\(remis\)/gi, '').trim();
@@ -166,15 +166,15 @@ export class WikiParser {
     let wydawca = "";
     let seria = "";
 
-    // 1. Pobierz wartości ogólne z {{Książka}} (jako fallback)
-    // Wartość może zawierać linki z pipe ([[Cel|Etykieta]]) — dopasowuj całe [[...]]
+    // 1. Get the general values from {{Książka}} (as a fallback)
+    // The value may contain piped links ([[Target|Label]]) — match the whole [[...]]
     const wydawcaMatch = wikitext.match(/\|\s*wydawca\s*=\s*((?:\[\[[^\]]*\]\]|[^\n|])+)/i);
     if (wydawcaMatch) wydawca = this.cleanWikitext(wydawcaMatch[1]);
 
     const seriaMatch = wikitext.match(/\|\s*seria\s*=\s*((?:\[\[[^\]]*\]\]|[^\n|])+)/i);
     if (seriaMatch) seria = this.cleanWikitext(seriaMatch[1]);
 
-    // 2. Pobierz wartości z {{tabela wydania}} (infowydanie) - priorytet dla najwyższego N z danymi
+    // 2. Get the values from {{tabela wydania}} (infowydanie) - priority to the highest N with data
     const infoRegex = /\|\s*informacja(\d+)\s*=\s*\{\{infowydanie\s*\|([\s\S]*?)\}\}/gi;
     
     let match;
@@ -183,11 +183,11 @@ export class WikiParser {
       infos.push({ n: parseInt(match[1], 10), content: match[2] });
     }
 
-    // Sortuj od najwyższego N, aby znaleźć najnowsze wydanie z danymi
+    // Sort from the highest N, to find the newest edition with data
     infos.sort((a, b) => b.n - a.n);
 
     for (const info of infos) {
-      // Kotwica (?:^|\|) — nie dopasowuj wewnątrz innych parametrów (np. "współwydawca")
+      // Anchor (?:^|\|) — don't match inside other parameters (e.g. "współwydawca")
       const infoWydawcaMatch = info.content.match(/(?:^|\|)\s*wydawca\s*=\s*((?:\[\[[^\]]*\]\]|[^\n|])+)/i);
       const infoSeriaMatch = info.content.match(/(?:^|\|)\s*seria\s*=\s*((?:\[\[[^\]]*\]\]|[^\n|])+)/i);
 
@@ -195,9 +195,9 @@ export class WikiParser {
       const foundSeria = infoSeriaMatch ? this.cleanWikitext(infoSeriaMatch[1]) : "";
 
       if (foundWydawca || foundSeria) {
-        // Najnowsze wydanie z danymi jest miarodajne w całości — przypisz OBA pola,
-        // także puste. Nie pozwól, by seria ze starszego wydania (lub z globalnego
-        // fallbacku {{Książka}}) przeciekła, gdy najnowsze wydanie jej nie ma.
+        // The newest edition with data is authoritative in full — assign BOTH fields,
+        // including empty ones. Don't let a series from an older edition (or from the
+        // global {{Książka}} fallback) leak through when the newest edition lacks it.
         wydawca = foundWydawca;
         seria = foundSeria;
         break;
@@ -209,20 +209,20 @@ export class WikiParser {
 
   static extractAuthor(wikitext: string): string {
     // Look for autor, twórca, or redaktor in infoboxes.
-    // Wartość może zawierać szablony/linki z pipe: {{sortname|Ursula K.|Le Guin}},
-    // {{Autor|Jan Kowalski}}, [[Stanisław Lem|Lem, Stanisław]]. Dopasuj całe
-    // [[...]]/{{...}} jako jeden token — inaczej capture `[^\n|]+` ucinał wartość na
-    // pierwszym `|` (np. do "{{sortname"), przez co czyszczenie szablonów w
-    // cleanWikitext nigdy nie miało czego przetworzyć.
+    // The value may contain piped templates/links: {{sortname|Ursula K.|Le Guin}},
+    // {{Autor|Jan Kowalski}}, [[Stanisław Lem|Lem, Stanisław]]. Match the whole
+    // [[...]]/{{...}} as one token — otherwise the capture `[^\n|]+` cut the value at
+    // the first `|` (e.g. down to "{{sortname"), so the template cleanup in
+    // cleanWikitext never had anything to process.
     const authorRegex = /\|\s*(autor|twórca|redaktor|scenariusz|tekst)\s*=\s*((?:\[\[[^\]]*\]\]|\{\{[^{}]*\}\}|[^\n|])+)/gi;
     let match;
     let authors: string[] = [];
 
     while ((match = authorRegex.exec(wikitext)) !== null) {
-      // cleanWikitext rozwija [[Cel|Etykieta]]→Etykieta, {{sortname|a|b}}→"a b",
-      // {{Autor|a}}→a i usuwa pozostałe szablony/znaczniki.
+      // cleanWikitext expands [[Target|Label]]→Label, {{sortname|a|b}}→"a b",
+      // {{Autor|a}}→a and removes the remaining templates/markup.
       const cleaned = this.cleanWikitext(match[2]);
-      // Pusty parametr (np. "| redaktor = " ze spacją) matchuje — odfiltruj
+      // An empty parameter (e.g. "| redaktor = " with a space) matches — filter it out
       if (cleaned) authors.push(cleaned);
     }
     
@@ -239,16 +239,16 @@ export class WikiParser {
   }
 
   /**
-   * Wyciąga informacje o cyklu z infoboksu `{{Książka}}`: nazwę cyklu (`|cykl=`),
-   * sąsiednie tomy (`|poprzednia=` / `|następna=` — łańcuch prev/next, potwierdzony
-   * na realnym rawie) oraz — oportunistycznie — tytuły z linków w szablonie
-   * nawigacyjnym `{{Cykl…}}`. Wołane w podglądzie cyklu (bez zapisu do bazy).
-   * `|następna=`/`|nastepna=` oba warianty (encyklopedia bywa niespójna w ogonku).
+   * Extracts cycle info from the `{{Książka}}` infobox: the cycle name (`|cykl=`),
+   * neighboring volumes (`|poprzednia=` / `|następna=` — the prev/next chain, confirmed
+   * on real raw) and — opportunistically — titles from links in the navigation
+   * template `{{Cykl…}}`. Called in the cycle preview (no DB writes).
+   * `|następna=`/`|nastepna=` both variants (the encyclopedia is sometimes inconsistent in the suffix).
    */
   static extractCycleInfo(wikitext: string): { cycleName: string; prev: string | null; next: string | null; templateVolumes: string[] } {
     if (!wikitext) return { cycleName: "", prev: null, next: null, templateVolumes: [] };
 
-    // Pojedyncza wartość parametru infoboksu (całe [[...]]/{{...}} jako token, ucięcie na następnym `|`).
+    // A single infobox parameter value (whole [[...]]/{{...}} as a token, cut at the next `|`).
     const field = (name: string): string => {
       const re = new RegExp(`\\|\\s*${name}\\s*=\\s*((?:\\[\\[[^\\]]*\\]\\]|\\{\\{[^{}]*\\}\\}|[^\\n|])+)`, "i");
       const m = wikitext.match(re);
@@ -259,7 +259,7 @@ export class WikiParser {
     const prev = field("poprzednia") || field("poprzedni") || "";
     const next = field("następna") || field("nastepna") || field("następny") || field("nastepny") || "";
 
-    // Szablon nawigacyjny {{Cykl…}} — zbierz cele wikilinków [[Tytuł]] w kolejności.
+    // Navigation template {{Cykl…}} — collect the wikilink targets [[Tytuł]] in order.
     const templateVolumes: string[] = [];
     const tplMatch = wikitext.match(/\{\{\s*cykl[^{}]*(?:\{\{[^{}]*\}\}[^{}]*)*\}\}/i);
     if (tplMatch) {

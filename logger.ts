@@ -1,5 +1,5 @@
-// Prosty strukturalny logger. Jedna linia na wpis, czytelna w logach Rendera,
-// z komponentem, poziomem i opcjonalnym kontekstem (bez sekretów).
+// Simple structured logger. One line per entry, readable in Render's logs,
+// with component, level and optional context (no secrets).
 
 type Level = "info" | "warn" | "error";
 
@@ -10,7 +10,7 @@ const LEVEL_TAG: Record<Level, string> = {
 };
 
 function emit(level: Level, component: string, message: string, context?: Record<string, unknown>) {
-  // Nie logujemy sekretów — kontekst powinien zawierać tylko metadane.
+  // We don't log secrets — context should contain only metadata.
   const parts = [`[${LEVEL_TAG[level]}]`, `[${component}]`, message];
   let line = parts.join(" ");
   if (context && Object.keys(context).length > 0) {
@@ -39,17 +39,17 @@ export function createLogger(component: string): Logger {
 }
 
 /**
- * Klasyfikuje błąd żądania HTTP (axios/network) do zrozumiałej kategorii.
- * Używane, by odróżnić blokadę IP/Cloudflare od zwykłego timeoutu czy
- * błędu aplikacyjnego — kluczowe przy diagnozie "sync nie działa".
+ * Classifies an HTTP request error (axios/network) into an understandable category.
+ * Used to tell an IP/Cloudflare block apart from a plain timeout or an
+ * application error — crucial when diagnosing "sync doesn't work".
  */
 export type ErrorClass =
-  | "ip_blocked"        // 403 / Cloudflare challenge — najczęstsza przyczyna na hostingu
+  | "ip_blocked"        // 403 / Cloudflare challenge — most common cause on hosting
   | "rate_limited"      // 429
-  | "server_error"      // 5xx po stronie wiki
-  | "timeout"           // przekroczony czas / zerwane połączenie
-  | "dns"               // nie rozwiązano hosta
-  | "http_error"        // inny status HTTP
+  | "server_error"      // 5xx on the wiki side
+  | "timeout"           // timed out / dropped connection
+  | "dns"               // host not resolved
+  | "http_error"        // other HTTP status
   | "unknown";
 
 export function classifyHttpError(error: any): { class: ErrorClass; status?: number; code?: string; hint: string; snippet?: string } {

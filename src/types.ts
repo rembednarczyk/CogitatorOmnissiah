@@ -46,26 +46,26 @@ export interface NotionBook {
   currentWydawnictwo?: string;
   currentSeria?: string;
   currentCzesccyklu?: boolean;
-  /** Kategoria wiersza: „Nagroda" (domyślnie/pusto) vs „Tom cyklu" (poboczny tom cyklu). */
+  /** Row category: „Nagroda" (default/empty) vs „Tom cyklu" (sibling cycle volume). */
   kategoria?: string;
   lp?: string;
   zrodlo?: string[];
   plTitleRichText?: NotionRichTextItem[];
   origTitleRichText?: NotionRichTextItem[];
-  /** Blob JSON składowanych wyników Vinted (pole „VintedData") — parsowany przez vintedStore. */
+  /** JSON blob of stored Vinted results (field „VintedData") — parsed by vintedStore. */
   vintedData?: string;
-  /** Nazwa cyklu (pole „Cykl") — grupuje wiersze jednego cyklu (kotwica + poboczne tomy). */
+  /** Cycle name (field „Cykl") — groups the rows of one cycle (anchor + sibling volumes). */
   cykl?: string;
-  /** Pozycja w cyklu (pole „CyklNr", number) — kolejność czytania. */
+  /** Position within the cycle (field „CyklNr", number) — reading order. */
   cyklNr?: number;
-  /** Ręczny klucz porządku na regale (kolumna „ShelfOrder"; skala ułamkowych lat). */
+  /** Manual shelf ordering key (column „ShelfOrder"; fractional-year scale). */
   shelfOrder?: number;
 }
 
 /**
- * Odchudzony rekord książki dla wyszukiwarki „Skryptorium" (`GET /api/books`).
- * Świadomie BEZ ciężkich pól (`vintedData` blob, `*RichText`) — to indeks do
- * filtrowania client-side, nie pełny model. Współdzielony przez serwer i front.
+ * Slimmed-down book record for the „Skryptorium" search (`GET /api/books`).
+ * Deliberately WITHOUT heavy fields (`vintedData` blob, `*RichText`) — this is an
+ * index for client-side filtering, not the full model. Shared by server and front.
  */
 export interface BookIndexEntry {
   id: string;
@@ -77,7 +77,7 @@ export interface BookIndexEntry {
   zrodlo: string[];
   series: string;
   partOfCycle: boolean;
-  /** Ręczny klucz porządku na regale (precyzyjny drag&drop); brak → sort po roku. */
+  /** Manual shelf ordering key (precise drag&drop); absent → sort by year. */
   shelfOrder?: number;
 }
 
@@ -95,8 +95,8 @@ export interface SyncState {
 }
 
 export interface SyncEvent {
-  // "match" / "search_attempt" są emitowane przez skanery (Vinted/Biblioteka)
-  // "seller_resolved" — grupowanie Vinted per sprzedawca (dociąganie sprzedawcy oferty)
+  // "match" / "search_attempt" are emitted by the scanners (Vinted/Biblioteka)
+  // "seller_resolved" — Vinted grouping per seller (resolving the offer's seller)
   type: "status" | "progress" | "complete" | "error" | "match" | "search_attempt" | "seller_resolved";
   message?: string;
   error?: string;

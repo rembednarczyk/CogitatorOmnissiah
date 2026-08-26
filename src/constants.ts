@@ -1,12 +1,12 @@
 import { DEFAULT_CONFIG } from "./configSchema";
 
 /**
- * Stałe-fallbacki DERYWOWANE z DEFAULT_CONFIG (jedno źródło prawdy w configSchema).
- * Żywe wartości pochodzą z konfiguracji (`useEffectiveConfig` → GET /api/app-config);
- * te listy służą jako stan początkowy zanim odpowiedź dotrze.
+ * Fallback constants DERIVED from DEFAULT_CONFIG (single source of truth in configSchema).
+ * Live values come from the configuration (`useEffectiveConfig` → GET /api/app-config);
+ * these lists serve as initial state before the response arrives.
  */
 
-/** Pseudo-nagroda pełnej synchronizacji — opcja UI, nie strona wiki. */
+/** Pseudo-award for a full sync — a UI option, not a wiki page. */
 export const SYNC_ALL_AWARD = { name: "Wszystkie Nagrody", title: "Wszystkie" };
 
 export const PREDEFINED_AWARDS = [...DEFAULT_CONFIG.sync.awards, SYNC_ALL_AWARD];

@@ -32,8 +32,8 @@ export interface CyclesHarvest {
 }
 
 /**
- * Zebrane cykle (GET /api/cycles-harvest) — agregacja WIERSZY cykli (pole `Cykl`)
- * materializowanych Rytuałem Żniw. Odczyt lekki (agregacja serwera z cache książek).
+ * Harvested cycles (GET /api/cycles-harvest) — aggregation of cycle ROWS (the `Cykl` field)
+ * materialized by the „Rytuał Żniw". Lightweight read (server aggregation off the book cache).
  */
 export function useCyclesHarvest() {
   const [view, setView] = useState<CyclesHarvest | null>(null);
@@ -41,8 +41,8 @@ export function useCyclesHarvest() {
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  // `silent` = odświeżenie w tle (po oznaczeniu tomu) bez migania całą kartą.
-  // `fresh` = pomiń 5-min cache książek na serwerze (ręczne „Odśwież Dane").
+  // `silent` = background refresh (after marking a volume) without flashing the whole card.
+  // `fresh` = skip the 5-min book cache on the server (manual „Odśwież Dane").
   const fetchHarvest = useCallback(async (silent = false, fresh = false) => {
     if (!silent) setLoading(true);
     setError(null);
@@ -58,11 +58,11 @@ export function useCyclesHarvest() {
   }, []);
 
   /**
-   * Przełącza znacznik „Źródło" (Przeczytane/Posiadam) na wierszu tomu i odświeża
-   * widok. `active=true` dopisuje, `false` usuwa (endpoint mark/unmark-as-read).
+   * Toggles the „Źródło" tag (Przeczytane/Posiadam) on a volume row and refreshes
+   * the view. `active=true` adds it, `false` removes it (mark/unmark-as-read endpoint).
    */
   const toggleSource = useCallback(async (id: string, tag: "Przeczytane" | "Posiadam", active: boolean) => {
-    if (!id) return; // bez ID nie ma czego oznaczać (i pusty busyId rozbrajałby blokadę)
+    if (!id) return; // without an ID there's nothing to mark (and an empty busyId would disarm the lock)
     setBusyId(id);
     setError(null);
     try {

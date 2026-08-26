@@ -127,9 +127,9 @@ describe('NotionAdapter', () => {
       mockClient.dataSources.retrieve.mockResolvedValue({ id: 'test-db-id' }); // init
       mockClient.dataSources.query.mockResolvedValue({ results: [page('1')], has_more: false });
 
-      // Pierwszy skan pobiera z Notion...
+      // The first scan fetches from Notion...
       const first = await adapter.getBooksForStats(undefined, undefined, { cache: true });
-      // ...drugi (np. kolejna filia) korzysta z cache — bez nowego query.
+      // ...the second (e.g. another branch) uses the cache — no new query.
       const second = await adapter.getBooksForStats(undefined, undefined, { cache: true });
 
       expect(first).toHaveLength(1);
@@ -142,7 +142,7 @@ describe('NotionAdapter', () => {
       mockClient.dataSources.query.mockResolvedValue({ results: [page('1')], has_more: false });
 
       await adapter.getBooksForStats(undefined, undefined, { cache: true }); // primes cache
-      await adapter.getBooksForStats(); // stats path — musi pobrać świeżo
+      await adapter.getBooksForStats(); // stats path — must fetch fresh
 
       expect(mockClient.dataSources.query).toHaveBeenCalledTimes(2);
     });

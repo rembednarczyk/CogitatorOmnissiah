@@ -7,16 +7,16 @@ import { createLogger } from "../logger";
 
 const log = createLogger("CycleLookup");
 
-/** Status jednego tomu względem TWOJEJ bazy (krzyżowanie po znormalizowanym tytule). */
+/** Status of a single volume relative to YOUR database (cross-ref by normalized title). */
 export interface CycleVolume {
   title: string;
-  /** Czy to książka, z której wyszedł podgląd. */
+  /** Whether this is the book the preview started from. */
   isCurrent: boolean;
-  /** Czy tom jest w bazie Notion. */
+  /** Whether the volume is in the Notion database. */
   inBase: boolean;
   read: boolean;
   owned: boolean;
-  /** Czy tom jest nagrodzony (ma jakąkolwiek nagrodę w bazie). */
+  /** Whether the volume is awarded (has any award in the database). */
   awarded: boolean;
   awards: string[];
 }
@@ -24,15 +24,15 @@ export interface CycleVolume {
 export interface CycleView {
   cycleName: string;
   volumes: CycleVolume[];
-  /** Ile tomów PRZED bieżącym nie jest przeczytanych (książki do nadrobienia przed fabułą). */
+  /** How many volumes BEFORE the current one are unread (books to catch up on before the plot). */
   unreadBefore: number;
-  /** Źródło listy: „chain" (prev/next), „template" ({{Cykl}}), „mixed". */
+  /** List source: „chain" (prev/next), „template" ({{Cykl}}), „mixed". */
   source: "chain" | "template" | "mixed" | "single";
 }
 
-/** Normalizacja tytułu do krzyżowania: bez formatowania wiki, lowercase, bez interpunkcji brzegowej.
- *  Eksportowana, by rytuał żniw indeksował wiersze DOKŁADNIE tak samo (inaczej „inBase" z
- *  lookup i dopasowanie w żniwach się rozjeżdżają → duplikat wiersza). */
+/** Title normalization for cross-referencing: no wiki formatting, lowercase, no edge punctuation.
+ *  Exported so the harvest ritual indexes rows EXACTLY the same way (otherwise „inBase" from
+ *  lookup and the match in harvest diverge → duplicate row). */
 export function normTitle(t: string): string {
   return (t || "")
     .replace(/''+/g, "")
@@ -43,25 +43,25 @@ export function normTitle(t: string): string {
     .trim();
 }
 
-const MAX_HOPS = 15; // bezpiecznik chodzenia po łańcuchu w każdą stronę
+const MAX_HOPS = 15; // safety cap on walking the chain in each direction
 
 /**
- * Podgląd cyklu dla pojedynczej książki — NA ŻĄDANIE, bez zapisu do Notion.
- * Buduje uporządkowaną listę tomów z łańcucha `|poprzednia=`/`|następna=` (pewny,
- * potwierdzony format), wzbogaca o linki z `{{Cykl}}`, i krzyżuje każdy tom z bazą.
- * Cache w pamięci procesu (klucz: tytuł+autor) — powtórne kliknięcie jest natychmiastowe.
+ * Cycle preview for a single book — ON DEMAND, without writing to Notion.
+ * Builds an ordered list of volumes from the `|poprzednia=`/`|następna=` chain (a solid,
+ * confirmed format), enriches it with links from `{{Cykl}}`, and cross-refs each volume with the database.
+ * In-process memory cache (key: title+author) — a repeat click is instant.
  */
 export class CycleLookupService {
   private cache = new Map<string, CycleView | null>();
 
   constructor(private notion: NotionAdapter, private wiki: WikiAdapter) {}
 
-  /** Rozwiązuje stronę wiki dla (tytuł, autor): direct fetch + search, z bramką autora. */
+  /** Resolves the wiki page for (title, author): direct fetch + search, with an author gate. */
   private async resolvePage(title: string, author: string): Promise<string> {
-    // 1. Bezpośrednie pobranie po dokładnym tytule.
+    // 1. Direct fetch by exact title.
     const direct = await this.wiki.fetchPageContent(title);
     if (direct && (!author || isWikiAuthorMatch(WikiParser.extractAuthor(direct), author))) return direct;
-    // 2. Wyszukiwanie po „tytuł autor".
+    // 2. Search by „tytuł autor".
     if (author) {
       const hits = await this.wiki.searchPage(`${title} ${author}`, 3);
       for (const h of hits) {
@@ -72,7 +72,7 @@ export class CycleLookupService {
     return direct || "";
   }
 
-  /** Fetch po dokładnym tytule sąsiada z łańcucha (bez bramki autora — tytuł z zaufanego pola). */
+  /** Fetch by the exact title of a chain neighbor (no author gate — title from a trusted field). */
   private async fetchNeighbor(title: string): Promise<string> {
     try { return await this.wiki.fetchPageContent(title); } catch { return ""; }
   }
@@ -91,7 +91,7 @@ export class CycleLookupService {
     const info = WikiParser.extractCycleInfo(wikitext);
     if (!info.cycleName && !info.prev && !info.next && info.templateVolumes.length === 0) return null;
 
-    // Uporządkowany łańcuch: ...prev(prev), prev, [current], next, next(next)...
+    // Ordered chain: ...prev(prev), prev, [current], next, next(next)...
     const before: string[] = [];
     const after: string[] = [];
     const visited = new Set<string>([normTitle(rawTitle)]);
@@ -116,7 +116,7 @@ export class CycleLookupService {
     }
 
     const chain = [...before, rawTitle, ...after];
-    // Linki z {{Cykl}} — dołóż nieobecne w łańcuchu (dla cykli bez prev/next).
+    // Links from {{Cykl}} — add ones absent from the chain (for cycles without prev/next).
     const extras = info.templateVolumes.filter((t) => !chain.some((c) => normTitle(c) === normTitle(t)));
     const ordered = chain.length > 1 ? [...chain, ...extras] : (extras.length > 0 ? [rawTitle, ...extras] : chain);
 
@@ -125,7 +125,7 @@ export class CycleLookupService {
       chain.length > 1 ? "chain" :
       extras.length > 0 ? "template" : "single";
 
-    // Krzyżowanie z bazą (cache: współdzielone pobranie).
+    // Cross-referencing with the database (cache: shared fetch).
     const books = await this.notion.getBooksForStats(undefined, undefined, { cache: true });
     const byTitle = new Map<string, NotionBook>();
     for (const b of books) {
@@ -149,9 +149,9 @@ export class CycleLookupService {
     const currentIdx = volumes.findIndex((v) => v.isCurrent);
     const unreadBefore = currentIdx > 0 ? volumes.slice(0, currentIdx).filter((v) => !v.read).length : 0;
 
-    // Nazwa cyklu: pole |cykl= jeśli jest; inaczej NIE „Cykl" (wszystkie bezimienne
-    // cykle zlałyby się w jedną grupę i większość zostałaby pominięta w żniwach) —
-    // bierzemy tytuł PIERWSZEGO tomu, stabilny niezależnie od kotwicy startowej.
+    // Cycle name: the |cykl= field if present; otherwise NOT „Cykl" (all nameless
+    // cycles would collapse into one group and most would be skipped in the harvest) —
+    // we take the title of the FIRST volume, stable regardless of the starting anchor.
     const cycleName = info.cycleName || volumes[0]?.title || "Cykl";
     log.info("Cykl", { title: rawTitle, cycle: cycleName, volumes: volumes.length, source });
     return { cycleName, volumes, unreadBefore, source };

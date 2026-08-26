@@ -7,7 +7,7 @@ import { IntegrityCheckCard } from "./IntegrityCheckCard";
 
 interface SyncAwardsProps {
   sync: ReturnType<typeof useSync>;
-  /** Lista nagród z konfiguracji (+ „Wszystkie Nagrody") — dropdown. */
+  /** List of awards from config (+ „Wszystkie Nagrody") — dropdown. */
   awardOptions: AwardPage[];
   integritySync: ReturnType<typeof useSync>;
   handleAwardChange: (name: string) => void;

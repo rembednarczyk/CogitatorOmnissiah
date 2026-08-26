@@ -49,7 +49,7 @@ describe("parseVintedItems", () => {
   });
 
   it("parses the current Vinted grid (hashed CSS-module class) with structural price and photo", () => {
-    // Realny DOM Vinted: klasa feed-grid jest hashowana, cena i miniatura są w kafelku.
+    // Real Vinted DOM: the feed-grid class is hashed, the price and thumbnail are in the tile.
     const html =
       `<div class="Grid-module-scss-module__HmDNda__feed-grid__item">` +
       `<img src="https://images1.vinted.net/t/abc/310x430/x.webp?s=deadbeef" alt="Cień nocy, Andrea Cremer"/>` +
@@ -66,8 +66,8 @@ describe("parseVintedItems", () => {
   });
 
   it("returns standalone (detached) strings so a huge parent HTML is not pinned", () => {
-    // Rodzic ~1 MB otaczający jeden kafelek. Pola oferty muszą być krótkimi kopiami,
-    // nie podstringami rodzica (SlicedString) — inaczej `results` pinuje cały HTML → OOM.
+    // Parent ~1 MB wrapping a single tile. The offer fields must be short copies,
+    // not substrings of the parent (SlicedString) — otherwise `results` pins the whole HTML → OOM.
     const filler = "x".repeat(1_000_000);
     const tile =
       `<div class="Grid-module-scss-module__HmDNda__feed-grid__item">` +
@@ -77,9 +77,9 @@ describe("parseVintedItems", () => {
     const html = `<html><body>${filler}${tile}${filler}</body></html>`;
     const items = parseVintedItems(html, "Solaris", "Lem");
     expect(items).toHaveLength(1);
-    // Wartości nietknięte...
+    // Values untouched...
     expect(items[0]).toMatchObject({ url: "https://www.vinted.pl/items/77-solaris", currency: "zł" });
-    // ...ale każdy string krótki (kopia), nie ~1 MB rodzic.
+    // ...but every string short (a copy), not the ~1 MB parent.
     for (const v of [items[0].title, items[0].url, String(items[0].price), items[0].currency, items[0].photo]) {
       if (typeof v === "string") expect(v.length).toBeLessThan(1000);
     }
@@ -99,11 +99,11 @@ describe("parseVintedItems", () => {
   });
 
   it("recovers the item price from the offer title attribute when structural price is missing", () => {
-    // Realny przypadek: fallback HTML łapie title aukcji z ceną w opisie.
+    // Real case: the HTML fallback catches the listing title with the price in the description.
     const html = `<a href="/items/5" title="Pokrzywa i kość, T. Kingfisher, Stan: Bardzo dobry, 12,00 zł, 18,65 zł"></a>`;
     const items = parseVintedItems(html, "Pokrzywa i kość", "Kingfisher");
     expect(items).toHaveLength(1);
-    expect(items[0].priceValue).toBe(12); // niższa z pary = cena przedmiotu
+    expect(items[0].priceValue).toBe(12); // the lower of the pair = the item price
     expect(items[0].currency).toBe("zł");
   });
 
@@ -137,9 +137,9 @@ describe("vintedDiagnostics", () => {
   });
 
   it("flags a block only for a small challenge page, not a huge normal page", () => {
-    // Mała strona challenge → blokada.
+    // Small challenge page → block.
     expect(vintedDiagnostics(`<html>Just a moment... checking your browser</html>`, 0).blockedMarker).toBe(true);
-    // Wielka normalna strona zawierająca słowo „cloudflare" (analytics) → NIE blokada.
+    // Large normal page containing the word „cloudflare" (analytics) → NOT a block.
     const huge = `<html>${"x".repeat(200000)} cloudflare robot captcha</html>`;
     expect(vintedDiagnostics(huge, 5).blockedMarker).toBe(false);
   });

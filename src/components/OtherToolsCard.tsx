@@ -46,7 +46,7 @@ export const OtherToolsCard: React.FC<OtherToolsCardProps> = ({
   handleResetSync,
   isAnySyncLoading
 }) => {
-  // Wszystkie rytuały jednym idiomem (`RitualButton` + centralny `ritualButtonTheme`).
+  // All rituals in one idiom (`RitualButton` + central `ritualButtonTheme`).
   const rituals: { color: RitualColor; icon: typeof Database; title: string; subtitle: string; onClick: () => void; animate?: "spin" | "pulse" }[] = [
     { color: "emerald", icon: Database, title: "Rytuał Inicjacji Schematu", subtitle: "Weryfikacja i kreacja brakujących kolumn w bazie Notion", onClick: handleSyncSchema, animate: schemaSync.state.loading ? "pulse" : undefined },
     { color: "amber", icon: Sparkles, title: "Rytuał Puryfikacji", subtitle: "Oczyszczanie tytułów z nadmiarowych znaków i formatowania", onClick: handleSyncPurify, animate: purifySync.state.loading ? "pulse" : undefined },

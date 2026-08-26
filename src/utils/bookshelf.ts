@@ -1,37 +1,37 @@
 import { BookIndexEntry } from "../types";
 
-/** Znacznik „Źródło" oznaczający pozycję przeczytaną. */
+/** „Źródło" tag marking an item as read. */
 export const READ_TAG = "Przeczytane";
 
-/** Która półka: przeczytane vs do przeczytania. */
+/** Which shelf: read vs to-read. */
 export type ShelfId = "read" | "toRead";
 
-/** Lokalne nadpisania stanu „przeczytane" (optymistyczny drag&drop przed potwierdzeniem z API). */
+/** Local overrides of the „przeczytane" state (optimistic drag&drop before API confirmation). */
 export type ReadOverrides = Record<string, boolean>;
 
-/** Czy książka jest przeczytana — z uwzględnieniem optymistycznego nadpisania. */
+/** Whether the book is read — taking optimistic overrides into account. */
 export function isRead(book: BookIndexEntry, overrides: ReadOverrides = {}): boolean {
   if (Object.prototype.hasOwnProperty.call(overrides, book.id)) return overrides[book.id];
   return book.zrodlo.includes(READ_TAG);
 }
 
-/** Deterministyczny wygląd grzbietu — stały dla danego tytułu (bez migotania przy re-renderze). */
+/** Deterministic spine appearance — stable per title (no flicker on re-render). */
 export interface SpineStyle {
-  color: string;   // stonowany kolor „płótna" (skóra Relikwiarz)
-  app: string;     // akcent z palety aplikacji (skóra Holo+) — hex
-  appRgb: string;  // ten sam akcent jako „r,g,b" (do rgba(var(...), a))
+  color: string;   // muted bookbinding-cloth color (Relikwiarz skin)
+  app: string;     // accent from the app palette (Holo+ skin) — hex
+  appRgb: string;  // the same accent as „r,g,b" (for rgba(var(...), a))
   width: number;   // px
   height: number;  // px
 }
 
-/** Paleta „płótna introligatorskiego" — stonowana, autentyczna (Relikwiarz). */
+/** Bookbinding-cloth palette — muted, authentic (Relikwiarz). */
 export const CLOTH_PALETTE = [
   "#7f1d2e", "#0f5132", "#1e3a5f", "#7c5410", "#3f2d52", "#2b2b2b",
   "#5a2a1e", "#14504f", "#4a3b16", "#5b1f3a", "#243b53", "#6b2737",
 ];
 
-/** Paleta akcentów aplikacji (cyan/niebieski/indygo/fiolet/purpura) — Holo+.
- *  Równoległa do `CLOTH_PALETTE` (ten sam indeks = ta sama książka). */
+/** App accent palette (cyan/blue/indigo/violet/purple) — Holo+.
+ *  Parallel to `CLOTH_PALETTE` (same index = same book). */
 export const APP_PALETTE: readonly (readonly [string, string])[] = [
   ["#06b6d4", "6,182,212"], ["#3b82f6", "59,130,246"], ["#6366f1", "99,102,241"], ["#8b5cf6", "139,92,246"],
   ["#a855f7", "168,85,247"], ["#14b8a6", "20,184,166"], ["#0ea5e9", "14,165,233"], ["#4f46e5", "79,70,229"],
@@ -52,12 +52,12 @@ export function spineStyle(book: BookIndexEntry): SpineStyle {
     color: CLOTH_PALETTE[idx],
     app, appRgb,
     width: 16 + (h % 12),          // 16–27 px
-    height: 124 + ((h >>> 3) % 48), // 124–171 px (unsigned shift — h bywa >2^31)
+    height: 124 + ((h >>> 3) % 48), // 124–171 px (unsigned shift — h can be >2^31)
   };
 }
 
-/** Avalanche-mix (xxHash-style) — rozprasza bity, by rozkład póz był równomierny
- *  niezależnie od korpusu tytułów (goły rolling-hash sąsiednich napisów jest skośny). */
+/** Avalanche-mix (xxHash-style) — scrambles bits so the pose distribution is even
+ *  regardless of the title corpus (a bare rolling-hash of adjacent strings is skewed). */
 function mix32(n: number): number {
   let x = n >>> 0;
   x ^= x >>> 16; x = Math.imul(x, 0x7feb352d);
@@ -71,11 +71,11 @@ function seed(book: BookIndexEntry): number {
 }
 
 /**
- * Slot na półce — deterministyczny plan ułożenia. Każdy wolumin trafia dokładnie
- * do jednego slotu:
- * - `spine` — grzbiet stojący (prosto, `lean === 0`) lub lekko przechylony (`lean` °),
- * - `stack` — kupka LEŻĄCYCH książek; **każda warstwa to osobny, prawdziwy wolumin**
- *   (własny tytuł/kolor/nagroda/drag), a nie jeden grzbiet udający stos.
+ * A shelf slot — a deterministic layout plan. Each volume lands in exactly
+ * one slot:
+ * - `spine` — a standing spine (upright, `lean === 0`) or slightly tilted (`lean` °),
+ * - `stack` — a pile of LYING books; **each layer is a separate, real volume**
+ *   (its own title/color/award/drag), not one spine pretending to be a stack.
  */
 export type ShelfSlot =
   | { kind: "spine"; book: BookIndexEntry; lean: number }
@@ -84,14 +84,14 @@ export type ShelfSlot =
 export const MAX_LEAN_DEG = 6;
 
 /**
- * Planuje sloty dla posortowanej listy woluminów. Decyzja per książka jest
- * deterministyczna (hasz tytułu); kupkę tworzy kilka KOLEJNYCH prawdziwych
- * książek (starter „pożera" następne). Zdecydowana większość stoi prosto,
- * ~12 % lekko przechylone, a kupki (po 4–7 realnych woluminów) są rzadkie.
+ * Plans slots for a sorted list of volumes. The per-book decision is
+ * deterministic (title hash); a pile is formed by several CONSECUTIVE real
+ * books (the starter swallows the ones that follow). The vast majority stand
+ * upright, ~12 % slightly tilted, and piles (of 4–7 real volumes) are rare.
  *
- * Reguły ułożenia:
- * - **dwie kupki nigdy nie sąsiadują** (po kupce następny slot to zawsze grzbiet),
- * - **grzbiety sąsiadujące z kupką przechylają się w jej stronę** (`LEAN_TOWARD`).
+ * Layout rules:
+ * - **two piles never sit adjacent** (after a pile the next slot is always a spine),
+ * - **spines adjacent to a pile tilt toward it** (`LEAN_TOWARD`).
  */
 export const LEAN_TOWARD = 5;
 
@@ -102,9 +102,9 @@ export function planShelf(books: BookIndexEntry[]): ShelfSlot[] {
     const b = books[i];
     const x = seed(b);
     const sel = x % 100;
-    // Kupka tylko gdy: los trafił (rzadko), są ≥2 książki i poprzedni slot NIE był kupką.
+    // Pile only when: the draw hit (rarely), there are ≥2 books and the previous slot was NOT a pile.
     if (sel >= 95 && books.length - i >= 2 && !prevWasStack) {
-      const size = Math.min(4 + ((x >>> 17) % 4), books.length - i); // 4–7 realnych książek
+      const size = Math.min(4 + ((x >>> 17) % 4), books.length - i); // 4–7 real books
       slots.push({ kind: "stack", books: books.slice(i, i + size) });
       i += size;
       prevWasStack = true;
@@ -114,16 +114,16 @@ export function planShelf(books: BookIndexEntry[]): ShelfSlot[] {
       i += 1;
       prevWasStack = false;
     } else {
-      // prosto (także zablokowana kupka spada tutaj)
+      // upright (a blocked pile also falls here)
       slots.push({ kind: "spine", book: b, lean: 0 });
       i += 1;
       prevWasStack = false;
     }
   }
 
-  // Grzbiety tuż obok kupki przechylają się w jej stronę (nadpisuje losową pozę).
-  // Sąsiad kupki jest zawsze grzbitem (dwie kupki nie sąsiadują). Wierzch grzbietu
-  // pochyla się do środka: lewy sąsiad w prawo (+), prawy sąsiad w lewo (−).
+  // Spines right next to a pile tilt toward it (overrides the random pose).
+  // A pile's neighbor is always a spine (two piles don't sit adjacent). The spine's
+  // top tilts inward: left neighbor to the right (+), right neighbor to the left (−).
   for (let k = 0; k < slots.length; k++) {
     if (slots[k].kind !== "stack") continue;
     const left = slots[k - 1], right = slots[k + 1];
@@ -133,14 +133,14 @@ export function planShelf(books: BookIndexEntry[]): ShelfSlot[] {
   return slots;
 }
 
-// Przybliżona szerokość znaku względem rozmiaru czcionki (font bold) — celowo
-// zawyżona, by CAŁY tytuł na pewno się zmieścił (bez ucinania / wielokropka).
+// Approximate character width relative to font size (bold font) — deliberately
+// overestimated so the WHOLE title definitely fits (no truncation / ellipsis).
 const CHAR_W = 0.6;
 
 /**
- * Rozmiar czcionki tytułu na STOJĄCYM grzbiecie. Tekst biegnie wzdłuż wysokości
- * grzbietu, więc dłuższy tytuł dostaje mniejszą czcionkę, tak by pełna nazwa
- * zmieściła się na całej wysokości (bez ucinania). Zakres 6–11 px.
+ * Title font size on a STANDING spine. The text runs along the spine's height,
+ * so a longer title gets a smaller font, so that the full name fits across the
+ * whole height (no truncation). Range 6–11 px.
  */
 export function spineFontSize(style: SpineStyle, title: string): number {
   const len = Math.max(1, title.length);
@@ -148,22 +148,22 @@ export function spineFontSize(style: SpineStyle, title: string): number {
   return Math.max(6, Math.min(11, f));
 }
 
-/** Wymiary LEŻĄCEJ książki tak, by cała nazwa się zmieściła (pozioma, wzdłuż grzbietu). */
+/** Dimensions of a LYING book so the whole name fits (horizontal, along the spine). */
 export interface FlatBookLayout { width: number; fontSize: number; thickness: number; lines: 1 | 2 }
 
-/** Górny limit szerokości leżącej książki — powyżej niego tytuł ZAWIJAMY do 2 linii. */
+/** Upper width limit for a lying book — above it we WRAP the title to 2 lines. */
 export const FLAT_MAX_W = 150;
 
 /**
- * Dobiera szerokość, czcionkę, grubość i liczbę linii leżącej książki tak, by
- * zmieścić PEŁNY tytuł BEZ poszerzania ponad `FLAT_MAX_W`: krótki tytuł → 1 linia
- * (książka dokładnie na tekst), dłuższy → 2 linie (książka trochę grubsza, nie
- * szersza). Bardzo długi tytuł dodatkowo zmniejsza czcionkę, aż połowa zmieści
- * się w jednej linii (2 linie zawsze wystarczą). Nic nie jest ucinane.
+ * Picks width, font, thickness and line count of a lying book so as to fit
+ * the FULL title WITHOUT widening past `FLAT_MAX_W`: a short title → 1 line
+ * (book exactly as wide as the text), longer → 2 lines (book a bit thicker,
+ * not wider). A very long title additionally shrinks the font until half fits
+ * in one line (2 lines always suffice). Nothing is truncated.
  */
 export function flatBookLayout(book: BookIndexEntry): FlatBookLayout {
   const len = Math.max(1, displayTitle(book).length);
-  const PAD_X = 20;                       // lewy margines tekstu + prawa krawędź kartek
+  const PAD_X = 20;                       // left text margin + right edge of the pages
   const availW = FLAT_MAX_W - PAD_X;
   const oneLine = (f: number) => len * CHAR_W * f;
 
@@ -182,7 +182,7 @@ export function flatBookLayout(book: BookIndexEntry): FlatBookLayout {
   return { width, fontSize, thickness, lines };
 }
 
-// ─── Ułożenie kupki ───────────────────────────────────────────────────────
+// ─── Pile layout ───────────────────────────────────────────────────────
 export type StackAlign = "left" | "right" | "center";
 
 function stackSeed(books: BookIndexEntry[]): number {
@@ -190,8 +190,8 @@ function stackSeed(books: BookIndexEntry[]): number {
 }
 
 /**
- * Wyrównanie kupki: **często do lewej, często do prawej, BARDZO RZADKO symetryczna
- * piramida** (center). Deterministyczne z pierwszej książki + rozmiaru kupki.
+ * Pile alignment: **often left, often right, VERY RARELY a symmetric
+ * pyramid** (center). Deterministic from the first book + pile size.
  */
 export function stackAlign(books: BookIndexEntry[]): StackAlign {
   const s = stackSeed(books) % 100;
@@ -200,13 +200,13 @@ export function stackAlign(books: BookIndexEntry[]): StackAlign {
   return "center"; // ~10 %
 }
 
-/** Poziom „chaosu" ułożenia w px: 0 = równo, ~⅓ kupek dostaje 3–7 px rozjazdu. */
+/** Layout „chaos" level in px: 0 = even, ~⅓ of piles get 3–7 px of spread. */
 export function stackChaos(books: BookIndexEntry[]): number {
   const s = mix32(stackSeed(books) ^ 0x85ebca6b);
   return (s % 100) < 34 ? 3 + (s % 5) : 0;
 }
 
-/** Deterministyczny luz pojedynczej książki w kupce, znormalizowany do [-1, 1). */
+/** Deterministic slack of a single book in a pile, normalized to [-1, 1). */
 export function layerJitter(book: BookIndexEntry): number {
   const s = mix32(seed(book) ^ 0xc2b2ae35);
   return ((s % 1000) / 500) - 1;
@@ -216,11 +216,11 @@ export interface StackLayoutLayer extends FlatBookLayout { book: BookIndexEntry;
 export interface StackLayout { cellW: number; height: number; align: StackAlign; chaos: number; layers: StackLayoutLayer[] }
 
 /**
- * Pełne ułożenie kupki: sortuje książki **od największej (dół) do najmniejszej
- * (góra)**, wybiera wyrównanie (`stackAlign`) i poziom chaosu (`stackChaos`),
- * i liczy poziomy offset `x` każdej warstwy. Gwarancja: `0 ≤ x ≤ cellW − width`
- * (nic nie wystaje poza komórkę → brak nachodzenia na sąsiednie sloty).
- * `layers[0]` to spód kupki (renderować przez `flex-col-reverse`).
+ * Full pile layout: sorts books **from largest (bottom) to smallest
+ * (top)**, picks alignment (`stackAlign`) and chaos level (`stackChaos`),
+ * and computes the horizontal offset `x` of each layer. Guarantee: `0 ≤ x ≤ cellW − width`
+ * (nothing sticks out of the cell → no overlap onto adjacent slots).
+ * `layers[0]` is the bottom of the pile (render via `flex-col-reverse`).
  */
 export function layoutStack(books: BookIndexEntry[]): StackLayout {
   const align = stackAlign(books);
@@ -237,68 +237,68 @@ export function layoutStack(books: BookIndexEntry[]): StackLayout {
     x = Math.max(0, Math.min(slack, x));
     return { ...l, x };
   });
-  // Wysokość kupki: suma grubości warstw + 1 px marginesu między nimi.
+  // Pile height: sum of layer thicknesses + 1 px margin between them.
   const height = layers.reduce((s, l) => s + l.thickness, 0) + Math.max(0, layers.length - 1);
   return { cellW, height, align, chaos, layers };
 }
 
-/** Tytuł do pokazania (polski, a gdy brak — oryginalny). */
+/** Title to display (Polish, and when missing — original). */
 export function displayTitle(book: BookIndexEntry): string {
   return book.plTitle || book.origTitle;
 }
 
-// ─── Geometria regału (deski) ─────────────────────────────────────────────
-// Rzędy grzbietów mają STAŁĄ wysokość, dzięki czemu każdy zawinięty wiersz
-// zaczyna się na tej samej wysokości i można pod nim narysować drewnianą deskę
-// jednym powtarzalnym gradientem — niezależnie od szerokości ekranu i liczby
-// książek w wierszu. `ROW_H` > najwyższy grzbiet (171 px), `GAP` mieści deskę.
-export const SHELF_ROW_H = 178;   // px — wysokość toru jednego rzędu
-export const SHELF_PLANK_H = 15;  // px — grubość widocznej deski
-export const SHELF_ROW_GAP = 30;  // px — prześwit pod rzędem (deska + cień + luz)
+// ─── Regał geometry (planks) ─────────────────────────────────────────────
+// Spine rows have a FIXED height, so every wrapped line starts at the same
+// height and a wooden plank can be drawn under it with a single repeating
+// gradient — regardless of screen width and the number of books in a line.
+// `ROW_H` > tallest spine (171 px), `GAP` fits the plank.
+export const SHELF_ROW_H = 178;   // px — height of one row's track
+export const SHELF_PLANK_H = 15;  // px — thickness of the visible plank
+export const SHELF_ROW_GAP = 30;  // px — gap under the row (plank + shadow + slack)
 
 /**
- * Tło powtarzalne rysujące drewnianą deskę tuż pod spodem każdego rzędu grzbietów.
- * Grzbiety są wyrównane do dołu toru `SHELF_ROW_H`, więc deska ląduje dokładnie
- * pod nimi (w prześwicie `SHELF_ROW_GAP`). Zwraca gotowy `background` (CSS).
+ * A repeating background drawing a wooden plank just beneath each row of spines.
+ * Spines are aligned to the bottom of the `SHELF_ROW_H` track, so the plank lands
+ * exactly under them (in the `SHELF_ROW_GAP` gap). Returns a ready `background` (CSS).
  */
 export function shelfPlankBackground(): { backgroundImage: string } {
-  const top = SHELF_ROW_H;                        // górna krawędź deski (linia książek)
-  const bot = SHELF_ROW_H + SHELF_PLANK_H;        // dolna krawędź deski
-  const period = SHELF_ROW_H + SHELF_ROW_GAP;     // skok pionowy na jeden rząd
+  const top = SHELF_ROW_H;                        // top edge of the plank (book line)
+  const bot = SHELF_ROW_H + SHELF_PLANK_H;        // bottom edge of the plank
+  const period = SHELF_ROW_H + SHELF_ROW_GAP;     // vertical step per row
   const backgroundImage =
     `repeating-linear-gradient(180deg,` +
     ` rgba(0,0,0,0) 0px,` +
     ` rgba(0,0,0,0) ${top}px,` +
-    ` rgba(255,214,160,0.45) ${top}px,` +          // rozświetlona krawędź (blat)
-    ` #5a3a1e ${top + 1}px,` +                      // drewno — góra
+    ` rgba(255,214,160,0.45) ${top}px,` +          // lit edge (top surface)
+    ` #5a3a1e ${top + 1}px,` +                      // wood — top
     ` #3a2413 ${top + Math.round(SHELF_PLANK_H * 0.55)}px,` +
-    ` #1c1108 ${bot - 1}px,` +                      // drewno — dół
-    ` rgba(0,0,0,0.85) ${bot}px,` +                 // cień rzucany pod deską
+    ` #1c1108 ${bot - 1}px,` +                      // wood — bottom
+    ` rgba(0,0,0,0.85) ${bot}px,` +                 // shadow cast under the plank
     ` rgba(0,0,0,0) ${bot + 6}px,` +
     ` rgba(0,0,0,0) ${period}px)`;
   return { backgroundImage };
 }
 
-/** Znacznik zdobytej NAGRODY (nie nominacji) z color-code do pieczęci na grzbiecie. */
+/** Marker of a WON award (not a nomination) with a color-code for the spine seal. */
 export interface AwardMark { key: "hugo" | "nebula" | "locus"; color: string; label: string }
 
 const AWARD_MARKS: Record<AwardMark["key"], AwardMark> = {
-  hugo: { key: "hugo", color: "#fbbf24", label: "Hugo" },      // złoto (rakieta)
-  nebula: { key: "nebula", color: "#c084fc", label: "Nebula" }, // fiolet (mgławica)
-  locus: { key: "locus", color: "#38bdf8", label: "Locus" },   // błękit
+  hugo: { key: "hugo", color: "#fbbf24", label: "Hugo" },      // gold (rocket)
+  nebula: { key: "nebula", color: "#c084fc", label: "Nebula" }, // violet (nebula)
+  locus: { key: "locus", color: "#38bdf8", label: "Locus" },   // blue
 };
 
 /**
- * Zdobyte nagrody książki z color-code. Bierze TYLKO wygrane („Nagroda …" lub
- * „Wszystkie" = Hugo+Nebula+Locus) — **nominacje pomijamy**. Zdeduplikowane,
- * w stałej kolejności Hugo → Nebula → Locus.
+ * A book's won awards with a color-code. Takes ONLY wins („Nagroda …" or
+ * „Wszystkie" = Hugo+Nebula+Locus) — **nominations are skipped**. Deduplicated,
+ * in a fixed order Hugo → Nebula → Locus.
  */
 export function awardWins(book: BookIndexEntry): AwardMark[] {
   const won = new Set<AwardMark["key"]>();
   for (const a of book.awards) {
     const s = a.toLowerCase().trim();
     if (s === "wszystkie") { won.add("hugo"); won.add("nebula"); won.add("locus"); continue; }
-    if (!s.startsWith("nagroda ")) continue;        // pomijamy „Nominacja …" i inne
+    if (!s.startsWith("nagroda ")) continue;        // skip „Nominacja …" and others
     if (s.includes("hugo")) won.add("hugo");
     else if (s.includes("nebula")) won.add("nebula");
     else if (s.includes("locus")) won.add("locus");
@@ -306,15 +306,15 @@ export function awardWins(book: BookIndexEntry): AwardMark[] {
   return (["hugo", "nebula", "locus"] as const).filter((k) => won.has(k)).map((k) => AWARD_MARKS[k]);
 }
 
-/** Czy pozycja ma zdobytą nagrodę (do pieczęci na grzbiecie i półki „Wyróżnione"). */
+/** Whether the item has a won award (for the spine seal and the „Wyróżnione" shelf). */
 export function hasAward(book: BookIndexEntry): boolean {
   return awardWins(book).length > 0;
 }
 
 /**
- * Rok wydania z pola daty. Pole bywa wielokrotne („1965/1966", „1965, 1966",
- * „1965 (wyd. pol. 1970)") — bierzemy **pierwszy 4-cyfrowy rok z brzegu**, żeby
- * pozycja i tak trafiła do swojej dekady. Brak roku → `null`.
+ * Publication year from the date field. The field is sometimes multi-valued
+ * („1965/1966", „1965, 1966", „1965 (wyd. pol. 1970)") — we take **the first
+ * 4-digit year from the edge**, so the item still lands in its decade. No year → `null`.
  */
 export function parseYear(year: string): number | null {
   const m = String(year ?? "").match(/\d{4}/);
@@ -322,21 +322,22 @@ export function parseYear(year: string): number | null {
   return Number.isFinite(y) && y > 0 ? y : null;
 }
 
-/** Rok wydania jako liczba do sortowania; brak → na koniec. */
+/** Publication year as a number for sorting; missing → at the end. */
 export function pubYear(b: BookIndexEntry): number {
   return parseYear(b.year) ?? Infinity;
 }
 
-/** Klucz dekady książki (1950, 1960, …); brak roku → Infinity (sekcja „bez daty" na końcu). */
+/** Book's decade key (1950, 1960, …); no year → Infinity („bez daty" section at the end). */
 export function decadeKeyOf(b: BookIndexEntry): number {
   const y = parseYear(b.year);
   return y === null ? Infinity : Math.floor(y / 10) * 10;
 }
 
 /**
- * Efektywny klucz porządku na półce: ręczny `shelfOrder` (precyzyjny drag&drop),
- * o ile mieści się w dekadzie książki — klucz spoza dekady jest STALE (rok książki
- * zmienił dekadę po nadaniu klucza) i wraca do sortu po roku. Skala: ułamkowe lata.
+ * Effective shelf-ordering key: the manual `shelfOrder` (precise drag&drop),
+ * as long as it falls within the book's decade — a key outside the decade is STALE
+ * (the book's year changed decade after the key was assigned) and falls back to
+ * sorting by year. Scale: fractional years.
  */
 export function effShelfKey(b: BookIndexEntry): number {
   const dec = decadeKeyOf(b);
@@ -346,15 +347,15 @@ export function effShelfKey(b: BookIndexEntry): number {
 }
 
 /**
- * Porządek na regale: dekada → efektywny klucz (ręczny lub rok) → tytuł.
- * Bez ręcznych kluczy równoważny dawnemu sortowi po roku (dekada rośnie z rokiem).
+ * Order on the Regał: decade → effective key (manual or year) → title.
+ * Without manual keys, equivalent to the old sort by year (decade grows with year).
  */
 export const byShelfPosition = (a: BookIndexEntry, b: BookIndexEntry) =>
   decadeKeyOf(a) - decadeKeyOf(b) || effShelfKey(a) - effShelfKey(b) || displayTitle(a).localeCompare(displayTitle(b), "pl");
 
 /**
- * Dzieli księgozbiór na dwie półki wg stanu „przeczytane" (z nadpisaniami),
- * każda posortowana porządkiem regału (`byShelfPosition`).
+ * Splits the collection into two shelves by „przeczytane" state (with overrides),
+ * each sorted in Regał order (`byShelfPosition`).
  */
 export function splitShelves(books: BookIndexEntry[], overrides: ReadOverrides = {}): Record<ShelfId, BookIndexEntry[]> {
   const read: BookIndexEntry[] = [];
@@ -366,8 +367,8 @@ export function splitShelves(books: BookIndexEntry[], overrides: ReadOverrides =
 }
 
 /**
- * Półka „Wyróżnione" (okładki twarzą): przeczytane pozycje z nagrodą.
- * Brak daty przeczytania w danych → kolejność wg roku malejąco, potem tytuł.
+ * The „Wyróżnione" shelf (covers facing out): read items with an award.
+ * No read-date in the data → order by year descending, then title.
  */
 export function featuredReads(books: BookIndexEntry[], overrides: ReadOverrides = {}, limit = 12): BookIndexEntry[] {
   return books

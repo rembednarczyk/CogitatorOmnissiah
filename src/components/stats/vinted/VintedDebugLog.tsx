@@ -4,7 +4,7 @@ import { ExternalLink, Loader2, Bug, CheckCircle2, XCircle, AlertCircle } from "
 import { VintedSearchAttempt } from "../../../hooks/useVintedCheck";
 import { formatDebug } from "../../../utils/vintedFormat";
 
-/** Zwijany panel logów skanowania (diagnostyka per próba). */
+/** Collapsible scan log panel (diagnostics per attempt). */
 export const VintedDebugLog: React.FC<{ searchAttempts: VintedSearchAttempt[]; show: boolean }> = ({ searchAttempts, show }) => (
   <AnimatePresence>
     {show && searchAttempts.length > 0 && (

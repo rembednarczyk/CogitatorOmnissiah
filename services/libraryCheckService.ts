@@ -13,10 +13,10 @@ const log = createLogger("LibraryCheck");
 const REQUEST_TIMEOUT = 20000;
 
 /**
- * Skaner dostępności w bibliotece (OPAC MBP Lublin, Prolib Integro). Dla każdej
- * nieprzeczytanej/nieposiadanej książki odpytuje OPAC zawężony do wybranej filii
- * (param f2), parsuje rekordy i szuka dopasowania KSIĄŻKI (filmy/audiobooki są
- * pomijane). Zob. docs/library-check.md i services/opacParser.ts.
+ * Library availability scanner (OPAC MBP Lublin, Prolib Integro). For each
+ * unread/unowned book it queries the OPAC narrowed to the chosen branch
+ * (param f2), parses the records and looks for a BOOK match (films/audiobooks are
+ * skipped). See docs/library-check.md and services/opacParser.ts.
  */
 export class LibraryCheckService {
   constructor(private notion: NotionAdapter, private config: ConfigService) {}
@@ -26,14 +26,14 @@ export class LibraryCheckService {
     sendEvent: (data: SyncEvent) => void,
     checkCancellation: () => boolean,
   ) {
-    // Knoby skanera (równoległość / wykluczenia / pula UA) czytane raz na przebieg.
+    // Scanner knobs (concurrency / exclusions / UA pool) read once per run.
     const cfg = await this.config.getConfig();
     const concurrency = cfg.library.concurrency;
     sendEvent({ type: "status", message: "Pobieranie listy książek z Notion..." });
-    // cache: kolejne filie w „Skanuj wszystkie" współdzielą jedno pobranie z Notion.
+    // cache: successive branches in „Skanuj wszystkie" share one fetch from Notion.
     const allBooks = await this.notion.getBooksForStats(undefined, checkCancellation, { cache: true });
 
-    // Kandydaci: mają polski tytuł i NIE są już przeczytane/posiadane/w bibliotece.
+    // Candidates: have a Polish title and are NOT already read/owned/in the library.
     const candidates = allBooks.filter((b) => {
       const zrodlo = b.zrodlo || [];
       return !zrodlo.some((z) => cfg.library.excludedSources.includes(z)) && b.plTitle && b.plTitle.trim() !== "";
@@ -42,9 +42,9 @@ export class LibraryCheckService {
     sendEvent({ type: "status", message: `Znaleziono ${candidates.length} kandydatów do sprawdzenia...` });
 
     const results: any[] = [];
-    // OPAC MBP Lublin nie wysyła certyfikatu pośredniego → Node zgłasza „unable to
-    // verify the first certificate" i każde żądanie leci wyjątkiem. Wyłączamy
-    // weryfikację TLS tylko dla tego agenta (czytamy publiczny katalog, bez sekretów).
+    // OPAC MBP Lublin doesn't send the intermediate certificate → Node reports „unable to
+    // verify the first certificate" and every request throws. We disable
+    // TLS verification only for this agent (reading a public catalog, no secrets).
     const httpsAgent = createScrapingAgent({ rejectUnauthorized: false, maxSockets: concurrency });
     const limit = pLimit(concurrency);
     let processed = 0;

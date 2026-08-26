@@ -12,7 +12,7 @@ describe("shelfPacking.packRows", () => {
       const base = r.reduce((s, it) => s + it.bw, 0) + 3 * (r.length - 1);
       expect(base).toBeLessThanOrEqual(200 + 1e-9);
     }
-    expect(rows.flat().map((x) => x.key)).toEqual(items.map((x) => x.key)); // nic nie zgubione
+    expect(rows.flat().map((x) => x.key)).toEqual(items.map((x) => x.key)); // nothing lost
   });
   it("always keeps at least one item per row even if too wide", () => {
     const rows = packRows([spine("wide", 400)], 200, 3);
@@ -38,31 +38,31 @@ describe("shelfPacking.layoutRow (wypełnienie + fizyka oparcia)", () => {
   });
 
   it("a leaning book rests at θ = atan(gap / supportHeight), capped at MAX_LEAN", () => {
-    // a leans right onto b (support height 100). Duży luz → kąt ograniczony do MAX_LEAN.
+    // a leans right onto b (support height 100). Large slack → angle capped at MAX_LEAN.
     const row = [spine("a", 20, 150, 1), spine("b", 30, 100)];
     const placed = layoutRow(row, 400);
     const leaner = placed[0];
-    expect(leaner.deg).toBeGreaterThan(0);              // pochyla się w prawo (w stronę podpory)
+    expect(leaner.deg).toBeGreaterThan(0);              // leans right (toward the support)
     expect(leaner.deg).toBeLessThanOrEqual(MAX_LEAN_DEG + 1e-9);
-    // gap między a i b odpowiada kątowi: gap = supportH * tan(deg)
+    // the gap between a and b matches the angle: gap = supportH * tan(deg)
     const gap = placed[1].x - (leaner.x + leaner.bw);
     const expectDeg = Math.min(MAX_LEAN_DEG, Math.atan(gap / 100) * 180 / Math.PI);
     expect(leaner.deg).toBeCloseTo(expectDeg, 4);
   });
 
   it("fills slack by THICKENING straight spines (no gaps) — real shelves have no air between books", () => {
-    // 12 stojących grzbietów z zapasem na pogrubienie → luz idzie w grubość, nie w szczeliny.
+    // 12 upright spines with room to thicken → slack goes into thickness, not gaps.
     const row = Array.from({ length: 12 }, (_, i) => spine(`s${i}`, 20, 150, 0, 20));
-    const placed = layoutRow(row, 340); // base 240, slack 100, łączny zapas 240
+    const placed = layoutRow(row, 340); // base 240, slack 100, total headroom 240
     for (let i = 1; i < placed.length; i++) {
       const gap = placed[i].x - (placed[i - 1].x + placed[i - 1].w);
-      expect(gap).toBeLessThan(1e-6);                         // książki się stykają — zero przerw
+      expect(gap).toBeLessThan(1e-6);                         // books touch — zero gaps
     }
-    for (const p of placed) expect(p.w).toBeGreaterThanOrEqual(p.bw); // grzbiety zgrubiały
+    for (const p of placed) expect(p.w).toBeGreaterThanOrEqual(p.bw); // spines thickened
     const widened = placed.reduce((s, p) => s + (p.w - p.bw), 0);
-    expect(widened).toBeCloseTo(100, 4);                      // cały luz wchłonięty przez grubość
+    expect(widened).toBeCloseTo(100, 4);                      // all slack absorbed by thickness
     const last = placed[placed.length - 1];
-    expect(last.x + last.w).toBeCloseTo(340, 6);              // wypełnione do prawej
+    expect(last.x + last.w).toBeCloseTo(340, 6);              // filled to the right
   });
 
   it("falls back to EVEN gaps only when spines can't thicken further (stretch = 0)", () => {
@@ -71,7 +71,7 @@ describe("shelfPacking.layoutRow (wypełnienie + fizyka oparcia)", () => {
     const gaps: number[] = [];
     for (let i = 1; i < placed.length; i++) gaps.push(placed[i].x - (placed[i - 1].x + placed[i - 1].w));
     const min = Math.min(...gaps), max = Math.max(...gaps);
-    expect(max - min).toBeLessThan(1e-6);                     // równe (żadnej pojedynczej dziury)
+    expect(max - min).toBeLessThan(1e-6);                     // even (no single hole)
     expect(placed[placed.length - 1].x + placed[placed.length - 1].w).toBeCloseTo(340, 6);
   });
 
@@ -85,8 +85,8 @@ describe("shelfPacking.layoutRow (wypełnienie + fizyka oparcia)", () => {
   it("never leans an edge book outward (no support beyond the row edge)", () => {
     const row = [spine("a", 20, 150, -1), spine("b", 20, 150), spine("c", 20, 150, 1)];
     const placed = layoutRow(row, 300);
-    expect(placed[0].deg).toBe(0);                       // pierwszy nie pochyli się w lewo (brak podpory)
-    expect(placed[placed.length - 1].deg).toBe(0);       // ostatni nie pochyli się w prawo
+    expect(placed[0].deg).toBe(0);                       // the first won't lean left (no support)
+    expect(placed[placed.length - 1].deg).toBe(0);       // the last won't lean right
   });
 });
 
@@ -96,9 +96,9 @@ describe("shelfPacking.packAndLayout", () => {
     expect(packAndLayout(items, { rowWidth: 0 })).toEqual([]);
     const rows = packAndLayout(items, { rowWidth: 240 });
     for (const row of rows) {
-      if (row.length === 1) continue;                    // pojedyncze centrowane
+      if (row.length === 1) continue;                    // single ones are centered
       const last = row[row.length - 1];
-      expect(last.x + last.bw).toBeCloseTo(240, 4);      // każdy rząd wypełniony do prawej
+      expect(last.x + last.bw).toBeCloseTo(240, 4);      // every row filled to the right
     }
   });
 });

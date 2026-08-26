@@ -1,15 +1,15 @@
 import { cleanTitle, calculateSimilarity, normalizeAuthor } from "../utils";
 
 /**
- * Parser wyników OPAC (Prolib Integro, MBP Lublin). Czysty (bez I/O) — skaner
- * podaje HTML, dostaje listę rekordów. Struktura strony wyników:
+ * OPAC results parser (Prolib Integro, MBP Lublin). Pure (no I/O) — the scanner
+ * supplies HTML, gets a list of records. Results page structure:
  *   <article data-item-id="…"> … <dl class="dl-horizontal">
  *       <dt>Tytuł:</dt><dd><span>…</span></dd>
  *       <dt>Autorzy:</dt><dd><span><a>Nazwisko, Imię (rok- )</a></span></dd> …
  *   </dl>
- *   <span class="pdt-p-book|pdt-p-movie|pdt-p-audiobook"></span>  ← typ nośnika
- * Zapytanie jest już zawężone do filii (param f2), więc obecność rekordu = filia
- * ma dany egzemplarz w zbiorach.
+ *   <span class="pdt-p-book|pdt-p-movie|pdt-p-audiobook"></span>  ← medium type
+ * The query is already narrowed to the branch (param f2), so a record's presence = the branch
+ * holds that copy in its collection.
  */
 
 export type OpacDocType = "ksiazka" | "audiobook" | "film" | "inne";
@@ -23,7 +23,7 @@ export interface OpacRecord {
 
 const stripTags = (s: string) => s.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
 
-/** Wyciąga wartość pola z listy <dl>: <dt>Label:</dt><dd>…</dd>. */
+/** Extracts a field value from the <dl> list: <dt>Label:</dt><dd>…</dd>. */
 function dlField(block: string, labelRe: string): string {
   const re = new RegExp(`<dt[^>]*>\\s*${labelRe}\\s*</dt>\\s*<dd[^>]*>([\\s\\S]*?)</dd>`, "i");
   const m = block.match(re);
@@ -53,11 +53,11 @@ export function parseOpacResults(html: string): OpacRecord[] {
 }
 
 /**
- * Znajduje najlepiej pasujący rekord KSIĄŻKI (domyślnie z wykluczeniem filmów i
- * audiobooków — wyszukiwanie „gra o tron" zwraca też seriale i inne dzieła autora,
- * a użytkownik szuka konkretnej książki). Dopasowanie = zgodność tytułu (z obsługą
- * tytułów równoległych „Oryginał = Polski") ORAZ autora (gdy znany po obu stronach).
- * Zwraca najlepszy rekord ponad progiem albo null.
+ * Finds the best-matching BOOK record (by default excluding films and
+ * audiobooks — a search for „gra o tron" also returns series and other works by the author,
+ * while the user is looking for a specific book). A match = title agreement (handling
+ * parallel titles „Oryginał = Polski") AND author (when known on both sides).
+ * Returns the best record above the threshold or null.
  */
 export function findBookMatch(
   records: OpacRecord[],
@@ -76,7 +76,7 @@ export function findBookMatch(
   let bestSim = 0;
 
   for (const r of books) {
-    // Tytuły równoległe: „Game of thrones … = Gra o tron" — porównaj każdą stronę.
+    // Parallel titles: „Game of thrones … = Gra o tron" — compare each side.
     const parts = r.title.split("=").map((s) => cleanTitle(s).toLowerCase()).filter(Boolean);
     let titleSim = 0;
     for (const p of parts) {
@@ -87,8 +87,8 @@ export function findBookMatch(
     }
     if (titleSim <= 0.8) continue;
 
-    // Autor: gdy znamy autora z Notion, musi zgadzać się z rekordem (redukuje
-    // fałszywe trafienia na inne dzieła tego samego autora złapane po serii/temacie).
+    // Author: when we know the author from Notion, it must agree with the record (reduces
+    // false hits on other works by the same author caught by series/topic).
     let authorOk = true;
     if (normAuthor) {
       const recAuthor = normalizeAuthor(r.author || "");

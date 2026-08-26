@@ -31,21 +31,21 @@ export interface IdentifiedBook {
   title: string;
   author: string;
   year?: number | null;
-  // Wypełniane przez skan biblioteki (OPAC) — tytuł/autor odczytany z katalogu
+  // Filled by the library scan (OPAC) — title/author read from the catalog
   extractedTitle?: string | null;
   extractedAuthor?: string | null;
 }
 
-/** Zagregowana dostępność nieprzeczytanych — partycja priorytetowa (każda książka raz). */
+/** Aggregated availability of unread items — priority partition (each book once). */
 export interface AvailabilityStats {
   totalUnread: number;
-  /** Posiadane, ale nieprzeczytane. */
+  /** Owned but unread. */
   owned: number;
-  /** Dostępne do wypożyczenia w bibliotece (tag filii), nieposiadane. */
+  /** Available to borrow from the library (branch tag), not owned. */
   library: number;
-  /** Dostępne na Vinted (≥1 składowana oferta), nieposiadane i nie w bibliotece. */
+  /** Available on Vinted (≥1 stored offer), not owned and not in the library. */
   vinted: number;
-  /** Bez śladu — brak posiadania, biblioteki i ofert. */
+  /** No trace — not owned, no library, no offers. */
   none: number;
 }
 
@@ -107,11 +107,11 @@ export function useStats() {
     }
   }, []);
 
-  // Optymistyczne dopisanie książki do sekcji „Książki dostępne w bibliotekach"
-  // zaraz po otagowaniu (Biblioteka / Biblioteka 9), bez czekania na kolejny
-  // refetch — Notion bywa opóźniony w odczycie tuż po zapisie, więc pełne
-  // odświeżenie potrafi jeszcze nie widzieć nowego tagu. `libraryStats[].id`
-  // to nazwa tagu, więc dopasowujemy filię po znaczniku.
+  // Optimistically add a book to the „Książki dostępne w bibliotekach" section
+  // right after tagging (Biblioteka / Biblioteka 9), without waiting for the next
+  // refetch — Notion can lag on reads just after a write, so a full refresh may
+  // not see the new tag yet. `libraryStats[].id` is the tag name, so we match the
+  // branch by its tag.
   const addBookToLibrarySection = useCallback((tag: string, book: { id: string; title: string; author: string; year?: number | null }) => {
     setStats(prev => {
       if (!prev) return prev;

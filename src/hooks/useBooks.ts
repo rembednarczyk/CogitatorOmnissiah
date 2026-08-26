@@ -2,14 +2,14 @@ import { useState, useEffect, useCallback } from "react";
 import { BookIndexEntry } from "../types";
 
 /**
- * Pobiera odchudzony indeks książek z `GET /api/books` RAZ i trzyma w stanie.
- * Cała wyszukiwarka „Skryptorium" filtruje ten indeks w pamięci (client-side),
- * więc żaden znak w polu wyszukiwania nie uderza do sieci ani do Notion.
+ * Fetches the slimmed-down book index from `GET /api/books` ONCE and holds it in state.
+ * The whole „Skryptorium" search filters this index in memory (client-side),
+ * so no keystroke in the search field hits the network or Notion.
  */
 export function useBooks() {
   const [books, setBooks] = useState<BookIndexEntry[] | null>(null);
-  // Startujemy w stanie ładowania — fetch leci od razu w useEffect (po paint), więc
-  // bez tego pierwsza klatka pokazywałaby pusty stan zamiast spinnera.
+  // Start in loading state — the fetch fires right away in useEffect (after paint), so
+  // without this the first frame would show an empty state instead of a spinner.
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

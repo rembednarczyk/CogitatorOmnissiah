@@ -1,10 +1,10 @@
 import { BookIndexEntry } from "../types";
 
 /**
- * Fold diakrytyków PER ZNAK (nie NFD): mapuje polskie litery na łacińskie
- * odpowiedniki i lowercase'uje. Świadomie NIE używamy `normalize('NFD')` —
- * NFD nie rozkłada „ł" (U+0142), a fold per-znak jest 1:1 na długość, dzięki
- * czemu indeksy trafień mapują wprost na oryginalny tekst (podświetlanie).
+ * Per-CHARACTER diacritic fold (not NFD): maps Polish letters to their Latin
+ * equivalents and lowercases. We deliberately do NOT use `normalize('NFD')` —
+ * NFD doesn't decompose „ł" (U+0142), whereas a per-character fold is 1:1 in
+ * length, so hit indices map straight onto the original text (highlighting).
  */
 const FOLD: Record<string, string> = {
   ą: "a", ć: "c", ę: "e", ł: "l", ń: "n", ó: "o", ś: "s", ż: "z", ź: "z",
@@ -16,20 +16,20 @@ export function fold(s: string): string {
   return out;
 }
 
-/** Rozbija zapytanie na tokeny (spacje) po foldzie. */
+/** Splits the query into tokens (on spaces) after folding. */
 function tokenize(query: string): string[] {
   return fold(query).split(/\s+/).filter(Boolean);
 }
 
 /**
- * Filtruje + rankuje indeks po tytule (PL + oryginalny) i autorze. Każdy token
- * musi trafić (AND) jako substring w KTÓRYMKOLWIEK z pól — dzięki temu „simmons
- * hyperion" łączy autora z tytułu. Puste zapytanie → cały zbiór (tryb przeglądu).
- * Ranking: prefiks tytułu > substring tytułu > tytuł oryginalny > autor.
+ * Filters + ranks the index by title (PL + original) and author. Each token
+ * must match (AND) as a substring in ANY of the fields — so that „simmons
+ * hyperion" combines author with title. Empty query → whole set (browse mode).
+ * Ranking: title prefix > title substring > original title > author.
  */
 export function matchBooks(query: string, index: BookIndexEntry[]): BookIndexEntry[] {
   const tokens = tokenize(query);
-  // Tytuł efektywny = polski, a gdy go brak — oryginalny (rekordy nieprzetłumaczone).
+  // Effective title = Polish, and when missing — original (untranslated records).
   const displayTitle = (b: BookIndexEntry) => b.plTitle || b.origTitle;
   const byTitle = (a: BookIndexEntry, b: BookIndexEntry) => displayTitle(a).localeCompare(displayTitle(b), "pl");
 
@@ -62,18 +62,18 @@ export interface HighlightSegment {
 }
 
 /**
- * Dzieli tekst na segmenty trafione/nietrafione względem zapytania. Bazuje na
- * foldzie 1:1 (indeks w folded == indeks w oryginale), więc podświetla we
- * właściwym miejscu mimo diakrytyków. Podświetla tylko tokeny obecne w TYM
- * tekście (token trafiony w innym polu tu nie da zakresu).
+ * Splits text into hit/non-hit segments relative to the query. Relies on the
+ * 1:1 fold (index in folded == index in original), so it highlights in the
+ * right place despite diacritics. Highlights only tokens present in THIS
+ * text (a token matched in another field yields no range here).
  */
 export function highlight(text: string, query: string): HighlightSegment[] {
   const tokens = tokenize(query);
   if (!tokens.length || !text) return [{ text, hit: false }];
 
   const folded = fold(text);
-  // Zabezpieczenie: gdyby lowercase zmienił długość (rzadkie unicode), fallback
-  // bez podświetlenia zamiast rozjechanych indeksów.
+  // Safeguard: if lowercase changed the length (rare unicode), fall back to
+  // no highlighting instead of misaligned indices.
   if (folded.length !== text.length) return [{ text, hit: false }];
 
   const ranges: [number, number][] = [];
@@ -107,24 +107,24 @@ export function highlight(text: string, query: string): HighlightSegment[] {
   return segs;
 }
 
-// ── „Czy chodziło Ci o…" — fuzzy podpowiedzi na literówki ──────────────────
+// ── „Czy chodziło Ci o…" — fuzzy suggestions for typos ──────────────────
 
 export interface VocabTerm {
-  /** Znormalizowane (fold) słowo — po tym liczymy dystans. */
+  /** Normalized (folded) word — distance is computed against this. */
   folded: string;
-  /** Wariant do pokazania użytkownikowi (oryginalna pisownia). */
+  /** Variant to show the user (original spelling). */
   display: string;
 }
 
-/** Słowa (≥3 znaki) z tekstu, rozbite na granicach nie-liter/cyfr. */
+/** Words (≥3 chars) from the text, split on non-letter/digit boundaries. */
 function wordsOf(s: string): string[] {
   return s.split(/[^\p{L}\p{N}]+/u).filter((w) => w.length >= 3);
 }
 
 /**
- * Buduje słownik terminów (słowa tytułów PL+oryg i autorów) do fuzzy-podpowiedzi.
- * Dedupe po foldzie; jako `display` preferuje wariant z wielką literą. Liczony raz
- * na zbiór (memoizowany w komponencie), nie na każdy znak.
+ * Builds a term dictionary (words from PL+orig titles and authors) for fuzzy
+ * suggestions. Dedupes by fold; prefers the capitalized variant as `display`.
+ * Computed once per set (memoized in the component), not on every keystroke.
  */
 export function buildSearchVocab(index: BookIndexEntry[]): VocabTerm[] {
   const map = new Map<string, string>();
@@ -145,7 +145,7 @@ export function buildSearchVocab(index: BookIndexEntry[]): VocabTerm[] {
   return [...map.entries()].map(([folded, display]) => ({ folded, display }));
 }
 
-/** Dystans Levenshteina (dwa bufory wierszy — O(min·max) pamięci liniowej). */
+/** Levenshtein distance (two row buffers — O(min·max) linear memory). */
 function levenshtein(a: string, b: string): number {
   const m = a.length;
   const n = b.length;
@@ -165,10 +165,10 @@ function levenshtein(a: string, b: string): number {
 }
 
 /**
- * „Czy chodziło Ci o…" — dla (zwykle zerowego) zapytania zwraca do `limit`
- * najbliższych terminów ze słownika. Porównuje OSTATNI token zapytania (tam
- * zwykle siedzi literówka), z progiem zależnym od długości. Odsiew po różnicy
- * długości (Levenshtein ≥ |Δlen|) tnie koszt. Pomija trafienie dokładne.
+ * „Czy chodziło Ci o…" — for a (usually zero-hit) query returns up to `limit`
+ * of the closest dictionary terms. Compares the LAST query token (where the
+ * typo usually sits), with a threshold that depends on length. Pre-filtering
+ * by length difference (Levenshtein ≥ |Δlen|) cuts the cost. Skips exact hits.
  */
 export function didYouMean(query: string, vocab: VocabTerm[], limit = 3): string[] {
   const qWord = fold(query).split(/\s+/).filter(Boolean).pop() ?? "";
@@ -197,9 +197,9 @@ export function didYouMean(query: string, vocab: VocabTerm[], limit = 3): string
 }
 
 /**
- * Podmienia OSTATNI token zapytania na `term`, zachowując wcześniejsze słowa —
- * bo `didYouMean` poprawia właśnie ostatni token. „Greg Vear" + „Bear" →
- * „Greg Bear". Puste / same spacje → zwraca sam `term`.
+ * Replaces the LAST query token with `term`, keeping the earlier words —
+ * because `didYouMean` corrects exactly the last token. „Greg Vear" + „Bear" →
+ * „Greg Bear". Empty / only spaces → returns just `term`.
  */
 export function replaceLastToken(query: string, term: string): string {
   const m = query.match(/^(.*?)(\S+)\s*$/);

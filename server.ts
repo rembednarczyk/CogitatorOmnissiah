@@ -8,9 +8,9 @@ dotenv.config();
 
 const serverLog = createLogger("Server");
 
-// Re-eksport dla zgodności wstecznej — kontrolery importują `syncManager` z
-// ./syncManager, ale testy i inne moduły nadal mogą sięgać po { app, syncManager }
-// przez ./server.
+// Re-export for backward compatibility — controllers import `syncManager` from
+// ./syncManager, but tests and other modules can still reach for { app, syncManager }
+// via ./server.
 export { app } from "./app";
 export { syncManager } from "./syncManager";
 

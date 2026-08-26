@@ -1,28 +1,28 @@
-// Pomocniki prezentacji ofert Vinted (czyste, testowalne): sortowanie po cenie
-// rosnąco (oferty bez ceny na końcu), zakres cen do nagłówka karty i formatowanie
-// kwoty w polskim stylu.
+// Helpers for presenting Vinted offers (pure, testable): sorting by price
+// ascending (offers without a price at the end), price range for the card header and
+// formatting the amount in Polish style.
 
 export interface OfferLike {
   priceValue?: number | null;
   currency?: string;
 }
 
-/** Waluta do wyświetlenia: PLN → „zł", w innym wypadku kod bez zmian. */
+/** Currency to display: PLN → „zł", otherwise the code unchanged. */
 function currencyLabel(currency?: string): string {
   if (!currency) return "zł";
   const c = currency.trim().toUpperCase();
   return c === "PLN" || c === "ZŁ" ? "zł" : currency;
 }
 
-/** „12,00 zł" dla znanej ceny; „cena w ofercie", gdy nieznana (placeholder). */
+/** „12,00 zł" for a known price; „cena w ofercie" when unknown (placeholder). */
 export function formatVintedPrice(value: number | null | undefined, currency?: string): string {
   if (value === null || value === undefined || !Number.isFinite(value)) return "cena w ofercie";
   return `${value.toFixed(2).replace(".", ",")} ${currencyLabel(currency)}`;
 }
 
 /**
- * Sortuje oferty rosnąco po cenie; oferty bez ceny (priceValue == null) lądują na
- * końcu. Zwraca NOWĄ tablicę (nie mutuje wejścia).
+ * Sorts offers ascending by price; offers without a price (priceValue == null) land at
+ * the end. Returns a NEW array (doesn't mutate the input).
  */
 export function sortOffersByPrice<T extends OfferLike>(items: T[]): T[] {
   return [...items].sort((a, b) => {
@@ -36,9 +36,9 @@ export function sortOffersByPrice<T extends OfferLike>(items: T[]): T[] {
 }
 
 /**
- * Czyści tytuł oferty do wyświetlenia: rozkodowuje encje HTML i odcina „ogon"
- * z opisu Vinted (kondycja „, Stan: …" oraz doklejone kwoty), bo ścieżki HTML
- * parsera biorą atrybut title aukcji z całym opisem i ceną w środku.
+ * Cleans the offer title for display: decodes HTML entities and cuts off the „tail"
+ * from the Vinted description (the „, Stan: …" condition and appended amounts), because the
+ * parser's HTML paths take the listing's title attribute with the whole description and price inside.
  */
 export function cleanOfferTitle(title: string): string {
   let t = (title || "")
@@ -47,12 +47,12 @@ export function cleanOfferTitle(title: string): string {
     .replace(/&#39;/g, "'")
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">");
-  t = t.replace(/,\s*Stan:.*$/i, "");                 // odetnij kondycję i wszystko po niej
-  t = t.replace(/,?\s*\d+[.,]\d+\s*(?:zł|PLN).*$/i, ""); // awaryjnie: doklejony ogon cenowy
+  t = t.replace(/,\s*Stan:.*$/i, "");                 // cut off the condition and everything after it
+  t = t.replace(/,?\s*\d+[.,]\d+\s*(?:zł|PLN).*$/i, ""); // fallback: appended price tail
   return t.trim();
 }
 
-/** Minimalna cena (lub null, gdy żadna oferta nie ma ceny) i liczba ofert. */
+/** Minimum price (or null when no offer has a price) and the number of offers. */
 export function offersPriceSummary(items: OfferLike[]): { min: number | null; count: number } {
   const prices = items
     .map((i) => i.priceValue)
@@ -61,9 +61,9 @@ export function offersPriceSummary(items: OfferLike[]): { min: number | null; co
 }
 
 /**
- * Sortuje KARTY wyników po najtańszej ofercie każdej książki (rosnąco). Książki
- * bez żadnej znanej ceny lądują na końcu. Zwraca NOWĄ tablicę (nie mutuje).
- * Używane do dynamicznego układania wyników w trakcie skanu.
+ * Sorts result CARDS by each book's cheapest offer (ascending). Books
+ * without any known price land at the end. Returns a NEW array (doesn't mutate).
+ * Used for dynamically arranging results during the scan.
  */
 export function sortResultsByCheapest<T extends { vintedItems: OfferLike[] }>(results: T[]): T[] {
   return [...results].sort((a, b) => {

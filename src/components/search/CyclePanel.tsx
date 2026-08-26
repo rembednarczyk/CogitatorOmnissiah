@@ -7,11 +7,11 @@ import { encyclopediaUrl } from "../../utils/encyclopedia";
 import { computePopoverPosition, AnchorRect } from "../../utils/popoverPosition";
 
 /**
- * Popover podglądu cyklu, zakotwiczony „w miejscu kliknięcia" (kotwica = prostokąt
- * triggera). Renderowany PRZEZ PORTAL do `document.body`, żeby uciec transformom
- * przodków (framer-motion) — inaczej `position: fixed` liczyłby się względem karty,
- * a nie viewportu (popover lądował na środku długiej listy / był ucinany). Wysokość
- * dopasowuje się do liczby tomów aż do dostępnej przestrzeni; dłuższa lista scrolluje.
+ * Cycle preview popover, anchored „at the click point" (anchor = trigger
+ * rectangle). Rendered THROUGH A PORTAL into `document.body` to escape ancestor
+ * transforms (framer-motion) — otherwise `position: fixed` would be relative to the card,
+ * not the viewport (the popover landed in the middle of a long list / got clipped). Height
+ * adapts to the number of volumes up to the available space; a longer list scrolls.
  */
 
 const STATUS = (v: { read: boolean; owned: boolean; inBase: boolean }) => {
@@ -24,7 +24,7 @@ const STATUS = (v: { read: boolean; owned: boolean; inBase: boolean }) => {
 interface Props {
   title: string;
   author: string;
-  /** Prostokąt triggera (getBoundingClientRect) — kotwica popovera. */
+  /** Trigger rectangle (getBoundingClientRect) — popover anchor. */
   anchor: AnchorRect;
   onClose: () => void;
 }
@@ -35,7 +35,7 @@ export const CyclePanel: React.FC<Props> = ({ title, author, anchor, onClose }) 
   useEffect(() => { fetchCycle(title, author); }, [title, author, fetchCycle]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    // Scroll/resize dezaktualizuje kotwicę — najprościej zamknąć popover.
+    // Scroll/resize invalidates the anchor — simplest to just close the popover.
     const onShift = () => onClose();
     window.addEventListener("keydown", onKey);
     window.addEventListener("resize", onShift);
@@ -54,7 +54,7 @@ export const CyclePanel: React.FC<Props> = ({ title, author, anchor, onClose }) 
 
   return createPortal(
     <>
-      {/* Przezroczysty łapacz kliknięć poza popoverem (feel tooltipa — bez przyciemnienia). */}
+      {/* Transparent catcher for clicks outside the popover (tooltip feel — no dimming). */}
       <div className="fixed inset-0 z-[99]" onClick={onClose} aria-hidden="true" />
       <motion.div
         role="dialog"
@@ -66,7 +66,7 @@ export const CyclePanel: React.FC<Props> = ({ title, author, anchor, onClose }) 
         className="z-[100] glass-card rounded-2xl border-amber-500/20 flex flex-col overflow-hidden shadow-2xl shadow-slate-950/60"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Nagłówek */}
+        {/* Header */}
         <div className="flex items-start gap-2.5 p-3.5 border-b border-white/5 shrink-0">
           <div className="shrink-0 p-1.5 rounded-lg bg-amber-500/15 border border-amber-500/25 text-amber-300">
             <Layers className="w-3.5 h-3.5" />
@@ -82,7 +82,7 @@ export const CyclePanel: React.FC<Props> = ({ title, author, anchor, onClose }) 
           </button>
         </div>
 
-        {/* Treść */}
+        {/* Content */}
         <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-3 space-y-2">
           {loading && (
             <div className="flex items-center justify-center gap-2.5 py-8 text-slate-400">

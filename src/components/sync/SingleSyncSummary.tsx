@@ -7,7 +7,7 @@ import { useCopyToClipboard } from "../../hooks/useCopyToClipboard";
 import { StatCard } from "./StatCard";
 import { SummaryDetailPanel } from "./SummaryDetailPanel";
 
-/** Podsumowanie pojedynczego rytuału (dodane / zaktualizowane / pominięte / duplikaty). */
+/** Summary of a single ritual (added / updated / skipped / duplicates). */
 export const SingleSyncSummary: React.FC<{ sync: ReturnType<typeof useSync>; onClose: () => void }> = ({ sync, onClose }) => {
   const { copied, copy } = useCopyToClipboard();
 
@@ -15,7 +15,7 @@ export const SingleSyncSummary: React.FC<{ sync: ReturnType<typeof useSync>; onC
   const color = sync.state.color || "cyan";
   const summary = activeResult?.summary;
 
-  // Motyw rytuału (patrz src/theme/ritualColors.ts). Tu bg = miękkie tło karty.
+  // Ritual theme (see src/theme/ritualColors.ts). Here bg = soft card background.
   const t = getRitualTheme(color);
   const theme = { text: t.text, border: t.border, bg: t.bgSoft };
 

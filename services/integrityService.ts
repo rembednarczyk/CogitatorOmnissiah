@@ -16,9 +16,9 @@ const PREDEFINED_AWARDS = [
 
 const IGNORED_LOCUS_TAGS = ["Powieść dla młodzieży", "Locus - Powieść dla młodzieży", "Locus YA"];
 
-/** Książka zredukowana do kluczy tożsamości + lat wydania, po scaleniu duplikatów. */
+/** A book reduced to identity keys + publication years, after merging duplicates. */
 interface MergedBook { years: Set<string>; display: string; keys: string[] }
-/** Wejście do scalania: pre-wyekstrahowane klucze/lata/etykieta pojedynczego rekordu. */
+/** Merge input: pre-extracted keys/years/label of a single record. */
 interface BookEntry { keys: string[]; years: string[]; display: string }
 
 export class IntegrityService {
@@ -38,8 +38,8 @@ export class IntegrityService {
         (count) => sendEvent({ type: "status", message: `Pobrano ${count} rekordów z Notion...` }),
         checkCancellation
       );
-      // Integralność dotyczy pozycji NAGRODOWYCH — poboczne tomy cykli (Kategoria=Tom
-      // cyklu) nie są na listach nagród wiki, więc wykluczamy je z porównań (rok/Lp).
+      // Integrity concerns AWARD entries — side cycle volumes (Kategoria=Tom
+      // cyklu) aren't on the wiki award lists, so we exclude them from comparisons (year/Lp).
       const notionBooks = allNotionRows.filter(isAwardBook);
       if (checkCancellation()) return;
 
@@ -49,8 +49,8 @@ export class IntegrityService {
 
       sendEvent({ type: "status", message: "Analiza integralności danych (Rytuał Weryfikacji)..." });
 
-      // Scal duplikaty po kluczach tożsamości (tytuł|autor) — te same mapy zasilają
-      // porównanie liczby książek per rok.
+      // Merge duplicates by identity keys (title|author) — the same maps feed
+      // the per-year book count comparison.
       const mergedNotion = this.mergeBooksByKey(this.notionEntries(notionBooks));
       const mergedWiki = this.mergeBooksByKey(this.wikiEntries(allWikiBooks));
 
@@ -61,7 +61,7 @@ export class IntegrityService {
         yearCountMatch: { status: false, diffs: this.computeYearDiffs(mergedNotion, mergedWiki) },
         awardCountMatch: { status: false, diffs: this.computeAwardDiffs(notionBooks, allWikiBooks) },
       };
-      // status = brak rozbieżności
+      // status = no discrepancies
       result.lpUniqueness.status = result.lpUniqueness.duplicates.length === 0;
       result.originalTitleUniqueness.status = result.originalTitleUniqueness.duplicates.length === 0;
       result.polishTitleUniqueness.status = result.polishTitleUniqueness.duplicates.length === 0;
@@ -85,9 +85,9 @@ export class IntegrityService {
   }
 
   /**
-   * Klucz tożsamości książki odporny na wariacje: normalizuje autora (mapowania),
-   * sortuje i czyści nazwiska, normalizuje tytuł. Pusty tytuł → pusty klucz
-   * (odrzucany), by "|autor" nie scalał różnych książek tego samego autora.
+   * A variation-resistant book identity key: normalizes the author (mappings),
+   * sorts and cleans names, normalizes the title. Empty title → empty key
+   * (rejected), so "|author" doesn't merge different books by the same author.
    */
   private robustKey(author: string, title: string): string {
     const normalizedAuthor = normalizeData(author || "", 'author');
@@ -156,7 +156,7 @@ export class IntegrityService {
     }));
   }
 
-  /** Scala rekordy dzielące dowolny klucz tożsamości w jedną książkę (union lat). */
+  /** Merges records sharing any identity key into one book (union of years). */
   private mergeBooksByKey(entries: BookEntry[]): Map<string, MergedBook> {
     const merged = new Map<string, MergedBook>();
     const keyToPrimary = new Map<string, string>();

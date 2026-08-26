@@ -30,7 +30,7 @@ describe("bookshelf.spineStyle", () => {
     for (const t of ["Diuna", "Hyperion", "Ubik", "Solaris", "Lód"]) {
       const s = spineStyle(mk({ plTitle: t }));
       expect(CLOTH_PALETTE).toContain(s.color);
-      // akcent Holo+ z tego samego indeksu (równoległa paleta)
+      // Holo+ accent from the same index (parallel palette)
       const idx = CLOTH_PALETTE.indexOf(s.color);
       expect(s.app).toBe(APP_PALETTE[idx][0]);
       expect(s.appRgb).toBe(APP_PALETTE[idx][1]);
@@ -50,8 +50,8 @@ describe("bookshelf.planShelf", () => {
     const b = planShelf(shelf);
     expect(a).toEqual(b);
     const ids = a.flatMap((s) => (s.kind === "stack" ? s.books.map((x) => x.id) : [s.book.id]));
-    expect(ids).toEqual(shelf.map((x) => x.id));           // każda książka raz, w kolejności
-    expect(new Set(ids).size).toBe(shelf.length);          // bez duplikatów
+    expect(ids).toEqual(shelf.map((x) => x.id));           // each book once, in order
+    expect(new Set(ids).size).toBe(shelf.length);          // no duplicates
   });
 
   it("keeps most books upright, with a minority leaning/stacked", () => {
@@ -59,7 +59,7 @@ describe("bookshelf.planShelf", () => {
     const straight = slots.filter((s) => s.kind === "spine" && s.lean === 0).length;
     const lean = slots.filter((s) => s.kind === "spine" && s.lean !== 0).length;
     const stacks = slots.filter((s) => s.kind === "stack").length;
-    expect(straight).toBeGreaterThan(lean + stacks);        // zdecydowana większość prosto
+    expect(straight).toBeGreaterThan(lean + stacks);        // the vast majority upright
     expect(lean).toBeGreaterThan(0);
     expect(stacks).toBeGreaterThan(0);
   });
@@ -88,7 +88,7 @@ describe("bookshelf.planShelf", () => {
     for (let k = 1; k < slots.length; k++) {
       expect(slots[k].kind === "stack" && slots[k - 1].kind === "stack").toBe(false);
     }
-    expect(slots.some((s) => s.kind === "stack")).toBe(true); // a jakieś kupki są
+    expect(slots.some((s) => s.kind === "stack")).toBe(true); // yet some stacks exist
   });
 
   it("leans a stack's neighbours toward the stack (left → +, right → −)", () => {
@@ -99,7 +99,7 @@ describe("bookshelf.planShelf", () => {
       const left = slots[k - 1], right = slots[k + 1];
       if (left && left.kind === "spine") {
         expect(Math.abs(left.lean)).toBe(LEAN_TOWARD); checked++;
-        // kierunek pewny tylko gdy grzbiet nie jest wciśnięty między dwie kupki
+        // direction is certain only when the spine isn't wedged between two stacks
         if (slots[k - 2]?.kind !== "stack") expect(left.lean).toBe(LEAN_TOWARD);
       }
       if (right && right.kind === "spine") {
@@ -128,9 +128,9 @@ describe("bookshelf.title sizing (pełne nazwy)", () => {
     expect(short.width).toBeLessThanOrEqual(FLAT_MAX_W);
 
     const long = flatBookLayout(mk({ plTitle: "Hyperion i jego długa, rozwlekła kontynuacja opowieści" }));
-    expect(long.lines).toBe(2);                 // zawija, nie poszerza
-    expect(long.width).toBe(FLAT_MAX_W);        // szerokość zaczepiona na limicie
-    expect(long.thickness).toBeGreaterThan(short.thickness); // 2 linie → trochę grubsza
+    expect(long.lines).toBe(2);                 // wraps, doesn't widen
+    expect(long.width).toBe(FLAT_MAX_W);        // width pinned at the cap
+    expect(long.thickness).toBeGreaterThan(short.thickness); // 2 lines → a bit thicker
 
     for (const l of [short, long]) {
       expect(l.width).toBeLessThanOrEqual(FLAT_MAX_W);
@@ -138,7 +138,7 @@ describe("bookshelf.title sizing (pełne nazwy)", () => {
       expect(l.fontSize).toBeLessThanOrEqual(10);
       expect(l.thickness).toBeGreaterThanOrEqual(15);
       expect(l.thickness).toBeLessThanOrEqual(24);
-      // 2 linie muszą wystarczyć na pełny tytuł: połowa tekstu mieści się w linii
+      // 2 lines must suffice for the full title: half the text fits in one line
       const availW = FLAT_MAX_W - 20;
       expect(Math.ceil((l === long ? "Hyperion i jego długa, rozwlekła kontynuacja opowieści".length : 4) * 0.6 * l.fontSize / l.lines)).toBeLessThanOrEqual(availW);
     }
@@ -169,7 +169,7 @@ describe("bookshelf.layoutStack (wyrównanie + chaos)", () => {
   it("aligns left / right often and symmetric (center) only rarely", () => {
     const counts = { left: 0, right: 0, center: 0 } as Record<string, number>;
     for (let s = 0; s < 600; s++) counts[stackAlign(mkBooks(`Z${s}_`, 4))]++;
-    expect(counts.center).toBeLessThan(counts.left);   // piramida rzadka
+    expect(counts.center).toBeLessThan(counts.left);   // pyramid is rare
     expect(counts.center).toBeLessThan(counts.right);
     expect(counts.left).toBeGreaterThan(0);
     expect(counts.right).toBeGreaterThan(0);
@@ -183,7 +183,7 @@ describe("bookshelf.layoutStack (wyrównanie + chaos)", () => {
       if (c > 0) chaotic++;
     }
     expect(chaotic).toBeGreaterThan(0);
-    expect(chaotic).toBeLessThan(600 / 2); // większość równa
+    expect(chaotic).toBeLessThan(600 / 2); // most are aligned
   });
 });
 
@@ -191,11 +191,11 @@ describe("bookshelf.shelfPlankBackground", () => {
   it("draws a plank starting at the row baseline and repeats per row advance", () => {
     const { backgroundImage } = shelfPlankBackground();
     expect(backgroundImage.startsWith("repeating-linear-gradient(180deg,")).toBe(true);
-    // Deska zaczyna się dokładnie pod spodem rzędu (SHELF_ROW_H) …
+    // The plank starts exactly below the row (SHELF_ROW_H) …
     expect(backgroundImage).toContain(`${SHELF_ROW_H}px`);
-    // … kończy po SHELF_PLANK_H …
+    // … ends after SHELF_PLANK_H …
     expect(backgroundImage).toContain(`${SHELF_ROW_H + SHELF_PLANK_H}px`);
-    // … a okres powtórzenia = skok jednego rzędu (ROW_H + GAP).
+    // … and the repeat period = one row's advance (ROW_H + GAP).
     expect(backgroundImage).toContain(`${SHELF_ROW_H + SHELF_ROW_GAP}px`);
   });
 
@@ -214,7 +214,7 @@ describe("bookshelf.awardWins (color-code, bez nominacji)", () => {
   it("ignores nominations entirely", () => {
     expect(awardWins(mk({ awards: ["Nominacja Hugo", "Nominacja Nebula"] }))).toEqual([]);
     expect(hasAward(mk({ awards: ["Nominacja Hugo"] }))).toBe(false);
-    // wygrana + nominacja → tylko wygrana
+    // win + nomination → only the win
     expect(awardWins(mk({ awards: ["Nominacja Hugo", "Nagroda Nebula"] })).map((x) => x.key)).toEqual(["nebula"]);
   });
   it("treats Wszystkie as all three wins, deduped", () => {
@@ -256,7 +256,7 @@ describe("bookshelf.splitShelves", () => {
   it("respects overrides when partitioning (drag&drop move)", () => {
     const { read, toRead } = splitShelves(books, { "1": false });
     expect(read.map((b) => b.id)).toEqual(["3"]);
-    // toRead posortowane po dacie: 1965 (id 2) przed 1970 (id 1)
+    // toRead sorted by date: 1965 (id 2) before 1970 (id 1)
     expect(toRead.map((b) => b.id)).toEqual(["2", "1"]);
   });
 });

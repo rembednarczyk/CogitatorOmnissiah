@@ -4,18 +4,18 @@ import { PREDEFINED_AWARDS, SYNC_ALL_AWARD } from "../constants";
 import { useEffectiveConfig } from "./useAppConfig";
 
 /**
- * Orkiestracja wszystkich rytuałów synchronizacji po stronie frontendu.
+ * Front-end orchestration of all synchronization rituals.
  *
- * Trzyma dziewięć instancji `useSync` (po jednej na rytuał), wzajemne czyszczenie
- * stanu, sekwencyjny "Wielki Rytuał" (full sync) oraz wynik zbiorczy. Wyniesione
- * z `App.tsx`, żeby komponent został przy renderowaniu, a logika żyła w hooku
- * (zob. COGITATOR_GUIDELINES §2 "Logic Isolation").
+ * Holds nine `useSync` instances (one per ritual), mutual state clearing, the
+ * sequential „Wielki Rytuał" (full sync), and an aggregate result. Extracted
+ * from `App.tsx` so the component stays with rendering and the logic lives in the hook
+ * (see COGITATOR_GUIDELINES §2 "Logic Isolation").
  */
 export function useSyncManager() {
   const [fullSyncResults, setFullSyncResults] = useState<any[] | null>(null);
 
-  // Lista nagród z konfiguracji (+ pseudo-opcja pełnej synchronizacji);
-  // PREDEFINED_AWARDS służy tylko jako stan początkowy do czasu pobrania.
+  // List of awards from config (+ the full-sync pseudo-option);
+  // PREDEFINED_AWARDS serves only as the initial state until the fetch completes.
   const cfg = useEffectiveConfig();
   const awardOptions = [...cfg.sync.awards, SYNC_ALL_AWARD];
 
@@ -52,8 +52,8 @@ export function useSyncManager() {
     return await syncService.startSync(params, undefined, statusMessage);
   };
 
-  // Przyjmuje samą NAZWĘ nagrody (nie zdarzenie DOM) — manager pozostaje
-  // niezależny od prezentacji (parsowanie <select> zostaje w komponencie).
+  // Takes just the award NAME (not a DOM event) — the manager stays
+  // independent of presentation (<select> parsing remains in the component).
   const handleAwardChange = (selectedName: string) => {
     const predefined = awardOptions.find(a => a.name === selectedName);
 
@@ -81,9 +81,9 @@ export function useSyncManager() {
     });
   };
 
-  // „Wielki Rytuał" — sekwencja kroków opisana danymi (nie 7× copy-paste).
-  // Kroki `abortOnFail` przerywają całość przy błędzie i porzucają wyniki; ostatni
-  // (Lp) tylko dopisuje wynik, jeśli jest, i zawsze domyka podsumowanie.
+  // „Wielki Rytuał" — a data-described step sequence (not 7× copy-paste).
+  // `abortOnFail` steps abort the whole thing on error and drop results; the last one
+  // (Lp) only appends its result if present, and always closes the summary.
   const FULL_SYNC_STEPS: { sync: any; name: string; color: string; label: string; params?: any; abortOnFail: boolean }[] = [
     { sync: schemaSync, name: "Schemat", color: "emerald", label: "Krok 1/7: Rytuał Inicjacji Schematu...", abortOnFail: true },
     { sync: purifySync, name: "Puryfikacja", color: "amber", label: "Krok 2/7: Rytuał Puryfikacji...", abortOnFail: true },
@@ -102,7 +102,7 @@ export function useSyncManager() {
       clearOthers(step.sync);
       const res = await step.sync.startSync(step.params ?? {}, undefined, step.label);
       if (step.abortOnFail) {
-        if (!res || res.success === false) return; // przerwij i porzuć częściowe wyniki
+        if (!res || res.success === false) return; // abort and drop partial results
         results.push({ name: step.name, result: res, color: step.color });
       } else if (res) {
         results.push({ name: step.name, result: res, color: step.color });
@@ -135,14 +135,14 @@ export function useSyncManager() {
   };
 
   return {
-    // Instancje rytuałów (przekazywane do komponentów prezentacyjnych)
+    // Ritual instances (passed to presentational components)
     sync, publisherSync, seriesSync, cyclesSync, cyclesHarvestSync, lpSync, integritySync, duplicatesSync, purifySync, schemaSync,
-    // Lista nagród z konfiguracji (dropdown w SyncAwards)
+    // List of awards from config (dropdown in SyncAwards)
     awardOptions,
-    // Stan zbiorczy
+    // Aggregate state
     syncs, anyError, isAnySyncLoading,
     fullSyncResults, clearFullSyncResults: () => setFullSyncResults(null),
-    // Akcje
+    // Actions
     handleAwardChange, handleSync, handleFullSync, handleResetSync,
     handleSyncSchema, handleSyncPurify, handleSyncPublisher, handleSyncSeries,
     handleCyclesSync, handleCyclesHarvest, handleSyncLp, handleSyncDuplicates,

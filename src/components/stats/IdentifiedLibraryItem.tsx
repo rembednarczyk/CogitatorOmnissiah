@@ -11,7 +11,7 @@ interface IdentifiedLibraryItemProps {
   onStop: () => void;
   onMarkAsRead: (pageId: string, tag?: string) => void;
   markingId: string | null;
-  // Klucze „{tag}:{pageId}" pozycji już oznaczonych znacznikiem filii.
+  // Keys „{tag}:{pageId}" of items already marked with the branch tag.
   markedIds: Set<string>;
   isChecking: boolean;
   progress: any;

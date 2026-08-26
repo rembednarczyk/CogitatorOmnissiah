@@ -4,11 +4,11 @@ import { sanitizeNotionString, sanitizeNotionTag } from "./utils";
 import { NotionPage, NotionBook } from "./src/types";
 import { mapPageToBook } from "./notionMapper";
 
-// Krótki cache pełnej listy książek dla ścieżek TYLKO-DO-ODCZYTU skanerów
-// (biblioteka „Skanuj wszystkie" odpytywałaby Notion raz na filię). Cache jest
-// opt-in (`{ cache: true }`), więc statystyki (`/api/stats`) zawsze czytają
-// świeże dane, a każdy zapis książki go unieważnia. TTL to tylko bezpiecznik na
-// edycje spoza aplikacji.
+// Short cache of the full book list for the scanners' READ-ONLY paths
+// (the library „Skanuj wszystkie" would query Notion once per branch). The cache is
+// opt-in (`{ cache: true }`), so stats (`/api/stats`) always read fresh data, and
+// every book write invalidates it. The TTL is only a safeguard against edits made
+// outside the app.
 const BOOKS_CACHE_TTL_MS = 5 * 60 * 1000;
 
 export class NotionAdapter {
@@ -22,17 +22,17 @@ export class NotionAdapter {
     this.notion = new Client({ auth: apiKey });
   }
 
-  /** Unieważnia cache listy książek — wołane po każdym zapisie zmieniającym książki. */
+  /** Invalidates the book-list cache — called after every write that changes books. */
   private invalidateBooksCache(): void {
     this.booksCache = null;
   }
 
   async init(): Promise<void> {
     if (this.actualDataSourceId) return; // Already initialized
-    // Deduplikuj równoległe wywołania init() — jedna inicjalizacja w locie
+    // Deduplicate concurrent init() calls — a single in-flight initialization
     if (!this.initPromise) {
       this.initPromise = this.doInit().catch((err) => {
-        this.initPromise = null; // pozwól spróbować ponownie po błędzie
+        this.initPromise = null; // allow retrying after an error
         throw err;
       });
     }
@@ -41,7 +41,7 @@ export class NotionAdapter {
 
   private async doInit(): Promise<void> {
     try {
-      // Try as data_source first (withRetry nie ponawia 404 — tylko 429/5xx/sieć)
+      // Try as data_source first (withRetry doesn't retry 404 — only 429/5xx/network)
       await withRetry(() => (this.notion as any).dataSources.retrieve({ data_source_id: this.databaseId }));
       this.actualDataSourceId = this.databaseId;
       this.isDataSource = true;
@@ -58,7 +58,7 @@ export class NotionAdapter {
           this.isDataSource = false;
         }
       } catch (dbError: any) {
-        // "Brak dostępu" tylko przy prawdziwym 404 — timeout to nie problem uprawnień
+        // "No access" only on a genuine 404 — a timeout isn't a permissions problem
         if (dbError?.code === "object_not_found" || dbError?.status === 404) {
           throw new Error(`Nie można znaleźć bazy danych ani źródła danych o ID: ${this.databaseId}. Upewnij się, że integracja ma dostęp.`);
         }
@@ -68,9 +68,9 @@ export class NotionAdapter {
   }
 
   // --- Dual-mode helpers ---
-  // Notion udostępnia bazę jako "data source" (nowe API) lub klasyczną "database".
-  // Te trzy helpery kapsułkują rozgałęzienie isDataSource, które wcześniej było
-  // powielone w ~7 metodach.
+  // Notion exposes the base as a "data source" (new API) or a classic "database".
+  // These three helpers encapsulate the isDataSource branching, which was previously
+  // duplicated across ~7 methods.
 
   private async retrieveSource(id: string): Promise<any> {
     return this.isDataSource
@@ -114,10 +114,10 @@ export class NotionAdapter {
   }
 
   /**
-   * Zapis ręcznych kluczy porządku regału (kolumna „ShelfOrder", number) dla partii
-   * książek — precyzyjny drag&drop wysyła 1 wpis (wstawiona), a przy renumeracji
-   * remisów kilka. Kolumna tworzona przy pierwszym zapisie. Sekwencyjnie (nie
-   * równolegle) — partie są małe, a rate-limit Notion wrażliwy na bursty.
+   * Writes manual shelf ordering keys (column „ShelfOrder", number) for a batch of
+   * books — precise drag&drop sends 1 entry (the inserted one), and several when
+   * renumbering ties. The column is created on first write. Sequential (not parallel)
+   * — batches are small, and Notion's rate limit is sensitive to bursts.
    */
   async setShelfOrders(entries: { pageId: string; order: number }[]): Promise<void> {
     await this.init();
@@ -131,14 +131,14 @@ export class NotionAdapter {
     this.invalidateBooksCache();
   }
 
-  /** Nazwa kolumny-nośnika konfiguracji aplikacji (blob JSON żyje w jej OPISIE, nie w wierszach). */
+  /** Name of the column that carries the app config (the JSON blob lives in its DESCRIPTION, not in rows). */
   private static readonly APP_CONFIG_COLUMN = "AppConfig";
 
   /**
-   * Odczyt blobu konfiguracji z opisu kolumny `AppConfig`. Brak kolumny/opisu → null
-   * (aplikacja działa na defaultach z `configSchema`). Opis kolumny wybrano zamiast
-   * wiersza-sentinela, bo rytuały (puryfikacja/integralność/LP) iterują po wszystkich
-   * wierszach i sentinel by w nie wyciekał.
+   * Reads the config blob from the `AppConfig` column's description. Missing column/description → null
+   * (the app runs on defaults from `configSchema`). The column description was chosen over a
+   * sentinel row, because the rituals (purification/integrity/LP) iterate over all rows
+   * and a sentinel would leak into them.
    */
   async getAppConfigRaw(): Promise<string | null> {
     const schema = await this.getSchema();
@@ -146,7 +146,7 @@ export class NotionAdapter {
     return typeof desc === "string" && desc.trim() ? desc : null;
   }
 
-  /** Zapis blobu konfiguracji do opisu kolumny `AppConfig` (tworzy kolumnę przy pierwszym zapisie). */
+  /** Writes the config blob to the `AppConfig` column's description (creates the column on first write). */
   async saveAppConfigRaw(json: string): Promise<void> {
     await this.init();
     await this.updateSource(this.actualDataSourceId!, {
@@ -171,8 +171,8 @@ export class NotionAdapter {
 
       hasMore = response.has_more;
       nextCursor = response.next_cursor ?? undefined;
-      // Zabezpieczenie: has_more === true bez kursora oznaczałoby ponowne pobranie
-      // strony 1 od początku w kółko (i podwójne liczenie). Przerwij zamiast zawisnąć.
+      // Safeguard: has_more === true without a cursor would mean re-fetching
+      // page 1 from the start over and over (and double counting). Break instead of hanging.
       if (hasMore && !nextCursor) break;
       if (onProgress) onProgress(allBooks.length);
     }
@@ -185,17 +185,17 @@ export class NotionAdapter {
     checkCancellation?: () => boolean,
     opts?: { cache?: boolean },
   ): Promise<NotionBook[]> {
-    // Ta sama pętla co queryAllBooks — jedna implementacja, żeby skany
-    // biblioteki/Vinted też dało się anulować w fazie pobierania z Notion.
-    // `cache: true` współdzieli jedno pobranie między kolejnymi skanami
-    // (np. obie filie w „Skanuj wszystkie") — statystyki wołają bez cache.
+    // Same loop as queryAllBooks — one implementation, so library/Vinted scans
+    // can also be cancelled during the Notion fetch phase.
+    // `cache: true` shares a single fetch across successive scans
+    // (e.g. both branches in „Skanuj wszystkie") — stats call without cache.
     if (opts?.cache && this.booksCache && this.booksCache.expiresAt > Date.now()) {
       return this.booksCache.data;
     }
 
     const books = await this.queryAllBooks(onProgress, checkCancellation);
 
-    // Nie zapisuj listy urwanej przez anulowanie — byłaby niepełna.
+    // Don't cache a list cut short by cancellation — it would be incomplete.
     const cancelled = checkCancellation ? checkCancellation() : false;
     if (opts?.cache && !cancelled) {
       this.booksCache = { data: books, expiresAt: Date.now() + BOOKS_CACHE_TTL_MS };
@@ -244,10 +244,10 @@ export class NotionAdapter {
   }
 
   /**
-   * Wspólny rdzeń mutacji pola multi_select: pobiera aktualne tagi, przepuszcza je
-   * przez `transform` i zapisuje wynik. `transform` zwraca nową listę tagów albo
-   * `null` = brak zmiany (pomiń zapis i inwalidację cache). Add/remove to cienkie
-   * przypadki na tym rdzeniu — jedno miejsce na retrieve→mutate→update.
+   * Shared core for mutating a multi_select field: fetches the current tags, passes them
+   * through `transform` and writes the result. `transform` returns a new tag list or
+   * `null` = no change (skip the write and cache invalidation). Add/remove are thin
+   * cases on top of this core — one place for retrieve→mutate→update.
    */
   private async mutateMultiSelect(
     pageId: string,
@@ -264,7 +264,7 @@ export class NotionAdapter {
 
     const currentTags = prop.multi_select.map((t: any) => ({ name: t.name }));
     const nextTags = transform(currentTags);
-    if (nextTags === null) return; // no-op: tag już jest / nie było
+    if (nextTags === null) return; // no-op: tag already present / was absent
 
     await withRetry(() => this.notion.pages.update({
       page_id: pageId,
@@ -273,13 +273,13 @@ export class NotionAdapter {
     this.invalidateBooksCache();
   }
 
-  /** Dopisuje znacznik do pola multi_select (pomija, jeśli już jest). */
+  /** Appends a tag to a multi_select field (skips if already present). */
   async addTagToMultiSelect(pageId: string, propertyName: string, tag: string): Promise<void> {
     return this.mutateMultiSelect(pageId, propertyName, (tags) =>
       tags.some((t) => t.name === tag) ? null : [...tags, { name: tag }]);
   }
 
-  /** Usuwa znacznik z pola multi_select (odwrotność `addTagToMultiSelect`). */
+  /** Removes a tag from a multi_select field (inverse of `addTagToMultiSelect`). */
   async removeTagFromMultiSelect(pageId: string, propertyName: string, tag: string): Promise<void> {
     return this.mutateMultiSelect(pageId, propertyName, (tags) => {
       const next = tags.filter((t) => t.name !== tag);
@@ -316,9 +316,9 @@ export class NotionAdapter {
   }
 
   /**
-   * Zapis blobu składowanych wyników Vinted do pola „VintedData" (rich_text). Tekst
-   * dzielony na segmenty ≤2000 znaków (limit Notion) — mapper skleja je z powrotem
-   * przez `join("")`. NIE używa `buildPropertyValue` (obcina do 2000 i psułoby JSON).
+   * Writes the stored Vinted results blob to the „VintedData" field (rich_text). The text
+   * is split into segments ≤2000 chars (Notion's limit) — the mapper joins them back
+   * with `join("")`. Does NOT use `buildPropertyValue` (it truncates to 2000 and would corrupt the JSON).
    */
   async saveVintedData(pageId: string, text: string): Promise<void> {
     const chunks: { text: { content: string } }[] = [];
@@ -339,9 +339,9 @@ export class NotionAdapter {
       ? { type: "data_source_id", data_source_id: this.actualDataSourceId! }
       : { type: "database_id", database_id: this.actualDataSourceId! };
 
-    // idempotent=false: pages.create tworzy nowy wiersz — po błędzie sieci/5xx
-    // ponowienie mogłoby zdublować książkę (błąd resetu socketu po zapisie).
-    // 429 nadal jest ponawiane (żądanie odrzucone przed przetworzeniem).
+    // idempotent=false: pages.create creates a new row — after a network/5xx error
+    // a retry could duplicate the book (socket reset error after the write).
+    // 429 is still retried (request rejected before processing).
     const response = await withRetry(() => this.notion.pages.create({
       parent: parent,
       properties

@@ -5,7 +5,7 @@ import { getRitualDot } from "../../theme/ritualColors";
 import { useCopyToClipboard } from "../../hooks/useCopyToClipboard";
 import { StatCard } from "./StatCard";
 
-/** Podsumowanie „Wielkiego Rytuału" — agregat wszystkich kroków pełnej synchronizacji. */
+/** „Wielki Rytuał" summary — aggregate of all steps of the full synchronization. */
 export const FullSyncSummary: React.FC<{ results: any[]; onClose: () => void }> = ({ results, onClose }) => {
   const { copied, copy } = useCopyToClipboard();
 
@@ -39,7 +39,7 @@ export const FullSyncSummary: React.FC<{ results: any[]; onClose: () => void }> 
           {results.map((res) => (
             <div key={res.name} className="p-3 rounded-xl bg-slate-900/40 border border-slate-800/50 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                {/* Tailwind nie generuje klas budowanych dynamicznie — mapuj statycznie */}
+                {/* Tailwind doesn't generate dynamically built classes — map them statically */}
                 <div className={`w-2 h-2 rounded-full ${getRitualDot(res.color)}`} />
                 <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">{res.name}</span>
               </div>

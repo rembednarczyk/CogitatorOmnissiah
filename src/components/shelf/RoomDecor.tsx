@@ -1,8 +1,8 @@
 import React from "react";
 import { motion } from "motion/react";
 
-/** Sygil koła zębatego (Mechanicus) — ozdoba pokoju. Kolor przez `style`, by
- *  rozwiązywały się zmienne skóry (`var(--sk-room-cog*)`). */
+/** Cog-wheel sigil (Mechanicus) — room decoration. Color via `style`, so
+ *  the skin variables resolve (`var(--sk-room-cog*)`). */
 const CogMark: React.FC<{ size: number; color: string; className?: string; style?: React.CSSProperties }> = ({ size, color, className, style }) => (
   <svg viewBox="0 0 48 48" width={size} height={size} className={className} style={style} aria-hidden>
     <g style={{ fill: color }}>
@@ -16,7 +16,7 @@ const CogMark: React.FC<{ size: number; color: string; className?: string; style
   </svg>
 );
 
-/** Świeca z migoczącym płomieniem i ciepłą poświatą. */
+/** Candle with a flickering flame and warm glow. */
 const Sconce: React.FC<{ className?: string }> = ({ className }) => (
   <div className={`absolute pointer-events-none ${className ?? ""}`} aria-hidden>
     <svg viewBox="0 0 60 70" width="52" height="60">
@@ -38,7 +38,7 @@ const Sconce: React.FC<{ className?: string }> = ({ className }) => (
   </div>
 );
 
-/** Dryfująca drobinka kurzu w świetle. */
+/** A drifting speck of dust in the light. */
 const Mote: React.FC<{ i: number }> = ({ i }) => {
   const left = (i * 61) % 100;
   const top = 12 + ((i * 37) % 60);
@@ -54,9 +54,9 @@ const Mote: React.FC<{ i: number }> = ({ i }) => {
 };
 
 /**
- * „Sala Archiwum" — ciepły skryptorium wokół regałów: drewniana ściana z panelami,
- * podłoga, kinkiety z migoczącym światłem, proporzec, sygil koła zębatego, kurz
- * i winieta. Czysto dekoracyjne (aria-hidden). Fizyki książek nie dotyka.
+ * „Sala Archiwum" — a warm scriptorium around the shelves: paneled wooden wall,
+ * floor, sconces with flickering light, banner, cog-wheel sigil, dust
+ * and vignette. Purely decorative (aria-hidden). Does not touch the book physics.
  */
 export const RoomDecor: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div
@@ -66,24 +66,24 @@ export const RoomDecor: React.FC<{ children: React.ReactNode }> = ({ children })
       boxShadow: "inset 0 2px 0 var(--sk-room-inset), inset 0 40px 80px -40px rgba(0,0,0,.7)",
     }}
   >
-    {/* Znak wodny koła zębatego */}
+    {/* Cog-wheel watermark */}
     <CogMark size={320} color="var(--sk-room-cog)" className="absolute left-1/2 -translate-x-1/2 top-6 opacity-[0.05] pointer-events-none" />
 
-    {/* Kinkiety */}
+    {/* Sconces */}
     <Sconce className="left-3 top-16 hidden md:block" />
     <Sconce className="right-3 top-16 hidden md:block" />
 
-    {/* Kurz w powietrzu */}
+    {/* Dust in the air */}
     {Array.from({ length: 16 }).map((_, i) => <Mote key={i} i={i} />)}
 
-    {/* Treść (regały) */}
+    {/* Content (shelves) */}
     <div className="relative z-10">{children}</div>
 
-    {/* Podłoga */}
+    {/* Floor */}
     <div className="absolute left-0 right-0 bottom-0 h-[120px] pointer-events-none"
       style={{ background: "var(--sk-room-floor)", boxShadow: "inset 0 16px 26px -12px rgba(0,0,0,.85)" }} aria-hidden />
 
-    {/* Winieta */}
+    {/* Vignette */}
     <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(120% 90% at 50% 40%, rgba(0,0,0,0) 45%, rgba(0,0,0,.5) 100%)" }} aria-hidden />
   </div>
 );

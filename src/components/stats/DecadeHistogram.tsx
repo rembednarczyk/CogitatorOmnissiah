@@ -4,9 +4,9 @@ import { BarChart3, Crown } from "lucide-react";
 import { DecadeStat } from "../../hooks/useStats";
 
 /**
- * Oś czasu / dekady — histogram rozkładu kolekcji po dekadach wydania (aplikacja
- * już myśli dekadami przez regał). Słupek = total; wypełnienie = przeczytane.
- * Wyróżniona „złota era" (najliczniejsza dekada).
+ * Timeline / decades — a histogram of the collection's distribution by publication decade (the app
+ * already thinks in decades via the shelf). Bar = total; fill = read.
+ * Highlights the „golden era" (the most populous decade).
  */
 export const DecadeHistogram: React.FC<{ decades: DecadeStat[] }> = ({ decades }) => {
   const max = Math.max(1, ...decades.map((d) => d.total));
@@ -37,7 +37,7 @@ export const DecadeHistogram: React.FC<{ decades: DecadeStat[] }> = ({ decades }
         <p className="text-slate-400 text-sm italic text-center py-8">Brak dat wydania w kolekcji.</p>
       ) : (
         <>
-          {/* Histogram — słupki pionowe, wypełnienie = przeczytane */}
+          {/* Histogram — vertical bars, fill = read */}
           <div className="flex items-end gap-1.5 h-[160px] pt-2">
             {decades.map((d) => {
               const h = (d.total / max) * 100;
@@ -52,7 +52,7 @@ export const DecadeHistogram: React.FC<{ decades: DecadeStat[] }> = ({ decades }
                       style={{ height: `${Math.max(h, 2)}%` }}
                       title={`${d.decade}–${d.decade + 9}: ${d.total} (przecz. ${d.read}, posiad. ${d.owned})`}
                     >
-                      {/* Wypełnienie = przeczytane (od dołu) */}
+                      {/* Fill = read (from the bottom) */}
                       <div
                         className={`absolute bottom-0 inset-x-0 ${isPeak ? "bg-gradient-to-t from-amber-500 to-amber-400" : "bg-gradient-to-t from-cyan-500 to-cyan-400"}`}
                         style={{ height: `${readH}%` }}
@@ -65,7 +65,7 @@ export const DecadeHistogram: React.FC<{ decades: DecadeStat[] }> = ({ decades }
             })}
           </div>
 
-          {/* Legenda */}
+          {/* Legend */}
           <div className="flex items-center justify-center gap-5 text-[10px] text-slate-500 uppercase tracking-widest font-bold">
             <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-cyan-400" /> Przeczytane</span>
             <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-slate-700/60" /> Pozostałe</span>

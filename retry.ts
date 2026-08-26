@@ -15,13 +15,13 @@ export async function withRetry<T>(
         throw error;
       }
 
-      // 429 (rate limit) oznacza, że żądanie zostało ODRZUCONE przed przetworzeniem
-      // — ponowienie jest zawsze bezpieczne, nawet dla operacji nieidempotentnych.
+      // 429 (rate limit) means the request was REJECTED before processing
+      // — retrying is always safe, even for non-idempotent operations.
       const isRateLimit = error?.status === 429 || error?.response?.status === 429;
 
-      // 5xx i błędy sieci (socket hang up itd.) mogą zostawić żądanie CZĘŚCIOWO
-      // przetworzone: dla operacji nieidempotentnych (np. pages.create) ponowienie
-      // tworzy duplikat. Ponawiaj je tylko, gdy wołający deklaruje idempotent=true.
+      // 5xx and network errors (socket hang up etc.) may leave a request PARTIALLY
+      // processed: for non-idempotent operations (e.g. pages.create) a retry
+      // creates a duplicate. Retry them only when the caller declares idempotent=true.
       const isServerError = idempotent && (error?.status >= 500 || error?.response?.status >= 500);
 
       const transientCodes = ['ECONNRESET', 'ETIMEDOUT', 'ECONNABORTED', 'EPIPE', 'ENOTFOUND', 'EAI_AGAIN', 'ERR_HTTP2_GOAWAY_SESSION', 'ERR_STREAM_WRITE_AFTER_END'];
@@ -33,14 +33,14 @@ export async function withRetry<T>(
                                      )));
 
       if (!isRateLimit && !isServerError && !isTransientNetworkError) {
-        // Nie ponawiaj błędów klienta (4xx poza 429) ani — dla operacji
-        // nieidempotentnych — błędów 5xx/sieci, które mogły już zapisać dane.
+        // Don't retry client errors (4xx other than 429) nor — for non-idempotent
+        // operations — 5xx/network errors that may have already written data.
         throw error;
       }
 
       let waitTime = delayMs * Math.pow(backoffFactor, attempt - 1);
 
-      // Notion (i inne API) przy 429 podaje Retry-After — uszanuj go zamiast zgadywać
+      // Notion (and other APIs) send Retry-After on 429 — respect it instead of guessing
       if (isRateLimit) {
         const retryAfter = error?.headers?.['retry-after'] ?? error?.response?.headers?.['retry-after'];
         const retryAfterSec = parseFloat(retryAfter);

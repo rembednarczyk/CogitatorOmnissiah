@@ -4,11 +4,11 @@ export interface TabDef {
   id: string;
   label: string;
   icon: React.ReactNode;
-  /** Klasy aktywnego stanu (kolor/obwódka/glow) danej zakładki. */
+  /** Active-state classes (color/border/glow) for the given tab. */
   activeClass: string;
 }
 
-/** Pasek zakładek — jeden wzorzec przycisku zamiast 5× copy-paste. */
+/** Tab bar — one button pattern instead of 5× copy-paste. */
 export const TabNav: React.FC<{ tabs: TabDef[]; active: string; onSelect: (id: string) => void }> = ({ tabs, active, onSelect }) => (
   <div className="flex flex-col sm:flex-row sm:items-stretch justify-center gap-4 mt-8">
     {tabs.map((tab) => (

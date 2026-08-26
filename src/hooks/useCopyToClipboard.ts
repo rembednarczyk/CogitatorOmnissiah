@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 
-/** Kopiowanie do schowka z krótkim stanem „skopiowano" (do ikonki ✓). */
+/** Copy to clipboard with a brief „copied" state (for the ✓ icon). */
 export function useCopyToClipboard(resetMs = 2000) {
   const [copied, setCopied] = useState(false);
   const copy = useCallback((text: string) => {

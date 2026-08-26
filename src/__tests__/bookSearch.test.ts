@@ -63,7 +63,7 @@ describe("bookSearch.matchBooks", () => {
     ];
     const r = matchBooks("childe", idx);
     expect(r.map((b) => b.id)).toEqual(["u"]);
-    // prefiks tytułu efektywnego (origTitle) rankuje jak prefiks tytułu
+    // a prefix of the effective title (origTitle) ranks like a title prefix
     expect(matchBooks("chi", idx)[0].id).toBe("u");
   });
 

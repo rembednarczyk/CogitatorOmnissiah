@@ -8,7 +8,7 @@ const result = (id: string, title: string, items: ReturnType<typeof item>[]): Vi
   ({ id, title, author: "Autor", vintedItems: items });
 
 describe("sortBundles", () => {
-  // s1: 3 książki, suma 60 (droższa paczka). s2: 2 książki, suma 20 (tańsza paczka).
+  // s1: 3 books, total 60 (pricier bundle). s2: 2 books, total 20 (cheaper bundle).
   const results = [
     result("1", "A", [item("https://www.vinted.pl/items/1", 20)]),
     result("2", "B", [item("https://www.vinted.pl/items/2", 20)]),
@@ -73,7 +73,7 @@ describe("groupBySeller", () => {
   });
 
   it("uses the seller's cheapest copy per book and reports premium vs the global cheapest", () => {
-    // Książka A: najtaniej 10 (s2), ale s1 ma A za 11 + B za 8 → paczka s1 z dopłatą 1.
+    // Book A: cheapest 10 (s2), but s1 has A for 11 + B for 8 → s1's bundle with a premium of 1.
     const results = [
       result("1", "A", [item("https://www.vinted.pl/items/a-s2", 10), item("https://www.vinted.pl/items/a-s1", 11)]),
       result("2", "B", [item("https://www.vinted.pl/items/b-s1", 8)]),
@@ -87,11 +87,11 @@ describe("groupBySeller", () => {
     expect(bundles).toHaveLength(1);
     const b = bundles[0];
     expect(b.seller.id).toBe("s1");
-    expect(b.totalValue).toBe(19); // 11 (A u s1) + 8 (B)
+    expect(b.totalValue).toBe(19); // 11 (A at s1) + 8 (B)
     expect(b.totalPremium).toBe(1); // A: 11 - 10(min) = 1; B: 0
     const entryA = b.entries.find(e => e.bookTitle === "A")!;
     expect(entryA.premium).toBe(1);
-    expect(entryA.item.priceValue).toBe(11); // najtańsza kopia A U s1, nie globalna
+    expect(entryA.item.priceValue).toBe(11); // cheapest copy of A at s1, not the global one
   });
 
   it("feeds groupBySeller from stored data (via storedToView)", () => {
@@ -125,7 +125,7 @@ describe("groupBySeller", () => {
       result("2", "B", [item("https://www.vinted.pl/items/2", 8)]),
       result("3", "C", [item("https://www.vinted.pl/items/3", 8)]),
     ];
-    // s1 ma A (dwie oferty tej samej książki) + B; s2 ma tylko C.
+    // s1 has A (two offers of the same book) + B; s2 has only C.
     const sellers = {
       "https://www.vinted.pl/items/1": seller("s1"),
       "https://www.vinted.pl/items/1b": seller("s1"),
@@ -135,6 +135,6 @@ describe("groupBySeller", () => {
     const bundles = groupBySeller(results, sellers);
     expect(bundles).toHaveLength(1);
     expect(bundles[0].seller.id).toBe("s1");
-    expect(bundles[0].entries).toHaveLength(2); // A liczone raz, nie dwa
+    expect(bundles[0].entries).toHaveLength(2); // A counted once, not twice
   });
 });

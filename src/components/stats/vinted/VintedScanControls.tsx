@@ -4,7 +4,7 @@ import { RitualButton } from "../RitualButton";
 
 
 interface Props {
-  /** Okno „Kontynuuj" (h) z konfiguracji — tylko do tooltipa. */
+  /** The „Kontynuuj" window (h) from config — for the tooltip only. */
   resumeHours: number;
   isChecking: boolean;
   isResolving: boolean;
@@ -21,7 +21,7 @@ interface Props {
   onClearStored: () => void;
 }
 
-/** Nagłówek skanera + rytuały (skan / identyfikacja handlarzy / przywołanie z bazy). */
+/** Scanner header + rituals (scan / seller identification / summon from the database). */
 export const VintedScanControls: React.FC<Props> = ({
   resumeHours,
   isChecking, isResolving, isLoadingStored, usingStored, hasAttempts,
@@ -57,7 +57,7 @@ export const VintedScanControls: React.FC<Props> = ({
       </div>
     </div>
 
-    {/* Rytuały skanera — w stylu liturgii synchronizacji */}
+    {/* Scanner rituals — in the style of the sync liturgies */}
     <div className="grid sm:grid-cols-2 gap-3">
       <RitualButton
         className="sm:col-span-2"

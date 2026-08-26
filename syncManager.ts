@@ -21,17 +21,17 @@ import { createLogger, classifyHttpError } from "./logger";
 import { SyncEvent } from "./src/types";
 
 /**
- * Composition root domeny: buduje adaptery, serwisy i orkiestrator SyncManager.
- * Trzymane z dala od `server.ts` (który jest tylko entrypointem HTTP) — dzięki
- * temu kontrolery importują `syncManager` stąd, a nie z modułu serwera, co
- * kasuje cykl server → routes → controller → server.
+ * Domain composition root: builds the adapters, services and the SyncManager orchestrator.
+ * Kept away from `server.ts` (which is only the HTTP entrypoint) — so that
+ * controllers import `syncManager` from here, not from the server module, which
+ * breaks the server → routes → controller → server cycle.
  */
 
 const log = createLogger("SyncManager");
 
 const notionAdapter = new NotionAdapter(process.env.NOTION_API_KEY!, process.env.NOTION_DATABASE_ID!);
 const wikiAdapter = new WikiAdapter();
-/** Konfiguracja aplikacji (knoby) — defaulty + nadpisania z Notion; wstrzykiwana do serwisów. */
+/** App configuration (knobs) — defaults + overrides from Notion; injected into the services. */
 export const configService = new ConfigService(notionAdapter);
 const duplicateSyncService = new DuplicateSyncService(notionAdapter, wikiAdapter, configService);
 const bookSyncService = new BookSyncService(notionAdapter, wikiAdapter, configService);
@@ -53,7 +53,7 @@ interface SyncTask {
   cancelRequested: boolean;
 }
 
-/** Kanoniczne nazwy rytuałów synchronizacji — jedno źródło prawdy dla dispatchu. */
+/** Canonical sync ritual names — single source of truth for dispatch. */
 export type SyncTaskName =
   | "book"
   | "purify"
@@ -72,11 +72,11 @@ export type SyncTaskName =
 type TaskFn = (checkCancellation: () => boolean) => Promise<void>;
 
 /**
- * Rejestr rytuałów: nazwa → fabryka `taskFn`. Każdy serwis ma inaczej nazwaną
- * metodę `run*`, ale wszystkie mają ten sam kontrakt `(sendEvent, checkCancellation)`;
- * rejestr spina je w jedną tablicę, dzięki czemu SyncManager.run() jest jednym
- * generycznym dispatcherem zamiast kilkunastu bliźniaczych metod. `book` i
- * `library` przyjmują dodatkowe parametry z żądania (przez argument `params`).
+ * Ritual registry: name → `taskFn` factory. Each service has a differently named
+ * `run*` method, but they all share the same contract `(sendEvent, checkCancellation)`;
+ * the registry ties them into one table, so SyncManager.run() is a single
+ * generic dispatcher instead of a dozen twin methods. `book` and
+ * `library` take extra parameters from the request (via the `params` argument).
  */
 const TASK_REGISTRY: Record<SyncTaskName, (sendEvent: (data: SyncEvent) => void, params?: any) => TaskFn> = {
   book:       (s, p) => (cc) => bookSyncService.runBookSync(p ?? {}, s, cc),
@@ -111,7 +111,7 @@ class SyncManager {
     return await statsService.getStats();
   }
 
-  /** Odchudzony indeks książek dla wyszukiwarki „Skryptorium" (client-side). */
+  /** Slimmed-down book index for the „Skryptorium" search (client-side). */
   async getBooks() {
     const books = await this.notion.getBooksForStats(undefined, undefined, { cache: true });
     return toSearchIndex(books);
@@ -132,8 +132,8 @@ class SyncManager {
     try {
       await taskFn(() => task.cancelRequested);
     } finally {
-      // Zwolnij blokadę tylko jeśli nadal należy do tego zadania —
-      // po resetSyncState() mogło już wystartować nowe zadanie
+      // Release the lock only if it still belongs to this task —
+      // after resetSyncState() a new task may have already started
       if (this.currentTask === task) {
         this.currentTask = null;
       }
@@ -141,9 +141,9 @@ class SyncManager {
   }
 
   /**
-   * Generyczny dispatch rytuału: pobiera fabrykę z rejestru, buduje `taskFn`
-   * i uruchamia ją pod blokadą pojedynczego zadania. `params` niosą dane
-   * z żądania dla rytuałów, które ich wymagają (`book`, `library`).
+   * Generic ritual dispatch: takes the factory from the registry, builds `taskFn`
+   * and runs it under the single-task lock. `params` carry data
+   * from the request for rituals that need it (`book`, `library`).
    */
   async run(taskName: SyncTaskName, sendEvent: (data: SyncEvent) => void, params?: any) {
     const makeTaskFn = TASK_REGISTRY[taskName];
@@ -155,32 +155,32 @@ class SyncManager {
     return await this.wiki.fetchLastRevisionDate(pageTitle);
   }
 
-  // Dopisuje znacznik „Źródło" na stronie książki. Domyślnie „Przeczytane"
-  // (przycisk w zasobach posiadanych / bibliotecznych statystykach), ale skaner
-  // bibliotek podaje znacznik filii („Biblioteka" = Felin, „Biblioteka 9" =
-  // Bronowice), aby oznaczyć, w której filii pozycja jest dostępna.
+  // Appends a „Źródło" tag on a book's page. Defaults to „Przeczytane"
+  // (button in owned resources / library stats), but the library scanner
+  // passes a branch tag („Biblioteka" = Felin, „Biblioteka 9" =
+  // Bronowice), to mark which branch the item is available in.
   async markAsRead(pageId: string, tag: string = "Przeczytane") {
     return await this.notion.addTagToMultiSelect(pageId, "Źródło", tag);
   }
 
-  /** Usuwa znacznik „Źródło" (odwrotność `markAsRead`) — drag&drop na regale. */
+  /** Removes a „Źródło" tag (inverse of `markAsRead`) — drag&drop on the shelf. */
   async unmarkRead(pageId: string, tag: string = "Przeczytane") {
     return await this.notion.removeTagFromMultiSelect(pageId, "Źródło", tag);
   }
 
-  /** Zapis ręcznych kluczy porządku regału (precyzyjny drag&drop). */
+  /** Writes manual shelf ordering keys (precise drag&drop). */
   async setShelfOrders(entries: { pageId: string; order: number }[]) {
     return await this.notion.setShelfOrders(entries);
   }
 
-  /** Odczyt składowanych wyników Vinted (kafelki/paczki z bazy — bez re-scrape). */
+  /** Reads stored Vinted results (tiles/bundles from the DB — no re-scrape). */
   async getVintedStored() {
     return await vintedSyncService.getStoredData();
   }
 
-  /** Podgląd cyklu dla książki (na żądanie, bez zapisu do bazy). */
-  /** Zagregowany widok cykli (z wierszy oznaczonych polem `Cykl`) dla Archiwum. */
-  /** `fresh` (ręczne „Odśwież Dane") pomija 5-min cache książek → dane jak w /api/stats. */
+  /** Cycle preview for a book (on demand, no DB writes). */
+  /** Aggregated cycles view (from rows tagged with the `Cykl` field) for the Archiwum. */
+  /** `fresh` (manual „Odśwież Dane") bypasses the 5-min book cache → data as in /api/stats. */
   async getCyclesHarvest(fresh = false) {
     const books = await this.notion.getBooksForStats(undefined, undefined, { cache: !fresh });
     return aggregateCycleRows(books);
@@ -191,10 +191,10 @@ class SyncManager {
   }
 
   /**
-   * Diagnostyka end-to-end: sprawdza połączenie z Notion oraz pobranie i
-   * parsowanie każdej strony nagrody z encyklopedii. Zwraca strukturę JSON,
-   * którą można otworzyć w przeglądarce (GET /api/diagnostics) — jedno miejsce,
-   * by zobaczyć, DLACZEGO sync nie działa (blokada IP, brak strony, 0 książek).
+   * End-to-end diagnostics: checks the Notion connection plus fetching and
+   * parsing each award page from the encyclopedia. Returns a JSON structure
+   * that can be opened in the browser (GET /api/diagnostics) — one place
+   * to see WHY sync doesn't work (IP block, missing page, 0 books).
    */
   async runDiagnostics() {
     const startedAt = Date.now();
@@ -209,7 +209,7 @@ class SyncManager {
       summary: "",
     };
 
-    // 1. Notion — inicjalizacja i lekki odczyt schematu
+    // 1. Notion — initialization and a light schema read
     try {
       await this.notion.init();
       const schema = await this.notion.getSchema();
@@ -220,7 +220,7 @@ class SyncManager {
       log.error("Diagnostics: Notion FAILED", report.notion);
     }
 
-    // 2. Wiki — pobranie każdej strony nagrody z osobna (lista z konfiguracji `sync.awards`)
+    // 2. Wiki — fetch each award page separately (list from the `sync.awards` config)
     const AWARDS = (await configService.getConfig()).sync.awards;
     for (const aw of AWARDS) {
       const t0 = Date.now();
@@ -247,7 +247,7 @@ class SyncManager {
       }
     }
 
-    // 3. Podsumowanie diagnozy
+    // 3. Diagnosis summary
     const wikiOk = report.wiki.filter((w: any) => w.ok);
     const wikiBlocked = report.wiki.filter((w: any) => w.classification === "ip_blocked");
     if (!report.notion.ok) {
@@ -274,14 +274,14 @@ class SyncManager {
   }
 
   resetSyncState() {
-    // Anuluj aktywne zadanie, ale NIE zeruj blokady natychmiast. Wcześniej
-    // resetSyncState od razu ustawiał currentTask = null, przez co isSyncing
-    // stawał się false i kolejny POST /sync-* startował drugie zadanie, gdy
-    // osierocone wciąż pisało do Notion (łamiąc "dokładnie jeden sync naraz").
-    // Zamiast tego sygnalizujemy anulowanie; blokada zwolni się w `finally`
-    // zadania (identity-check), gdy zauważy cancelRequested i wyjdzie — a że
-    // wszystkie rytuały sprawdzają checkCancellation w pętlach i mają ograniczone
-    // timeouty (axios/withRetry), następuje to szybko i bez okna równoległych zapisów.
+    // Cancel the active task, but do NOT reset the lock immediately. Previously
+    // resetSyncState set currentTask = null right away, so isSyncing
+    // became false and the next POST /sync-* started a second task while
+    // the orphaned one was still writing to Notion (breaking "exactly one sync at a time").
+    // Instead we signal cancellation; the lock releases in the task's `finally`
+    // (identity-check) once it notices cancelRequested and exits — and since
+    // all rituals check checkCancellation in their loops and have bounded
+    // timeouts (axios/withRetry), this happens quickly and without a window of concurrent writes.
     this.stopActiveSync();
   }
 }

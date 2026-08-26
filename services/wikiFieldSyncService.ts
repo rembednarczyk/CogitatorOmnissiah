@@ -8,30 +8,30 @@ import { DiffEngine } from "./diffEngine";
 import { isAwardBook } from "./bookCategory";
 
 /**
- * Konfiguracja jednego pola wzbogacanego ze strony książki w encyklopedii.
- * PublisherSyncService i SeriesSyncService to tylko dwie instancje tego samego
- * potoku (fetch → weryfikacja autora → diff → update), różniące się polem.
+ * Config for a single field enriched from a book's encyclopedia page.
+ * PublisherSyncService and SeriesSyncService are just two instances of the same
+ * pipeline (fetch → author verification → diff → update), differing only in the field.
  */
 export interface WikiFieldConfig {
-  /** Kolumna w Notion, np. "Wydawnictwo" / "Seria". */
+  /** Notion column, e.g. "Wydawnictwo" / "Seria". */
   notionColumn: string;
-  /** Wybiera pole z wyniku parsera. */
+  /** Picks the field from the parser result. */
   pick: (extracted: { wydawca: string; seria: string }) => string;
-  /** Kontekst normalizacji dla dataNormalizer. */
+  /** Normalization context for dataNormalizer. */
   normalizeContext: NormalizationContext;
-  /** Odczytuje obecną wartość z rekordu Notion. */
+  /** Reads the current value from the Notion record. */
   current: (book: NotionBook) => string;
-  /** Nazwa rytuału (do komunikatu o przerwaniu). */
+  /** Ritual name (for the cancellation message). */
   ritualName: string;
-  /** Etykieta do komunikatu progresu (dopełniacz, np. "wydawnictw"). */
+  /** Label for the progress message (genitive, e.g. "wydawnictw"). */
   progressLabel: string;
-  /** Etykieta do podsumowania (np. "Wydawnictwo"). */
+  /** Label for the summary (e.g. "Wydawnictwo"). */
   summaryLabel: string;
 }
 
 /**
- * Wspólny potok synchronizacji pojedynczego pola (wydawca/seria) ze stron
- * książek. Zastępuje zduplikowane Publisher/SeriesSyncService.
+ * Shared pipeline for syncing a single field (publisher/series) from book
+ * pages. Replaces the duplicated Publisher/SeriesSyncService.
  */
 export class WikiFieldSyncService {
   constructor(
@@ -48,10 +48,10 @@ export class WikiFieldSyncService {
         (count) => sendEvent({ type: "status", message: `Pobrano ${count} książek z Notion...` }),
         checkCancellation
       );
-      // Wzbogacanie wydawcy/serii to koncern NAGRODOWY — poboczne tomy cykli
-      // (Kategoria="Tom cyklu") mają własny rytuał żniw i widok „Archiwum Cykli",
-      // więc pomijamy je (bez zbędnych pobrań stron i zapisów na wierszach,
-      // których żaden konsument nagrodowy nie czyta).
+      // Publisher/series enrichment is an AWARD concern — side cycle volumes
+      // (Kategoria="Tom cyklu") have their own harvest ritual and „Archiwum Cykli" view,
+      // so we skip them (no needless page fetches and writes on rows
+      // that no award consumer reads).
       const allBooks = rawBooks.filter(isAwardBook);
 
       if (checkCancellation()) { sendEvent({ type: "status", message: `Przerwano ${cfg.ritualName}.` }); return; }
@@ -85,7 +85,7 @@ export class WikiFieldSyncService {
           const wikitext = wikiContents[titleToSearch.toLowerCase()];
           if (!wikitext) return;
 
-          // Zweryfikuj autora — strona o tym samym tytule może dotyczyć innego dzieła
+          // Verify the author — a page with the same title may concern a different work
           const wikiAuthor = WikiParser.extractAuthor(wikitext);
           if (!isWikiAuthorMatch(wikiAuthor, book.author || "")) return;
 

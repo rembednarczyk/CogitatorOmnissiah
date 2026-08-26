@@ -1,89 +1,89 @@
 /**
- * Schemat konfiguracji aplikacji (knoby z zakładki „Konfiguracja").
+ * App configuration schema (the knobs from the „Konfiguracja" tab).
  *
- * Moduł WSPÓŁDZIELONY frontend/backend (czysty TS, zero zależności Node) — frontend
- * bierze stąd typy i DEFAULT_CONFIG (formularz + reset), backend merge/clamp/diff.
- * Zasada przechowywania: w Notion (opis kolumny `AppConfig`) ląduje wyłącznie
- * **diff od defaultów** — mały blob, a nowe knoby w kodzie dostają defaulty bez
- * migracji. Wartości domyślne = dokładnie dotychczasowe zachowanie aplikacji.
+ * A SHARED frontend/backend module (pure TS, zero Node deps) — the frontend
+ * takes its types and DEFAULT_CONFIG from here (form + reset), the backend merge/clamp/diff.
+ * Storage principle: only the **diff from defaults** lands in Notion (the `AppConfig`
+ * column description) — a small blob, and new knobs in the code get defaults without
+ * a migration. The default values = exactly the app's existing behavior.
  */
 
 export interface LibraryBranch {
   id: string;
   name: string;
   code: string;
-  /** Tag „Źródło" dopisywany po oznaczeniu książki jako dostępnej w tej filii. */
+  /** „Źródło" tag added after marking a book as available in this branch. */
   sourceTag: string;
 }
 
 export interface AwardPage {
   name: string;
-  /** Tytuł strony w Archiwum Encyklopedii Fantastyki. */
+  /** Page title in the Archiwum Encyklopedii Fantastyki. */
   title: string;
 }
 
 export interface AppConfig {
   vinted: {
-    /** Okno „Kontynuuj": pomiń książki skanowane w ostatnich N h. */
+    /** „Kontynuuj" window: skip books scanned in the last N h. */
     resumeHours: number;
-    /** Minimalny odstęp między żądaniami (ms). */
+    /** Minimum interval between requests (ms). */
     throttleMinMs: number;
-    /** Losowy jitter dokładany do odstępu (ms). */
+    /** Random jitter added to the interval (ms). */
     throttleJitterMs: number;
-    /** Timeout pojedynczego żądania HTTP (ms). NIE skracaj pochopnie — patrz backlog. */
+    /** Timeout of a single HTTP request (ms). Do NOT shorten rashly — see backlog. */
     requestTimeoutMs: number;
-    /** Liczba prób withRetry. */
+    /** Number of withRetry attempts. */
     retryAttempts: number;
-    /** Bazowy backoff między próbami (ms). */
+    /** Base backoff between attempts (ms). */
     retryBackoffMs: number;
-    /** Kategoria katalogu Vinted (2319 = beletrystyka). */
+    /** Vinted catalog category (2319 = fiction). */
     catalogId: number;
-    /** Filtr języka ofert (6440 = polski). */
+    /** Offer language filter (6440 = Polish). */
     languageId: number;
-    /** Dolny próg ceny (odcina oferty-śmieci). */
+    /** Lower price threshold (cuts off junk offers). */
     priceFrom: number;
     currency: string;
-    /** Sortowanie wyników katalogu. */
+    /** Catalog results sorting. */
     order: string;
-    /** Limit ustaleń sprzedawców na przebieg; 0 = bez limitu. */
+    /** Cap on seller resolutions per run; 0 = no cap. */
     sellerResolveCap: number;
-    /** Tagi „Źródło" wykluczające książkę ze skanu Vinted. */
+    /** „Źródło" tags that exclude a book from the Vinted scan. */
     excludedSources: string[];
-    /** Rozgrzej sesję (GET strony głównej → ciasteczko Cloudflare) przed skanem. */
+    /** Warm up the session (GET the homepage → Cloudflare cookie) before the scan. */
     primeSession: boolean;
   };
   scraping: {
-    /** Pula User-Agentów (rotacja per żądanie). Odświeżaj co kilka miesięcy. */
+    /** User-Agent pool (rotated per request). Refresh every few months. */
     userAgents: string[];
   };
   library: {
     branches: LibraryBranch[];
-    /** Równoległość zapytań OPAC. */
+    /** OPAC query concurrency. */
     concurrency: number;
-    /** Tagi wykluczające ze skanu bibliotecznego (celowo osobna lista — bez „Audioteka"). */
+    /** Tags excluding from the library scan (intentionally a separate list — without „Audioteka"). */
     excludedSources: string[];
   };
   sync: {
-    /** Strony nagród na wiki (Hugo/Nebula/Locus) — źródło pełnej synchronizacji i diagnostyki. */
+    /** Award pages on the wiki (Hugo/Nebula/Locus) — source for full sync and diagnostics. */
     awards: AwardPage[];
-    /** Równoległość zapisów do Notion (bookSync / cycles). */
+    /** Notion write concurrency (bookSync / cycles). */
     writeConcurrency: number;
-    /** Próg podobieństwa autorów przy wykrywaniu duplikatów (0–1). */
+    /** Author similarity threshold for duplicate detection (0–1). */
     dupAuthorThreshold: number;
-    /** Próg podobieństwa tytułów (PL i oryginalnego) przy duplikatach (0–1). */
+    /** Title similarity threshold (PL and original) for duplicates (0–1). */
     dupTitleThreshold: number;
   };
   ui: {
-    /** Liczba rzędów regału na stronę (Regał N/M). */
+    /** Number of shelf rows per page (Regał N/M). */
     shelfRowsPerPage: number;
-    /** Precyzyjny drag&drop na regale (wstawianie w szczelinę w obrębie dekady). */
+    /** Precise drag&drop on the shelf (inserting into a slot within a decade). */
     preciseShelfDrop: boolean;
-    /** Kolejność kart w „Analizie Zasobów" (id sekcji). Puste = domyślna kolejność z kodu. */
+    /** Card order in „Analizie Zasobów" (section ids). Empty = default order from code. */
     statsOrder: string[];
   };
 }
 
-/** Głęboki partial konfiguracji (kształt nadpisań składowanych w Notion). */
+/** Deep partial of the config (shape of the overrides stored in Notion). */
 export type ConfigOverrides = {
   [S in keyof AppConfig]?: Partial<AppConfig[S]>;
 };
@@ -141,7 +141,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   },
 };
 
-/* ==================== Normalizacja / clampy ==================== */
+/* ==================== Normalization / clamps ==================== */
 
 const clamp = (v: unknown, min: number, max: number, dflt: number): number => {
   const n = typeof v === "number" && isFinite(v) ? v : NaN;
@@ -167,7 +167,7 @@ const cleanStringList = (v: unknown, dflt: string[], maxItems = 30, maxLen = 400
   return out.length > 0 ? out : [...dflt];
 };
 
-/** Lista identyfikatorów (np. kolejność kart) — dozwolona pusta, dedup, przycięcie. */
+/** List of identifiers (e.g. card order) — empty allowed, dedup, truncation. */
 const cleanIdList = (v: unknown, maxItems = 40, maxLen = 40): string[] => {
   if (!Array.isArray(v)) return [];
   const seen = new Set<string>();
@@ -212,9 +212,9 @@ const cleanAwards = (v: unknown, dflt: AwardPage[]): AwardPage[] => {
 };
 
 /**
- * Scala nadpisania z defaultami i clampuje każdą wartość do bezpiecznego zakresu.
- * Nieznane pola są ignorowane, złe typy wracają do defaultu — funkcja NIGDY nie
- * rzuca (uszkodzony blob w Notion nie może zabić aplikacji).
+ * Merges overrides with defaults and clamps every value to a safe range.
+ * Unknown fields are ignored, bad types fall back to the default — the function NEVER
+ * throws (a corrupted blob in Notion must not kill the app).
  */
 export function mergeConfig(overrides?: unknown): AppConfig {
   const o = (overrides && typeof overrides === "object" ? overrides : {}) as ConfigOverrides;
@@ -266,8 +266,8 @@ export function mergeConfig(overrides?: unknown): AppConfig {
 const eq = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSON.stringify(b);
 
 /**
- * Diff pełnej konfiguracji względem defaultów — do składowania trzymamy tylko to,
- * co user faktycznie zmienił (mały blob + nowe knoby dziedziczą defaulty z kodu).
+ * Diff of the full config against the defaults — for storage we keep only what
+ * the user actually changed (small blob + new knobs inherit defaults from code).
  */
 export function diffFromDefaults(cfg: AppConfig): ConfigOverrides {
   const out: ConfigOverrides = {};
@@ -283,7 +283,7 @@ export function diffFromDefaults(cfg: AppConfig): ConfigOverrides {
   return out;
 }
 
-/** Parsuje blob z Notion; pusty/uszkodzony → null (mergeConfig dostanie undefined = same defaulty). */
+/** Parses the blob from Notion; empty/corrupted → null (mergeConfig gets undefined = defaults only). */
 export function parseStoredConfig(raw: string | null | undefined): ConfigOverrides | null {
   if (!raw || !raw.trim()) return null;
   try {

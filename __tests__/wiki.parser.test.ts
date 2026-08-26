@@ -75,8 +75,8 @@ describe('WikiParser', () => {
     });
 
     it('takes both fields from the latest edition and does not backfill series from an older one', () => {
-      // Decyzja projektowa: najnowsze wydanie jest miarodajne. Wydanie 2022 (Rebis)
-      // ma wydawcę, ale pustą serię — seria z wydania 1989 NIE ma się cofać.
+      // Design decision: the latest edition is authoritative. The 2022 edition (Rebis)
+      // has a publisher but an empty series — the series from the 1989 edition must NOT be backfilled.
       const wikitext = `
         {{tabela wydania
         |informacja1={{infowydanie|wydawca= klubówka |seria= Wielkie Serie SF|isbn= }}

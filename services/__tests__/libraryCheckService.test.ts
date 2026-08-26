@@ -12,7 +12,7 @@ import { NotionAdapter } from '../../notion.adapter';
 
 const mockedGet = axios.get as unknown as ReturnType<typeof vi.fn>;
 
-// Odwzorowanie realnej struktury OPAC (Prolib Integro): <article> + <dl> + ikona typu.
+// Mirrors the real OPAC structure (Prolib Integro): <article> + <dl> + type icon.
 const ICON = { book: 'pdt-p-book', movie: 'pdt-p-movie', audiobook: 'pdt-p-audiobook' } as const;
 const article = (id: string, title: string, author: string, icon: keyof typeof ICON) => `
 <article data-item-id="${id}" data-type="cataloged" class="fixed-height-article">
@@ -59,9 +59,9 @@ describe('LibraryCheckService', () => {
     const notion = makeNotion([{ id: '1', plTitle: 'Solaris', author: 'Stanisław Lem', zrodlo: [] }]);
     mockedGet.mockResolvedValue({
       data: opacPage(
-        article('a', 'Solaris', '', 'movie'),                     // film — ignorowany
-        article('b', 'Solaris', 'Lem, Stanisław', 'audiobook'),   // audiobook — ignorowany
-        article('c', 'Solaris', 'Lem, Stanisław (1921-2006)', 'book'), // książka — TO trafienie
+        article('a', 'Solaris', '', 'movie'),                     // film — ignored
+        article('b', 'Solaris', 'Lem, Stanisław', 'audiobook'),   // audiobook — ignored
+        article('c', 'Solaris', 'Lem, Stanisław (1921-2006)', 'book'), // book — THIS is the match
       ),
     });
 
@@ -78,9 +78,9 @@ describe('LibraryCheckService', () => {
     const notion = makeNotion([{ id: '1', plTitle: 'Gra o tron', author: 'George R. R. Martin', zrodlo: [] }]);
     mockedGet.mockResolvedValue({
       data: opacPage(
-        article('a', 'Gra o tron', 'Martin, George R. R. (1948- )', 'audiobook'), // audiobook — nie liczy się
+        article('a', 'Gra o tron', 'Martin, George R. R. (1948- )', 'audiobook'), // audiobook — does not count
         article('b', 'Game of thrones. Sezon 1 = Gra o tron', '', 'movie'),        // film
-        article('c', 'Rycerz Siedmiu Królestw', 'Martin, George R. R. (1948- )', 'book'), // inna książka Martina
+        article('c', 'Rycerz Siedmiu Królestw', 'Martin, George R. R. (1948- )', 'book'), // another Martin book
       ),
     });
 

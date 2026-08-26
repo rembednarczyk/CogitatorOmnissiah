@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { SyncState } from "../types";
 import { useSSEStream } from "./useSSEStream";
 
-// Dłuższy wariant komunikatu o zawieszeniu (dopisek o Diagnostyce) — specyficzny dla rytuałów sync.
+// Longer variant of the stall message (with the „Diagnostyka" note) — specific to sync rituals.
 const SYNC_STALL_MESSAGE =
   "Połączenie z serwerem zawisło (brak odpowiedzi przez 30 s). Możliwe buforowanie strumienia przez hosting. Odśwież stronę i spróbuj ponownie; jeśli się powtarza, uruchom Diagnostykę.";
 
@@ -42,8 +42,8 @@ export function useSync(endpoint: string, stopEndpoint: string, initialState: Pa
       startTime: Date.now()
     }));
 
-    // Wynik complete/error łapiemy do `outcome`, bo callback nie może bezpośrednio
-    // wyjść z startSync; sam transport (fetch + watchdog + SSE) żyje w useSSEStream.
+    // We capture the complete/error outcome into `outcome`, because the callback can't
+    // directly return out of startSync; the transport itself (fetch + watchdog + SSE) lives in useSSEStream.
     let outcome: { type: "complete"; result: any } | { type: "error" } | null = null;
     const streamResult = await run(params, (data) => {
       if (data.type === "status") {
@@ -78,8 +78,8 @@ export function useSync(endpoint: string, stopEndpoint: string, initialState: Pa
       return false;
     }
 
-    // Strumień zakończył się bez complete/error (np. anulowanie po stronie serwera) —
-    // nie zostawiaj UI w wiecznym stanie ładowania.
+    // The stream ended without complete/error (e.g. server-side cancellation) —
+    // don't leave the UI stuck in a loading state forever.
     setState(prev => ({ ...prev, loading: false, statusMessage: null, progress: null }));
     return false;
   }, [endpoint, run]);

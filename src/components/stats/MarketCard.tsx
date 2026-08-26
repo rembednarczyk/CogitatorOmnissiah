@@ -4,10 +4,10 @@ import { Coins, Tag, TrendingDown, Users, ExternalLink } from "lucide-react";
 import { MarketStats } from "../../hooks/useStats";
 
 /**
- * „Rynek" — statystyki z blobu VintedData: koszt skompletowania kolekcji (suma
- * najtańszych ofert chcianych książek), najtańsze okazje, świeże spadki cen,
- * sprzedawcy z największą liczbą chcianych książek (naturalne paczki). Actionable —
- * linki wiodą wprost do ofert.
+ * „Rynek" — statistics from the VintedData blob: cost to complete the collection (sum of
+ * the cheapest offers for wanted books), the cheapest deals, fresh price drops,
+ * sellers with the most wanted books (natural bundles). Actionable —
+ * links lead straight to the offers.
  */
 
 const money = (n: number, cur: string) => `${n.toLocaleString("pl-PL", { maximumFractionDigits: 0 })} ${cur}`;
@@ -41,7 +41,7 @@ export const MarketCard: React.FC<{ market: MarketStats }> = ({ market }) => {
         <p className="text-slate-400 text-sm italic text-center py-8">Brak składowanych ofert — uruchom Rytuał Skanowania Vinted.</p>
       ) : (
         <>
-          {/* Koszt skompletowania */}
+          {/* Completion cost */}
           <div className="p-4 rounded-2xl bg-gradient-to-br from-rose-500/10 to-slate-950/40 border border-rose-500/20">
             <div className="flex items-baseline gap-2">
               <span className="text-3xl font-bold font-display text-rose-200 tabular-nums">{money(market.completionCost, cur)}</span>
@@ -51,7 +51,7 @@ export const MarketCard: React.FC<{ market: MarketStats }> = ({ market }) => {
             </p>
           </div>
 
-          {/* Najtańsze okazje */}
+          {/* Cheapest deals */}
           <div className="space-y-2">
             <h4 className="text-[11px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-1.5"><Tag className="w-3 h-3" /> Najtańsze okazje</h4>
             <div className="space-y-1.5 max-h-[160px] overflow-y-auto pr-1 custom-scrollbar">
@@ -63,7 +63,7 @@ export const MarketCard: React.FC<{ market: MarketStats }> = ({ market }) => {
             </div>
           </div>
 
-          {/* Świeże spadki cen */}
+          {/* Fresh price drops */}
           {market.priceDrops.length > 0 && (
             <div className="space-y-2">
               <h4 className="text-[11px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-1.5"><TrendingDown className="w-3 h-3 text-emerald-400" /> Spadki cen</h4>
@@ -79,7 +79,7 @@ export const MarketCard: React.FC<{ market: MarketStats }> = ({ market }) => {
             </div>
           )}
 
-          {/* Sprzedawcy z paczką */}
+          {/* Sellers with a bundle */}
           {market.topSellers.length > 0 && (
             <div className="space-y-2">
               <h4 className="text-[11px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-1.5"><Users className="w-3 h-3" /> Sprzedawcy z paczką</h4>

@@ -5,7 +5,7 @@ interface Props {
   coverage: AwardCoverageStat[];
 }
 
-/** Siatka pokrycia poszczególnych nagród — procent zdobytych z całości. */
+/** Coverage grid of individual awards — percent obtained out of the total. */
 export const AwardCoverageGrid: React.FC<Props> = ({ coverage }) => (
   <div className="pt-4 space-y-3">
     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Pokrycie Poszczególnych Nagród</p>

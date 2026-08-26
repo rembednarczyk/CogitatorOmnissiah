@@ -21,31 +21,31 @@ import { orderByIds, moveId, distributeColumns } from "../utils/statsLayout";
 
 interface StatCard {
   id: string;
-  /** Karta na pełną szerokość siatki (md:col-span-2). */
+  /** Full-width grid card (md:col-span-2). */
   span2?: boolean;
   node: React.ReactNode;
 }
 
 export const StatsSection: React.FC = () => {
-  // Filie biblioteczne z konfiguracji (fallback: defaulty do czasu pobrania).
+  // Library branches from config (fallback: defaults until fetched).
   const cfg = useEffectiveConfig();
   const branches = cfg.library.branches;
   const { stats, loading, error, fetchStats, addBookToLibrarySection } = useStats();
   const { identifiedBooks, checkingLibrary, checkProgress, libraryError, checkLibrary, checkAllLibraries, stopLibraryCheck } = useLibraryCheck();
   const { markingId, markedIds, markAsRead } = useMarkAsRead({ identifiedBooks, addBookToLibrarySection, fetchStats });
 
-  // „Odśwież Dane" odświeża `stats` (fetchStats) ORAZ karty z własnym fetchem
-  // (Archiwum Cykli) — inkrement sygnału zmusza je do świeżego pobrania.
+  // „Odśwież Dane" refreshes `stats` (fetchStats) AND cards with their own fetch
+  // („Archiwum Cykli") — incrementing the signal forces them to refetch.
   const [refreshTick, setRefreshTick] = useState(0);
   const refreshAll = () => { fetchStats(); setRefreshTick((t) => t + 1); };
 
-  // Tryb układania kart (drag&drop) + stan bieżącego przeciągania.
+  // Card arranging mode (drag&drop) + current drag state.
   const [arranging, setArranging] = useState(false);
   const [dragId, setDragId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
 
-  // Liczba kolumn masonry zależna od breakpointu md (768px) — round-robin trzyma
-  // czytanie „wiersz po wierszu", więc kolumny muszą odpowiadać temu, co widać.
+  // Masonry column count depends on the md breakpoint (768px) — round-robin keeps
+  // reading „row by row", so the columns must match what's visible.
   const [cols, setCols] = useState(2);
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 768px)");
@@ -86,8 +86,8 @@ export const StatsSection: React.FC = () => {
 
   if (!stats) return null;
 
-  // Definicje kart w kolejności kodu (= domyślna). Każda ma stabilne `id`, po którym
-  // zapamiętujemy układ użytkownika (ui.statsOrder). Reorder nie zmienia treści kart.
+  // Card definitions in code order (= default). Each has a stable `id`, by which
+  // we remember the user's layout (ui.statsOrder). Reordering doesn't change card content.
   const cards: StatCard[] = [
     {
       id: "authors",
@@ -228,7 +228,7 @@ export const StatsSection: React.FC = () => {
     },
   ];
 
-  // Kolejność efektywna (zapis użytkownika + nowe karty na końcu) i wyszukiwanie po id.
+  // Effective order (user's save + new cards at the end) and lookup by id.
   const order = orderByIds(cards.map((c) => c.id), cfg.ui.statsOrder);
   const byId = new Map(cards.map((c) => [c.id, c]));
   const ordered = order.map((id) => byId.get(id)).filter((c): c is StatCard => Boolean(c));
@@ -239,8 +239,8 @@ export const StatsSection: React.FC = () => {
   };
   const exitArrange = () => { setArranging(false); setDragId(null); setOverId(null); };
 
-  // Jedna karta z opakowaniem DnD + nakładkami trybu układania (reużywalna w blokach
-  // round-robin i w kartach pełnej szerokości).
+  // A single card with the DnD wrapper + arranging-mode overlays (reusable in round-robin
+  // blocks and in full-width cards).
   const renderCard = (card: StatCard) => {
     const dragging = dragId === card.id;
     const isOver = arranging && overId === card.id && !!dragId && dragId !== card.id;
@@ -273,8 +273,8 @@ export const StatsSection: React.FC = () => {
     );
   };
 
-  // Segmentacja: karty pełnej szerokości (span2) przerywają blok round-robin i renderują
-  // się na całą szerokość; pozostałe idą w kolumny (i % cols) z niezależnym pakowaniem.
+  // Segmentation: full-width cards (span2) break the round-robin block and render
+  // at full width; the rest go into columns (i % cols) with independent packing.
   type Segment = { kind: "full"; card: StatCard } | { kind: "block"; cards: StatCard[] };
   const segments: Segment[] = [];
   let run: StatCard[] = [];
@@ -343,10 +343,10 @@ export const StatsSection: React.FC = () => {
         </div>
       )}
 
-      {/* Masonry „wiersz po wierszu": karty rozłożone round-robin (i % cols) na osobne
-          kolumny, każda pakuje się niezależnie (brak sprzężenia wysokości = brak dziur),
-          a odczyt lewo→prawo/góra→dół pozostaje 0,1,2,3,... Karta pełnej szerokości
-          (histogram dekad) przerywa blok i zajmuje całą szerokość. */}
+      {/* Masonry „row by row": cards laid out round-robin (i % cols) across separate
+          columns, each packing independently (no height coupling = no gaps),
+          while reading left→right/top→bottom stays 0,1,2,3,... A full-width card
+          (the decade histogram) breaks the block and takes the whole width. */}
       <div className="space-y-8">
         {segments.map((seg, si) =>
           seg.kind === "full" ? (

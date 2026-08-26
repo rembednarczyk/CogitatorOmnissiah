@@ -5,20 +5,20 @@ interface Props {
   title: string;
   count: number;
   icon: React.ReactNode;
-  /** Kolor nagłówka, np. "text-emerald-400". */
+  /** Header color, e.g. "text-emerald-400". */
   accentClass: string;
-  /** Klasy obramowania + tła wiersza, np. "border-emerald-500/30 bg-emerald-500/5". */
+  /** Row border + background classes, e.g. "border-emerald-500/30 bg-emerald-500/5". */
   rowClass: string;
-  /** Kolor tekstu wiersza (domyślnie slate-300). */
+  /** Row text color (defaults to slate-300). */
   rowTextClass?: string;
   items: string[];
-  /** Opcjonalny przycisk kopiowania listy (używane przez panel duplikatów). */
+  /** Optional list-copy button (used by the duplicates panel). */
   onCopy?: () => void;
   copied?: boolean;
   copyTitle?: string;
 }
 
-/** Panel listy podsumowania (Nowe / Zaktualizowane / Pominięte / Duplikaty) — jeden wzorzec. */
+/** Summary list panel (New / Updated / Skipped / Duplicates) — one pattern. */
 export const SummaryDetailPanel: React.FC<Props> = ({ title, count, icon, accentClass, rowClass, rowTextClass = "text-slate-300", items, onCopy, copied, copyTitle }) => (
   <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-6">
     <div className="flex items-center justify-between mb-4">

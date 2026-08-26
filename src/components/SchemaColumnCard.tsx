@@ -6,20 +6,20 @@ interface Props {
   name: string;
   value: any;
   isSelectType: boolean;
-  options: any[];        // posortowane opcje (dla select/multi_select)
+  options: any[];        // sorted options (for select/multi_select)
   isOverLimit: boolean;
   limit: number;
-  index: number;         // do animacji wejścia (delay)
-  updating: boolean;     // czy trwa mutacja tej kolumny
+  index: number;         // for the entry animation (delay)
+  updating: boolean;     // whether a mutation of this column is in progress
   newOptionValue: string;
   onNewOptionChange: (v: string) => void;
   onAdd: () => void;
   onDeleteRequest: (optionName: string) => void;
 }
 
-/** Karta jednej kolumny schematu: nazwa, licznik limitu, opcje + dodawanie/usuwanie. */
+/** Card for a single schema column: name, limit counter, options + add/remove. */
 export const SchemaColumnCard: React.FC<Props> = ({ name, value, isSelectType, options, isOverLimit, limit, index, updating, newOptionValue, onNewOptionChange, onAdd, onDeleteRequest }) => {
-  // „Autor" jest tylko do odczytu — nie pokazujemy licznika, przycisków usuwania ani warnu.
+  // „Autor" is read-only — we don't show the counter, delete buttons, or the warning.
   const isEditable = name !== "Autor";
 
   return (

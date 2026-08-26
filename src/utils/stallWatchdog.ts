@@ -1,18 +1,18 @@
 /**
- * Watchdog przeciw zawieszeniu strumienia SSE. Hosting/proxy potrafi zbuforować
- * odpowiedź tak, że `reader.read()` nigdy nie wraca — bez tego skan zostawiał
- * wieczny spinner. Serwer wysyła keepalive co 5 s, więc na zdrowym połączeniu
- * `arm()` (wołane per chunk przez consumeSSE) stale resetuje odliczanie i abort
- * nigdy nie następuje; po `timeoutMs` ciszy sygnał jest przerywany.
+ * Watchdog against SSE stream hangs. Hosting/proxy can buffer the
+ * response such that `reader.read()` never returns — without this the scan left
+ * an eternal spinner. The server sends keepalive every 5 s, so on a healthy connection
+ * `arm()` (called per chunk by consumeSSE) keeps resetting the countdown and the abort
+ * never happens; after `timeoutMs` of silence the signal is aborted.
  */
 export interface StallWatchdog {
-  /** Przekaż do `fetch(..., { signal })`. */
+  /** Pass to `fetch(..., { signal })`. */
   signal: AbortSignal;
-  /** Zresetuj odliczanie (wołaj po każdym odebranym fragmencie strumienia). */
+  /** Reset the countdown (call after every received stream fragment). */
   arm: () => void;
-  /** Zatrzymaj watchdog (wołaj w finally). */
+  /** Stop the watchdog (call in finally). */
   clear: () => void;
-  /** Czy watchdog przerwał połączenie z powodu ciszy. */
+  /** Whether the watchdog aborted the connection due to silence. */
   readonly stalled: boolean;
 }
 

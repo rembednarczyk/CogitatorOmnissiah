@@ -10,10 +10,10 @@ describe("buildCycleVolumeProperties", () => {
     expect(p["Cykl"].rich_text[0].text.content).toBe("Mistborn");
     expect(p["CyklNr"]).toEqual({ number: 3 });
     expect(p["Część cyklu"]).toEqual({ checkbox: true });
-    // Lp (kolumna tytułowa) = etykieta cyklu, tytuł żyje w „Tytuł polski".
+    // Lp (title column) = cycle label, the title lives in „Tytuł polski".
     expect(p["Lp"].title[0].text.content).toBe("Mistborn (3)");
     expect(p["Tytuł polski"].rich_text[0].text.content).toBe("Bohater Wieków");
-    // Tytuł polski linkuje do strony tomu w encyklopedii (jak oryginalne rytuały).
+    // Tytuł polski links to the volume's encyclopedia page (like the original rituals).
     expect(p["Tytuł polski"].rich_text[0].text.link).toEqual({
       url: "https://encyklopediafantastyki.pl/index.php?title=Bohater_Wiek%C3%B3w",
     });
@@ -41,19 +41,19 @@ describe("aggregateCycleRows", () => {
       mk("1", { plTitle: "Tom 1", cykl: "Mistborn", cyklNr: 1, zrodlo: ["Przeczytane", "Posiadam"], awards: ["Hugo"] }),
       mk("3", { plTitle: "Tom 3", cykl: "Mistborn", cyklNr: 3, kategoria: "Tom cyklu" }),
       mk("2", { plTitle: "Tom 2", cykl: "Mistborn", cyklNr: 2, kategoria: "Tom cyklu", zrodlo: ["Posiadam"] }),
-      mk("x", { plTitle: "Bez cyklu" }), // brak pola Cykl → pomijane
+      mk("x", { plTitle: "Bez cyklu" }), // no Cykl field → skipped
     ];
     const out = aggregateCycleRows(books);
     expect(out.totalCycles).toBe(1);
     const c = out.cycles[0];
     expect(c.cycle).toBe("Mistborn");
-    expect(c.volumes.map((v) => v.title)).toEqual(["Tom 1", "Tom 2", "Tom 3"]); // po CyklNr
+    expect(c.volumes.map((v) => v.title)).toEqual(["Tom 1", "Tom 2", "Tom 3"]); // by CyklNr
     expect(c.volumes[0].isAward).toBe(true);
     expect(c.volumes[1].isAward).toBe(false);
     expect(c.total).toBe(3);
     expect(c.owned).toBe(2);
     expect(c.read).toBe(1);
-    expect(c.missing).toBe(1); // Tom 3: ani owned ani read
+    expect(c.missing).toBe(1); // Tom 3: neither owned nor read
   });
 
   it("sortuje cykle malejąco po 'do zdobycia'", () => {
@@ -76,13 +76,13 @@ describe("aggregateCycleRows", () => {
       { url: "https://vinted.pl/items/1", price: p + 5 }, { url: "https://vinted.pl/items/2", price: p },
     ] });
     const out = aggregateCycleRows([
-      mk("1", { cykl: "C", cyklNr: 1, kategoria: "Tom cyklu", vintedData: vd(12) }),                       // do zdobycia + oferta 12
-      mk("2", { cykl: "C", cyklNr: 2, kategoria: "Tom cyklu", zrodlo: ["Posiadam"], vintedData: vd(20) }), // posiadana → poza kosztem
-      mk("3", { cykl: "C", cyklNr: 3, kategoria: "Tom cyklu" }),                                           // do zdobycia, brak oferty
+      mk("1", { cykl: "C", cyklNr: 1, kategoria: "Tom cyklu", vintedData: vd(12) }),                       // to acquire + offer 12
+      mk("2", { cykl: "C", cyklNr: 2, kategoria: "Tom cyklu", zrodlo: ["Posiadam"], vintedData: vd(20) }), // owned → excluded from cost
+      mk("3", { cykl: "C", cyklNr: 3, kategoria: "Tom cyklu" }),                                           // to acquire, no offer
     ]);
     const c = out.cycles[0];
     expect(c.volumes[0].vinted).toEqual({ price: 12, url: "https://vinted.pl/items/2", count: 2 });
-    expect(c.acquireCost).toBe(12); // tylko tom 1
+    expect(c.acquireCost).toBe(12); // only volume 1
     expect(c.acquirable).toBe(1);
   });
 });

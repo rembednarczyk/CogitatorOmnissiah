@@ -17,17 +17,17 @@ interface Props {
   onDragStart: (book: BookIndexEntry) => void;
   onDragEnd: () => void;
   onDropBook: (target: ShelfId) => void;
-  /** Precyzyjny drop: wstaw przeciąganą książkę przed `insertBeforeId` (null = koniec półki). */
+  /** Precise drop: insert the dragged book before `insertBeforeId` (null = end of shelf). */
   onPreciseDrop?: (target: ShelfId, insertBeforeId: string | null) => void;
-  /** Przeciągana książka (do walidacji dekady precyzyjnego dropu); null = brak przeciągania. */
+  /** The dragged book (for decade validation of the precise drop); null = not dragging. */
   draggingBook: BookIndexEntry | null;
-  /** Knob `ui.preciseShelfDrop` — wyłączony = tylko globalny drop na ramę. */
+  /** Knob `ui.preciseShelfDrop` — disabled = only a global drop onto the frame. */
   preciseEnabled?: boolean;
-  /** Gdy podane: regał ma STAŁĄ wysokość tylu rzędów i dzieli się na segmenty „Regał I/N". */
+  /** When provided: the shelf has a FIXED height of this many rows and splits into „Regał I/N" segments. */
   pageSize?: number;
 }
 
-/** Jeden regał: drewniany korpus + FIZYCZNE rozłożenie woluminów (wypełnione półki, oparte pochyły). */
+/** One shelf: wooden body + PHYSICAL layout of volumes (filled shelves, leaning tilted ones). */
 export const Shelf: React.FC<Props> = ({ shelfId, title, icon, accent, books, onDragStart, onDragEnd, onDropBook, onPreciseDrop, draggingBook, preciseEnabled = true, pageSize }) => {
   const dragging = draggingBook !== null;
   const [over, setOver] = useState(false);
@@ -35,15 +35,15 @@ export const Shelf: React.FC<Props> = ({ shelfId, title, icon, accent, books, on
   const wellRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
 
-  // Kursor wstawienia + rozstrzygnięty cel (beforeId) — czyszczone z końcem przeciągania.
+  // Insertion caret + resolved target (beforeId) — cleared when dragging ends.
   const [caret, setCaret] = useState<(GapCaret & { beforeId: string | null }) | null>(null);
   useEffect(() => { if (!dragging) setCaret(null); }, [dragging]);
 
   const preciseActive = preciseEnabled && dragging && !!onPreciseDrop;
-  // Sekwencja półki bez przeciąganej książki (przy przeciąganiu w obrębie tej samej półki).
+  // The shelf sequence without the dragged book (when dragging within the same shelf).
   const seqSans = draggingBook ? books.filter((b) => b.id !== draggingBook.id) : books;
 
-  /** Granica szczeliny → cel wstawienia; undefined = no-op (szczelina przy samej przeciąganej). */
+  /** Gap boundary → insertion target; undefined = no-op (gap right next to the dragged one). */
   const resolveBoundary = (b: GapBoundary): string | null | undefined => {
     if (b.beforeId) return b.beforeId === draggingBook?.id ? undefined : b.beforeId;
     if (b.afterId) {
@@ -90,7 +90,7 @@ export const Shelf: React.FC<Props> = ({ shelfId, title, icon, accent, books, on
   const { items, slotByKey } = buildShelfItems(books);
   const rows = width > 0 ? packAndLayout(items, { rowWidth: width }) : [];
 
-  // Segmenty „Regał I/N" przy stałej wysokości.
+  // „Regał I/N" segments at fixed height.
   const segments = pageSize ? chunk(rows, pageSize) : [rows];
   const pageCount = Math.max(1, segments.length);
   const cur = Math.min(page, pageCount - 1);
@@ -118,7 +118,7 @@ export const Shelf: React.FC<Props> = ({ shelfId, title, icon, accent, books, on
 
   return (
     <div className="relative">
-      {/* Świeca na szczycie regału */}
+      {/* Candle on top of the shelf */}
       <div className="absolute -top-[26px] left-8 z-20 pointer-events-none" aria-hidden>
         <div className="w-[9px] h-[24px] mx-auto rounded-[2px] bg-gradient-to-b from-[#e8dcc0] via-[#d8c8a2] to-[#b9a271]" />
         <div className="absolute -top-[13px] left-1/2 -translate-x-1/2 w-[8px] h-[13px] rounded-[50%_50%_45%_45%/60%_60%_40%_40%]"
@@ -150,7 +150,7 @@ export const Shelf: React.FC<Props> = ({ shelfId, title, icon, accent, books, on
         )}
       </ShelfFrame>
 
-      {/* Cokół / nóżki — regał „stoi na podłodze" */}
+      {/* Plinth / feet — the shelf „stands on the floor" */}
       <div className="mx-2 h-[10px] rounded-b-[6px]" style={{ background: "var(--sk-plinth)", boxShadow: "0 10px 16px -6px rgba(0,0,0,.7)" }} aria-hidden />
       <div className="flex justify-between px-6" aria-hidden>
         {[0, 1].map((i) => <div key={i} className="w-8 h-[9px] rounded-b-[4px]" style={{ background: "var(--sk-foot)" }} />)}

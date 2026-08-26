@@ -4,32 +4,32 @@ import { DividerLevel, DividerDir } from "../../utils/shelfLayout";
 import { CogSigil } from "./ShelfOrnaments";
 
 interface Props {
-  label: string;      // np. „1950–1959" (w przyszłości litera alfabetu / nazwisko autora)
-  width?: number;     // szerokość deseczki (footprint na półce)
-  height?: number;    // wysokość toru rzędu (wyrównanie tabliczki u góry)
-  /** Poziom tabliczki: „top" (domyślnie) lub „bottom", gdy górna kolidowałaby z sąsiadem. */
+  label: string;      // e.g. „1950–1959" (in the future an alphabet letter / author's surname)
+  width?: number;     // divider board width (footprint on the shelf)
+  height?: number;    // row track height (aligns the plate at the top)
+  /** Plate level: „top" (default) or „bottom" when the top one would collide with a neighbor. */
   plate?: DividerLevel;
-  /** Kierunek rozwijania tabliczki: „right" (domyślnie) lub „left" przy prawej krawędzi półki. */
+  /** Plate expansion direction: „right" (default) or „left" at the right edge of the shelf. */
   dir?: DividerDir;
-  /** Warstwa renderu: „board" (deseczka+sygile+żyła) albo „plate" (sama tabliczka).
-   *  `ShelfRow` maluje wszystkie deseczki, a POTEM wszystkie tabliczki, wyżej — dzięki
-   *  temu tabliczka nigdy nie chowa się pod deseczką sąsiada. */
+  /** Render layer: „board" (board+sigils+vein) or „plate" (just the plate).
+   *  `ShelfRow` paints all boards, and THEN all plates, on top — so
+   *  the plate never hides under a neighbor's board. */
   part?: "board" | "plate";
 }
 
-/** Wysokość widocznej deseczki — spójna z `DIVIDER_H` w `shelfLayout` (podpora fizyki). */
+/** Height of the visible board — consistent with `DIVIDER_H` in `shelfLayout` (physics support). */
 export const BOARD_H = 168;
 
 /**
- * Generyczna **przekładka sekcji** w stylu noosferycznym: cienka **deseczka** z żyłą
- * danych i sygilami koła u góry i u dołu (`part="board"`) + pozioma **tabliczka-runa**
- * rocznika (`part="plate"`). Warstwy są rozdzielone, bo `ShelfRow` maluje najpierw
- * wszystkie deseczki, a potem wszystkie tabliczki wyżej (tabliczka zawsze na wierzchu).
- * Rozmieszczenie liczy `assignDividerPlacement`: tabliczka domyślnie u góry i w prawo,
- * przy wąskiej dekadzie → `plate="bottom"` (siada na krawędzi półki, by nie zasłaniać
- * tytułów), a przy prawej krawędzi półki → `dir="left"`. Klasa `shelf-divider` pozwala
- * skórze przemalować przekładkę (Holo+ = przytłumiony amber, w tonie oprawy Regału).
- * Nieprzeciągalna.
+ * A generic **section divider** in the noospheric style: a thin **board** with a data
+ * vein and cog sigils at the top and bottom (`part="board"`) + a horizontal **rune-plate**
+ * of the year (`part="plate"`). The layers are separated, because `ShelfRow` paints first
+ * all boards, and then all plates on top (the plate is always on top).
+ * The placement is computed by `assignDividerPlacement`: the plate defaults to top and right,
+ * for a narrow decade → `plate="bottom"` (sits on the shelf edge so it doesn't cover
+ * titles), and at the right edge of the shelf → `dir="left"`. The `shelf-divider` class lets
+ * the skin repaint the divider (Holo+ = muted amber, in the tone of the Regał frame).
+ * Not draggable.
  */
 export const ShelfDivider: React.FC<Props> = ({ label, width = 10, height = SHELF_ROW_H, plate = "top", dir = "right", part = "board" }) => {
   const atBottom = plate === "bottom";
@@ -38,7 +38,7 @@ export const ShelfDivider: React.FC<Props> = ({ label, width = 10, height = SHEL
     <div className="shelf-divider relative select-none" style={{ width, height }} title={label} aria-hidden>
       {part === "board" ? (
         <>
-          {/* cienka deseczka rozgraniczająca (dół toru) */}
+          {/* thin separating board (bottom of the track) */}
           <div
             className="absolute bottom-0 left-0 rounded-[2px_2px_1px_1px]"
             style={{
@@ -47,18 +47,18 @@ export const ShelfDivider: React.FC<Props> = ({ label, width = 10, height = SHEL
               boxShadow: "inset 1px 0 0 rgba(var(--noo-glow),.35), inset -1px 0 2px rgba(0,0,0,.6), 0 6px 10px -6px rgba(0,0,0,.6)",
             }}
           >
-            {/* cog-finial na szczycie deseczki */}
+            {/* cog-finial at the top of the board */}
             <CogSigil className="absolute -top-[7px] left-1/2 -translate-x-1/2 w-[13px] h-[13px] drop-shadow-[0_0_3px_rgba(var(--noo-glow),.6)]" />
-            {/* cog-finial u dołu deseczki (na linii półki) */}
+            {/* cog-finial at the bottom of the board (on the shelf line) */}
             <CogSigil className="absolute -bottom-[7px] left-1/2 -translate-x-1/2 w-[13px] h-[13px] drop-shadow-[0_0_3px_rgba(var(--noo-glow),.6)]" />
-            {/* świecąca żyła danych */}
+            {/* glowing data vein */}
             <div
               className="noo-data absolute left-1/2 -translate-x-1/2 rounded-[2px]"
               style={{ top: 14, bottom: 8, width: 2, background: "linear-gradient(180deg, rgba(var(--noo-glow),.9), rgba(var(--noo-glow),.15))", boxShadow: "0 0 6px rgba(var(--noo-glow),.8)" }}
             />
           </div>
 
-          {/* projekcyjna smużka światła łącząca tabliczkę z deseczką (kierunek zależny od poziomu) */}
+          {/* projected light streak connecting the plate to the board (direction depends on the level) */}
           <div
             className="noo-data absolute"
             style={{
@@ -71,9 +71,9 @@ export const ShelfDivider: React.FC<Props> = ({ label, width = 10, height = SHEL
           />
         </>
       ) : (
-        /* tabliczka-runa rocznika, krawędzią przy deseczce; u góry domyślnie, u dołu
-           (na linii półki, nachodzi na deskę) gdy górna kolidowałaby z sąsiadem;
-           rozwija się w prawo, a przy prawej krawędzi półki w lewo */
+        /* year rune-plate, its edge next to the board; at the top by default, at the bottom
+           (on the shelf line, overlapping the board) when the top one would collide with a neighbor;
+           expands to the right, and to the left at the right edge of the shelf */
         <div
           className="absolute flex items-center gap-[6px] whitespace-nowrap font-mono rounded-[3px] px-[9px] pt-[3px] pb-[4px]"
           style={{

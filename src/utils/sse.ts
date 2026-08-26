@@ -1,14 +1,14 @@
 import { SyncEvent } from "../types";
 
 /**
- * Wspólny odczyt strumienia SSE dla wszystkich hooków (useSync, useLibraryCheck,
- * useVintedCheck). Buforuje fragmenty między odczytami TCP — pojedyncze zdarzenie
- * SSE bywa rozcięte na granicy chunku, a `JSON.parse` na połówce wywala skan.
- * Dzieli po `\n\n`, zachowuje resztę, parsuje linie `data: ` i woła `onEvent`.
+ * Shared SSE stream reader for all hooks (useSync, useLibraryCheck,
+ * useVintedCheck). Buffers fragments between TCP reads — a single SSE event
+ * is sometimes cut at a chunk boundary, and `JSON.parse` on a half crashes the scan.
+ * Splits on `\n\n`, keeps the remainder, parses `data: ` lines and calls `onEvent`.
  *
- * `onEvent` może zwrócić `true` (lub `"stop"`), by zakończyć konsumpcję wcześniej
- * (np. po zdarzeniu `complete`/`error`). `onChunk` odpala się po każdym odczycie —
- * useSync używa go do resetu watchdoga (keepalive też liczy się jako aktywność).
+ * `onEvent` may return `true` (or `"stop"`) to end consumption early
+ * (e.g. after a `complete`/`error` event). `onChunk` fires after every read —
+ * useSync uses it to reset the watchdog (keepalive also counts as activity).
  */
 export async function consumeSSE(
   body: ReadableStream<Uint8Array> | null | undefined,
@@ -46,11 +46,11 @@ export async function consumeSSE(
       }
     }
   } finally {
-    // Gdy wychodzimy wcześniej (stop na complete/error albo rzut z onEvent),
-    // strumień fetch zostałby zablokowany i nieanulowany. Anuluj czytnik, by
-    // zwolnić połączenie — poza przypadkiem naturalnego końca (done).
+    // When we exit early (stop on complete/error or a throw from onEvent),
+    // the fetch stream would be left locked and uncancelled. Cancel the reader to
+    // free the connection — except on the natural end (done).
     if (!finished) {
-      try { await reader.cancel(); } catch { /* czytnik może nie wspierać cancel */ }
+      try { await reader.cancel(); } catch { /* the reader may not support cancel */ }
     }
   }
 }

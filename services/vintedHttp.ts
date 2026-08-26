@@ -1,17 +1,17 @@
 import { getRandomUserAgent } from "../scrapingClient";
 
-/** Rozgrzana sesja Vinted: ustalony User-Agent + ciasteczka (m.in. Cloudflare `cf_clearance`). */
+/** A warmed-up Vinted session: a fixed User-Agent + cookies (incl. Cloudflare `cf_clearance`). */
 export interface VintedSession {
-  /** UA użyty do primingu — MUSI być spójny z żądaniami niosącymi ciasteczko (cf_clearance wiąże się z UA). */
+  /** UA used for priming — MUST be consistent with requests carrying the cookie (cf_clearance is bound to the UA). */
   userAgent: string;
-  /** Nagłówek `Cookie` (np. „cf_clearance=…; anon_id=…"). Pusty = brak sesji. */
+  /** The `Cookie` header (e.g. „cf_clearance=…; anon_id=…"). Empty = no session. */
   cookie: string;
 }
 
 /**
- * Nagłówki żądania Vinted. Bez sesji: świeży losowy User-Agent na wywołanie (pula z
- * konfiguracji). Z rozgrzaną sesją: STAŁY UA + `Cookie` (spójność wymagana przez
- * Cloudflare — cf_clearance jest związany z UA, więc rotacja UA unieważniłaby ciasteczko).
+ * Vinted request headers. Without a session: a fresh random User-Agent per call (pool from
+ * config). With a warmed-up session: a FIXED UA + `Cookie` (consistency required by
+ * Cloudflare — cf_clearance is bound to the UA, so rotating the UA would invalidate the cookie).
  */
 export function vintedRequestHeaders(uaPool?: string[], session?: VintedSession) {
   const headers: Record<string, string> = {
@@ -33,10 +33,10 @@ export function vintedRequestHeaders(uaPool?: string[], session?: VintedSession)
 }
 
 /**
- * Odczyt pamięci procesu (MB). Strony Vinted to ~7 MB HTML każda — na hostingu z
- * limitem RAM (Render free = 512 MB) powtarzane piki przy parsowaniu mogą wywołać
- * OOM-kill procesu, co urywa SSE i „ubija" skan przy w miarę stałej liczbie prób.
- * Dołączamy `rssMb`/`heapMb` do debug każdej próby, żeby to zobaczyć w panelu logów.
+ * Reads process memory (MB). Vinted pages are ~7 MB of HTML each — on hosting with
+ * a RAM cap (Render free = 512 MB) repeated spikes during parsing can trigger an
+ * OOM-kill of the process, which cuts the SSE and „kills" the scan at a roughly constant number of tries.
+ * We attach `rssMb`/`heapMb` to each attempt's debug so this is visible in the logs panel.
  */
 export function memMb() {
   const m = process.memoryUsage();
@@ -44,16 +44,16 @@ export function memMb() {
 }
 
 /**
- * Odczekanie między żądaniami z jitterem (domyślnie 3–5 s). Stosowane na KAŻDEJ
- * ścieżce (też przy braku wyników) — burst żądań to prosta droga do bloku Cloudflare.
+ * Wait between requests with jitter (default 3–5 s). Applied on EVERY
+ * path (including no results) — a burst of requests is a straight road to a Cloudflare block.
  */
 export function throttle(minMs = 3000, jitterMs = 2000): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, minMs + Math.floor(Math.random() * jitterMs)));
 }
 
 /**
- * Mapuje błąd HTTP Vinted na komunikat dla UI + ewentualne dodatkowe odczekanie.
- * 429 = rate-limit (odczekaj 5 s), 403 = Cloudflare (leć dalej), reszta = timeout/inne.
+ * Maps a Vinted HTTP error to a UI message + an optional extra wait.
+ * 429 = rate-limit (wait 5 s), 403 = Cloudflare (carry on), the rest = timeout/other.
  */
 export function classifyVintedError(err: any, title: string): { message: string; waitMs: number } {
   const status = err?.response?.status;

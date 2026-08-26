@@ -33,11 +33,11 @@ export class SchemaValidationService {
         { name: "Nagroda", type: "multi_select" },
         { name: "Źródło", type: "multi_select" },
         { name: "Część cyklu", type: "checkbox" },
-        // Kolumny cykli (tomy jako wiersze) — dotąd tworzone leniwie przez Rytuał Żniw.
+        // Cycle columns (volumes as rows) — until now created lazily by the Rytuał Żniw.
         { name: "Kategoria", type: "select" },
         { name: "Cykl", type: "rich_text" },
         { name: "CyklNr", type: "number" },
-        // Domknięcie starego długu — dotąd tworzone leniwie przez skaner/regał.
+        // Closing old debt — until now created lazily by the scanner/shelf.
         { name: "VintedData", type: "rich_text" },
         { name: "ShelfOrder", type: "number" }
       ];

@@ -1,13 +1,13 @@
 import { HarvestCycle } from "../hooks/useCyclesHarvest";
 
 /**
- * Sortowanie kart „Archiwum Cykli":
- * - `easywins` — najmniej DO PRZECZYTANIA na górze (`total − read` rosnąco) → „szybkie
- *   zwycięstwa"; ukończone (przeczytane w całości) spadają na sam dół. Remis: mniej do
- *   zdobycia, potem nazwa.
- * - `acquire` — najwięcej BRAKÓW na górze (`missing` = ani posiadane, ani przeczytane) —
- *   dawne zachowanie (co jeszcze skompletować).
- * Czysta funkcja (zwraca kopię).
+ * Sorting of „Archiwum Cykli" cards:
+ * - `easywins` — fewest TO READ on top (`total − read` ascending) → quick
+ *   wins; completed (fully read) drop to the very bottom. Tie: fewer to
+ *   acquire, then name.
+ * - `acquire` — most MISSING on top (`missing` = neither owned nor read) —
+ *   the old behavior (what's left to complete).
+ * Pure function (returns a copy).
  */
 export type CycleSortMode = "easywins" | "acquire";
 
@@ -19,7 +19,7 @@ export function sortCycles(cycles: HarvestCycle[], mode: CycleSortMode): Harvest
   const copy = [...cycles];
   if (mode === "easywins") {
     return copy.sort((a, b) => {
-      // Ukończone zawsze na dół (nic nie zostało do nadrobienia).
+      // Completed always at the bottom (nothing left to catch up on).
       if (isDone(a) !== isDone(b)) return isDone(a) ? 1 : -1;
       return toRead(a) - toRead(b) || toAcquire(a) - toAcquire(b) || a.cycle.localeCompare(b.cycle, "pl");
     });

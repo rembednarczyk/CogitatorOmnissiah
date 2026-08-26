@@ -4,23 +4,23 @@ import { createLogger } from "../logger";
 
 const log = createLogger("Config");
 
-/** Krótki cache efektywnej konfiguracji — rytuały czytają ją na starcie przebiegu. */
+/** Short cache of the effective config — rituals read it at the start of a run. */
 const CONFIG_CACHE_TTL_MS = 30 * 1000;
 
-/** Twardy limit rozmiaru blobu w opisie kolumny (diff od defaultów jest zwykle < 1 KB). */
+/** Hard cap on the blob size in the column description (the diff from defaults is usually < 1 KB). */
 const MAX_BLOB_CHARS = 1900;
 
 /**
- * Serwis konfiguracji: efektywna konfiguracja = defaulty z `configSchema` + diff
- * składowany w Notion (opis kolumny `AppConfig`). Odczyt jest odporny: uszkodzony
- * blob / brak kolumny / błąd Notion → defaulty (aplikacja nigdy nie pada od configu).
+ * Config service: effective config = defaults from `configSchema` + diff
+ * stored in Notion (description of the `AppConfig` column). Reads are resilient: a corrupt
+ * blob / missing column / Notion error → defaults (the app never crashes on config).
  */
 export class ConfigService {
   private cached: { cfg: AppConfig; expiresAt: number } | null = null;
 
   constructor(private notion: NotionAdapter) {}
 
-  /** Efektywna konfiguracja (defaulty + nadpisania). `force` pomija cache. */
+  /** Effective config (defaults + overrides). `force` bypasses the cache. */
   async getConfig(force = false): Promise<AppConfig> {
     if (!force && this.cached && this.cached.expiresAt > Date.now()) return this.cached.cfg;
     let cfg: AppConfig;
@@ -36,8 +36,8 @@ export class ConfigService {
   }
 
   /**
-   * Zapis: wejście przechodzi przez mergeConfig (clampy/typy), składujemy TYLKO diff
-   * od defaultów. Zwraca efektywną konfigurację po zapisie.
+   * Save: input goes through mergeConfig (clamps/types), we store ONLY the diff
+   * from defaults. Returns the effective config after the save.
    */
   async saveConfig(input: unknown): Promise<AppConfig> {
     const cfg = mergeConfig(input);

@@ -9,7 +9,7 @@ interface SyncSummaryResultProps {
   onClearFullResults?: () => void;
 }
 
-/** Rozdziela widok podsumowania: agregat „Wielkiego Rytuału" vs pojedynczy rytuał. */
+/** Splits the summary view: „Wielki Rytuał" aggregate vs a single ritual. */
 export const SyncSummaryResult: React.FC<SyncSummaryResultProps> = ({ syncs, fullSyncResults, onClearFullResults }) => {
   const activeSync = syncs.find(s => s.state.result && s.endpoint !== "/api/sync-integrity");
   if (!activeSync && !fullSyncResults) return null;

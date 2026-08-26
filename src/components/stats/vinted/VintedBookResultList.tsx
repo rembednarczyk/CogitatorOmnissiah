@@ -43,7 +43,7 @@ const OfferRow: React.FC<{ item: Offer; result: VintedResult; isCheapest: boolea
         )}
       </div>
 
-      {/* Cena — najmocniej eksponowana, stała szerokość, nie zawija się */}
+      {/* Price — most prominently displayed, fixed width, does not wrap */}
       <div className={`shrink-0 text-right tabular-nums font-bold leading-none ${hasPrice ? (isCheapest ? "text-emerald-300 text-lg" : "text-rose-300 text-base") : "text-slate-500 text-[11px] font-medium italic"}`}>
         {hasPrice ? formatVintedPrice(item.priceValue, item.currency) : "cena w ofercie"}
         {isCheapest && hasPrice && <div className="text-[8px] text-emerald-400/80 uppercase tracking-widest font-bold mt-0.5">najtańsza</div>}
@@ -53,7 +53,7 @@ const OfferRow: React.FC<{ item: Offer; result: VintedResult; isCheapest: boolea
   );
 };
 
-/** Siatka wyników per książka (kafelek + oferty posortowane od najtańszej). */
+/** Results grid per book (tile + offers sorted cheapest first). */
 export const VintedBookResultList: React.FC<{ results: VintedResult[] }> = ({ results }) => (
   <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="grid grid-cols-1 lg:grid-cols-2 gap-4 overflow-hidden">
     {sortResultsByCheapest(results).map((result) => {

@@ -41,7 +41,7 @@ export const getWikiLastUpdate = async (req: Request, res: Response) => {
 export const getDiagnostics = async (req: Request, res: Response) => {
   try {
     const report = await syncManager.runDiagnostics();
-    // Zwróć 200 zawsze — raport sam opisuje status; ułatwia odczyt w przeglądarce.
+    // Always return 200 — the report itself describes the status; makes it easier to read in the browser.
     res.json(report);
   } catch (error: any) {
     log.error("Diagnostics endpoint failed", { message: error?.message });
@@ -63,7 +63,7 @@ export const getConfig = (req: Request, res: Response) => {
   });
 };
 
-/** Efektywna konfiguracja aplikacji (defaulty + nadpisania z Notion) — zakładka „Konfiguracja". */
+/** Effective app configuration (defaults + overrides from Notion) — the „Konfiguracja" tab. */
 export const getAppConfig = async (req: Request, res: Response) => {
   try {
     res.json(await configService.getConfig(req.query.force === "1"));
@@ -72,7 +72,7 @@ export const getAppConfig = async (req: Request, res: Response) => {
   }
 };
 
-/** Zapis konfiguracji: wejście przechodzi clampy w configSchema; składowany jest diff od defaultów. */
+/** Config save: input passes through the clamps in configSchema; the diff from defaults is stored. */
 export const updateAppConfig = async (req: Request, res: Response) => {
   try {
     res.json(await configService.saveConfig(req.body));
@@ -94,8 +94,8 @@ export const getNotionSchema = async (req: Request, res: Response) => {
   }
 };
 
-// Ten endpoint edytuje wyłącznie opcje kolumn select/multi_select — waliduj
-// wejście zanim trafi do Notion (mutacja schematu jest operacją uprzywilejowaną).
+// This endpoint edits only select/multi_select column options — validate
+// the input before it reaches Notion (a schema mutation is a privileged operation).
 const ALLOWED_SCHEMA_TYPES = new Set(["select", "multi_select"]);
 
 export const updateNotionSchema = async (req: Request, res: Response) => {
@@ -134,8 +134,8 @@ const stopSyncTask = (res: Response, message: string) => {
   }
 };
 
-// Zatrzymanie jest globalne (anuluje aktywne zadanie, jakiekolwiek by nie było) —
-// handlery różnią się wyłącznie komunikatem. Generujemy je z fabryki.
+// Stopping is global (cancels the active task, whatever it is) —
+// the handlers differ only by message. We generate them from a factory.
 const makeStopHandler = (message: string) =>
   (_req: Request, res: Response) => stopSyncTask(res, message);
 
@@ -164,8 +164,8 @@ export const runSync = async (req: Request, res: Response) => {
   );
 };
 
-// Rytuały bez parametrów żądania mają identyczny handler — różnią się tylko
-// nazwą zadania i etykietą błędu. Generujemy je z tabeli zamiast powielać.
+// Rituals without request parameters have an identical handler — they differ only in
+// the task name and error label. We generate them from a table instead of duplicating.
 const makeSyncHandler = (task: SyncTaskName, errorLabel: string) =>
   async (req: Request, res: Response) => {
     await executeSyncTask(req, res, (sendEvent) => syncManager.run(task, sendEvent), errorLabel);
@@ -185,9 +185,9 @@ export const stopPurifySync = makeStopHandler("Zatrzymano rytuał puryfikacji.")
 
 export const stopSchemaSync = makeStopHandler("Zatrzymano inicjalizację schematu.");
 
-// Znaczniki „Źródło", które wolno dopisać z tego endpointu. Ograniczone do
-// znanego zbioru — endpoint jedynie oznacza pozycję (przeczytana / dostępna w
-// danej filii), nie może wstrzykiwać dowolnych tagów do bazy Notion.
+// „Źródło" tags that may be added from this endpoint. Limited to
+// a known set — the endpoint only marks an entry (read / available at
+// a given branch), it cannot inject arbitrary tags into the Notion base.
 const ALLOWED_SOURCE_TAGS = new Set(["Przeczytane", "Posiadam", "Biblioteka", "Biblioteka 9"]);
 
 export const markAsRead = async (req: Request, res: Response) => {
@@ -209,8 +209,8 @@ export const markAsRead = async (req: Request, res: Response) => {
 };
 
 /**
- * Zapis ręcznych kluczy porządku regału (precyzyjny drag&drop). Partia mała
- * (1 wpis + ewentualna renumeracja remisów roku) — twardy limit 40 chroni Notion.
+ * Saving manual shelf-order keys (precise drag&drop). Small batch
+ * (1 entry + optional renumbering of year ties) — a hard limit of 40 protects Notion.
  */
 export const updateShelfOrders = async (req: Request, res: Response) => {
   try {
@@ -255,7 +255,7 @@ export const checkVintedAvailability = async (req: Request, res: Response) => {
     return res.status(400).json({ error: "Brak kluczy API Notion." });
   }
 
-  // Wznawianie: front może poprosić o pominięcie książek skanowanych w ostatnich N godzin.
+  // Resume: the frontend can ask to skip books scanned within the last N hours.
   const skipRaw = req.body?.skipScannedWithinHours;
   const skipScannedWithinHours = typeof skipRaw === "number" && skipRaw > 0 ? Math.min(skipRaw, 24 * 365) : undefined;
 
@@ -273,8 +273,8 @@ export const resolveVintedSellers = async (req: Request, res: Response) => {
   if (!process.env.NOTION_API_KEY || !process.env.NOTION_DATABASE_ID) {
     return res.status(400).json({ error: "Brak kluczy API Notion." });
   }
-  // Bez capu domyślnie — resolucja jest przyrostowa i wznawialna, więc jeden przebieg
-  // ustala wszystkie brakujące, ile zdąży. Opcjonalny `cap` z body ogranicza przebieg.
+  // No cap by default — resolution is incremental and resumable, so one pass
+  // resolves all the missing ones it can. An optional `cap` from the body limits the pass.
   const capRaw = req.body?.cap;
   const cap = typeof capRaw === "number" && capRaw > 0 ? capRaw : undefined;
 
@@ -300,9 +300,9 @@ export const getVintedStored = async (_req: Request, res: Response) => {
 };
 
 /**
- * Podgląd cyklu dla książki (Skryptorium) — pobiera stronę wiki na żądanie, buduje
- * listę tomów i krzyżuje z bazą. NIE zapisuje niczego do Notion. 404 = książka nie
- * jest w cyklu / brak danych na wiki.
+ * Cycle preview for a book (Skryptorium) — fetches the wiki page on demand, builds
+ * the volume list and cross-refs the base. Does NOT write anything to Notion. 404 = the book
+ * is not in a cycle / no data on the wiki.
  */
 export const getCycle = async (req: Request, res: Response) => {
   const title = typeof req.query.title === "string" ? req.query.title.trim() : "";

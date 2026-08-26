@@ -2,7 +2,7 @@ import React from "react";
 import { motion } from "motion/react";
 import { formatETA } from "../../../utils/time";
 
-/** Pasek postępu aktywnego skanu (message + ETA + current/total). */
+/** Progress bar for the active scan (message + ETA + current/total). */
 export const VintedScanProgress: React.FC<{ progress: any }> = ({ progress }) => {
   if (!progress) return null;
   return (

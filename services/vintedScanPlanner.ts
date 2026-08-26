@@ -1,10 +1,10 @@
 import { NotionBook } from "../src/types";
 import { parseVintedData } from "./vintedStore";
 
-/** Znaczniki „Źródło" wykluczające książkę ze skanu (już mamy / czytamy). */
+/** „Źródło" markers that exclude a book from the scan (already have / reading). */
 export const EXCLUDED_SOURCES = ["Posiadam", "Przeczytane", "Audioteka", "Biblioteka", "Biblioteka 9"];
 
-/** Czas ostatniego skanu książki w ms; nigdy-skanowane = -Infinity (najstarsze → najwyższy priorytet). */
+/** Last scan time of a book in ms; never-scanned = -Infinity (oldest → highest priority). */
 export function scannedMs(book: NotionBook): number {
   const at = parseVintedData(book.vintedData)?.scannedAt;
   const t = at ? Date.parse(at) : NaN;
@@ -13,16 +13,16 @@ export function scannedMs(book: NotionBook): number {
 
 export interface ScanPlan {
   candidates: NotionBook[];
-  /** Ile pominięto przez okno „Kontynuuj" (skanowane < N h). */
+  /** How many were skipped by the „Kontynuuj" window (scanned < N h ago). */
   skipped: number;
 }
 
 /**
- * Czysty plan skanu: (1) odsiej niekandydatów (wykluczone źródła / brak tytułu PL),
- * (2) opcjonalnie pomiń skanowane w ostatnich `skipScannedWithinHours` (bieżąca partia),
- * (3) posortuj OD NAJSTARSZYCH (nigdy-skanowane pierwsze) — przerwany przebieg zawsze
- * posuwa najbardziej nieaktualne dane, a „Kontynuuj" domyka partię zamiast dublować świeże.
- * `now` wstrzykiwalny dla testów; `excludedSources` z konfiguracji (default = dotychczasowa lista).
+ * Pure scan plan: (1) filter out non-candidates (excluded sources / no PL title),
+ * (2) optionally skip ones scanned within the last `skipScannedWithinHours` (current batch),
+ * (3) sort OLDEST-FIRST (never-scanned first) — an interrupted run always
+ * advances the most stale data, and „Kontynuuj" closes out the batch instead of re-doing fresh ones.
+ * `now` injectable for tests; `excludedSources` from config (default = the existing list).
  */
 export function selectAndOrderCandidates(
   books: NotionBook[],
@@ -40,7 +40,7 @@ export function selectAndOrderCandidates(
   if (skipScannedWithinHours && skipScannedWithinHours > 0) {
     const cutoff = now - skipScannedWithinHours * 3_600_000;
     const before = withDates.length;
-    withDates = withDates.filter((x) => x.at < cutoff); // -Infinity (nigdy) też przechodzi
+    withDates = withDates.filter((x) => x.at < cutoff); // -Infinity (never) passes too
     skipped = before - withDates.length;
   }
 
