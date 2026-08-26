@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.45.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.45.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,16 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.45.1** — **Podgląd cyklu: popover w miejscu kliknięcia (fix pozycjonowania) + etykieta „Cykl · N".**
+  ROOT CAUSE: `CyclePanel` (`position: fixed`) renderowany WEWNĄTRZ transformowanych przodków
+  (framer-motion `motion.div`) → fixed liczył się względem karty, nie viewportu (na długiej liście
+  Vinted lądował „na środku", w Skryptorium ucinał pozycje). FIX: `createPortal(→ document.body)`
+  + kotwiczenie w miejscu kliknięcia. Nowy czysty helper `src/utils/popoverPosition.ts`
+  (`computePopoverPosition`: nad/pod wg wolnego miejsca, clamp do viewportu, `maxHeight` = dostępna
+  przestrzeń → krótka lista się kurczy, długa scrolluje; +5 testów). Zamknięcie na scroll/resize/Esc/
+  klik-poza. Kafelek pokazuje teraz „Cykl · N" (hardcoded „Cykl" + numer, bez tytułu; pełna nazwa w
+  tooltipie + nagłówku panelu). Współdzielony `CycleTile`/`CyclePanel` → fix działa i w Vinted, i w
+  Skryptorium. Doc `vinted-scanner.md` zaktualizowany.
 - **1.45.0** — **Vinted: interaktywny kafelek cyklu + numer tomu (frontend, część 2/2 feature).**
   Współdzielony `CycleTile` (`src/components/CycleTile.tsx`): klik → `CyclePanel` (`useCycle`
   + `/api/cycle`), reużyty podgląd tomów ze Skryptorium; etykieta = nazwa cyklu + `· t.N` (z żniw),
