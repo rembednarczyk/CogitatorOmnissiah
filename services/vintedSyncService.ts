@@ -110,6 +110,28 @@ export class VintedSyncService {
         sendEvent({ type: "status", message: session.cookie
           ? `Sesja Vinted rozgrzana (${cookieCount(session.cookie)} ciasteczek, stały UA). Skanuję...`
           : "Nie udało się rozgrzać sesji (brak ciasteczek) — skanuję bez primingu." });
+
+        // SAMONAPRAWA: rozgrzana sesja (Cookie + stały UA) potrafi zmienić WARIANT strony,
+        // którą Vinted serwuje — jeśli to strona bez struktury katalogu, parser gubiłby
+        // WSZYSTKIE oferty (200 OK, ale 0 książek). Jedna próba walidacyjna: gdy strona nie
+        // jest zablokowana ANI nie ma żadnej struktury katalogu (JSON/feed-grid/`/items/`),
+        // porzucamy sesję i skanujemy bez primingu (priming może pomóc, nigdy nie szkodzić).
+        if (session.cookie) {
+          try {
+            const probeUrl = buildCatalogUrl(v, `${candidates[0].plTitle} ${candidates[0].author || ""}`.trim());
+            const probe = await axios.get(probeUrl, { httpsAgent, headers: vintedRequestHeaders(cfg.scraping.userAgents, session), timeout: v.requestTimeoutMs });
+            const ph: string = probe.data;
+            const d = vintedDiagnostics(ph, 0);
+            const usable = looksBlocked(ph) || d.noResultsMarker || d.hasCatalogJson || d.hasFeedGrid || d.itemLinks > 0;
+            if (!usable) {
+              session = { userAgent: "", cookie: "" };
+              sendEvent({ type: "status", message: "Rozgrzana sesja zwraca stronę bez katalogu — porzucam priming, skanuję bez sesji." });
+            }
+            await throttle(v.throttleMinMs, v.throttleJitterMs);
+          } catch {
+            // Błąd sondy nie przesądza — zostaw sesję, właściwy skan i tak ma retry/diagnostykę.
+          }
+        }
       }
 
       // Zapewnij pole składowania raz na skan; gdy się nie uda — persystencja off (skan i tak leci).

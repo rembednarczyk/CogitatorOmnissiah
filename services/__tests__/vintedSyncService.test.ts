@@ -96,4 +96,26 @@ describe('VintedSyncService', () => {
 
     expect(mockedGet).not.toHaveBeenCalled();
   });
+
+  it('self-heals: drops a primed session that serves a structureless page, still collects books', async () => {
+    const notion = makeNotion([
+      { id: '1', plTitle: 'Solaris', author: 'Lem', zrodlo: [] },
+    ]);
+    mockedGet
+      // 1) priming homepage — sets a cookie → session is primed
+      .mockResolvedValueOnce({ status: 200, data: '<html></html>', headers: { 'set-cookie': ['cf_clearance=x; Path=/'] } })
+      // 2) validation probe — structureless page (no catalog / feed-grid / /items/ / no-results)
+      .mockResolvedValueOnce({ data: '<html><body>brak katalogu tutaj</body></html>' })
+      // 3+) real catalog scan (unprimed after fallback) — a parseable offer
+      .mockResolvedValue({ data: CATALOG_HTML({ items: { list: [{ id: 123, title: 'Solaris Lem', price: { amount: '15', currency_code: 'PLN' }, url: '/items/123' }] } }) });
+
+    const svc = new VintedSyncService(notion, fakeConfig);
+    await svc.runVintedCheck(sendEvent, never);
+
+    const events = sendEvent.mock.calls.map((c: any) => c[0]);
+    expect(events.some((e: any) => e.type === 'status' && /porzucam priming/i.test(e.message || ''))).toBe(true);
+    const match = events.find((e: any) => e.type === 'match');
+    expect(match).toBeDefined();
+    expect(match.result.vintedItems).toHaveLength(1);
+  });
 });
