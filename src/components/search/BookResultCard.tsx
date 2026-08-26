@@ -1,9 +1,9 @@
-import React, { useState } from "react";
+import React from "react";
 import { motion } from "motion/react";
-import { Layers, BookMarked, Award, Tag } from "lucide-react";
+import { BookMarked, Award, Tag } from "lucide-react";
 import { BookIndexEntry } from "../../types";
 import { HighlightedText } from "./HighlightedText";
-import { CyclePanel } from "./CyclePanel";
+import { CycleTile } from "../CycleTile";
 
 /** Kolor tagu źródła — spójny język wizualny z resztą aplikacji. */
 function zrodloTheme(tag: string): string {
@@ -31,11 +31,8 @@ export const BookResultCard: React.FC<Props> = ({ book, query }) => {
   // Tytuł główny = polski, a gdy go brak — oryginalny (książki nieprzetłumaczone).
   const primaryTitle = book.plTitle?.trim() ? book.plTitle : book.origTitle;
   const showOrig = book.origTitle && book.origTitle.trim() && book.origTitle !== primaryTitle;
-  const [showCycle, setShowCycle] = useState(false);
 
   return (
-    <>
-    {showCycle && <CyclePanel title={primaryTitle} author={book.author || ""} onClose={() => setShowCycle(false)} />}
     <motion.div
       layout
       initial={{ opacity: 0, scale: 0.97 }}
@@ -55,16 +52,7 @@ export const BookResultCard: React.FC<Props> = ({ book, query }) => {
               query={query}
               className="text-base font-bold text-slate-100 leading-tight"
             />
-            {book.partOfCycle && (
-              <button
-                type="button"
-                onClick={() => setShowCycle(true)}
-                className="shrink-0 flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30 text-amber-300 hover:bg-amber-500/25 hover:border-amber-400/50 text-[9px] font-bold uppercase tracking-wider transition-all cursor-pointer"
-                title="Pokaż tomy cyklu — sprawdź kolejność czytania"
-              >
-                <Layers className="w-2.5 h-2.5" /> cykl
-              </button>
-            )}
+            <CycleTile title={primaryTitle} author={book.author || ""} partOfCycle={book.partOfCycle} />
           </div>
 
           {showOrig && (
@@ -109,6 +97,5 @@ export const BookResultCard: React.FC<Props> = ({ book, query }) => {
         </div>
       </div>
     </motion.div>
-    </>
   );
 };

@@ -105,6 +105,20 @@ describe("groupBySeller", () => {
     expect(bundles[0].entries).toHaveLength(2);
   });
 
+  it("carries cycle name + volume number from stored data into bundle entries", () => {
+    const books = [
+      { id: "1", title: "Tom I", author: "X", partOfCycle: true, cykl: "Saga", cyklNr: 1, scannedAt: "", offers: [{ url: "u1", price: 10, currency: "zł", seller: seller("s") }] },
+      { id: "2", title: "Tom II", author: "X", partOfCycle: true, cykl: "Saga", cyklNr: 2, scannedAt: "", offers: [{ url: "u2", price: 5, currency: "zł", seller: seller("s") }] },
+    ];
+    const view = storedToView(books);
+    // storedToView must forward the cycle fields onto each VintedResult.
+    expect(view.results[0]).toMatchObject({ partOfCycle: true, cykl: "Saga", cyklNr: 1 });
+    const bundles = groupBySeller(view.results, view.sellersByUrl);
+    const entries = bundles[0].entries;
+    const tom2 = entries.find((e) => e.bookTitle === "Tom II");
+    expect(tom2).toMatchObject({ bookPartOfCycle: true, bookCykl: "Saga", bookCyklNr: 2 });
+  });
+
   it("does not double-count the same book for one seller and sorts by count", () => {
     const results = [
       result("1", "A", [item("https://www.vinted.pl/items/1", 10), item("https://www.vinted.pl/items/1b", 12)]),

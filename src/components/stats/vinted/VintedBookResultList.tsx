@@ -1,7 +1,8 @@
 import React from "react";
 import { motion } from "motion/react";
-import { ExternalLink, Clock, Sparkles, BookImage, ShoppingCart, ArrowDown, Layers } from "lucide-react";
+import { ExternalLink, Clock, Sparkles, BookImage, ShoppingCart, ArrowDown } from "lucide-react";
 import { VintedResult } from "../../../hooks/useVintedCheck";
+import { CycleTile } from "../../CycleTile";
 import { sortOffersByPrice, offersPriceSummary, formatVintedPrice, cleanOfferTitle, sortResultsByCheapest } from "../../../utils/vintedOffers";
 import { shortDate, isBookChanged, offerBadges } from "../../../utils/vintedFormat";
 
@@ -65,11 +66,7 @@ export const VintedBookResultList: React.FC<{ results: VintedResult[] }> = ({ re
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 mb-1">
                 <div className="text-base font-bold text-slate-100 leading-tight truncate group-hover/book:text-rose-400 transition-colors">{result.title}</div>
-                {result.partOfCycle && (
-                  <span className="shrink-0 flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[9px] font-bold uppercase tracking-wider" title="Część cyklu — może być kolejnym tomem w kolekcji (ryzyko duplikatu/luki w serii)">
-                    <Layers className="w-2.5 h-2.5" /> cykl
-                  </span>
-                )}
+                <CycleTile title={result.title} author={result.author} partOfCycle={result.partOfCycle} cykl={result.cykl} cyklNr={result.cyklNr} />
               </div>
               <div className="text-[10px] text-slate-500 uppercase font-bold tracking-[0.2em]">{result.author}{result.year ? ` · ${result.year}` : ""}</div>
               {result.scannedAt && (

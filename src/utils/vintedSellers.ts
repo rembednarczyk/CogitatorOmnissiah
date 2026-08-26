@@ -14,6 +14,10 @@ export interface SellerBundleEntry {
   bookYear?: string;
   /** Czy książka jest częścią cyklu (metadana z Notion) — ryzyko „kolejny tom". */
   bookPartOfCycle?: boolean;
+  /** Nazwa cyklu (metadana z Notion, z żniw) — do etykiety kafelka cyklu. */
+  bookCykl?: string;
+  /** Numer tomu w cyklu (metadana z Notion, z żniw). */
+  bookCyklNr?: number;
   /** Najtańsza kopia tej książki U TEGO sprzedawcy. */
   item: VintedResult["vintedItems"][number];
   /** Dopłata vs najtańsza kopia tej książki globalnie (0, gdy to właśnie najtańsza). */
@@ -36,6 +40,8 @@ export interface StoredBookPayload {
   author: string;
   year?: string;
   partOfCycle?: boolean;
+  cykl?: string;
+  cyklNr?: number;
   scannedAt: string;
   changedAt?: string;
   offers: { url: string; title?: string; price: number | null; currency: string; photo?: string | null; seller?: VintedSeller | null; prevPrice?: number | null; firstSeenAt?: string }[];
@@ -66,6 +72,8 @@ export function storedToView(books: StoredBookPayload[]): StoredView {
       author: b.author,
       year: b.year,
       partOfCycle: b.partOfCycle,
+      cykl: b.cykl,
+      cyklNr: b.cyklNr,
       scannedAt: b.scannedAt,
       changedAt: b.changedAt,
       vintedItems: b.offers.map(o => ({
@@ -128,6 +136,8 @@ export function groupBySeller(
           bookAuthor: r.author,
           bookYear: r.year,
           bookPartOfCycle: r.partOfCycle,
+          bookCykl: r.cykl,
+          bookCyklNr: r.cyklNr,
           item,
           premium: item.priceValue != null && gmin != null ? Math.max(0, item.priceValue - gmin) : 0,
         });

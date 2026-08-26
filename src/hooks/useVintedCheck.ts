@@ -10,6 +10,10 @@ export interface VintedResult {
   year?: string;
   /** Część cyklu (kolumna „Część cyklu"; dane z bazy) — ryzyko „kolejny tom". */
   partOfCycle?: boolean;
+  /** Nazwa cyklu (kolumna „Cykl"; z żniw) — do etykiety kafelka cyklu. */
+  cykl?: string;
+  /** Numer tomu w cyklu (kolumna „CyklNr"; z żniw). */
+  cyklNr?: number;
   /** Znacznik świeżości — kiedy skanowano tę książkę (tylko dla danych z bazy, etap 3). */
   scannedAt?: string;
   /** Kiedy zestaw ofert ostatnio się zmienił (dane z bazy). Gdy == scannedAt → zmiana w ostatnim skanie. */
