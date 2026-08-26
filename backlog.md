@@ -757,6 +757,14 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
 
 ## Otwarte pozycje
 
+- **Weryfikacja: „Odśwież dane" pokrywa WSZYSTKIE nowe moduły statystyk archiwum** — DO SPRAWDZENIA.
+  Po dołożeniu kafelków (Oficyny/Serie/Cykle, Oś czasu/dekady, Rynek Vinted, Archiwum Cykli, kafelki
+  Vinted z cyklem) upewnić się, że przycisk „Odśwież dane" faktycznie przeładowuje KAŻDY z nich, a nie
+  tylko część. Sprawdzić w `useSyncManager`/hookach statystyk (`useStats`, `useCyclesHarvest`,
+  `useVintedStored`, market/`useAppConfig`), które źródła są invalidowane/refetchowane po kliknięciu, a
+  które trzymają własny cache (np. modułowy cache `useEffectiveConfig`, ref-cache `useCycle`,
+  `booksCache` w adapterze) i mogą serwować nieświeże dane. Wynik: albo potwierdzić pełne pokrycie, albo
+  domknąć luki (jeden refetch orchestrujący wszystkie moduły). Tani audyt + ewentualny fix.
 - **Sortowanie „Archiwum Cykli" po najmniejszej liczbie książek do przeczytania (easy wins)** — NOWE, do zrobienia.
   Cel: domyślnie na górze cykle, którym najmniej brakuje do ukończenia CZYTANIA („szybkie zwycięstwa") —
   motywacja + naturalna kolejność „domknij prawie skończone". Dziś `aggregateCycleRows` sortuje po
