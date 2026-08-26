@@ -49,6 +49,8 @@ export interface AppConfig {
     sellerResolveCap: number;
     /** Tagi „Źródło" wykluczające książkę ze skanu Vinted. */
     excludedSources: string[];
+    /** Rozgrzej sesję (GET strony głównej → ciasteczko Cloudflare) przed skanem. */
+    primeSession: boolean;
   };
   scraping: {
     /** Pula User-Agentów (rotacja per żądanie). Odświeżaj co kilka miesięcy. */
@@ -101,6 +103,7 @@ export const DEFAULT_CONFIG: AppConfig = {
     order: "price_low_to_high",
     sellerResolveCap: 0,
     excludedSources: ["Posiadam", "Przeczytane", "Audioteka", "Biblioteka", "Biblioteka 9"],
+    primeSession: true,
   },
   scraping: {
     userAgents: [
@@ -236,6 +239,7 @@ export function mergeConfig(overrides?: unknown): AppConfig {
       order: cleanString(v.order, d.vinted.order, 60),
       sellerResolveCap: clampInt(v.sellerResolveCap, 0, 10000, d.vinted.sellerResolveCap),
       excludedSources: cleanStringList(v.excludedSources, d.vinted.excludedSources, 30, 64),
+      primeSession: cleanBool(v.primeSession, d.vinted.primeSession),
     },
     scraping: {
       userAgents: cleanStringList(s.userAgents, d.scraping.userAgents, 30, 400),

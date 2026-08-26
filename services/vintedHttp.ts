@@ -1,9 +1,21 @@
 import { getRandomUserAgent } from "../scrapingClient";
 
-/** Nagłówki żądania Vinted (świeży User-Agent na wywołanie; pula z konfiguracji). */
-export function vintedRequestHeaders(uaPool?: string[]) {
-  return {
-    'User-Agent': getRandomUserAgent(uaPool),
+/** Rozgrzana sesja Vinted: ustalony User-Agent + ciasteczka (m.in. Cloudflare `cf_clearance`). */
+export interface VintedSession {
+  /** UA użyty do primingu — MUSI być spójny z żądaniami niosącymi ciasteczko (cf_clearance wiąże się z UA). */
+  userAgent: string;
+  /** Nagłówek `Cookie` (np. „cf_clearance=…; anon_id=…"). Pusty = brak sesji. */
+  cookie: string;
+}
+
+/**
+ * Nagłówki żądania Vinted. Bez sesji: świeży losowy User-Agent na wywołanie (pula z
+ * konfiguracji). Z rozgrzaną sesją: STAŁY UA + `Cookie` (spójność wymagana przez
+ * Cloudflare — cf_clearance jest związany z UA, więc rotacja UA unieważniłaby ciasteczko).
+ */
+export function vintedRequestHeaders(uaPool?: string[], session?: VintedSession) {
+  const headers: Record<string, string> = {
+    'User-Agent': session?.userAgent || getRandomUserAgent(uaPool),
     'Accept-Language': 'pl-PL,pl;q=0.9,en-US;q=0.8,en;q=0.7',
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
     'Referer': 'https://www.vinted.pl/',
@@ -16,6 +28,8 @@ export function vintedRequestHeaders(uaPool?: string[]) {
     'Connection': 'keep-alive',
     'Cache-Control': 'max-age=0',
   };
+  if (session?.cookie) headers['Cookie'] = session.cookie;
+  return headers;
 }
 
 /**
