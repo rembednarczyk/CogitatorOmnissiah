@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { ShieldAlert, CheckCircle, AlertTriangle, Loader2, Activity, ChevronDown, ChevronUp } from "lucide-react";
 import { useSync } from "../hooks/useSync";
 import { IntegrityCheckResult } from "../types";
+import { yearDiffLines, awardDiffLines } from "../utils/integrityDiff";
 
 interface IntegrityCheckCardProps {
   integritySync: ReturnType<typeof useSync>;
@@ -49,24 +50,13 @@ export const IntegrityCheckCard: React.FC<IntegrityCheckCardProps> = ({
     { id: "lp", label: "Unikalność Lp", status: result?.lpUniqueness.status ?? true, details: result?.lpUniqueness.duplicates || [] },
     { id: "origTitle", label: "Tytuły Oryginalne", status: result?.originalTitleUniqueness.status ?? true, details: result?.originalTitleUniqueness.duplicates || [] },
     { id: "plTitle", label: "Tytuły Polskie", status: result?.polishTitleUniqueness.status ?? true, details: result?.polishTitleUniqueness.duplicates || [] },
-    { 
-      id: "years", 
-      label: "Roczniki (Notion/Wiki)", 
-      status: result?.yearCountMatch.status ?? true, 
-      details: result?.yearCountMatch.diffs.flatMap(d => {
-        const lines = [`Rok ${d.year}: Notion(${d.notion}) vs Wiki(${d.wiki})`];
-        if (d.notionOnly && d.notionOnly.length > 0) {
-          lines.push(`  [TYLKO NOTION]:`);
-          d.notionOnly.forEach(b => lines.push(`    • ${b}`));
-        }
-        if (d.wikiOnly && d.wikiOnly.length > 0) {
-          lines.push(`  [TYLKO WIKI]:`);
-          d.wikiOnly.forEach(b => lines.push(`    • ${b}`));
-        }
-        return lines;
-      }) || [] 
+    {
+      id: "years",
+      label: "Roczniki (Notion/Wiki)",
+      status: result?.yearCountMatch.status ?? true,
+      details: result ? yearDiffLines(result.yearCountMatch.diffs) : [],
     },
-    { id: "awards", label: "Nagrody (Notion/Wiki)", status: result?.awardCountMatch.status ?? true, details: result?.awardCountMatch.diffs.map(d => `${d.award}: Notion(${d.notion}) vs Wiki(${d.wiki})`) || [] }
+    { id: "awards", label: "Nagrody (Notion/Wiki)", status: result?.awardCountMatch.status ?? true, details: result ? awardDiffLines(result.awardCountMatch.diffs) : [] }
   ];
 
   return (

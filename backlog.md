@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.67.4** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.67.5** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,11 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.67.5** — **[Tier 3, A4] Wspólny selektor `IntegrityCheckResult`→display (`src/utils/integrityDiff.ts`).**
+  Derywacja diffów była zduplikowana w `IntegrityCheckCard` i `SanctityDebugger` (oba czytają ten sam
+  `result`). Wyciągnięte VERBATIM: `hasInconsistencies`, `toDiffPanels` (strukturalne panele dla debuggera),
+  `yearDiffLines`/`awardDiffLines` (spłaszczone linie dla karty). Oba komponenty konsumują util. Zero zmiany
+  zachowania. Suite 474 zielone, lint czysty, build OK.
 - **1.67.4** — **[Tier 3] `StatsService.getStats` (~200-liniowa god-metoda) → czysty `statsAggregator.ts`.**
   11 agregacji (author/awardBooks/ownedUnread/awardCoverage/allAwards/availability/publisher/series/cycle/
   decade/yearly/library) wyciągnięte VERBATIM jako czyste `books[] → stat` (dołączają do istniejącego

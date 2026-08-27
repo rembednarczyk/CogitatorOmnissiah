@@ -2,62 +2,19 @@ import React from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Bug, ChevronRight, AlertCircle, Database, Globe } from "lucide-react";
 import { IntegrityCheckResult } from "../types";
+import { hasInconsistencies, toDiffPanels } from "../utils/integrityDiff";
 
 interface SanctityDebuggerProps {
   result: IntegrityCheckResult | null;
-}
-
-interface DiffEntry {
-  title: string;
-  notion: number;
-  wiki: number;
-  notionOnly?: string[];
-  wikiOnly?: string[];
-  misplaced?: { title: string; otherYear: string }[];
-  collisions?: { title: string; matches: string[] }[];
 }
 
 export const SanctityDebugger: React.FC<SanctityDebuggerProps> = ({ result }) => {
   const [selectedDiff, setSelectedDiff] = React.useState<string | null>(null);
 
   if (!result) return null;
+  if (!hasInconsistencies(result)) return null;
 
-  const hasHeresy = !result.lpUniqueness.status || 
-                    !result.yearCountMatch.status || 
-                    !result.originalTitleUniqueness.status || 
-                    !result.polishTitleUniqueness.status || 
-                    !result.awardCountMatch.status;
-
-  if (!hasHeresy) return null;
-
-  const diffItems: { id: string; label: string; status: boolean; data: DiffEntry[] }[] = [
-    {
-      id: "years",
-      label: "Rozbieżności Roczników",
-      status: result.yearCountMatch.status,
-      data: result.yearCountMatch.diffs.map(d => ({
-        title: `Rok ${d.year}`,
-        notion: d.notion,
-        wiki: d.wiki,
-        notionOnly: d.notionOnly,
-        wikiOnly: d.wikiOnly,
-        misplaced: d.misplaced,
-        collisions: d.collisions
-      }))
-    },
-    {
-      id: "awards",
-      label: "Rozbieżności Nagród",
-      status: result.awardCountMatch.status,
-      data: result.awardCountMatch.diffs.map(d => ({
-        title: d.award,
-        notion: d.notion,
-        wiki: d.wiki,
-        notionOnly: d.notionOnly,
-        wikiOnly: d.wikiOnly
-      }))
-    }
-  ].filter(item => !item.status);
+  const diffItems = toDiffPanels(result);
 
   return (
     <div className="bg-slate-900/60 border border-amber-500/20 rounded-2xl p-6 backdrop-blur-md shadow-2xl shadow-amber-900/10">
