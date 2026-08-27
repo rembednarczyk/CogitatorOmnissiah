@@ -112,7 +112,7 @@ describe("bookshelf.planShelf", () => {
 });
 
 describe("bookshelf.title sizing (pełne nazwy)", () => {
-  const style = { color: "#000", app: "#06b6d4", appRgb: "6,182,212", width: 20, height: 160 };
+  const style = { color: "#000", light: "#B0574A", app: "#06b6d4", appRgb: "6,182,212", width: 20, height: 160 };
   it("spineFontSize shrinks for longer titles, within 6–11 px", () => {
     const short = spineFontSize(style, "Ubik");
     const long = spineFontSize(style, "Opowieści z meekhańskiego pogranicza. Północ-Południe");

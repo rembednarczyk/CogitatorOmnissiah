@@ -28,6 +28,7 @@ export const BookSpine: React.FC<Props> = ({ book, style, onDragStart, onDragEnd
       width: style.width,
       height: style.height,
       ["--spine-muted" as string]: style.color,
+      ["--spine-light" as string]: style.light,
       ["--spine-app" as string]: style.app,
       ["--spine-app-rgb" as string]: style.appRgb,
     } as React.CSSProperties}

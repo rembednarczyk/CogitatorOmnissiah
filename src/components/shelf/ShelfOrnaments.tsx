@@ -13,7 +13,7 @@ type Corner = "tl" | "tr" | "bl" | "br";
  * (`--sk-cog-*`), so switching the skin repaints it without changing the component.
  */
 export const CogSigil: React.FC<{ className?: string }> = ({ className = "" }) => (
-  <svg aria-hidden viewBox="0 0 48 48" className={className}>
+  <svg aria-hidden viewBox="0 0 48 48" className={`dc-40k ${className}`}>
     <g style={{ fill: "var(--sk-cog-ring)" }} stroke="rgba(0,0,0,.4)" strokeWidth="0.6">
       {Array.from({ length: 10 }).map((_, i) => (
         <rect key={i} x="22.4" y="1.5" width="3.2" height="8" rx="1" transform={`rotate(${i * 36} 24 24)`} />
@@ -40,7 +40,7 @@ const ACCENT2 = (a: number) => `rgba(var(--noo-accent2), ${a})`;
  * Purely decorative.
  */
 export const NoosphericCrest: React.FC<{ size?: number; className?: string }> = ({ size = 46, className = "" }) => (
-  <div className={className} aria-hidden style={{ width: size, height: size }}>
+  <div className={`dc-40k ${className}`} aria-hidden style={{ width: size, height: size }}>
     <div className="relative w-full h-full">
       <svg viewBox="0 0 86 86" className="noo-spin absolute inset-[-24%] w-[148%] h-[148%]" style={{ opacity: 0.6 }}>
         <circle cx="43" cy="43" r="40" fill="none" stroke={GLOW(0.5)} strokeWidth="1" strokeDasharray="3 4" />
@@ -58,7 +58,7 @@ export const DataTicker: React.FC<{ text: string; tone?: "glow" | "accent"; slow
   const color = tone === "accent" ? ACCENT2(1) : GLOW(1);
   return (
     <div
-      className={`overflow-hidden rounded-[3px] flex items-center h-[18px] ${className}`}
+      className={`dc-40k overflow-hidden rounded-[3px] flex items-center h-[18px] ${className}`}
       style={{ border: `1px solid ${GLOW(0.3)}`, background: "linear-gradient(180deg,rgba(4,8,14,.9),rgba(2,4,8,.9))", boxShadow: `inset 0 0 8px ${GLOW(0.12)}` }}
       aria-hidden
     >
@@ -73,7 +73,7 @@ export const DataTicker: React.FC<{ text: string; tone?: "glow" | "accent"; slow
 
 /** Overlay: subtle noosphere grid + a moving scanline (CRT). */
 export const HoloField: React.FC<{ className?: string }> = ({ className = "" }) => (
-  <div className={`pointer-events-none absolute inset-0 overflow-hidden ${className}`} aria-hidden>
+  <div className={`dc-40k pointer-events-none absolute inset-0 overflow-hidden ${className}`} aria-hidden>
     <div
       className="absolute inset-0 opacity-50"
       style={{
@@ -93,7 +93,7 @@ export const HoloField: React.FC<{ className?: string }> = ({ className = "" }) 
 /** HUD corner (reticle) — in the color of the Regał FRAME (`--sk-frame-accent`, amber),
  *  pulsing. Locally overrides `--noo-glow` so the pulsing glow is also in the frame accent. */
 export const HudCorner: React.FC<{ corner: Corner }> = ({ corner }) => {
-  const base = "absolute w-4 h-4 z-20 pointer-events-none noo-pulse";
+  const base = "dc-40k absolute w-4 h-4 z-20 pointer-events-none noo-pulse";
   const c = "rgb(var(--sk-frame-accent))";
   const common = { ["--noo-glow" as string]: "var(--sk-frame-accent)" };
   const box: Record<Corner, React.CSSProperties> = {

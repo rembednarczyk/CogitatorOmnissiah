@@ -4,7 +4,7 @@ import { motion } from "motion/react";
 /** Cog-wheel sigil (Mechanicus) — room decoration. Color via `style`, so
  *  the skin variables resolve (`var(--sk-room-cog*)`). */
 const CogMark: React.FC<{ size: number; color: string; className?: string; style?: React.CSSProperties }> = ({ size, color, className, style }) => (
-  <svg viewBox="0 0 48 48" width={size} height={size} className={className} style={style} aria-hidden>
+  <svg viewBox="0 0 48 48" width={size} height={size} className={`dc-40k ${className ?? ""}`} style={style} aria-hidden>
     <g style={{ fill: color }}>
       {Array.from({ length: 12 }).map((_, i) => (
         <rect key={i} x="22.2" y="0.5" width="3.6" height="9" rx="1" transform={`rotate(${i * 30} 24 24)`} />
@@ -18,7 +18,7 @@ const CogMark: React.FC<{ size: number; color: string; className?: string; style
 
 /** Candle with a flickering flame and warm glow. */
 const Sconce: React.FC<{ className?: string }> = ({ className }) => (
-  <div className={`absolute pointer-events-none ${className ?? ""}`} aria-hidden>
+  <div className={`dc-40k absolute pointer-events-none ${className ?? ""}`} aria-hidden>
     <svg viewBox="0 0 60 70" width="52" height="60">
       <path d="M30 26 V54 M18 54 h24 M22 54 q8 7 16 0" stroke="#b8860b" strokeWidth="3" fill="none" strokeLinecap="round" />
       <ellipse cx="30" cy="24" rx="5" ry="3" fill="#3a2a12" />
@@ -45,7 +45,7 @@ const Mote: React.FC<{ i: number }> = ({ i }) => {
   const dur = 7 + (i % 5) * 1.7;
   return (
     <motion.div
-      className="absolute w-[3px] h-[3px] rounded-full"
+      className="dc-40k absolute w-[3px] h-[3px] rounded-full"
       style={{ left: `${left}%`, top: `${top}%`, filter: "blur(1px)", background: "var(--sk-room-mote)" }}
       animate={{ y: [0, -14, 0], opacity: [0.15, 0.5, 0.15] }}
       transition={{ duration: dur, repeat: Infinity, ease: "easeInOut", delay: (i % 7) * 0.6 }}

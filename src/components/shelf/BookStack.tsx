@@ -37,6 +37,7 @@ export const BookStack: React.FC<Props> = ({ books, onDragStart, onDragEnd }) =>
               marginLeft: x,
               marginBottom: i === 0 ? 0 : 1,
               ["--spine-muted" as string]: s.color,
+              ["--spine-light" as string]: s.light,
               ["--spine-app" as string]: s.app,
               ["--spine-app-rgb" as string]: s.appRgb,
               boxShadow: "inset 0 1.5px 0 rgba(255,255,255,.12), 0 2px 4px -1px rgba(0,0,0,.5)",

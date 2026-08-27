@@ -17,17 +17,27 @@ export function isRead(book: BookIndexEntry, overrides: ReadOverrides = {}): boo
 
 /** Deterministic spine appearance — stable per title (no flicker on re-render). */
 export interface SpineStyle {
-  color: string;   // muted bookbinding-cloth color (Relikwiarz skin)
+  color: string;   // muted bookbinding-cloth color (Klasyczny skin, dark)
+  light: string;   // lighter boho color (light „Librem" theme) — mockup palette
   app: string;     // accent from the app palette (Holo+ skin) — hex
   appRgb: string;  // the same accent as „r,g,b" (for rgba(var(...), a))
   width: number;   // px
   height: number;  // px
 }
 
-/** Bookbinding-cloth palette — muted, authentic (Relikwiarz). */
+/** Bookbinding-cloth palette — muted, authentic (Klasyczny / dark). */
 export const CLOTH_PALETTE = [
   "#7f1d2e", "#0f5132", "#1e3a5f", "#7c5410", "#3f2d52", "#2b2b2b",
   "#5a2a1e", "#14504f", "#4a3b16", "#5b1f3a", "#243b53", "#6b2737",
+];
+
+/** Light boho spine palette (jasny motyw „Librem") — jaśniejsze grzbiety w
+ *  paletcie makiety: clay/sage/ochre/brick + ciepłe tany. Parallel to
+ *  `CLOTH_PALETTE` (same index = same book). Mid-tone, żeby kremowy tytuł
+ *  na grzbiecie był czytelny. */
+export const LIGHT_SPINE_PALETTE = [
+  "#B0574A", "#7E8A6B", "#C4933A", "#A9603D", "#9C7B52", "#6F7A58",
+  "#B8623F", "#CF9B3F", "#8A6B46", "#A5524A", "#8F8560", "#C07A56",
 ];
 
 /** App accent palette (cyan/blue/indigo/violet/purple) — Holo+.
@@ -50,6 +60,7 @@ export function spineStyle(book: BookIndexEntry): SpineStyle {
   const [app, appRgb] = APP_PALETTE[idx];
   return {
     color: CLOTH_PALETTE[idx],
+    light: LIGHT_SPINE_PALETTE[idx],
     app, appRgb,
     width: 16 + (h % 12),          // 16–27 px
     height: 124 + ((h >>> 3) % 48), // 124–171 px (unsigned shift — h can be >2^31)
