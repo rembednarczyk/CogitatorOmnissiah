@@ -51,23 +51,8 @@ export async function lookupIsbn(rawCode: string): Promise<IsbnBook | null> {
   }
 }
 
-/**
- * Reverse lookup for the enrichment ritual (barcode "variant B"): given a book's
- * title (+ optional author), collect the canonical ISBN-13s of ALL its editions via
- * Google Books, so any edition's barcode identifies the row. The use case is „do I
- * own this title at all", not „this exact edition" — so we store every ISBN we can
- * resolve (ISBN-13 directly, ISBN-10 converted to 13), deduped. Returns the list
- * (possibly empty). Throws only on an unexpected error so the caller can report it.
- */
-export async function lookupIsbnsByTitle(title: string, author?: string): Promise<string[]> {
-  const cleanTitle = (title || "").trim();
-  if (!cleanTitle) return [];
-  const parts = [`intitle:${cleanTitle}`];
-  const cleanAuthor = (author || "").trim();
-  if (cleanAuthor) parts.push(`inauthor:${cleanAuthor}`);
-
-  const res = await axios.get(GOOGLE_BOOKS, { params: { q: parts.join("+"), maxResults: 20 }, timeout: 10000 });
-  const items: any[] = Array.isArray(res.data?.items) ? res.data.items : [];
+/** Collect deduped canonical ISBN-13s from a Google Books volumes response. */
+function collectIsbns(items: any[]): string[] {
   const found = new Set<string>();
   for (const item of items) {
     const ids: any[] = item?.volumeInfo?.industryIdentifiers || [];
@@ -80,4 +65,37 @@ export async function lookupIsbnsByTitle(title: string, author?: string): Promis
     }
   }
   return Array.from(found);
+}
+
+/** One Google Books query → deduped ISBN-13s. */
+async function queryIsbns(q: string): Promise<string[]> {
+  const res = await axios.get(GOOGLE_BOOKS, { params: { q, maxResults: 20 }, timeout: 10000 });
+  return collectIsbns(Array.isArray(res.data?.items) ? res.data.items : []);
+}
+
+/**
+ * Reverse lookup for the enrichment ritual (barcode "variant B"): given a book's
+ * title (+ optional author), collect the canonical ISBN-13s of ALL its editions via
+ * Google Books, so any edition's barcode identifies the row. The use case is „do I
+ * own this title at all", not „this exact edition" — so we store every ISBN we can
+ * resolve (ISBN-13 directly, ISBN-10 converted to 13), deduped. Returns the list
+ * (possibly empty). Throws only on an unexpected error so the caller can report it.
+ *
+ * The query terms are joined with a SPACE, not a literal „+": axios encodes a space
+ * as „+" (the Google Books AND separator), whereas a literal „+" is escaped to „%2B"
+ * and read as one garbage token — which returns zero results for every book.
+ */
+export async function lookupIsbnsByTitle(title: string, author?: string): Promise<string[]> {
+  const cleanTitle = (title || "").trim();
+  if (!cleanTitle) return [];
+  // Notion „Autor" can be multi-value („A, B") — the first author is enough to disambiguate
+  // and avoids over-constraining the query (some editions list a translator/editor too).
+  const firstAuthor = (author || "").split(",")[0].trim();
+
+  if (firstAuthor) {
+    const withAuthor = await queryIsbns(`intitle:${cleanTitle} inauthor:${firstAuthor}`);
+    if (withAuthor.length > 0) return withAuthor;
+    // Fall back to title-only — some editions aren't indexed under the same author string.
+  }
+  return await queryIsbns(`intitle:${cleanTitle}`);
 }

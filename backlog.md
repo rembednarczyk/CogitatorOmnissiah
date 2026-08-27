@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.52.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.52.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,13 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.52.1** — **FIX: rytuał ISBN nic nie znajdował (błędne kodowanie zapytania Google Books).** Root cause:
+  `lookupIsbnsByTitle` łączył człony zapytania literalnym „+" (`intitle:X+inauthor:Y`), a axios koduje „+"
+  jako `%2B` (literalny plus) → Google Books widział JEDEN śmieciowy token → 0 wyników dla KAŻDEJ książki
+  (wszystkie leciały do „Pominięto"). Fix: łączenie SPACJĄ (`intitle:X inauthor:Y`) — axios koduje spację jako
+  „+" (separator AND Google Books). Potwierdzone `axios.getUri` (spacja→`+`, `+`→`%2B`). Dodatkowo hardening:
+  bierzemy TYLKO pierwszego autora z multi-value „Autor" (mniej przeograniczeń) + fallback na zapytanie
+  title-only, gdy wersja z autorem nic nie zwróci. +2 testy (multi-autor, fallback) + asercja „q bez literalnego +".
 - **1.52.0** — **Skaner ISBN: wiele wydań na pozycję (multi-edition) — koniec zastrzeżenia multi-edition.**
   Decyzja użytkownika: use case = „czy w ogóle mam tę książkę", nie „tę konkretną edycję" → zapisujemy
   WSZYSTKIE ISBN-y wydań, nie jeden best-match. `lookupIsbnByTitle`→`lookupIsbnsByTitle` (zbiera zdedupowane
