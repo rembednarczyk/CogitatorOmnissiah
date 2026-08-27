@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.64.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.65.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,13 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.65.0** — **Regał w jasnym motywie = jeden wygląd (jak z makiety), bez przełącznika skór.** Skóry różnią się
+  grzbietami: `.skin-holo` = neon (`APP_PALETTE`), `.skin-noospheric` = matowe jewel-tone (`CLOTH_PALETTE`).
+  Makieta jest matowa → w jasnym motywie **wymuszamy `noospheric`** (`renderedSkin = theme==='light' ?
+  'noospheric' : skin`) i **chowamy przełącznik „Skóra"** (`theme !== 'light'`). Zapisany wybór skóry ZOSTAJE
+  dla motywu ciemnego (nie nadpisujemy `skin`, tylko klasę renderowaną). `BookshelfSection` używa teraz
+  `useTheme`. Efekt: jasny regał ma spójne matowe grzbiety + ciepłą lnianą oprawę (bez neonu), ciemny „Warhammer"
+  zachowuje Holo+/Klasyczny do wyboru. Suite 463 zielone, lint czysty, build OK.
 - **1.64.0** — **Katalog: tytuły wyników na serif (Cormorant) w jasnym motywie — podpis makiety.** Weryfikacja:
   `BookResultCard`/`HighlightedText`/`ScanModal` używają wyłącznie klas palety (cyan/emerald/blue/amber/purple/
   rose/slate + alpha) → repaint 1.62.0/1.63.0 już je ocieplił, BEZ twardych ciemnych przecieków (inaczej niż
