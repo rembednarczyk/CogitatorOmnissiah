@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.54.3** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.55.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,15 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.55.0** — **ISBN pollution: polskie ISBN-y na początek + limit + auto-czyszczenie.** Realny bug: dla
+  „451° Fahrenheita" enrichment zebrał 130+ obcych wydań → lista URWAŁA się na limicie 2000 zn. Notion,
+  ucinając m.in. polski ISBN (skan by nie trafiał). Fix: `prioritizeIsbns(isbns, cap=40)` (`services/isbn.ts`)
+  — dedup, polskie (prefiks `97883`) NA POCZĄTEK (przeżywają obcięcie + skan polskiego egzemplarza zawsze
+  trafia), potem reszta, cap 40 (≈600 zn., bez ryzyka truncation). Enrichment stosuje to przy zapisie i
+  porównuje ORDER-SENSITIVE (`isbnListsEqual`) → ponowny rytuał REWRITE'uje zapuchnięte rekordy (cap+reorder
+  różni się od zapisanego → zapis; czyste bez zmian → `unchanged`). +5 testów (priorytet PL, dedup+cap,
+  cleanup 60→40 PL-first, oba merge PL-first). NASTĘPNE (opcjonalnie): twardsze zawężenie u ŹRÓDŁA (wymóg
+  autora / bez title-only dla krótkich tytułów), by w ogóle nie ściągać obcych wydań.
 - **1.54.3** — **Skan: świeży fetch omija też cache SERWERA (`/api/books?fresh=1`).** Diagnostyka
   (`scan-debug`) potwierdziła: ISBN JEST zapisany, `kategoria=Nagroda`, `inScanIndex=true` → dane OK, problem
   = świeżość/klient. `getBooks()` używał 5-min `booksCache` (cache:true); ręczny wpis w Notion NIE unieważnia

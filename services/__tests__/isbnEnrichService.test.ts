@@ -40,7 +40,8 @@ describe("IsbnEnrichService", () => {
     expect(mockedLookup).toHaveBeenCalledWith("Dune", "Herbert");
     expect(notion.updatePage).toHaveBeenCalledTimes(1);
     expect(notion.updatePage).toHaveBeenCalledWith("1", { ISBN: expect.anything() });
-    expect(notion.buildPropertyValue).toHaveBeenCalledWith("9780441172719, 9788375780635", "rich_text");
+    // Polish edition (978-83…) is written FIRST so it survives Notion's char limit.
+    expect(notion.buildPropertyValue).toHaveBeenCalledWith("9788375780635, 9780441172719", "rich_text");
 
     const result = complete(events);
     expect(result.updated).toBe(1);
@@ -57,8 +58,30 @@ describe("IsbnEnrichService", () => {
     const svc = new IsbnEnrichService(notion as any);
     await svc.runIsbnEnrich((e) => events.push(e), () => false);
 
-    // Existing ISBN preserved, the new Polish one appended.
-    expect(notion.buildPropertyValue).toHaveBeenCalledWith("9780441172719, 9788375780635", "rich_text");
+    // The new Polish ISBN is kept and moved to the front; the original follows.
+    expect(notion.buildPropertyValue).toHaveBeenCalledWith("9788375780635, 9780441172719", "rich_text");
+    expect(complete(events).updated).toBe(1);
+  });
+
+  it("CLEANS UP a bloated row — caps to Polish-first even when nothing new is found", async () => {
+    // A row polluted with many foreign editions (one Polish among them).
+    const many = Array.from({ length: 60 }, (_, i) => `978000000${String(1000 + i)}`);
+    const withPolish = ["9788375780635", ...many];
+    const notion = makeNotion([
+      { id: "1", plTitle: "Diuna", origTitle: "Dune", author: "Herbert", isbns: withPolish },
+    ]);
+    mockedLookup.mockResolvedValue([]); // catalogs add nothing new this run
+
+    const events: any[] = [];
+    const svc = new IsbnEnrichService(notion as any);
+    await svc.runIsbnEnrich((e) => events.push(e), () => false);
+
+    // Rewritten: capped to 40, Polish ISBN first.
+    expect(notion.updatePage).toHaveBeenCalledTimes(1);
+    const written = notion.buildPropertyValue.mock.calls[0][0] as string;
+    const list = written.split(", ");
+    expect(list.length).toBe(40);
+    expect(list[0]).toBe("9788375780635");
     expect(complete(events).updated).toBe(1);
   });
 

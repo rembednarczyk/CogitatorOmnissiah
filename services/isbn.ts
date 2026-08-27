@@ -9,6 +9,26 @@ function cleanIsbnChars(raw: string): string {
   return (raw || "").replace(/[^0-9Xx]/g, "").toUpperCase();
 }
 
+/** Polish ISBN-13 prefix (978-83…). The scanned physical copies are Polish editions. */
+const POLISH_PREFIX = "97883";
+
+/** Max ISBNs stored per row — Polish-first, comfortably under Notion's 2000-char limit. */
+export const MAX_STORED_ISBNS = 40;
+
+/**
+ * Order + cap the stored edition ISBNs for a book. Polish editions (978-83…) come
+ * FIRST so a scan of the physical Polish copy always matches AND survives Notion's
+ * 2000-char field limit (the tail is what gets truncated); the list is then capped so
+ * a generic title (e.g. „451° Fahrenheita" → 130+ foreign editions) can't bloat a row.
+ */
+export function prioritizeIsbns(isbns: string[], cap = MAX_STORED_ISBNS): string[] {
+  const seen = new Set<string>();
+  const deduped = isbns.filter((i) => (seen.has(i) ? false : (seen.add(i), true)));
+  const polish = deduped.filter((i) => i.startsWith(POLISH_PREFIX));
+  const rest = deduped.filter((i) => !i.startsWith(POLISH_PREFIX));
+  return [...polish, ...rest].slice(0, cap);
+}
+
 /** EAN-13 / ISBN-13 checksum: Σ d_i·(1,3,1,3…) ≡ 0 (mod 10). */
 export function isValidIsbn13(s: string): boolean {
   if (!/^\d{13}$/.test(s)) return false;
