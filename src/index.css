@@ -212,6 +212,16 @@ body {
 /* Nagłówki na serif (klasa font-display używana w całej apce). */
 [data-theme="light"] .font-display { letter-spacing: .2px; }
 
+/* KATALOG: tytuły wyników na serif (Cormorant) — podpis makiety „Librem".
+   Tylko jasny motyw; ciemny „Warhammer" zostaje na sans (bez zmian). */
+[data-theme="light"] .result-title {
+  font-family: var(--font-display);
+  font-size: 1.18rem;
+  line-height: 1.18;
+  font-weight: 600;
+  letter-spacing: .2px;
+}
+
 /* Karty */
 [data-theme="light"] .glass-card {
   background-color: var(--l-card);

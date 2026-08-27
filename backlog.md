@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.63.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.64.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,15 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.64.0** — **Katalog: tytuły wyników na serif (Cormorant) w jasnym motywie — podpis makiety.** Weryfikacja:
+  `BookResultCard`/`HighlightedText`/`ScanModal` używają wyłącznie klas palety (cyan/emerald/blue/amber/purple/
+  rose/slate + alpha) → repaint 1.62.0/1.63.0 już je ocieplił, BEZ twardych ciemnych przecieków (inaczej niż
+  skóry Regału). Jedyny brakujący „makietowy" detal: tytuły książek makiety są serifowe (Cormorant) — dodane
+  `.result-title` na tytule wyniku + reguła `[data-theme="light"] .result-title { font-family: var(--font-
+  display); … }` (tylko jasny; ciemny „Warhammer" zostaje na sans). Laser skanera w `ScanModal` zostaje cyan —
+  jest nad ciemnym obrazem z kamery, więc czyta się dobrze w obu motywach (nie ruszamy arbitralnego shadow).
+  Suite 463 zielone, lint czysty, build OK. Status repaintu: Kolekcja ✅ / Regał ✅ / Katalog ✅; zostają Rynek
+  (bazowo pokryty repaintem) i opcjonalny re-layout Kolekcji 1:1.
 - **1.63.0** — **Regał: jasny wariant skór + FIX kontrastu nagłówków sekcji.** (1) Skóry regału (`.skin-holo`/
   `.skin-noospheric`) niosą własne, twarde gradienty ciemnego drewna/neonu w `--sk-*`/`--noo-*` — NIE przechodzą
   przez `--color-*`, więc w jasnym motywie regał zostawał ciemny na papierze. Dodana warstwa

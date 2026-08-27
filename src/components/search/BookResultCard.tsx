@@ -50,7 +50,7 @@ export const BookResultCard: React.FC<Props> = ({ book, query }) => {
             <HighlightedText
               text={primaryTitle}
               query={query}
-              className="text-base font-bold text-slate-100 leading-tight"
+              className="result-title text-base font-bold text-slate-100 leading-tight"
             />
             <CycleTile title={primaryTitle} author={book.author || ""} partOfCycle={book.partOfCycle} />
           </div>
