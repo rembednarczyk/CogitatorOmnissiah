@@ -56,6 +56,21 @@ export function isbn10to13(isbn10: string): string {
 }
 
 /**
+ * ISBN-13 → ISBN-10 (only for the 978 prefix; 979 has no ISBN-10 equivalent). Recovers
+ * the pre-2007 10-digit form so old numbers stay searchable — e.g. „9788370012250"
+ * (Slan) → „8370012256". Returns null when the input isn't a 978 ISBN-13.
+ */
+export function isbn13to10(isbn13: string): string | null {
+  const s = cleanIsbnChars(isbn13);
+  if (!/^978\d{10}$/.test(s)) return null;
+  const core = s.slice(3, 12); // 9 digits after „978"
+  let sum = 0;
+  for (let i = 0; i < 9; i++) sum += Number(core[i]) * (10 - i);
+  const check = (11 - (sum % 11)) % 11;
+  return core + (check === 10 ? "X" : String(check));
+}
+
+/**
  * Normalize any scanned/typed code to a canonical, checksum-valid ISBN-13, or null
  * when it isn't a real ISBN (wrong length, bad checksum, non-book EAN). EAN-13s that
  * aren't books (prefix ≠ 978/979) are rejected so a random product barcode can't match.

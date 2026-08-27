@@ -83,6 +83,8 @@ export interface BookIndexEntry {
   shelfOrder?: number;
   /** Canonical ISBN-13s across editions (if enriched) — a barcode of ANY edition matches this row. */
   isbns?: string[];
+  /** Space-joined ISBN forms for text search: each ISBN-13 plus its ISBN-10 equivalent (old, pre-2007). */
+  isbnSearch?: string;
 }
 
 export interface SyncState {

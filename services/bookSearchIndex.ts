@@ -1,5 +1,18 @@
 import { NotionBook, BookIndexEntry } from "../src/types";
 import { isAwardBook } from "./bookCategory";
+import { isbn13to10 } from "./isbn";
+
+/** Space-joined ISBN forms for text search: each stored ISBN-13 plus its ISBN-10 equivalent (pre-2007). */
+function buildIsbnSearch(isbns?: string[]): string | undefined {
+  if (!isbns || isbns.length === 0) return undefined;
+  const forms = new Set<string>();
+  for (const i of isbns) {
+    forms.add(i);
+    const ten = isbn13to10(i);
+    if (ten) forms.add(ten);
+  }
+  return Array.from(forms).join(" ");
+}
 
 /**
  * Pure projection of full Notion records → a slimmed-down search index.
@@ -26,5 +39,6 @@ export function toSearchIndex(books: NotionBook[]): BookIndexEntry[] {
       partOfCycle: b.currentCzesccyklu ?? false,
       shelfOrder: b.shelfOrder,
       isbns: b.isbns,
+      isbnSearch: buildIsbnSearch(b.isbns),
     }));
 }
