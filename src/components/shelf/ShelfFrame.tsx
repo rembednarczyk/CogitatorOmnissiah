@@ -60,13 +60,13 @@ export const ShelfFrame: React.FC<Props> = ({ title, icon, accent, count, highli
           {/* Cog-wheel sigil */}
           <CogSigil className="w-7 h-7 shrink-0 drop-shadow-[0_1px_2px_rgba(0,0,0,.6)]" />
           <span className={a.text}>{icon}</span>
-          <h3 className="text-sm font-display font-bold uppercase tracking-[0.22em] text-amber-100/90 whitespace-nowrap drop-shadow-[0_1px_2px_rgba(0,0,0,.7)]">
+          <h3 className="text-sm font-display font-bold uppercase tracking-[0.22em] text-amber-100/90 truncate min-w-0 drop-shadow-[0_1px_2px_rgba(0,0,0,.7)]">
             {title}
           </h3>
-          <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border ${a.chip}`}>{count}</span>
+          <span className={`shrink-0 px-2 py-0.5 rounded-lg text-[10px] font-bold border ${a.chip}`}>{count}</span>
           {/* Data ticker (scrolling) — fills the free space of the cornice */}
           <DataTicker className="ml-3 hidden sm:flex flex-1 min-w-0 max-w-[280px]" text="++ LIBREM·SYNC ++ 01001101·01000001·01010011 ++ KOLEKCJA·FANTASTYKI ++" />
-          <div className="ml-auto flex items-center gap-3">{headerExtra}</div>
+          <div className="ml-auto shrink-0 flex items-center gap-3">{headerExtra}</div>
           {/* Subtle light strip under the cornice (in the color of the Regał frame) */}
           <div className="absolute bottom-0 inset-x-6 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(var(--sk-frame-accent),.28), transparent)" }} />
         </div>

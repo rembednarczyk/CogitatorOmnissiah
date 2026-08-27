@@ -312,3 +312,13 @@ body {
   font-weight: 700;
   text-shadow: 0 1px 2px rgba(45,38,28,.72), 0 0 1px rgba(45,38,28,.55);
 }
+
+/* Pieczęcie nagród na grzbiecie: paleta boho zamiast neonu (Hugo→ochra,
+   Nebula→sage, Locus→clay) + cienki ciemny pierścień bez poświaty.
+   `!important` bije style inline (kolor nagrody trzymany w JS dla ciemnego). */
+[data-theme="light"] .skin-noospheric .spine-award {
+  box-shadow: 0 0 0 1px rgba(45,38,28,.42) !important;
+}
+[data-theme="light"] .skin-noospheric .spine-award-hugo   { background: #CE9B3F !important; }
+[data-theme="light"] .skin-noospheric .spine-award-nebula { background: #7E8A6B !important; }
+[data-theme="light"] .skin-noospheric .spine-award-locus  { background: #C07A56 !important; }

@@ -55,7 +55,7 @@ export const BookSpine: React.FC<Props> = ({ book, style, onDragStart, onDragEnd
       return (
         <span className="absolute bottom-[6px] left-1/2 -translate-x-1/2 flex flex-col-reverse items-center gap-[3px]" title={wins.map((w) => w.label).join(" · ")}>
           {wins.map((w) => (
-            <span key={w.key} className="w-[8px] h-[8px] rounded-full" style={{ background: w.color, boxShadow: `0 0 6px ${w.color}, 0 0 0 1px rgba(var(--noo-glow),.5)` }} />
+            <span key={w.key} className={`spine-award spine-award-${w.key} w-[8px] h-[8px] rounded-full`} style={{ background: w.color, boxShadow: `0 0 6px ${w.color}, 0 0 0 1px rgba(var(--noo-glow),.5)` }} />
           ))}
         </span>
       );
