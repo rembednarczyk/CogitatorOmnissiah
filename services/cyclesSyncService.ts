@@ -12,8 +12,6 @@ export class CyclesSyncService {
 
   async runCyclesSync(sendEvent: (data: SyncEvent) => void, checkCancellation: () => boolean) {
     try {
-      const databaseId = process.env.NOTION_DATABASE_ID;
-      const actualDataSourceId = await this.notion.resolveDataSourceId(databaseId!);
       sendEvent({ type: "status", message: "Sprawdzanie struktury bazy Notion..." });
       await this.notion.createColumnIfNeeded("Część cyklu", "checkbox");
       sendEvent({ type: "status", message: "Pobieranie listy książek z Notion..." });

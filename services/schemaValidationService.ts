@@ -9,13 +9,8 @@ export class SchemaValidationService {
       sendEvent({ type: "status", message: "Inicjalizacja bazy Notion..." });
       await this.notion.init();
 
-      const databaseId = process.env.NOTION_DATABASE_ID;
-      if (!databaseId) throw new Error("Brak NOTION_DATABASE_ID w zmiennych środowiskowych.");
-      
-      const actualDataSourceId = await this.notion.resolveDataSourceId(databaseId);
-
       sendEvent({ type: "status", message: "Pobieranie schematu bazy..." });
-      const db = await this.notion.retrieveDataSource(actualDataSourceId) as any;
+      const db = await this.notion.retrieveDataSource() as any;
 
       if (checkCancellation()) {
         sendEvent({ type: "status", message: "Przerwano inicjalizację schematu." });
@@ -48,9 +43,9 @@ export class SchemaValidationService {
       const titleProp = Object.values(db.properties).find((p: any) => p.type === "title") as any;
       if (titleProp && titleProp.name !== "Lp") {
         sendEvent({ type: "status", message: `Zmiana nazwy głównej kolumny z ${titleProp.name} na Lp...` });
-        await this.notion.renameProperty(actualDataSourceId, titleProp.name, "Lp");
+        await this.notion.renameProperty(titleProp.name, "Lp");
         // Refresh db properties after rename
-        const updatedDb = await this.notion.retrieveDataSource(actualDataSourceId) as any;
+        const updatedDb = await this.notion.retrieveDataSource() as any;
         db.properties = updatedDb.properties;
       }
 
@@ -66,12 +61,12 @@ export class SchemaValidationService {
         const existingProp = db.properties[prop.name];
         if (!existingProp) {
           sendEvent({ type: "status", message: `Tworzenie brakującej kolumny: ${prop.name}...` });
-          await this.notion.updateDatabaseProperty(actualDataSourceId, prop.name, prop.type);
+          await this.notion.updateDatabaseProperty(prop.name, prop.type);
           addedCount++;
           summary.added.push(prop.name);
         } else if (existingProp.type !== prop.type) {
           sendEvent({ type: "status", message: `Aktualizacja typu kolumny ${prop.name} z ${existingProp.type} na ${prop.type}...` });
-          await this.notion.updateDatabaseProperty(actualDataSourceId, prop.name, prop.type);
+          await this.notion.updateDatabaseProperty(prop.name, prop.type);
           addedCount++;
           summary.added.push(`${prop.name} (zmiana typu)`);
         }

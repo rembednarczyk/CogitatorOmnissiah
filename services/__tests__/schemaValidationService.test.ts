@@ -8,10 +8,8 @@ describe('SchemaValidationService', () => {
   let mockSendEvent: any;
 
   beforeEach(() => {
-    process.env.NOTION_DATABASE_ID = 'test-db-id';
     mockNotion = {
       init: vi.fn(),
-      resolveDataSourceId: vi.fn().mockResolvedValue('actual-id'),
       retrieveDataSource: vi.fn(),
       renameProperty: vi.fn(),
       updateDatabaseProperty: vi.fn(),
@@ -35,7 +33,7 @@ describe('SchemaValidationService', () => {
 
     await service.runSchemaValidation(mockSendEvent, () => false);
 
-    expect(mockNotion.renameProperty).toHaveBeenCalledWith('actual-id', 'Name', 'Lp');
+    expect(mockNotion.renameProperty).toHaveBeenCalledWith('Name', 'Lp');
   });
 
   it('creates missing properties', async () => {
@@ -48,15 +46,15 @@ describe('SchemaValidationService', () => {
 
     await service.runSchemaValidation(mockSendEvent, () => false);
 
-    expect(mockNotion.updateDatabaseProperty).toHaveBeenCalledWith('actual-id', 'Autor', 'multi_select');
-    expect(mockNotion.updateDatabaseProperty).toHaveBeenCalledWith('actual-id', 'Tytuł polski', 'rich_text');
+    expect(mockNotion.updateDatabaseProperty).toHaveBeenCalledWith('Autor', 'multi_select');
+    expect(mockNotion.updateDatabaseProperty).toHaveBeenCalledWith('Tytuł polski', 'rich_text');
     // Cycle columns + closing the old debt are provisioned too.
-    expect(mockNotion.updateDatabaseProperty).toHaveBeenCalledWith('actual-id', 'Kategoria', 'select');
-    expect(mockNotion.updateDatabaseProperty).toHaveBeenCalledWith('actual-id', 'Cykl', 'rich_text');
-    expect(mockNotion.updateDatabaseProperty).toHaveBeenCalledWith('actual-id', 'CyklNr', 'number');
-    expect(mockNotion.updateDatabaseProperty).toHaveBeenCalledWith('actual-id', 'Źródło', 'multi_select');
-    expect(mockNotion.updateDatabaseProperty).toHaveBeenCalledWith('actual-id', 'VintedData', 'rich_text');
-    expect(mockNotion.updateDatabaseProperty).toHaveBeenCalledWith('actual-id', 'ShelfOrder', 'number');
-    expect(mockNotion.updateDatabaseProperty).toHaveBeenCalledWith('actual-id', 'ISBN', 'rich_text');
+    expect(mockNotion.updateDatabaseProperty).toHaveBeenCalledWith('Kategoria', 'select');
+    expect(mockNotion.updateDatabaseProperty).toHaveBeenCalledWith('Cykl', 'rich_text');
+    expect(mockNotion.updateDatabaseProperty).toHaveBeenCalledWith('CyklNr', 'number');
+    expect(mockNotion.updateDatabaseProperty).toHaveBeenCalledWith('Źródło', 'multi_select');
+    expect(mockNotion.updateDatabaseProperty).toHaveBeenCalledWith('VintedData', 'rich_text');
+    expect(mockNotion.updateDatabaseProperty).toHaveBeenCalledWith('ShelfOrder', 'number');
+    expect(mockNotion.updateDatabaseProperty).toHaveBeenCalledWith('ISBN', 'rich_text');
   });
 });

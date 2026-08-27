@@ -13,7 +13,6 @@ describe('CyclesSyncService', () => {
 
   beforeEach(() => {
     mockNotion = {
-      resolveDataSourceId: vi.fn().mockResolvedValue('test-id'),
       createColumnIfNeeded: vi.fn(),
       queryAllBooks: vi.fn(),
       updatePage: vi.fn(),

@@ -27,6 +27,6 @@ Ensures the Notion database has the correct structure (columns and types) requir
 
 ## 4. Implementation Details
 - **Notion API**: Uses `updateDatabaseProperty` and `renameProperty` to modify the database schema.
-- **Database Resolution**: Uses `resolveDataSourceId` to handle potential database ID variations.
+- **Database Resolution**: The adapter resolves the effective data source at `init()` (data-source vs. classic database); the schema-management methods (`retrieveDataSource`/`updateDatabaseProperty`/`renameProperty`) target that resolved source directly — the service no longer passes an id.
 - **Progress Reporting**: Sends SSE events for each schema modification.
 - **Output**: Returns a summary of which columns were added or updated.

@@ -174,9 +174,9 @@ describe('NotionAdapter', () => {
   describe('updateDatabaseProperty', () => {
     it('updates a property correctly', async () => {
       mockClient.dataSources.retrieve.mockResolvedValueOnce({ id: 'test-db-id' }); // for init
-      
-      await adapter.updateDatabaseProperty('test-db-id', 'Wydawnictwo', 'rich_text');
-      
+
+      await adapter.updateDatabaseProperty('Wydawnictwo', 'rich_text');
+
       expect(mockClient.dataSources.update).toHaveBeenCalledWith({
         data_source_id: 'test-db-id',
         properties: {
