@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.57.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.58.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,14 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.58.0** — **Skryptorium mobile: czysty ekran + latarka i większy obszar w skanerze.** (1) Na mobile
+  (`matchMedia max-width:767px`) puste zapytanie NIE listuje pozycji — czysty ekran z podpowiedzią „zeskanuj
+  lub wpisz tytuł" (`browseSuppressed`; browse-all pozostaje na desktopie); skan/wpis wypełnia widok. Licznik
+  ukryty na czystym ekranie. Guard na brak `matchMedia`. (2) `ScanModal`: przycisk **latarki** (torch) —
+  widoczny tylko gdy track kamery ma `getCapabilities().torch` (Android/Chrome); toggle przez
+  `applyConstraints({advanced:[{torch}]})`, gaśnie przy `track.stop()`; reset stanu przy otwarciu. Obszar
+  skanowania powiększony (modal `max-w-md`→`max-w-lg`, viewport `aspect-[4/5]` na mobile / `4/3` na sm+,
+  ramka `inset-3`). Testy: suite 462 zielone (komponenty skanera bez zmian w logice testowanej).
 - **1.57.0** — **Bughunt skanera/ISBN (3 agenty + weryfikacja) — 7 realnych fixów.** Rdzeń potwierdzony
   czysty (matematyka ISBN, cap, throw-logic, round-trip, brak utraty ISBN-ów). Naprawione: (1) FE — wyszukiwarka
   po ISBN robiła substring → rok „1984" trafiał w każdy ISBN zawierający „1984"; teraz match po PREFIKSIE

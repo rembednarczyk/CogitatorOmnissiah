@@ -39,6 +39,20 @@ export const SearchSection: React.FC = () => {
     inputRef.current?.focus();
   }, []);
 
+  // On mobile, start with a clean screen: books are loaded, but nothing is listed until you
+  // type or scan (the empty-query browse-all is desktop-only). A scan/typed query fills it.
+  const [isMobile, setIsMobile] = useState<boolean>(
+    () => typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(max-width: 767px)").matches
+  );
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
+    const mq = window.matchMedia("(max-width: 767px)");
+    const onChange = () => setIsMobile(mq.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+  const browseSuppressed = isMobile && !query.trim();
+
   // Turn a scanned/typed code into a search: first a direct row match by stored ISBN
   // (variant B), else resolve the ISBN → title server-side and fuzzy-search it (variant A).
   const handleScanDetect = async (rawCode: string) => {
@@ -85,7 +99,7 @@ export const SearchSection: React.FC = () => {
   };
 
   const results = useMemo(() => matchBooks(deferredQuery, books ?? []), [deferredQuery, books]);
-  const shown = results.slice(0, RENDER_CAP);
+  const shown = browseSuppressed ? [] : results.slice(0, RENDER_CAP);
   const total = books?.length ?? 0;
 
   // „Czy chodziło Ci o…" — vocab computed once per set; suggestions only on 0 hits.
@@ -174,8 +188,8 @@ export const SearchSection: React.FC = () => {
 
       <ScanModal open={scanOpen} onClose={() => setScanOpen(false)} onDetect={handleScanDetect} />
 
-      {/* Counter */}
-      {books && !loading && (
+      {/* Counter (hidden on the mobile clean screen) */}
+      {books && !loading && !browseSuppressed && (
         <p className="text-center text-xs text-slate-500 font-bold tracking-widest uppercase">
           {query.trim()
             ? `Znaleziono ${results.length} ${results.length === 1 ? "wolumin" : "woluminów"} z ${total}`
@@ -184,7 +198,7 @@ export const SearchSection: React.FC = () => {
         </p>
       )}
 
-      {/* States: loading / error / no hits / grid */}
+      {/* States: loading / error / mobile clean screen / no hits / grid */}
       {loading ? (
         <div className="flex items-center justify-center gap-3 py-16 text-slate-500">
           <Loader2 className="w-5 h-5 animate-spin" />
@@ -202,6 +216,14 @@ export const SearchSection: React.FC = () => {
               Spróbuj ponownie
             </button>
           </div>
+        </div>
+      ) : browseSuppressed ? (
+        <div className="text-center py-20 space-y-3">
+          <ScanBarcode className="w-10 h-10 text-cyan-500/40 mx-auto" />
+          <p className="text-sm text-slate-400 italic">
+            {canScan ? "Zeskanuj kod kreskowy lub wpisz tytuł, aby przeszukać archiwum." : "Wpisz tytuł lub nazwisko autora, aby przeszukać archiwum."}
+          </p>
+          <p className="text-[11px] text-slate-600 uppercase tracking-widest font-bold">{total} woluminów w archiwum</p>
         </div>
       ) : results.length === 0 ? (
         <div className="text-center py-16 space-y-4">

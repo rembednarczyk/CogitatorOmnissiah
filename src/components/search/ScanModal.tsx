@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { X, ScanBarcode, Loader2, AlertCircle, Keyboard } from "lucide-react";
+import { X, ScanBarcode, Loader2, AlertCircle, Keyboard, Flashlight, FlashlightOff } from "lucide-react";
 import { looksLikeBookIsbn } from "../../utils/barcode";
 
 interface Props {
@@ -25,17 +25,34 @@ type BarcodeDetectorCtor = new (opts?: { formats?: string[] }) => BarcodeDetecto
 export const ScanModal: React.FC<Props> = ({ open, onClose, onDetect }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const trackRef = useRef<MediaStreamTrack | null>(null);
   const rafRef = useRef<number | null>(null);
   const doneRef = useRef(false);
   const [status, setStatus] = useState<"idle" | "starting" | "scanning" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState<string>("");
   const [manual, setManual] = useState("");
   const [manualErr, setManualErr] = useState("");
+  const [torchAvailable, setTorchAvailable] = useState(false);
+  const [torchOn, setTorchOn] = useState(false);
 
-  // Stop the camera + detection loop and release the stream.
+  // Stop the camera + detection loop and release the stream (also turns the torch off).
   const teardown = () => {
     if (rafRef.current !== null) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
     if (streamRef.current) { streamRef.current.getTracks().forEach((t) => t.stop()); streamRef.current = null; }
+    trackRef.current = null;
+  };
+
+  // Toggle the phone flashlight via the camera track's `torch` constraint (Android/Chrome).
+  const toggleTorch = async () => {
+    const track = trackRef.current;
+    if (!track) return;
+    const next = !torchOn;
+    try {
+      await track.applyConstraints({ advanced: [{ torch: next }] } as any);
+      setTorchOn(next);
+    } catch {
+      setTorchAvailable(false); // capability lied / not really controllable
+    }
   };
 
   const finish = (code: string) => {
@@ -48,6 +65,8 @@ export const ScanModal: React.FC<Props> = ({ open, onClose, onDetect }) => {
   useEffect(() => {
     if (!open) return;
     doneRef.current = false;
+    setTorchAvailable(false);
+    setTorchOn(false);
     const Ctor = (window as unknown as { BarcodeDetector?: BarcodeDetectorCtor }).BarcodeDetector;
 
     // No native detector → the modal still opens for the manual ISBN fallback.
@@ -67,6 +86,12 @@ export const ScanModal: React.FC<Props> = ({ open, onClose, onDetect }) => {
         video.srcObject = stream;
         await video.play();
         setStatus("scanning");
+
+        // Expose the flashlight toggle only if the camera track reports the torch capability.
+        const track = stream.getVideoTracks()[0] || null;
+        trackRef.current = track;
+        const caps = (track?.getCapabilities?.() ?? {}) as any;
+        if (!cancelled && caps.torch) setTorchAvailable(true);
 
         const tick = async () => {
           if (doneRef.current || cancelled) return;
@@ -124,7 +149,7 @@ export const ScanModal: React.FC<Props> = ({ open, onClose, onDetect }) => {
             initial={{ opacity: 0, scale: 0.92, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.92, y: 20 }}
-            className="relative w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.8)] overflow-hidden"
+            className="relative w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.8)] overflow-hidden"
           >
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500 to-transparent opacity-50" />
 
@@ -139,8 +164,8 @@ export const ScanModal: React.FC<Props> = ({ open, onClose, onDetect }) => {
                 </div>
               </div>
 
-              {/* Camera viewport */}
-              <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-slate-950 border border-white/10 mb-5">
+              {/* Camera viewport — a bit larger for easier aiming */}
+              <div className="relative aspect-[4/5] sm:aspect-[4/3] rounded-xl overflow-hidden bg-slate-950 border border-white/10 mb-5">
                 <video ref={videoRef} playsInline muted className="w-full h-full object-cover" />
                 {(status === "starting" || status === "idle") && (
                   <div className="absolute inset-0 flex items-center justify-center gap-2 text-slate-400">
@@ -150,9 +175,23 @@ export const ScanModal: React.FC<Props> = ({ open, onClose, onDetect }) => {
                 )}
                 {status === "scanning" && (
                   <>
-                    <div className="absolute inset-x-8 top-1/2 h-px bg-cyan-400/70 shadow-[0_0_12px_rgba(34,211,238,0.8)]" />
-                    <div className="absolute inset-6 border-2 border-cyan-400/30 rounded-lg" />
+                    <div className="absolute inset-x-6 top-1/2 h-px bg-cyan-400/70 shadow-[0_0_12px_rgba(34,211,238,0.8)]" />
+                    <div className="absolute inset-3 border-2 border-cyan-400/30 rounded-lg" />
                   </>
+                )}
+                {torchAvailable && status === "scanning" && (
+                  <button
+                    onClick={toggleTorch}
+                    aria-label={torchOn ? "Wyłącz latarkę" : "Włącz latarkę"}
+                    aria-pressed={torchOn}
+                    className={`absolute top-3 right-3 p-2.5 rounded-full border backdrop-blur-sm transition-colors ${
+                      torchOn
+                        ? "bg-amber-400/90 border-amber-300 text-slate-900"
+                        : "bg-slate-950/60 border-white/20 text-slate-200 hover:bg-slate-900/80"
+                    }`}
+                  >
+                    {torchOn ? <Flashlight className="w-5 h-5" /> : <FlashlightOff className="w-5 h-5" />}
+                  </button>
                 )}
                 {status === "error" && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-center px-6 text-red-300">
