@@ -3,6 +3,9 @@ import { useSync } from "./useSync";
 import { PREDEFINED_AWARDS, SYNC_ALL_AWARD } from "../constants";
 import { useEffectiveConfig } from "./useAppConfig";
 
+/** One ritual's `useSync` instance — the contract shared by every sync in the manager. */
+type SyncInstance = ReturnType<typeof useSync>;
+
 /**
  * Front-end orchestration of all synchronization rituals.
  *
@@ -39,7 +42,7 @@ export function useSyncManager() {
   const anyError = syncs.find(s => s.state.error);
   const isAnySyncLoading = syncs.some(s => s.state.loading);
 
-  const clearOthers = (currentSync: any) => {
+  const clearOthers = (currentSync: SyncInstance) => {
     syncs.forEach(s => {
       if (s !== currentSync) {
         s.reset();
@@ -47,7 +50,7 @@ export function useSyncManager() {
     });
   };
 
-  const handleSyncAction = async (syncService: any, params: any = {}, statusMessage: string | null = null) => {
+  const handleSyncAction = async (syncService: SyncInstance, params: Record<string, any> = {}, statusMessage: string | null = null) => {
     setFullSyncResults(null);
     clearOthers(syncService);
     return await syncService.startSync(params, undefined, statusMessage);
@@ -86,7 +89,7 @@ export function useSyncManager() {
   // „Wielki Rytuał" — a data-described step sequence (not 7× copy-paste).
   // `abortOnFail` steps abort the whole thing on error and drop results; the last one
   // (Lp) only appends its result if present, and always closes the summary.
-  const FULL_SYNC_STEPS: { sync: any; name: string; color: string; label: string; params?: any; abortOnFail: boolean }[] = [
+  const FULL_SYNC_STEPS: { sync: SyncInstance; name: string; color: string; label: string; params?: Record<string, any>; abortOnFail: boolean }[] = [
     { sync: schemaSync, name: "Schemat", color: "emerald", label: "Krok 1/7: Inicjacja schematu...", abortOnFail: true },
     { sync: purifySync, name: "Porządkowanie", color: "amber", label: "Krok 2/7: Porządkowanie tytułów...", abortOnFail: true },
     { sync, name: "Nagrody", color: "cyan", label: "Krok 3/7: Synchronizacja nagród...", params: { awardName: "Wszystkie Nagrody", syncAll: true }, abortOnFail: true },

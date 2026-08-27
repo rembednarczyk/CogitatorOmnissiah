@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from "react";
-import { IdentifiedBooks } from "./useStats";
+import { IdentifiedBooks } from "../types/stats";
 import { useSSEStream } from "./useSSEStream";
 import { postStop } from "../utils/http";
 
