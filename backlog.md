@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.54.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.54.2** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,13 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.54.2** — **Diagnostyka skanu: `GET /api/scan-debug/:code`.** Skaner dalej „nie znajduje" mimo świeżego
+  indeksu → endpoint do ustalenia PRZYCZYNY na żywo (Render). Read-only, bez cache: dla kodu zwraca
+  `{ input, normalized, totalBooks, scanIndexSize, matchCount, matches: [{title, kategoria, isbns, inScanIndex}] }`
+  — przeszukuje WSZYSTKIE książki (nie tylko nagrodowe), więc od razu widać: czy ISBN jest zapisany, na
+  której pozycji, jaką ma `Kategoria` i czy jest w indeksie skanera (`inScanIndex`=false gdy „Tom cyklu").
+  Hipotezy do rozstrzygnięcia: (a) książka to tom cyklu → poza indeksem; (b) zapisany ISBN różni się od
+  skanowanego (checksum/format/inne wydanie); (c) stary bundle w cache przeglądarki. +1 test (routing).
 - **1.54.1** — **FIX: skaner „nie znaleziono" mimo zapisanego ISBN (nieświeży indeks w apce).** Root cause:
   `useBooks` pobiera indeks TYLKO przy montowaniu; jeśli apka mobilna była otwarta PRZED rytuałem ISBN, jej
   lista w pamięci nie miała jeszcze ISBN-ów → `matchIsbnInIndex` szukał w nieświeżych danych → miss (potem
