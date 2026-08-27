@@ -121,4 +121,17 @@ describe("lookupIsbnsByTitle", () => {
     const r = await lookupIsbnsByTitle("Diuna", "Herbert");
     expect(r).toEqual(["9788375780635"]);
   });
+
+  it("still runs Google's title-only query when the author-qualified query errors (429)", async () => {
+    mockedGet.mockImplementation((url: string, config: any) => {
+      if (url.includes("googleapis.com")) {
+        // The author-qualified query 429s; the title-only fallback must still run.
+        if (String(config?.params?.q).includes("inauthor")) return Promise.reject(new Error("429"));
+        return Promise.resolve({ data: googleVolumes("9780441172719") });
+      }
+      return Promise.resolve({ data: {} }); // OpenLibrary/BN empty
+    });
+    const r = await lookupIsbnsByTitle("Dune", "Frank Herbert");
+    expect(r).toEqual(["9780441172719"]);
+  });
 });

@@ -37,6 +37,17 @@ describe("scan flow integration (mapper → search index → match)", () => {
     expect(matchIsbnInIndex("8370012256", index)?.plTitle).toBe("Miecz dla Króla");
   });
 
+  it("self-heals a dirty ISBN column: normalizes a bare ISBN-10 and drops junk tokens", () => {
+    // Legacy/hand-typed column: a bare ISBN-10 and a junk token alongside a valid ISBN-13.
+    const book = mapPageToBook(page("ISBN: 8370012256, 9788375900019"));
+    // "ISBN:" dropped; "8370012256" → 9788370012250; "9788375900019" kept — all canonical.
+    expect(book.isbns).toEqual(["9788370012250", "9788375900019"]);
+    const index = toSearchIndex([book]);
+    // A scan of the ISBN-13 barcode for the old book now matches (was stored only as ISBN-10).
+    expect(matchIsbnInIndex("9788370012250", index)?.plTitle).toBe("Miecz dla Króla");
+    expect(matchIsbnInIndex("8370012256", index)?.plTitle).toBe("Miecz dla Króla");
+  });
+
   it("DROPS the book from the index when it is a cycle volume (Tom cyklu)", () => {
     const book = mapPageToBook(page("9788375900019", "Tom cyklu"));
     const index = toSearchIndex([book]);

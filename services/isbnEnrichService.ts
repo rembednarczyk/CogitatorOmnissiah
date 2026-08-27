@@ -121,6 +121,13 @@ export class IsbnEnrichService {
 
       await Promise.all(tasks);
 
+      // A cancel that landed mid-run only made the remaining tasks early-return; report it as
+      // a stop, not a `complete` (which would look like a genuine finish over all targets).
+      if (checkCancellation()) {
+        sendEvent({ type: "status", message: `Przerwano Rytuał Sygnatur (zapisano ${updatedCount}).` });
+        return;
+      }
+
       sendEvent({
         type: "complete",
         result: {

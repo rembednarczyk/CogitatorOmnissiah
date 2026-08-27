@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.56.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.57.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,19 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.57.0** — **Bughunt skanera/ISBN (3 agenty + weryfikacja) — 7 realnych fixów.** Rdzeń potwierdzony
+  czysty (matematyka ISBN, cap, throw-logic, round-trip, brak utraty ISBN-ów). Naprawione: (1) FE — wyszukiwarka
+  po ISBN robiła substring → rok „1984" trafiał w każdy ISBN zawierający „1984"; teraz match po PREFIKSIE
+  (+ fragment ≥8 cyfr może w środku), koniec szumu. (2) FE — fetch skanu bez timeoutu mógł zawiesić spinner
+  na wieczność → `fetchWithTimeout` (AbortController, 12 s) na obu fetchach. (3) FE — resolve ufał pustemu
+  `book.title` (baner „null" + tryb przeglądania) → guard `book?.title`. (4) FE — `video.play()` reject
+  zostawiał kamerę włączoną → `teardown()` w catch. (5) FE — ręczny wpis nie-ISBN zamykał się bez feedbacku
+  → walidacja 10/13 cyfr + komunikat. (6) BE — błąd (429) na zapytaniu autor-owym w Google/BN ubijał całe
+  źródło i pomijał fallback title-only → per-query try/catch. (7) BE — anulowanie w trakcie raportowane jako
+  `complete` → post-loop check → status „Przerwano". (8) MAPPER — `notionMapper` NORMALIZUJE teraz każdy token
+  ISBN na read (ISBN-10→13, odrzut junk „ISBN:") → brudna/legacy kolumna sama się leczy i skan trafia. +12
+  testów. ODRZUCONE jako nie-bug/kosmetyka: quoting multi-word Google (precyzja vs recall — do „require author"
+  w backlogu), `found` mislabel, X-strip w cleanScannedCode (spójne wewn.).
 - **1.56.1** — **FIX: skaner też dopasowuje stary ISBN-10 (spójnie z wyszukiwarką).** Luka: `matchIsbnInIndex`
   (skan + ręczny wpis w oknie skanera) porównywał TYLKO do zapisanych ISBN-13, więc wpisany stary ISBN-10
   (`8370012256`) nie trafiał w wiersz zapisany jako `9788370012250` (antykwariat!). Fix: skaner dopasowuje

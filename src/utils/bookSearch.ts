@@ -40,14 +40,17 @@ export function matchBooks(query: string, index: BookIndexEntry[]): BookIndexEnt
     const title = fold(displayTitle(b));
     const orig = fold(b.origTitle);
     const author = fold(b.author);
-    // Digit-only blob of the book's ISBN forms (ISBN-13 + old ISBN-10) for full/partial
-    // ISBN search. Spaces between forms stop a query from matching across two ISBNs.
-    const isbnBlob = (b.isbnSearch || "").toLowerCase();
+    // The book's ISBN forms (ISBN-13 + old ISBN-10) for full/partial ISBN search.
+    const isbnForms = (b.isbnSearch || "").toLowerCase().split(/\s+/).filter(Boolean);
     const matchesAll = tokens.every((t) => {
       if (title.includes(t) || orig.includes(t) || author.includes(t)) return true;
-      // A numeric token of ≥4 digits may be a (partial) ISBN — match it against the ISBN blob.
+      // A numeric token of ≥4 digits may be a (partial) ISBN. Match it as a PREFIX of an
+      // ISBN (how people read/type ISBNs, left to right) — NOT any substring, so a common
+      // number like a year „1984" doesn't hit every ISBN that merely contains it. A long
+      // fragment (≥8 digits, can't be a year) may also match mid-ISBN.
       const digits = t.replace(/[^0-9x]/g, "");
-      return digits.length >= 4 && isbnBlob.includes(digits);
+      if (digits.length < 4) return false;
+      return isbnForms.some((f) => f.startsWith(digits) || (digits.length >= 8 && f.includes(digits)));
     });
     if (!matchesAll) continue;
 
