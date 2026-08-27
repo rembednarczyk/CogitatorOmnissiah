@@ -16,6 +16,7 @@ import { CycleLookupService } from "./services/cycleLookupService";
 import { CycleHarvestService } from "./services/cycleHarvestService";
 import { IsbnEnrichService } from "./services/isbnEnrichService";
 import { aggregateCycleRows } from "./services/cycleRows";
+import { fetchAwardPage } from "./services/awardBooksSource";
 import { lookupIsbn } from "./services/isbnLookupService";
 import { toSearchIndex } from "./services/bookSearchIndex";
 import { isAwardBook } from "./services/bookCategory";
@@ -268,7 +269,7 @@ class SyncManager {
     for (const aw of AWARDS) {
       const t0 = Date.now();
       try {
-        const books = await bookSyncService.fetchBooksFromMediaWiki(aw.title, aw.name, () => {});
+        const books = await fetchAwardPage(wikiAdapter, aw.title, aw.name, () => {});
         const entry = {
           award: aw.name, pageTitle: aw.title, ok: true,
           booksParsed: books.length, ms: Date.now() - t0,
