@@ -3,7 +3,7 @@ import { ConfigService } from "./configService";
 import { WikiAdapter } from "../wiki.adapter";
 import { fetchAwardBooks } from "./awardBooksSource";
 import { SyncEvent, NotionBook, Book, IntegrityCheckResult } from "../src/types";
-import { normalizeData } from "./dataNormalizer";
+import { robustBookKey } from "./bookMatch";
 import { isAwardBook } from "./bookCategory";
 
 export type { IntegrityCheckResult };
@@ -71,31 +71,6 @@ export class IntegrityService {
     return fetchAwardBooks(this.wiki, awards, sendEvent, checkCancellation);
   }
 
-  /**
-   * A variation-resistant book identity key: normalizes the author (mappings),
-   * sorts and cleans names, normalizes the title. Empty title → empty key
-   * (rejected), so "|author" doesn't merge different books by the same author.
-   */
-  private robustKey(author: string, title: string): string {
-    const normalizedAuthor = normalizeData(author || "", 'author');
-    const authors = normalizedAuthor.split(',').map(a =>
-      a.toLowerCase()
-        .replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, "")
-        .replace(/\s{2,}/g, " ")
-        .trim()
-    ).filter(Boolean).sort();
-    const normAuthor = authors.join(",");
-
-    const normTitle = normalizeData(title || "", 'title')
-      .toLowerCase()
-      .replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, "")
-      .replace(/\s{2,}/g, " ")
-      .trim();
-
-    if (!normTitle) return "";
-    return `${normTitle}|${normAuthor}`;
-  }
-
   // --- A. Lp uniqueness ---
   private checkLpUniqueness(books: NotionBook[]): string[] {
     const lpMap = new Map<string, number>();
@@ -111,7 +86,7 @@ export class IntegrityService {
     books.forEach(b => {
       const title = pick(b);
       if (!title) return;
-      const key = this.robustKey(b.author || "", title);
+      const key = robustBookKey(b.author || "", title);
       map.set(key, (map.get(key) || 0) + 1);
     });
     return Array.from(map.entries())
@@ -129,7 +104,7 @@ export class IntegrityService {
 
   private notionEntries(notionBooks: NotionBook[]): BookEntry[] {
     return notionBooks.filter(b => this.hasTrackedAward(b)).map(b => ({
-      keys: [this.robustKey(b.author || "", b.origTitle || ""), this.robustKey(b.author || "", b.plTitle || "")].filter(Boolean),
+      keys: [robustBookKey(b.author || "", b.origTitle || ""), robustBookKey(b.author || "", b.plTitle || "")].filter(Boolean),
       years: (b.year || "").split(',').map(y => y.trim()).filter(Boolean),
       display: `"${b.origTitle || b.plTitle}" (${b.author})`,
     }));
@@ -137,7 +112,7 @@ export class IntegrityService {
 
   private wikiEntries(allWikiBooks: Book[]): BookEntry[] {
     return allWikiBooks.map(b => ({
-      keys: [this.robustKey(b.author || "", b.originalTitle || ""), this.robustKey(b.author || "", b.polishTitle || "")].filter(Boolean),
+      keys: [robustBookKey(b.author || "", b.originalTitle || ""), robustBookKey(b.author || "", b.polishTitle || "")].filter(Boolean),
       years: [b.year.toString()],
       display: `"${b.originalTitle || b.polishTitle}" (${b.author})`,
     }));

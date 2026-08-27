@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.67.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.67.2** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,17 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.67.2** — **[Tier 1, PR2] Wspólny `services/bookMatch.ts` (klucz tożsamości + scoring duplikatów) — BEZ
+  zmiany reguł.** Konsolidacja rozproszonej logiki dopasowywania rekordów, ale zachowawczo (wybór usera: „tylko
+  bezpieczna część"). Trzy prymitywy przeniesione VERBATIM: `robustBookKey` (kanoniczny klucz — z
+  `integrityService.robustKey`), `scoreDuplicatePair` (pełny 7-regułowy audyt — z `duplicateSyncService`),
+  `isInsertDuplicate` (lekki insert-guard — z `bookSyncService`). Konsumenci: integrity → `robustBookKey`,
+  `duplicateSyncService` → `scoreDuplicatePair`, `bookSyncService` → `isInsertDuplicate` (usunięte lokalne
+  `calculateSimilarity`/`countCommonWords`/`normalizeData` gdzie zbędne). Dwie strategie duplikatów zostają
+  osobne CELOWO (insert-guard vs audyt odpowiadają na różne pytania). **Konwergencja klucza lookup w ścieżce
+  sync na `robustBookKey` ŚWIADOMIE odłożona** — zmieniłaby, które rekordy się matchują (ryzyko duplikatów w
+  Notion). +10 testów `bookMatch` (blokują bieżące reguły). Suite 474 zielone, lint czysty, build OK. ZOSTAJE
+  z Tier 1: divergent normalizery klucza sync (odłożone jw.).
 - **1.67.1** — **[Przegląd architektury — Tier 1, PR1] FIX: kontrola spójności czyta listę nagród z configu +
   wspólne źródło stron nagród.** Bug: `IntegrityService` miał zahardkodowaną `PREDEFINED_AWARDS`, więc nagroda
   dodana w Ustawieniach NIE była sprawdzana. Fix: czyta `config.sync.awards` (jak `bookSyncService` i

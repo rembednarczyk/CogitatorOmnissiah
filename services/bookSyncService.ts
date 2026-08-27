@@ -1,13 +1,14 @@
 import pLimit from "p-limit";
 import { NotionAdapter } from "../notion.adapter";
 import { WikiAdapter } from "../wiki.adapter";
-import { calculateSimilarity, countCommonWords, cleanTitle } from "../utils";
+import { cleanTitle } from "../utils";
 import { Book, NotionBook, SyncEvent, SyncParams } from "../src/types";
 import { normalizeData } from "./dataNormalizer";
 import { buildBookUpdates, buildNewBookProperties } from "./bookDiff";
 import { isCycleVolume, AWARD_CATEGORY } from "./bookCategory";
 import { ConfigService } from "./configService";
 import { fetchAwardPage, fetchAwardBooks } from "./awardBooksSource";
+import { isInsertDuplicate } from "./bookMatch";
 
 export class BookSyncService {
   constructor(private notion: NotionAdapter, private wiki: WikiAdapter, private config: ConfigService) {}
@@ -93,21 +94,10 @@ export class BookSyncService {
           
           let isDuplicateFound = false;
           if (!existingBook) {
-            // Check for potential duplicates
+            // Check for potential duplicates (insert-guard: same author + ≥2 common
+            // original-title words). Rule lives in `bookMatch.isInsertDuplicate`.
             for (const [titleWithAuthor, bookData] of existingBooksMap.entries()) {
-              let isDuplicate = false;
-              
-              // Check if authors are similar
-              const authorA = (book.author || "").toLowerCase().trim();
-              const authorB = (bookData.author || "").toLowerCase().trim();
-              const sameAuthor = authorA && authorB && (authorA === authorB || calculateSimilarity(authorA, authorB) > 0.85);
-
-              // Strict rule: at least 2 common significant words in original title AND same author
-              if (sameAuthor && book.originalTitle && bookData.origTitle && countCommonWords(book.originalTitle, bookData.origTitle) >= 2) {
-                isDuplicate = true;
-              }
-
-              if (isDuplicate) {
+              if (isInsertDuplicate(book, bookData)) {
                 syncSummary.duplicates.push(`${bookDisplayName} (duplikat: ${bookData.origTitle || titleWithAuthor} - dopasowanie słów + autor)`);
                 isDuplicateFound = true;
                 break;
