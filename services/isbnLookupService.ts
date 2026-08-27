@@ -11,6 +11,7 @@ import { createLogger } from "../logger";
 
 const log = createLogger("IsbnLookup");
 const GOOGLE_BOOKS = "https://www.googleapis.com/books/v1/volumes";
+const OPEN_LIBRARY = "https://openlibrary.org/search.json";
 
 export interface IsbnBook {
   /** Canonical ISBN-13 that was resolved. */
@@ -68,20 +69,46 @@ function collectIsbns(items: any[]): string[] {
 }
 
 /** One Google Books query → deduped ISBN-13s. */
-async function queryIsbns(q: string): Promise<string[]> {
+async function queryGoogle(q: string): Promise<string[]> {
   const res = await axios.get(GOOGLE_BOOKS, { params: { q, maxResults: 20 }, timeout: 10000 });
   return collectIsbns(Array.isArray(res.data?.items) ? res.data.items : []);
 }
 
 /**
+ * OpenLibrary reverse lookup → deduped ISBN-13s. Keyless and tolerant of server/
+ * datacenter IPs (Google Books rate-limits keyless calls hard from cloud hosts like
+ * Render), and each `doc.isbn` already lists every edition's ISBN — ideal here.
+ */
+async function queryOpenLibrary(title: string, author: string): Promise<string[]> {
+  const params: Record<string, string | number> = { title, limit: 5, fields: "isbn" };
+  if (author) params.author = author;
+  const res = await axios.get(OPEN_LIBRARY, { params, timeout: 10000 });
+  const docs: any[] = Array.isArray(res.data?.docs) ? res.data.docs : [];
+  const found = new Set<string>();
+  for (const doc of docs) {
+    const isbns: any[] = Array.isArray(doc?.isbn) ? doc.isbn : [];
+    for (const raw of isbns) {
+      const normalized = normalizeIsbn(String(raw || ""));
+      if (normalized) found.add(normalized);
+    }
+  }
+  return Array.from(found);
+}
+
+/**
  * Reverse lookup for the enrichment ritual (barcode "variant B"): given a book's
- * title (+ optional author), collect the canonical ISBN-13s of ALL its editions via
- * Google Books, so any edition's barcode identifies the row. The use case is „do I
- * own this title at all", not „this exact edition" — so we store every ISBN we can
- * resolve (ISBN-13 directly, ISBN-10 converted to 13), deduped. Returns the list
- * (possibly empty). Throws only on an unexpected error so the caller can report it.
+ * title (+ optional author), collect the canonical ISBN-13s of ALL its editions, so
+ * any edition's barcode identifies the row. The use case is „do I own this title at
+ * all", not „this exact edition" — so we store every ISBN we can resolve, deduped.
  *
- * The query terms are joined with a SPACE, not a literal „+": axios encodes a space
+ * Two sources for resilience: Google Books first, then OpenLibrary if Google finds
+ * nothing OR is unreachable (Google rate-limits keyless calls hard from datacenter
+ * IPs like Render — the enrichment came back empty in production for exactly this).
+ * Returns the deduped union. Returns [] when the sources respond but nothing matches;
+ * throws only when BOTH sources error (a real outage the caller reports per book), so
+ * a genuine „no match" is never confused with „couldn't reach the API".
+ *
+ * Google query terms are joined with a SPACE, not a literal „+": axios encodes a space
  * as „+" (the Google Books AND separator), whereas a literal „+" is escaped to „%2B"
  * and read as one garbage token — which returns zero results for every book.
  */
@@ -92,10 +119,35 @@ export async function lookupIsbnsByTitle(title: string, author?: string): Promis
   // and avoids over-constraining the query (some editions list a translator/editor too).
   const firstAuthor = (author || "").split(",")[0].trim();
 
-  if (firstAuthor) {
-    const withAuthor = await queryIsbns(`intitle:${cleanTitle} inauthor:${firstAuthor}`);
-    if (withAuthor.length > 0) return withAuthor;
-    // Fall back to title-only — some editions aren't indexed under the same author string.
+  const found = new Set<string>();
+  const failures: string[] = [];
+
+  // Source 1: Google Books (title+author, then title-only fallback).
+  try {
+    if (firstAuthor) {
+      (await queryGoogle(`intitle:${cleanTitle} inauthor:${firstAuthor}`)).forEach((x) => found.add(x));
+    }
+    if (found.size === 0) {
+      (await queryGoogle(`intitle:${cleanTitle}`)).forEach((x) => found.add(x));
+    }
+  } catch (e: any) {
+    log.warn("Google Books niedostępne", { title: cleanTitle, error: e?.message });
+    failures.push(`google-books: ${e?.message || "błąd"}`);
   }
-  return await queryIsbns(`intitle:${cleanTitle}`);
+
+  // Source 2: OpenLibrary — only if Google found nothing (or was unreachable).
+  if (found.size === 0) {
+    try {
+      (await queryOpenLibrary(cleanTitle, firstAuthor)).forEach((x) => found.add(x));
+    } catch (e: any) {
+      log.warn("OpenLibrary niedostępne", { title: cleanTitle, error: e?.message });
+      failures.push(`openlibrary: ${e?.message || "błąd"}`);
+    }
+  }
+
+  // Both sources errored AND nothing found → a real outage, surface it to the caller.
+  if (found.size === 0 && failures.length === 2) {
+    throw new Error(failures.join("; "));
+  }
+  return Array.from(found);
 }

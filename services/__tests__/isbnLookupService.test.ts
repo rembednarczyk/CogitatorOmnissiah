@@ -81,8 +81,25 @@ describe("lookupIsbnsByTitle", () => {
     expect(r).toEqual(["9780306406157"]);
   });
 
-  it("returns [] when no volume carries a usable ISBN (both queries)", async () => {
-    mockedGet.mockResolvedValue({ data: { items: [{ volumeInfo: { industryIdentifiers: [{ type: "OTHER", identifier: "xyz" }] } }] } });
+  it("falls back to OpenLibrary when Google Books finds nothing", async () => {
+    mockedGet
+      .mockResolvedValueOnce({ data: { items: [] } })                                   // google: author query
+      .mockResolvedValueOnce({ data: { items: [] } })                                   // google: title-only
+      .mockResolvedValueOnce({ data: { docs: [{ isbn: ["9788375780635", "0306406152"] }] } }); // openlibrary
+    const r = await lookupIsbnsByTitle("Rare", "Author");
+    // OpenLibrary's isbn array mixes ISBN-10/13 → all normalized to canonical 13, deduped.
+    expect(r).toEqual(["9788375780635", "9780306406157"]);
+    expect(mockedGet).toHaveBeenCalledTimes(3);
+    expect(mockedGet.mock.calls[2][0]).toContain("openlibrary.org");
+  });
+
+  it("throws only when BOTH sources are unreachable (so 'no match' ≠ 'API down')", async () => {
+    mockedGet.mockRejectedValue(new Error("ECONNRESET"));
+    await expect(lookupIsbnsByTitle("X", "Y")).rejects.toThrow(/google-books.*openlibrary/s);
+  });
+
+  it("returns [] (not an error) when sources respond but nothing matches", async () => {
+    mockedGet.mockResolvedValue({ data: { items: [], docs: [] } });
     const r = await lookupIsbnsByTitle("Nothing", "Someone");
     expect(r).toEqual([]);
   });
