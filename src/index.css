@@ -179,26 +179,31 @@ body {
   --color-slate-300:#5C5344; --color-slate-400:#8C8069; --color-slate-500:#8C8069;
   --color-slate-600:#9C8F78; --color-slate-700:#D6C6A6; --color-slate-800:#E4D9C4;
   --color-slate-900:#FBF6EC; --color-slate-950:#F3ECDF;
+  /* UWAGA: w tej apce shade'y 100–300 danej rodziny są używane WYŁĄCZNIE jako
+     kolor TEKSTU (nagłówki sekcji `text-*-100/90`, etykiety `text-*-300`), nigdy
+     jako jasne tła — więc mapujemy je na czytelne, GŁĘBOKIE tony (nie jasne),
+     inaczej nagłówki zlałyby się z papierem. Shade'y 400–700 (tekst akcentu +
+     jasny koniec gradientów/wypełnień) zostają w tonach średnich. */
   /* Clay (primary) */
-  --color-cyan-300:#DBA98D;  --color-cyan-400:#CD8F6E; --color-cyan-500:#C07A56;
-  --color-cyan-600:#A6603F;  --color-cyan-700:#8F4F31;
-  --color-blue-400:#CD8F6E;  --color-blue-500:#C07A56; --color-blue-600:#A6603F; --color-blue-700:#8F4F31;
-  --color-sky-400:#CD8F6E;   --color-sky-500:#C07A56;
+  --color-cyan-100:#8F4F31;  --color-cyan-200:#A6603F; --color-cyan-300:#B06A44;
+  --color-cyan-400:#CD8F6E;  --color-cyan-500:#C07A56; --color-cyan-600:#A6603F; --color-cyan-700:#8F4F31;
+  --color-blue-200:#A6603F;  --color-blue-300:#B06A44; --color-blue-400:#CD8F6E; --color-blue-500:#C07A56; --color-blue-600:#A6603F; --color-blue-700:#8F4F31;
+  --color-sky-300:#B06A44;   --color-sky-400:#CD8F6E;  --color-sky-500:#C07A56;
   /* Sage */
-  --color-emerald-300:#9AA588; --color-emerald-400:#8F9A7C; --color-emerald-500:#7E8A6B; --color-emerald-600:#68735A;
+  --color-emerald-100:#4F5A39; --color-emerald-200:#5B6743; --color-emerald-300:#63704C; --color-emerald-400:#8F9A7C; --color-emerald-500:#7E8A6B; --color-emerald-600:#68735A;
   --color-green-400:#8F9A7C;  --color-green-500:#7E8A6B;
   --color-teal-400:#8F9A7C;   --color-teal-500:#7E8A6B;
-  --color-indigo-300:#9AA588; --color-indigo-400:#8F9A7C; --color-indigo-500:#7E8A6B; --color-indigo-600:#68735A;
-  --color-purple-300:#9AA588; --color-purple-400:#8F9A7C; --color-purple-500:#7E8A6B; --color-purple-600:#68735A;
-  --color-violet-400:#8F9A7C; --color-violet-500:#7E8A6B;
+  --color-indigo-100:#4F5A39; --color-indigo-200:#5B6743; --color-indigo-300:#63704C; --color-indigo-400:#8F9A7C; --color-indigo-500:#7E8A6B; --color-indigo-600:#68735A;
+  --color-purple-100:#4F5A39; --color-purple-200:#5B6743; --color-purple-300:#63704C; --color-purple-400:#8F9A7C; --color-purple-500:#7E8A6B; --color-purple-600:#68735A;
+  --color-violet-300:#63704C; --color-violet-400:#8F9A7C; --color-violet-500:#7E8A6B;
   /* Ochre */
-  --color-amber-300:#DCB97E; --color-amber-400:#D8AD55; --color-amber-500:#CE9B3F; --color-amber-600:#B3822C; --color-amber-700:#96691F;
+  --color-amber-100:#7F5D16; --color-amber-200:#8F6A1C; --color-amber-300:#A67C24; --color-amber-400:#D8AD55; --color-amber-500:#CE9B3F; --color-amber-600:#B3822C; --color-amber-700:#96691F;
   --color-yellow-400:#D8AD55;--color-yellow-500:#CE9B3F;
-  --color-orange-400:#D69663;--color-orange-500:#CE9B3F; --color-orange-600:#B3822C;
+  --color-orange-300:#B3822C;--color-orange-400:#D69663;--color-orange-500:#CE9B3F; --color-orange-600:#B3822C;
   /* Brick (danger) */
-  --color-rose-300:#C98A7E;  --color-rose-400:#C06E5F; --color-rose-500:#B0574A; --color-rose-600:#974336;
-  --color-red-300:#C98A7E;   --color-red-400:#C06E5F;  --color-red-500:#B0574A; --color-red-600:#974336; --color-red-700:#7E3A2E;
-  --color-pink-400:#C06E5F;  --color-pink-500:#B0574A;
+  --color-rose-100:#8F4336;  --color-rose-200:#9C4A3A; --color-rose-300:#A5503F; --color-rose-400:#C06E5F; --color-rose-500:#B0574A; --color-rose-600:#974336;
+  --color-red-100:#8F4336;   --color-red-200:#9C4A3A;  --color-red-300:#A5503F; --color-red-400:#C06E5F;  --color-red-500:#B0574A; --color-red-600:#974336; --color-red-700:#7E3A2E;
+  --color-pink-300:#A5503F;  --color-pink-400:#C06E5F; --color-pink-500:#B0574A;
 }
 
 [data-theme="light"] body { background-color: var(--l-paper); color: var(--l-ink); }
@@ -231,3 +236,45 @@ body {
 [data-theme="light"] .custom-scrollbar::-webkit-scrollbar-track { background: rgba(228,217,196,.5); }
 [data-theme="light"] .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(192,122,86,.45); }
 [data-theme="light"] .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(192,122,86,.7); }
+
+/* ============================================================================
+   REGAŁ — jasny wariant skór (len + jasny dąb) wg `design/Regal.dc.html`.
+   Skóry `.skin-*` niosą własne, twarde gradienty ciemnego drewna/neonu (NIE
+   przechodzą przez `--color-*`), więc w jasnym motywie regał zostawał ciemny.
+   Nadpisujemy tu wspólne `--sk-*`/`--noo-*` dla OBU skór → ciepły, jasny regał.
+   Grzbiety (jewel-tone z JS) zostają — czytają się jak realne książki na lnie.
+   ============================================================================ */
+[data-theme="light"] .skin-holo,
+[data-theme="light"] .skin-noospheric {
+  --noo-glow: 192,122,86; --noo-accent2: 126,138,107;
+  --sk-cab-bg: linear-gradient(150deg,#f4ebda 0%,#ece0c8 45%,#e4d7bd 100%);
+  --sk-cornice-bg: linear-gradient(180deg,#ede1ca 0%,#e3d4b9 60%,#d9c8a8 100%);
+  --sk-well-bg: repeating-linear-gradient(90deg,#efe6d5 0px,#efe6d5 26px,#e7dcc4 27px,#efe6d5 28px), radial-gradient(120% 80% at 50% 0%, rgba(255,255,255,.28), rgba(58,52,43,.06));
+  --sk-plank-bg: linear-gradient(180deg, rgba(255,255,255,.55) 0, #caa877 1px, #b6905f 55%, #9a7549 100%);
+  --sk-plate-bg: linear-gradient(180deg,#e7d3a5 0%,#d3b06e 58%,#b98f4a 100%);
+  --sk-plate-text: #4a3517; --sk-plate-edge: #b28c4d;
+  --sk-board-bg: linear-gradient(90deg,#c3a06f,#a9835a 45%,#b8955f 55%,#8f6a3f);
+  --sk-cog-ring: #b6905f; --sk-cog-skull: #6a5738; --sk-cog-disc: #efe6d5;
+  --sk-frame-accent: 206,155,63;
+  --sk-frame-border: rgba(58,52,43,.14); --sk-frame-glow: 0 0 0 rgba(0,0,0,0);
+  --sk-plinth: linear-gradient(180deg,#e2d3b8,#d0bd98);
+  --sk-foot: linear-gradient(180deg,#d3c09e,#c0aa82);
+  --sk-room-bg: linear-gradient(180deg,#efe6d5 0%,#e8dcc4 55%,#e0d1b6 100%), repeating-linear-gradient(90deg, rgba(58,52,43,.03) 0 2px, transparent 2px 130px);
+  --sk-room-inset: rgba(58,52,43,.06);
+  --sk-room-floor: linear-gradient(180deg,#d8c19a 0,#c9b087 40%,#b89e70 100%);
+  --sk-room-cog: #c1a071;
+  --sk-room-mote: rgba(150,110,60,.32);
+  --sk-room-glow: rgba(206,155,63,.2);
+  --sk-room-flame: radial-gradient(circle at 50% 72%, #fff3c0, #eaa53f 55%, #cf7a26);
+}
+/* Divider (żyła/smużka/sygil) — cieplejszy akcent na jasnym dębie. */
+[data-theme="light"] .skin-holo .shelf-divider,
+[data-theme="light"] .skin-noospheric .shelf-divider {
+  --noo-glow: 176,120,70;
+  --sk-board-bg: linear-gradient(180deg,#caa24c,#b07d2e 42%,#8a5f22);
+  --sk-plate-text: #4a3517; --sk-plate-edge: #7d5210;
+  --sk-cog-ring: #b6905f; --sk-cog-skull: #5c4a2e; --sk-cog-disc: #efe6d5;
+}
+/* Gwiazdka „Wyróżnione" na okładce — ciepły akcent zamiast neonu. */
+[data-theme="light"] .skin-holo .cover-badge,
+[data-theme="light"] .skin-noospheric .cover-badge { color: #C07A56; border-color: #C07A56; }
