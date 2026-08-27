@@ -11,7 +11,7 @@ import { scanSupported, cleanScannedCode, matchIsbnInIndex } from "../utils/barc
 const RENDER_CAP = 150;
 
 export const SearchSection: React.FC = () => {
-  const { books, loading, error, fetchBooks } = useBooks();
+  const { books, loading, error, fetchBooks, setBooks } = useBooks();
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -35,23 +35,34 @@ export const SearchSection: React.FC = () => {
     setScanNotice(null);
     const code = cleanScannedCode(rawCode);
     if (!code) return;
-
-    const direct = matchIsbnInIndex(code, books ?? []);
-    if (direct) {
-      setQuery(direct.plTitle || direct.origTitle);
-      setScanNotice({ kind: "exact", text: `Trafienie w archiwum: „${direct.plTitle || direct.origTitle}"` });
-      return;
-    }
-
     setScanResolving(true);
     try {
+      // Match against a FRESH index, not the in-memory one: the ISBN may have been added
+      // by the enrichment ritual after this page loaded (useBooks fetches only on mount),
+      // so the cached list can be stale exactly for a just-enriched book.
+      let index = books ?? [];
+      try {
+        const fresh = await fetch(`/api/books?t=${Date.now()}`);
+        if (fresh.ok) { index = await fresh.json(); setBooks(index); }
+      } catch {
+        // Network hiccup — fall back to the in-memory index.
+      }
+
+      const direct = matchIsbnInIndex(code, index);
+      if (direct) {
+        setQuery(direct.plTitle || direct.origTitle);
+        setScanNotice({ kind: "exact", text: `Trafienie w archiwum: „${direct.plTitle || direct.origTitle}"` });
+        return;
+      }
+
+      // Not stored on any row → resolve the ISBN to a title and fuzzy-search it (variant A).
       const res = await fetch(`/api/isbn/${encodeURIComponent(code)}`);
       if (res.ok) {
         const book = await res.json();
         setQuery(book.title || "");
         setScanNotice({ kind: "resolved", text: `Rozpoznano przez ISBN: „${book.title}" — przeszukuję archiwum` });
       } else {
-        setScanNotice({ kind: "miss", text: `Nie rozpoznano kodu ISBN ${code}. Spróbuj wpisać tytuł ręcznie.` });
+        setScanNotice({ kind: "miss", text: `Nie znaleziono w archiwum książki o ISBN ${code}.` });
       }
     } catch {
       setScanNotice({ kind: "miss", text: "Błąd rozpoznawania ISBN — spróbuj ponownie lub wpisz tytuł ręcznie." });
