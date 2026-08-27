@@ -22,7 +22,9 @@ export const getBooks = async (req: Request, res: Response) => {
     // `fresh=1` bypasses the 5-min server cache — used by the barcode scan so a
     // just-enriched (or manually-edited) ISBN is visible immediately.
     const fresh = req.query.fresh === "1" || req.query.fresh === "true";
-    const books = await syncManager.getBooks(fresh);
+    // `all=1` includes cycle volumes (not just award books) — the full Skryptorium / scan index.
+    const all = req.query.all === "1" || req.query.all === "true";
+    const books = await syncManager.getBooks(fresh, all);
     res.json(books);
   } catch (error: any) {
     console.error("Books Error:", error);

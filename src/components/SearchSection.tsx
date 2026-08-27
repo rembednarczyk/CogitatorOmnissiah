@@ -22,7 +22,8 @@ async function fetchWithTimeout(url: string, ms = 12000): Promise<Response> {
 }
 
 export const SearchSection: React.FC = () => {
-  const { books, loading, error, fetchBooks, setBooks } = useBooks();
+  // Full index (award books + cycle volumes) — so the scan/search finds a non-award volume too.
+  const { books, loading, error, fetchBooks, setBooks } = useBooks(true);
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -68,7 +69,7 @@ export const SearchSection: React.FC = () => {
       let index = books ?? [];
       try {
         // fresh=1 bypasses the server's 5-min cache too, so a just-added ISBN is visible.
-        const fresh = await fetchWithTimeout(`/api/books?fresh=1&t=${Date.now()}`);
+        const fresh = await fetchWithTimeout(`/api/books?fresh=1&all=1&t=${Date.now()}`);
         if (fresh.ok) { index = await fresh.json(); setBooks(index); }
       } catch {
         // Network hiccup / timeout — fall back to the in-memory index.

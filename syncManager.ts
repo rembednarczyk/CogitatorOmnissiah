@@ -118,10 +118,13 @@ class SyncManager {
     return await statsService.getStats();
   }
 
-  /** Slimmed-down book index for the „Skryptorium" search (client-side). `fresh` bypasses the cache. */
-  async getBooks(fresh = false) {
+  /**
+   * Slimmed-down book index for the „Skryptorium" search (client-side). `fresh` bypasses
+   * the cache; `all` includes cycle volumes too (award-only by default, for the Regał).
+   */
+  async getBooks(fresh = false, all = false) {
     const books = await this.notion.getBooksForStats(undefined, undefined, { cache: !fresh });
-    return toSearchIndex(books);
+    return toSearchIndex(books, !all);
   }
 
   /**

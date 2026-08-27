@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.58.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.59.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,7 +69,16 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
-- **1.58.0** — **Skryptorium mobile: czysty ekran + latarka i większy obszar w skanerze.** (1) Na mobile
+- **1.59.0** — **Skaner ISBN obejmuje też książki bez nagród (tomy cykli).** Dotąd `toSearchIndex` był
+  nagrodowo-only → skan nie znajdował tomów cykli (`Kategoria="Tom cyklu"`). Zmiany: (1) `toSearchIndex(books,
+  awardOnly=true)` — Regał zostaje nagrodowo-only, ale nowy wariant „wszystko"; (2) `getBooks(fresh, all)` +
+  `GET /api/books?all=1`; (3) `useBooks(all)` — **Skryptorium** (`SearchSection`) i skan używają `all=1`
+  (award + tomy cykli), **Regał** (`BookshelfSection`) domyślnie nagrodowo-only; (4) `isbnEnrichService`
+  przetwarza teraz KAŻDY wiersz z tytułem (usunięty filtr `isAwardBook`), więc tomy cykli też dostają ISBN.
+  Efekt: skan tomu cyklu trafia; klasyczne szukanie w Skryptorium też pokazuje tomy cykli (spójne — „szukaj
+  po wszystkim, co śledzę"); Regał i statystyki nagrodowe bez zmian. +2 testy (enrich tomu cyklu, indeks
+  award-only vs all). UWAGA: po redeployie odpal ponownie „Rytuał Sygnatur (ISBN)", żeby dociągnąć ISBN-y
+  do tomów cykli (więcej książek = więcej zapytań, rytuał ręczny — OK). (1) Na mobile
   (`matchMedia max-width:767px`) puste zapytanie NIE listuje pozycji — czysty ekran z podpowiedzią „zeskanuj
   lub wpisz tytuł" (`browseSuppressed`; browse-all pozostaje na desktopie); skan/wpis wypełnia widok. Licznik
   ukryty na czystym ekranie. Guard na brak `matchMedia`. (2) `ScanModal`: przycisk **latarki** (torch) —

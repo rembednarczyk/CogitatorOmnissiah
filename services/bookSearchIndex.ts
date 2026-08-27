@@ -20,12 +20,14 @@ function buildIsbnSearch(isbns?: string[]): string | undefined {
  * „Skryptorium" filters/renders on. Keeps a record having ANY
  * title — Polish OR original; untranslated books (original title only)
  * should be searchable too. Only a record with no title at all is dropped (a skeleton).
+ *
+ * `awardOnly` (default true): the Regał shelf stays award-only (side cycle volumes have
+ * their own „Archiwum Cykli" view). Pass `false` for the barcode scan / full Skryptorium
+ * search, so a scan can find a tracked cycle volume too.
  */
-export function toSearchIndex(books: NotionBook[]): BookIndexEntry[] {
+export function toSearchIndex(books: NotionBook[], awardOnly = true): BookIndexEntry[] {
   return books
-    // Regał and Skryptorium stay award-only — side cycle volumes are excluded
-    // (they have their own „Archiwum Cykli" view); optional inclusion will come later.
-    .filter((b) => isAwardBook(b))
+    .filter((b) => !awardOnly || isAwardBook(b))
     .filter((b) => (b.plTitle && b.plTitle.trim().length > 0) || (b.origTitle && b.origTitle.trim().length > 0))
     .map((b) => ({
       id: b.id,
