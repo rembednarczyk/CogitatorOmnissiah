@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.48.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.49.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,7 +69,16 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
-- **1.48.0** — **Vinted anty-blok pkt 2: priming przez headless browser (Playwright).** `browserPrime.ts` —
+- **1.49.0** — **Skryptorium: skaner kodów kreskowych — PR1 (backend resolver ISBN, wariant A).** Fizyczny
+  kod kreskowy = EAN-13 = ISBN-13, ale baza Notion NIE trzyma ISBN → kod nie dopasuje wiersza wprost;
+  potrzebna rezolucja ISBN→tytuł, potem istniejąca rozmyta wyszukiwarka. Czyste helpery `services/isbn.ts`
+  (`normalizeIsbn`: czyszczenie, walidacja sum kontrolnych ISBN-13/10, konwersja 10→13, odrzut nie-książkowych
+  EAN prefix≠978/979). `services/isbnLookupService.ts` (`lookupIsbn`): Google Books `q=isbn:{isbn}` (bez
+  klucza), mapowanie `items[0].volumeInfo`→`{isbn,title,author,year,source}`, cache w pamięci procesu.
+  Wpięcie: `syncManager.lookupIsbn`, `GET /api/isbn/:code` (`getIsbn`: 400 zły ISBN / 404 brak / 200 hit,
+  `normalizeIsbn` na wejściu). +11 testów. NASTĘPNE: PR2 (kolumna `ISBN` w Notion + rytuał wzbogacania po
+  tytule+autorze → wariant B: skan dopasowuje wprost), PR3 (mobilny przycisk skanu w Skryptorium →
+  `BarcodeDetector` → exact match po `isbn` (B) else resolve→fuzzy (A) + ręczny fallback ISBN). priming przez headless browser (Playwright).** `browserPrime.ts` —
   headless Chromium (`playwright-core`, optionalDependency, dynamic import) rozwiązuje wyzwanie JS Cloudflare
   po prawdziwe `cf_clearance` + UA, wpuszczane do `VintedSession` używanej dalej przez lekki axios. Knob
   `vinted.primeWithBrowser` (default off) + checkbox w Kalibracji, wpięte w skan i resolve sprzedawców.
@@ -799,6 +808,24 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
 - **1.0.0** — Stan bazowy.
 
 ## Otwarte pozycje
+
+- **Skryptorium: skaner kodów kreskowych (mobile) — feature W TOKU (A+B), 3 PR-y.** Cel: LOOKUP
+  („czy ta fizyczna książka to jedna z moich śledzonych nagrodowych?"), NIE dodawanie do bazy. Decyzje
+  użytkownika: A+B, zgoda na Google Books (external), sprzęt=Android → natywny `BarcodeDetector` (bez nowej
+  zależności skanera). Rdzeń problemu: baza Notion NIE trzyma ISBN → kod nie dopasuje wiersza wprost.
+  - **PR1 — backend resolver ISBN (wariant A)** — ✅ ZREALIZOWANE (1.49.0). `services/isbn.ts` (`normalizeIsbn`)
+    + `services/isbnLookupService.ts` (`lookupIsbn` Google Books, cache) + `GET /api/isbn/:code`.
+  - **PR2 — kolumna `ISBN` w Notion + rytuał wzbogacania (wariant B)** — TODO. Nowa kolumna `ISBN` (rich_text)
+    w `requiredProps` (Rytuał Inicjacji Schematu); rytuał wzbogacania: dla nagrodowych bez ISBN → Google Books
+    po tytule+autorze → zapis „najlepszego dopasowania"; mapper czyta `isbn`; indeks wyszukiwarki dostaje `isbn`
+    (exact-match skanu bez zapytania zewnętrznego).
+  - **PR3 — frontend skanu (mobile)** — TODO. Przycisk skanu w Skryptorium (tylko gdy `BarcodeDetector`
+    dostępny) → modal kamery → exact match po zapisanym `isbn` (B), inaczej resolve→fuzzy-search (A);
+    ręczny fallback wpisania ISBN.
+  - **ZASTRZEŻENIA / ODŁOŻONE**: (a) iOS Safari NIE ma natywnego `BarcodeDetector` — fallback `@zxing/browser`
+    odłożony (v1 = Android/Chrome); (b) multi-edition ISBN — książka ma wiele ISBN wydań, wzbogacanie (B)
+    zapisuje JEDNO „najlepsze" z Google Books, często ≠ ISBN fizycznego egzemplarza → wariant A (resolve→tytuł
+    →fuzzy) jest bezpieczniejszą siecią; docelowo można trzymać listę ISBN wydań, nie jeden.
 
 - **Vinted znowu zablokował skaner — alternatywy w zanadrzu** — NOTATKA (Vinted ubił skan z IP Render/datacenter).
   Co JUŻ mamy (obrona pasywna): throttle 3–5 s + jitter na każdej ścieżce, pula User-Agent (rotacja,

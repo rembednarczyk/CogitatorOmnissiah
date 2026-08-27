@@ -3,6 +3,7 @@ import { syncManager, SyncTaskName, configService } from "../syncManager";
 import { SyncParams } from "../src/types";
 import { createLogger } from "../logger";
 import { executeSyncTask } from "./sseStream";
+import { normalizeIsbn } from "../services/isbn";
 
 const log = createLogger("SyncController");
 
@@ -315,6 +316,20 @@ export const getCycle = async (req: Request, res: Response) => {
   } catch (error: any) {
     log.error("Cycle lookup error", { title, message: error?.message });
     res.status(500).json({ error: error.message || "Błąd podglądu cyklu." });
+  }
+};
+
+export const getIsbn = async (req: Request, res: Response) => {
+  const code = typeof req.params.code === "string" ? req.params.code : "";
+  const isbn = normalizeIsbn(code);
+  if (!isbn) return res.status(400).json({ error: "Nieprawidłowy ISBN." });
+  try {
+    const book = await syncManager.lookupIsbn(isbn);
+    if (!book) return res.status(404).json({ error: "Nie znaleziono książki dla tego ISBN." });
+    res.json(book);
+  } catch (error: any) {
+    log.error("ISBN lookup error", { isbn, message: error?.message });
+    res.status(500).json({ error: error.message || "Błąd wyszukiwania ISBN." });
   }
 };
 
