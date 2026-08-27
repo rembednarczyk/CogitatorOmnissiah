@@ -288,3 +288,27 @@ body {
 /* Gwiazdka „Wyróżnione" na okładce — ciepły akcent zamiast neonu. */
 [data-theme="light"] .skin-holo .cover-badge,
 [data-theme="light"] .skin-noospheric .cover-badge { color: #C07A56; border-color: #C07A56; }
+
+/* Jasny Regał: bez 40k. Chowamy warhammerowe ornamenty/efekty (cog-skull,
+   ticker binarny, skan-linia, HUD-narożniki, holo-crest, płomień świecy,
+   pyłki, żyły danych) → czysty, boho regał. Ciemny motyw = bez zmian. */
+[data-theme="light"] .dc-40k,
+[data-theme="light"] .noo-data { display: none !important; }
+
+/* Jaśniejsze grzbiety z palety makiety (var `--spine-light`) + jasne okładki. */
+[data-theme="light"] .skin-noospheric .book-spine {
+  background: linear-gradient(90deg, rgba(58,52,43,.20), var(--spine-light) 20%, var(--spine-light) 80%, rgba(58,52,43,.14));
+  box-shadow: inset 1.5px 0 0 rgba(255,255,255,.30), inset -2px 0 4px rgba(58,52,43,.24), 0 6px 12px -7px rgba(58,52,43,.42);
+}
+[data-theme="light"] .skin-noospheric .stack-layer {
+  background: linear-gradient(0deg, rgba(58,52,43,.24) 0, var(--spine-light) 26%, var(--spine-light) 74%, rgba(255,255,255,.22) 100%);
+}
+[data-theme="light"] .skin-noospheric .cover-card { background: linear-gradient(150deg, var(--cml-a), var(--cml-b)); }
+
+/* Tytuł na grzbiecie: kremowa biel + mocny cień = czytelny na jasnym grzbiecie
+   (zamiast bieli zlewającej się z jasnym tłem). */
+[data-theme="light"] .skin-noospheric .spine-title {
+  color: #FBF3E6;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(45,38,28,.72), 0 0 1px rgba(45,38,28,.55);
+}

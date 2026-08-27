@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.65.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.66.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,17 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.66.0** — **Jasny Regał: kolory grzbietów z makiety + usunięcie 40k + czytelny kremowy tytuł.** (1) Nowa
+  `LIGHT_SPINE_PALETTE` (12 boho mid-tone: clay/sage/ochre/brick/tany) równoległa do `CLOTH_PALETTE`; `spineStyle`
+  zwraca `light`, komponenty emitują `--spine-light` (BookSpine/BookStack) i `--cml-a/b` (CoverCard). Warstwa
+  `[data-theme="light"] .skin-noospheric .book-spine/.stack-layer/.cover-card` renderuje jaśniejsze grzbiety/
+  okładki z tej palety (ciemny motyw = jewel-tone bez zmian). (2) **Bez 40k w jasnym**: ornamenty/efekty dostały
+  klasę-marker `dc-40k` (CogSigil, NoosphericCrest, DataTicker, HoloField, HudCorner, CogMark-watermark, świeca+
+  płomień, pyłki) → `[data-theme="light"] .dc-40k,.noo-data { display:none }`. Czysty, boho regał (ramka/deski/
+  „pokój" zostają, warm). (3) **Tytuł na grzbiecie**: `[data-theme="light"] .skin-noospheric .spine-title` →
+  kremowa biel `#FBF3E6` + mocny cień = czytelny na jasnym grzbiecie (zamiast bieli zlewającej się z tłem).
+  Fix testu: literał `SpineStyle` w `bookshelf.test.ts` dostał pole `light`. Suite 463 zielone, lint czysty,
+  build OK.
 - **1.65.0** — **Regał w jasnym motywie = jeden wygląd (jak z makiety), bez przełącznika skór.** Skóry różnią się
   grzbietami: `.skin-holo` = neon (`APP_PALETTE`), `.skin-noospheric` = matowe jewel-tone (`CLOTH_PALETTE`).
   Makieta jest matowa → w jasnym motywie **wymuszamy `noospheric`** (`renderedSkin = theme==='light' ?

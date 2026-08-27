@@ -1,6 +1,6 @@
 import React from "react";
 import { BookIndexEntry } from "../../types";
-import { CLOTH_PALETTE, APP_PALETTE, displayTitle } from "../../utils/bookshelf";
+import { CLOTH_PALETTE, LIGHT_SPINE_PALETTE, APP_PALETTE, displayTitle } from "../../utils/bookshelf";
 
 function hash(s: string): number {
   let h = 0;
@@ -20,6 +20,7 @@ export const CoverCard: React.FC<{ book: BookIndexEntry }> = ({ book }) => {
       className="cover-card group relative shrink-0 w-[104px] h-[156px] rounded-[6px_3px_3px_6px] overflow-hidden flex flex-col justify-between p-3 pl-4 transition-transform duration-150 hover:-translate-y-2"
       style={{
         ["--cm-a" as string]: CLOTH_PALETTE[i1], ["--cm-b" as string]: CLOTH_PALETTE[i2],
+        ["--cml-a" as string]: LIGHT_SPINE_PALETTE[i1], ["--cml-b" as string]: LIGHT_SPINE_PALETTE[i2],
         ["--ca-a" as string]: APP_PALETTE[i1][0], ["--ca-b" as string]: APP_PALETTE[i2][0],
         boxShadow: "inset -5px 0 8px -6px rgba(0,0,0,.6), 0 10px 16px -8px rgba(0,0,0,.7)",
       } as React.CSSProperties}
