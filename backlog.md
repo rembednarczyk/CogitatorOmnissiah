@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.67.5** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.67.6** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,12 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.67.6** — **[Tier 3, A2a] Ekstrakcja 6 inline kart `StatsSection` do komponentów `stats/`.** Karty
+  authors/awards/yearly/ownedUnread/library/identified były pisane ręcznie inline (powielony nagłówek), gdy
+  reszta to komponenty. Wyciągnięte VERBATIM: `AuthorsCard`, `AwardsProgressCard`, `YearlyCard`,
+  `OwnedUnreadCard`, `LibraryProgressCard`, `IdentifiedLibraryCard` (typy propsów przez `React.ComponentProps`
+  z item-komponentów → bezpieczne). `StatsSection` 372→244 linie; wszystkie karty jednorodne. Zero zmiany
+  zachowania. Suite 474 zielone, lint czysty, build OK. (A2b — wyniesienie masonry+DnD do hooka — osobno.)
 - **1.67.5** — **[Tier 3, A4] Wspólny selektor `IntegrityCheckResult`→display (`src/utils/integrityDiff.ts`).**
   Derywacja diffów była zduplikowana w `IntegrityCheckCard` i `SanctityDebugger` (oba czytają ten sam
   `result`). Wyciągnięte VERBATIM: `hasInconsistencies`, `toDiffPanels` (strukturalne panele dla debuggera),
