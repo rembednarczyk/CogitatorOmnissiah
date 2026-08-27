@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { useSSEStream } from "./useSSEStream";
+import { postStop } from "../utils/http";
 
 export interface VintedResult {
   id: string;
@@ -130,11 +131,7 @@ export function useVintedCheck() {
   }, [run]);
 
   const stopVintedCheck = useCallback(async () => {
-    try {
-      await fetch("/api/vinted-check/stop", { method: "POST" });
-    } catch (err) {
-      console.error("Error stopping Vinted check:", err);
-    }
+    await postStop("/api/vinted-check/stop");
   }, []);
 
   return { 

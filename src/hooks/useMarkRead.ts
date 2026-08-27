@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { READ_TAG } from "../utils/bookshelf";
+import { markReadRequest } from "../utils/http";
 
 /**
  * Writing the „read" state to Notion: `mark-as-read` adds the „Przeczytane" tag
@@ -7,18 +8,8 @@ import { READ_TAG } from "../utils/bookshelf";
  * (shelf) makes an optimistic move and reverts it if the write fails.
  */
 export function useMarkRead() {
-  const setRead = useCallback(async (pageId: string, read: boolean): Promise<void> => {
-    const url = read ? "/api/mark-as-read" : "/api/unmark-as-read";
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ pageId, tag: READ_TAG }),
-    });
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error(body.error || "Zapis do Notion nie powiódł się");
-    }
-  }, []);
+  const setRead = useCallback((pageId: string, read: boolean): Promise<void> =>
+    markReadRequest(pageId, READ_TAG, read), []);
 
   return { setRead };
 }
