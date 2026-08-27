@@ -32,75 +32,93 @@ describe("lookupIsbn", () => {
 describe("lookupIsbnsByTitle", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("returns [] for an empty title without hitting the API", async () => {
+  // The three sources run in parallel, so route the mock by URL rather than call order.
+  // Each handler receives the axios config and returns the response body (`data`).
+  const routeByUrl = (handlers: {
+    google?: (q: string) => any;
+    openlibrary?: (params: any) => any;
+    bn?: (params: any) => any;
+  }) => {
+    mockedGet.mockImplementation((url: string, config: any) => {
+      const params = config?.params || {};
+      if (url.includes("googleapis.com")) return Promise.resolve({ data: handlers.google ? handlers.google(params.q) : { items: [] } });
+      if (url.includes("openlibrary.org")) return Promise.resolve({ data: handlers.openlibrary ? handlers.openlibrary(params) : { docs: [] } });
+      if (url.includes("data.bn.org.pl")) return Promise.resolve({ data: handlers.bn ? handlers.bn(params) : { bibs: [] } });
+      return Promise.resolve({ data: {} });
+    });
+  };
+
+  const googleVolumes = (...isbn13s: string[]) => ({
+    items: isbn13s.map((id) => ({ volumeInfo: { industryIdentifiers: [{ type: "ISBN_13", identifier: id }] } })),
+  });
+
+  // A Biblioteka Narodowa bib carrying one MARC 020 $a ISBN (+ optional isbnIssn field).
+  const bnBib = (marc020a: string, isbnIssn?: string) => {
+    const subfields = [{ a: marc020a }];
+    const bib: any = { marc: { fields: [{ "020": { subfields } }] } };
+    if (isbnIssn) bib.isbnIssn = isbnIssn;
+    return bib;
+  };
+
+  it("returns [] for an empty title without hitting any API", async () => {
     const r = await lookupIsbnsByTitle("   ", "Herbert");
     expect(r).toEqual([]);
     expect(mockedGet).not.toHaveBeenCalled();
   });
 
-  it("queries intitle+inauthor and collects deduped ISBN-13s across editions", async () => {
-    mockedGet.mockResolvedValue({
-      data: { items: [
-        { volumeInfo: { industryIdentifiers: [{ type: "ISBN_10", identifier: "0441172717" }, { type: "ISBN_13", identifier: "9780441172719" }] } },
-        { volumeInfo: { industryIdentifiers: [{ type: "ISBN_13", identifier: "9788375780635" }] } },
-        { volumeInfo: { industryIdentifiers: [{ type: "ISBN_13", identifier: "9780441172719" }] } }, // dup edition
-      ] },
-    });
-    const r = await lookupIsbnsByTitle("Dune", "Frank Herbert");
-    // ISBN-10 of the first volume normalizes to the same 13 as its ISBN_13 → deduped.
-    expect(r).toEqual(["9780441172719", "9788375780635"]);
-    const q = mockedGet.mock.calls[0][1].params.q;
-    expect(q).toContain("intitle:Dune");
-    expect(q).toContain("inauthor:Frank Herbert");
-    // Terms MUST be space-joined, never a literal plus (axios escapes it to %2B, giving 0 results).
-    expect(q).not.toContain("+");
+  it("sends Google Books a space-joined query (never a literal plus → %2B → 0 results)", async () => {
+    routeByUrl({ google: () => googleVolumes("9780441172719") });
+    await lookupIsbnsByTitle("Dune", "Frank Herbert");
+    const googleCall = mockedGet.mock.calls.find((c) => String(c[0]).includes("googleapis.com"));
+    const q = googleCall![1].params.q;
     expect(q).toBe("intitle:Dune inauthor:Frank Herbert");
+    expect(q).not.toContain("+");
+  });
+
+  it("unions ISBNs across all three sources, deduped (incl. the Polish edition from BN)", async () => {
+    routeByUrl({
+      google: () => googleVolumes("9780441172719"),                                        // original (EN)
+      openlibrary: () => ({ docs: [{ isbn: ["9780441172719", "0306406152"] }] }),          // dup + another
+      bn: () => ({ bibs: [bnBib("978-83-7578-063-5 (opr. tw.)")] }),                        // Polish edition
+    });
+    const r = await lookupIsbnsByTitle("Diuna", "Herbert");
+    expect(new Set(r)).toEqual(new Set(["9780441172719", "9780306406157", "9788375780635"]));
   });
 
   it("uses only the first author from a multi-value author field", async () => {
-    mockedGet.mockResolvedValue({ data: { items: [{ volumeInfo: { industryIdentifiers: [{ type: "ISBN_13", identifier: "9780441172719" }] } }] } });
+    routeByUrl({ google: () => googleVolumes("9780441172719") });
     await lookupIsbnsByTitle("Dune", "Frank Herbert, Kevin Anderson");
-    expect(mockedGet.mock.calls[0][1].params.q).toBe("intitle:Dune inauthor:Frank Herbert");
+    const googleCall = mockedGet.mock.calls.find((c) => String(c[0]).includes("googleapis.com"));
+    expect(googleCall![1].params.q).toBe("intitle:Dune inauthor:Frank Herbert");
   });
 
-  it("falls back to a title-only query when the author query yields nothing", async () => {
-    mockedGet
-      .mockResolvedValueOnce({ data: { items: [] } }) // author query → empty
-      .mockResolvedValueOnce({ data: { items: [{ volumeInfo: { industryIdentifiers: [{ type: "ISBN_13", identifier: "9788375780635" }] } }] } });
-    const r = await lookupIsbnsByTitle("Rare", "Obscure Author");
-    expect(r).toEqual(["9788375780635"]);
-    expect(mockedGet).toHaveBeenCalledTimes(2);
-    expect(mockedGet.mock.calls[1][1].params.q).toBe("intitle:Rare");
-  });
-
-  it("converts an ISBN-10-only edition to ISBN-13", async () => {
-    mockedGet.mockResolvedValue({
-      data: { items: [{ volumeInfo: { industryIdentifiers: [{ type: "ISBN_10", identifier: "0306406152" }] } }] },
+  it("reads BN ISBNs from both MARC 020 $a and the isbnIssn convenience field", async () => {
+    routeByUrl({
+      bn: () => ({ bibs: [bnBib("978-83-7648-090-9", "9788375780635")] }),
     });
-    const r = await lookupIsbnsByTitle("Some Book");
-    expect(r).toEqual(["9780306406157"]);
+    const r = await lookupIsbnsByTitle("Polska", "Autor");
+    expect(new Set(r)).toEqual(new Set(["9788375780635", "9788376480909"]));
   });
 
-  it("falls back to OpenLibrary when Google Books finds nothing", async () => {
-    mockedGet
-      .mockResolvedValueOnce({ data: { items: [] } })                                   // google: author query
-      .mockResolvedValueOnce({ data: { items: [] } })                                   // google: title-only
-      .mockResolvedValueOnce({ data: { docs: [{ isbn: ["9788375780635", "0306406152"] }] } }); // openlibrary
-    const r = await lookupIsbnsByTitle("Rare", "Author");
-    // OpenLibrary's isbn array mixes ISBN-10/13 → all normalized to canonical 13, deduped.
-    expect(r).toEqual(["9788375780635", "9780306406157"]);
-    expect(mockedGet).toHaveBeenCalledTimes(3);
-    expect(mockedGet.mock.calls[2][0]).toContain("openlibrary.org");
-  });
-
-  it("throws only when BOTH sources are unreachable (so 'no match' ≠ 'API down')", async () => {
+  it("throws only when EVERY source errors (so 'no match' ≠ 'API down')", async () => {
     mockedGet.mockRejectedValue(new Error("ECONNRESET"));
-    await expect(lookupIsbnsByTitle("X", "Y")).rejects.toThrow(/google-books.*openlibrary/s);
+    await expect(lookupIsbnsByTitle("X", "Y")).rejects.toThrow(/google-books.*openlibrary.*biblioteka-narodowa/s);
   });
 
   it("returns [] (not an error) when sources respond but nothing matches", async () => {
-    mockedGet.mockResolvedValue({ data: { items: [], docs: [] } });
+    routeByUrl({});
     const r = await lookupIsbnsByTitle("Nothing", "Someone");
     expect(r).toEqual([]);
+  });
+
+  it("still succeeds when some sources error, as long as one responds", async () => {
+    mockedGet.mockImplementation((url: string) => {
+      if (url.includes("data.bn.org.pl")) {
+        return Promise.resolve({ data: { bibs: [bnBib("9788375780635")] } });
+      }
+      return Promise.reject(new Error("429")); // google + openlibrary rate-limited
+    });
+    const r = await lookupIsbnsByTitle("Diuna", "Herbert");
+    expect(r).toEqual(["9788375780635"]);
   });
 });

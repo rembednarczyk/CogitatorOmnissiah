@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.52.2** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.53.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,15 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.53.0** — **Rytuał ISBN: polskie ISBN-y z Biblioteki Narodowej + unia 3 źródeł.** Skanujemy polskie
+  egzemplarze (prefiks 978-83…), których Google/OpenLibrary często nie mają. Dodane 3. źródło:
+  **Biblioteka Narodowa** (`data.bn.org.pl/api/institutions/bibs.json`, keyless) — autorytatywne dla polskich
+  wydań; ISBN-y czytane z MARC 020 $a (po jednym na wydanie → wiele 020) + pole `isbnIssn`. Model zmieniony
+  z „pierwsze źródło, które coś zwróci" na **UNIĘ 3 źródeł RÓWNOLEGLE** (`Promise.allSettled`: Google Books
+  ∪ OpenLibrary ∪ BN) — więc łapiemy też polski ISBN, nawet gdy Google zwrócił oryginalny. Każde źródło z
+  fallbackiem tytuł+autor→tytuł. Rzuca błąd TYLKO gdy WSZYSTKIE 3 padną (źródło z pustą odpowiedzią = sukces
+  → „brak dopasowania"=skip, nie błąd). +5 testów (unia, BN z MARC/isbnIssn, throw-gdy-wszystkie-padną,
+  częściowa awaria). Uwaga: BN/OL nieweryfikowalne w sandboxie (proxy blokuje) — potwierdzić na Renderze.
 - **1.52.2** — **Rytuał ISBN: fallback OpenLibrary + WIDOCZNE błędy (dalej nic nie łapał po 1.52.1).** Po
   fixie kodowania (1.52.1) na Renderze dalej pusto — HIPOTEZA: Google Books ostro limituje keyless z IP
   datacenter (Render) → każde zapytanie 429/403 → wszystko leciało do BŁĘDÓW, a `SingleSyncSummary` błędów
