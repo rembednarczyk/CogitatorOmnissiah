@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.67.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.67.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,16 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.67.1** — **[Przegląd architektury — Tier 1, PR1] FIX: kontrola spójności czyta listę nagród z configu +
+  wspólne źródło stron nagród.** Bug: `IntegrityService` miał zahardkodowaną `PREDEFINED_AWARDS`, więc nagroda
+  dodana w Ustawieniach NIE była sprawdzana. Fix: czyta `config.sync.awards` (jak `bookSyncService` i
+  `runDiagnostics`). Dla domyślnej konfiguracji lista jest identyczna → zero zmiany dla dotychczasowych; dla
+  własnych nagród — teraz poprawnie. Przy okazji SRP: nowy `services/awardBooksSource.ts` (`fetchAwardPage` /
+  `fetchAwardBooks`) jako JEDNO źródło „pobierz+sparsuj strony nagród"; `bookSyncService.fetchBooksFromMediaWiki`
+  to teraz cienki pass-through, `IntegrityService` NIE tworzy już własnej instancji `BookSyncService`, a
+  `runDiagnostics` woła `fetchAwardPage` zamiast sięgać w serwis sync. Kontrakt „brak danych vs błąd infra"
+  zachowany (`fetchPageContent` → "" dla braku strony, rzuca przy sieci). +1 test (integrity fetchuje custom
+  nagrodę z configu, nie hardcoded). Suite 464 zielone, lint czysty, build OK.
 - **1.67.0** — **Kolekcja: nagłówkowy rząd 4 KPI (makieta) — responsywny desktop + mobile.** Nowy `KpiRow`
   (`src/components/stats/KpiRow.tsx`) nad kartami, STAŁY (nie wchodzi w masonry z drag&drop — kolejność kart
   zachowana). 4 KPI z `Stats`: **Woluminy** = `awardBooksStats.total`; **Przeczytane** = `read/total%` (+pasek);

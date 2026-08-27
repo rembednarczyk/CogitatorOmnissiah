@@ -1,33 +1,21 @@
 import pLimit from "p-limit";
 import { NotionAdapter } from "../notion.adapter";
 import { WikiAdapter } from "../wiki.adapter";
-import { WikiParser } from "../wiki.parser";
 import { calculateSimilarity, countCommonWords, cleanTitle } from "../utils";
 import { Book, NotionBook, SyncEvent, SyncParams } from "../src/types";
 import { normalizeData } from "./dataNormalizer";
 import { buildBookUpdates, buildNewBookProperties } from "./bookDiff";
 import { isCycleVolume, AWARD_CATEGORY } from "./bookCategory";
-import { createLogger } from "../logger";
 import { ConfigService } from "./configService";
-
-const log = createLogger("BookSync");
+import { fetchAwardPage, fetchAwardBooks } from "./awardBooksSource";
 
 export class BookSyncService {
   constructor(private notion: NotionAdapter, private wiki: WikiAdapter, private config: ConfigService) {}
 
+  /** Thin pass-through to the shared award-page source (kept for callers that
+   *  fetch a single award page by title). */
   async fetchBooksFromMediaWiki(pageTitle: string, awardName: string, sendEvent: (data: SyncEvent) => void): Promise<Book[]> {
-    sendEvent({ type: "status", message: `Inicjacja ekstrakcji danych z Archiwum Encyklopedii: ${awardName}...` });
-    const wikitext = await this.wiki.fetchPageContent(pageTitle);
-
-    if (!wikitext) {
-      // Page exists in code, but wiki returned empty content (missing page / changed title)
-      log.warn(`Pusta treść strony "${pageTitle}" — 0 książek dla ${awardName}`, { pageTitle, awardName });
-    }
-
-    sendEvent({ type: "status", message: `Dekodowanie tablic wyników: ${awardName}...` });
-    const books = WikiParser.parseAwardTable(wikitext, awardName);
-    log.info(`Sparsowano ${books.length} książek dla ${awardName}`, { awardName, pageTitle, wikitextLength: wikitext.length, books: books.length });
-    return books;
+    return fetchAwardPage(this.wiki, pageTitle, awardName, sendEvent);
   }
 
   async runBookSync(params: SyncParams, sendEvent: (data: SyncEvent) => void, checkCancellation: () => boolean) {
@@ -38,13 +26,9 @@ export class BookSyncService {
       if (params.syncAll) {
         // List of award pages from config (knob `sync.awards`) — no copy in code.
         const awards = (await this.config.getConfig()).sync.awards;
-        for (const aw of awards) {
-          if (checkCancellation()) break;
-          const books = await this.fetchBooksFromMediaWiki(aw.title, aw.name, sendEvent);
-          allBooksToSync = allBooksToSync.concat(books);
-        }
+        allBooksToSync = await fetchAwardBooks(this.wiki, awards, sendEvent, checkCancellation);
       } else if (params.pageTitle && params.awardName) {
-        allBooksToSync = await this.fetchBooksFromMediaWiki(params.pageTitle, params.awardName, sendEvent);
+        allBooksToSync = await fetchAwardPage(this.wiki, params.pageTitle, params.awardName, sendEvent);
       }
       if (checkCancellation()) {
         sendEvent({ type: "error", error: "Synchronizacja przerwana przez użytkownika." });

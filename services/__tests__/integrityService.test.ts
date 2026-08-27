@@ -1,6 +1,8 @@
 import { fakeConfig } from "./testConfig";
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { IntegrityService } from '../integrityService';
+import { ConfigService } from '../configService';
+import { mergeConfig } from '../../src/configSchema';
 import { NotionAdapter } from '../../notion.adapter';
 import { WikiAdapter } from '../../wiki.adapter';
 import { NotionBook, Book } from '../../src/types';
@@ -114,5 +116,23 @@ describe('IntegrityService', () => {
         yearCountMatch: expect.objectContaining({ status: false })
       })
     }));
+  });
+
+  it('fetches the award pages from config (sync.awards), not a hardcoded list', async () => {
+    // Config with a CUSTOM award page — the integrity check must fetch it.
+    const customConfig = {
+      getConfig: async () => mergeConfig({ sync: { awards: [{ name: "Nagroda BSFA", title: "BSFA nagroda powieść" }] } }),
+    } as unknown as ConfigService;
+    const svc = new IntegrityService(mockNotion as unknown as NotionAdapter, mockWiki as unknown as WikiAdapter, customConfig);
+
+    mockNotion.queryAllBooks.mockResolvedValue([]);
+    mockWiki.fetchPageContent.mockResolvedValue('');
+
+    await svc.runIntegrityCheck(mockSendEvent, () => false);
+
+    const titles = mockWiki.fetchPageContent.mock.calls.map((c: any) => c[0]);
+    expect(titles).toContain("BSFA nagroda powieść");
+    // ...and does NOT fetch the old hardcoded defaults that aren't in this config.
+    expect(titles).not.toContain("Hugo nagroda powieść");
   });
 });

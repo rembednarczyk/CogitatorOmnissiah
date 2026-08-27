@@ -1,18 +1,12 @@
 import { NotionAdapter } from "../notion.adapter";
 import { ConfigService } from "./configService";
 import { WikiAdapter } from "../wiki.adapter";
-import { BookSyncService } from "./bookSyncService";
+import { fetchAwardBooks } from "./awardBooksSource";
 import { SyncEvent, NotionBook, Book, IntegrityCheckResult } from "../src/types";
 import { normalizeData } from "./dataNormalizer";
 import { isAwardBook } from "./bookCategory";
 
 export type { IntegrityCheckResult };
-
-const PREDEFINED_AWARDS = [
-  { name: "Nagroda Hugo", title: "Hugo nagroda powieść" },
-  { name: "Nagroda Nebula", title: "Nebula nagroda najlepsza powieść" },
-  { name: "Nagroda Locus", title: "Locus nagroda powieść" }
-];
 
 const IGNORED_LOCUS_TAGS = ["Powieść dla młodzieży", "Locus - Powieść dla młodzieży", "Locus YA"];
 
@@ -22,11 +16,7 @@ interface MergedBook { years: Set<string>; display: string; keys: string[] }
 interface BookEntry { keys: string[]; years: string[]; display: string }
 
 export class IntegrityService {
-  private bookSyncService: BookSyncService;
-
-  constructor(private notion: NotionAdapter, private wiki: WikiAdapter, config: ConfigService) {
-    this.bookSyncService = new BookSyncService(notion, wiki, config);
-  }
+  constructor(private notion: NotionAdapter, private wiki: WikiAdapter, private config: ConfigService) {}
 
   async runIntegrityCheck(sendEvent: (data: SyncEvent) => void, checkCancellation: () => boolean) {
     try {
@@ -75,13 +65,10 @@ export class IntegrityService {
   }
 
   private async fetchWikiBooks(sendEvent: (data: SyncEvent) => void, checkCancellation: () => boolean): Promise<Book[]> {
-    let allWikiBooks: Book[] = [];
-    for (const aw of PREDEFINED_AWARDS) {
-      if (checkCancellation()) break;
-      const books = await this.bookSyncService.fetchBooksFromMediaWiki(aw.title, aw.name, sendEvent);
-      allWikiBooks = allWikiBooks.concat(books);
-    }
-    return allWikiBooks;
+    // Award list from config (`sync.awards`) — the single source of truth, so a
+    // custom award added in Ustawienia is checked here too (not a hardcoded copy).
+    const awards = (await this.config.getConfig()).sync.awards;
+    return fetchAwardBooks(this.wiki, awards, sendEvent, checkCancellation);
   }
 
   /**
