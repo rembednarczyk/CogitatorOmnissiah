@@ -932,12 +932,18 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
     odłożony (v1 = Android/Chrome). (b) multi-edition ISBN — ✅ ROZWIĄZANE (1.52.0): zapisujemy WSZYSTKIE
     ISBN-y wydań (`isbns: string[]`), więc barcode dowolnej edycji trafia w wiersz (use case = „mam tę
     książkę", nie „tę edycję").
-  - **DO ZROBIENIA: zawężenie enrichmentu (pollution ISBN).** Generyczne tytuły („Miecz dla króla") przez
-    title-only fallback + 3 źródła × 2 tytuły × 20 wyników zbierają DZIESIĄTKI niepowiązanych wydań (realny
-    przypadek: 72 ISBN-y na 1 pozycji). Ryzyko: FAŁSZYWE trafienia skanu (kod obcej książki pasuje do naszej).
-    Kandydaci na fix: wymagać zgodności autora w wynikach (Google `inauthor`/OL `author_name`/BN autor),
-    NIE robić title-only fallback dla krótkich/generycznych tytułów, twardy limit ISBN-ów na pozycję,
-    filtr prefiksu (preferuj 978-83 dla polskich). Do przemyślenia z użytkownikiem.
+  - **DO ZROBIENIA: zawężenie enrichmentu (pollution ISBN) U ŹRÓDŁA.** Objaw ZAŁAGODZONY w 1.55.0
+    (`prioritizeIsbns`: polskie na początek + cap 40 + auto-cleanup), ale nadal ŚCIĄGAMY dziesiątki obcych
+    wydań (generyczne tytuły przez title-only fallback + 3 źródła × 2 tytuły × 20 wyników; realne przypadki
+    72 i 130+ ISBN-ów). Ryzyko szczątkowe: FAŁSZYWE trafienia skanu. Kandydaci: wymagać zgodności autora w
+    wynikach (Google `inauthor`/OL `author_name`/BN autor), NIE robić title-only fallback dla krótkich/
+    generycznych tytułów, ewentualnie przechowywać TYLKO polskie (978-83). Do przemyślenia z użytkownikiem.
+  - **DO ZROBIENIA (odłożone, decyzja użytkownika „narazie nie robimy"): OCR cyfr ISBN z kamery.** Dziś skaner
+    czyta TYLKO kod kreskowy (`BarcodeDetector` → cyfry z pasków EAN-13); wydrukowanego numeru ISBN wzrokowo
+    NIE odczyta (to OCR). Alternatywa dla cyfr JUŻ jest: pole „wpisz ISBN ręcznie" w oknie skanera
+    (`inputMode=numeric`). Gdyby kiedyś dodawać OCR („nakieruj na numer"): `TextDetector` praktycznie martwy →
+    trzeba biblioteki (np. Tesseract.js, ~kilka MB, wolniej), suma kontrolna ISBN do odfiltrowania błędów.
+    Cięższy, osobny feature.
 
 - **Vinted znowu zablokował skaner — alternatywy w zanadrzu** — NOTATKA (Vinted ubił skan z IP Render/datacenter).
   Co JUŻ mamy (obrona pasywna): throttle 3–5 s + jitter na każdej ścieżce, pula User-Agent (rotacja,
