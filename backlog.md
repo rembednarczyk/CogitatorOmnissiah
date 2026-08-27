@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.67.6** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.67.7** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,11 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.67.7** — **[Tier 3, A2b] Masonry + drag&drop `StatsSection` → `StatsMasonry` + `useCardReorder`.** Silnik
+  układu (kolumny wg breakpointu, round-robin, segmenty span2, `renderCard` z DnD) i stan reorderu (arranging/
+  drag/hover + `persistStatsOrder`/`moveId`/reset) wyniesione z komponentu-sekcji. `StatsSection` = sama
+  kompozycja (372→**148 linii** łącznie z A2a). Zero zmiany zachowania. Suite 474 zielone, lint czysty, build
+  OK. (Zamyka A2 — StatsSection zdekomponowany.)
 - **1.67.6** — **[Tier 3, A2a] Ekstrakcja 6 inline kart `StatsSection` do komponentów `stats/`.** Karty
   authors/awards/yearly/ownedUnread/library/identified były pisane ręcznie inline (powielony nagłówek), gdy
   reszta to komponenty. Wyciągnięte VERBATIM: `AuthorsCard`, `AwardsProgressCard`, `YearlyCard`,
