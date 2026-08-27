@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.67.7** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.67.8** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,13 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.67.8** — **[Tier 3, A3] `BookshelfSection` — kolejka zapisów/optymistyka → `useShelfMutations`.** Z ciała
+  komponentu wyniesione: serializowana kolejka „latest-wins" per książka (`pendingRef`/`runningRef`, guard na
+  nieatomowy `mutateMultiSelect`), optymistyczne overrides „przeczytane" + rollback, optymistyczny zapis
+  kolejności (`applyOrderPlan` + `saveOrders` + rollback) i wspólny `moveError`. Komponent renderuje i wiąże
+  callbacki; czyste helpery (`planInsertion`/`splitShelves`/`featuredReads`) były już wyciągnięte. 236→177
+  linii. Zero zmiany zachowania. Suite 474 zielone, lint czysty, build OK. **Tier 3 zamknięty** (statsAggregator
+  + A4 + A2a/A2b + A3).
 - **1.67.7** — **[Tier 3, A2b] Masonry + drag&drop `StatsSection` → `StatsMasonry` + `useCardReorder`.** Silnik
   układu (kolumny wg breakpointu, round-robin, segmenty span2, `renderCard` z DnD) i stan reorderu (arranging/
   drag/hover + `persistStatsOrder`/`moveId`/reset) wyniesione z komponentu-sekcji. `StatsSection` = sama

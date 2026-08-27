@@ -1,10 +1,9 @@
-import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { Library, BookOpen, CheckCircle2, Sparkles, Loader2, AlertCircle, X } from "lucide-react";
 import { BookIndexEntry } from "../types";
 import { useBooks } from "../hooks/useBooks";
-import { useMarkRead } from "../hooks/useMarkRead";
-import { useShelfOrder } from "../hooks/useShelfOrder";
-import { ShelfId, ReadOverrides, isRead, splitShelves, featuredReads } from "../utils/bookshelf";
+import { useShelfMutations } from "../hooks/useShelfMutations";
+import { ShelfId, isRead, splitShelves, featuredReads } from "../utils/bookshelf";
 import { planInsertion } from "../utils/shelfInsertion";
 import { ShelfSkin, SHELF_SKINS, skinClass, loadSkin, saveSkin } from "../utils/shelfSkin";
 import { useEffectiveConfig } from "../hooks/useAppConfig";
@@ -16,12 +15,9 @@ import { RoomDecor } from "./shelf/RoomDecor";
 
 export const BookshelfSection: React.FC = () => {
   const { books, loading, error, fetchBooks } = useBooks();
-  const { setRead } = useMarkRead();
-  const { saveOrders } = useShelfOrder();
+  const { overrides, orderOverrides, moveError, setMoveError, applyReadChange, applyOrderPlan } = useShelfMutations();
 
-  const [overrides, setOverrides] = useState<ReadOverrides>({});
   const [dragging, setDragging] = useState<BookIndexEntry | null>(null);
-  const [moveError, setMoveError] = useState<string | null>(null);
   const [skin, setSkin] = useState<ShelfSkin>(loadSkin);
   const { theme } = useTheme();
   // Jasny motyw „Librem" = jeden regał jak z makiety: wymuszamy matową skórę
@@ -31,16 +27,7 @@ export const BookshelfSection: React.FC = () => {
   // UI knobs: number of „Regał" rows per page + precise drop.
   const uiCfg = useEffectiveConfig().ui;
   const rowsPerPage = uiCfg.shelfRowsPerPage;
-  // Optimistic overrides of manual order keys (precise drop) until refetch.
-  const [orderOverrides, setOrderOverrides] = useState<Record<string, number>>({});
   useEffect(() => { saveSkin(skin); }, [skin]);
-
-  // Saving the „przeczytane" state is SERIALIZED per book (latest-wins). The backend
-  // `mutateMultiSelect` is a non-atomic retrieve→modify→update, so two overlapping
-  // writes of the same book could read the same state and drift Notion from the UI.
-  // `pendingRef` holds the freshest requested state, `runningRef` — books with an active runner.
-  const pendingRef = useRef<Record<string, boolean>>({});
-  const runningRef = useRef<Set<string>>(new Set());
 
   // Book collection with overridden order keys (optimistically, until refetch).
   const all = useMemo(() => {
@@ -49,33 +36,6 @@ export const BookshelfSection: React.FC = () => {
   }, [books, orderOverrides]);
   const { read, toRead } = useMemo(() => splitShelves(all, overrides), [all, overrides]);
   const featured = useMemo(() => featuredReads(all, overrides), [all, overrides]);
-
-  /** Optimistic „przeczytane" change + serialized save (latest-wins per book). */
-  const applyReadChange = useCallback((book: BookIndexEntry, targetRead: boolean) => {
-    setOverrides((prev) => ({ ...prev, [book.id]: targetRead }));
-    setMoveError(null);
-
-    // Store the freshest requested state; if this book's runner is already running, it will pick it up itself.
-    pendingRef.current[book.id] = targetRead;
-    if (runningRef.current.has(book.id)) return;
-    runningRef.current.add(book.id);
-    void (async () => {
-      try {
-        while (book.id in pendingRef.current) {
-          const desired = pendingRef.current[book.id];
-          delete pendingRef.current[book.id];
-          await setRead(book.id, desired);
-        }
-      } catch (e: any) {
-        // Save didn't go through — revert to the DB state and show the error.
-        delete pendingRef.current[book.id];
-        setOverrides((prev) => { const next = { ...prev }; delete next[book.id]; return next; });
-        setMoveError(`Nie udało się zapisać „${book.plTitle || book.origTitle}": ${e.message}`);
-      } finally {
-        runningRef.current.delete(book.id);
-      }
-    })();
-  }, [setRead]);
 
   const handleDrop = useCallback((target: ShelfId) => {
     const book = dragging;
@@ -103,28 +63,9 @@ export const BookshelfSection: React.FC = () => {
     const seq = (targetRead ? read : toRead).filter((b) => b.id !== book.id);
     const plan = planInsertion(seq, book, insertBeforeId);
 
-    if (plan && plan.orders.length > 0) {
-      setOrderOverrides((prev) => {
-        const next = { ...prev };
-        for (const o of plan.orders) next[o.pageId] = o.order;
-        return next;
-      });
-      void (async () => {
-        try {
-          await saveOrders(plan.orders);
-        } catch (e: any) {
-          setOrderOverrides((prev) => {
-            const next = { ...prev };
-            for (const o of plan.orders) delete next[o.pageId];
-            return next;
-          });
-          setMoveError(`Nie udało się zapisać pozycji „${book.plTitle || book.origTitle}": ${e.message}`);
-        }
-      })();
-    }
-
+    if (plan && plan.orders.length > 0) applyOrderPlan(book, plan.orders);
     if (wasRead !== targetRead) applyReadChange(book, targetRead);
-  }, [dragging, overrides, read, toRead, applyReadChange]);
+  }, [dragging, overrides, read, toRead, applyReadChange, applyOrderPlan]);
 
   return (
     <div className="space-y-8">
