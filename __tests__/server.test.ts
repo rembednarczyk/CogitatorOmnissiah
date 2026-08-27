@@ -30,7 +30,6 @@ vi.mock('../notion.adapter', () => {
 vi.mock('../wiki.adapter', () => {
   const WikiAdapter = vi.fn();
   WikiAdapter.prototype.fetchPageContent = vi.fn().mockResolvedValue('{| class="wikitable"\n|-\n! Rok !! Autor !! Tytuł oryginalny !! Tytuł polski\n|-\n| 1961 || [[Stanisław Lem]] || \'\'Solaris\'\' || Solaris\n|}');
-  WikiAdapter.prototype.fetchPageContentWithSlots = vi.fn().mockResolvedValue('{{Książka|wydawca=Wydawnictwo Literackie|seria=Dzieła}}');
   return { WikiAdapter };
 });
 

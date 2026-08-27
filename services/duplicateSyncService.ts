@@ -1,28 +1,28 @@
 import { NotionAdapter } from "../notion.adapter";
-import { WikiAdapter } from "../wiki.adapter";
 import { NotionBook, SyncEvent } from "../src/types";
 import { scoreDuplicatePair } from "./bookMatch";
 import { ConfigService } from "./configService";
 import { isAwardBook } from "./bookCategory";
+import { createLogger } from "../logger";
+
+const log = createLogger("DuplicateSync");
 
 export class DuplicateSyncService {
-  constructor(private notion: NotionAdapter, private wiki: WikiAdapter, private config: ConfigService) {}
+  constructor(private notion: NotionAdapter, private config: ConfigService) {}
 
   async runDuplicateCheck(sendEvent: (data: SyncEvent) => void, checkCancellation: () => boolean) {
-    console.log("DuplicateSyncService runDuplicateCheck started");
     try {
       // Similarity thresholds from config (knobs `sync.dup*Threshold`).
       const { dupAuthorThreshold, dupTitleThreshold } = (await this.config.getConfig()).sync;
       sendEvent({ type: "status", message: "Inicjalizacja bazy Notion..." });
       await this.notion.init();
-      console.log("Notion initialized");
       sendEvent({ type: "status", message: "Pobieranie listy książek z Notion..." });
       const fetched: NotionBook[] = await this.notion.queryAllBooks((count) => sendEvent({ type: "status", message: `Pobrano ${count} książek z Notion...` }), checkCancellation);
       // Duplicate detection concerns award entries — side cycle volumes are
       // legitimately distinct books, not duplicates (excluded from comparisons).
       const allBooks: NotionBook[] = fetched.filter(isAwardBook);
-      console.log(`Fetched ${fetched.length} books (${allBooks.length} award after category filter)`);
-      
+      log.info(`Pobrano ${fetched.length} książek (${allBooks.length} nagrodowych po filtrze kategorii)`, { fetched: fetched.length, award: allBooks.length });
+
       const duplicates: { bookA: string; bookB: string; reason: string }[] = [];
       for (let i = 0; i < allBooks.length; i++) {
         if (checkCancellation()) { sendEvent({ type: "status", message: "Przerwano sprawdzanie duplikatów." }); break; }

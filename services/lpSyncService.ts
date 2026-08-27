@@ -2,6 +2,9 @@ import { NotionAdapter } from "../notion.adapter";
 import pLimit from "p-limit";
 import { NotionBook, SyncEvent } from "../src/types";
 import { isAwardBook } from "./bookCategory";
+import { createLogger } from "../logger";
+
+const log = createLogger("LpSync");
 
 export class LpSyncService {
   constructor(private notion: NotionAdapter) {}
@@ -35,7 +38,7 @@ export class LpSyncService {
             await this.notion.updateLp(book.id, expectedLp);
             updatedCount++;
             syncSummary.updated.push(`${book.plTitle || book.origTitle} (Zaktualizowano: Lp -> ${expectedLp})`);
-          } catch (err: any) { console.error(`Błąd Lp dla ${book.plTitle}:`, err.message); }
+          } catch (err: any) { log.error(`Błąd Lp dla ${book.plTitle}`, { title: book.plTitle, error: err.message }); }
         }
         processedCount++;
         if (processedCount % 10 === 0 || processedCount === allBooks.length) {

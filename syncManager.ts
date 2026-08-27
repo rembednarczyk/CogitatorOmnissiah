@@ -38,7 +38,7 @@ const notionAdapter = new NotionAdapter(process.env.NOTION_API_KEY!, process.env
 const wikiAdapter = new WikiAdapter();
 /** App configuration (knobs) — defaults + overrides from Notion; injected into the services. */
 export const configService = new ConfigService(notionAdapter);
-const duplicateSyncService = new DuplicateSyncService(notionAdapter, wikiAdapter, configService);
+const duplicateSyncService = new DuplicateSyncService(notionAdapter, configService);
 const bookSyncService = new BookSyncService(notionAdapter, wikiAdapter, configService);
 const publisherSyncService = new PublisherSyncService(notionAdapter, wikiAdapter);
 const seriesSyncService = new SeriesSyncService(notionAdapter, wikiAdapter);

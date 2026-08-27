@@ -88,35 +88,6 @@ export class WikiAdapter {
     }
   }
 
-  async fetchPageContentWithSlots(title: string): Promise<string> {
-    try {
-      const response = await withRetry(() => wikiAxios.get(this.baseUrl, {
-        params: {
-          action: "query",
-          prop: "revisions",
-          rvprop: "content",
-          rvslots: "main",
-          titles: title,
-          redirects: 1,
-          format: "json"
-        }
-      }), 3, 2000);
-
-      const pages = response.data.query.pages;
-      const pageId = Object.keys(pages)[0];
-
-      if (pageId === "-1") {
-        console.warn(`Nie znaleziono strony "${title}" w encyklopedii.`);
-        return "";
-      }
-
-      const rev = pages[pageId].revisions[0];
-      return rev.slots?.main?.["*"] || rev["*"] || rev.content || "";
-    } catch (error: any) {
-      console.warn(`Błąd pobierania strony "${title}": ${error.message} (zablokowane IP?)`);
-      return "";
-    }
-  }
 
   /**
    * Fetches the content of multiple pages. Returns a content map plus a list of titles

@@ -2,13 +2,11 @@ import { fakeConfig } from "./testConfig";
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DuplicateSyncService } from '../duplicateSyncService';
 import { NotionAdapter } from '../../notion.adapter';
-import { WikiAdapter } from '../../wiki.adapter';
 import { NotionBook } from '../../src/types';
 
 describe('DuplicateSyncService', () => {
   let service: DuplicateSyncService;
   let mockNotion: any;
-  let mockWiki: any;
   let mockSendEvent: any;
 
   beforeEach(() => {
@@ -17,11 +15,9 @@ describe('DuplicateSyncService', () => {
       queryAllBooks: vi.fn(),
     };
 
-    mockWiki = {};
-
     mockSendEvent = vi.fn();
 
-    service = new DuplicateSyncService(mockNotion as unknown as NotionAdapter, mockWiki as unknown as WikiAdapter, fakeConfig);
+    service = new DuplicateSyncService(mockNotion as unknown as NotionAdapter, fakeConfig);
   });
 
   it('detects duplicates with identical titles', async () => {
