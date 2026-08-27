@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.56.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.56.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,12 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.56.1** — **FIX: skaner też dopasowuje stary ISBN-10 (spójnie z wyszukiwarką).** Luka: `matchIsbnInIndex`
+  (skan + ręczny wpis w oknie skanera) porównywał TYLKO do zapisanych ISBN-13, więc wpisany stary ISBN-10
+  (`8370012256`) nie trafiał w wiersz zapisany jako `9788370012250` (antykwariat!). Fix: skaner dopasowuje
+  teraz do `isbnSearch` (obie formy: 13 + odtworzone 10), dokładnie jak wyszukiwarka; fallback do `isbns`
+  gdy brak `isbnSearch`. Match nadal DOKŁADNY (pełny numer, nie fragment) — cyfrowo, więc myślniki nieważne.
+  +2 testy (stary ISBN-10 wpisany, z myślnikami, oraz e2e mapper→index→match).
 - **1.56.0** — **Skryptorium: wyszukiwanie po ISBN (pełnym/częściowym) + stary ISBN-10.** Dotąd wyszukiwarka
   szukała tylko po tytule/oryginale/autorze — ISBN-ów NIE. Teraz `matchBooks` matchuje też ISBN: token
   numeryczny ≥4 cyfr (po odsianiu myślników) porównywany do blobu ISBN książki (substring → działa fragment).

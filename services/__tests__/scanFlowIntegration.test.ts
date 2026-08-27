@@ -30,6 +30,13 @@ describe("scan flow integration (mapper → search index → match)", () => {
     expect(matchIsbnInIndex("9788375900019", index)?.plTitle).toBe("Miecz dla Króla");
   });
 
+  it("matches a typed OLD ISBN-10 against a row stored as ISBN-13 (antiquarian case)", () => {
+    // Stored as the modern ISBN-13; the physical old copy prints the ISBN-10.
+    const book = mapPageToBook(page("9788370012250"));
+    const index = toSearchIndex([book]);
+    expect(matchIsbnInIndex("8370012256", index)?.plTitle).toBe("Miecz dla Króla");
+  });
+
   it("DROPS the book from the index when it is a cycle volume (Tom cyklu)", () => {
     const book = mapPageToBook(page("9788375900019", "Tom cyklu"));
     const index = toSearchIndex([book]);

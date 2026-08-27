@@ -47,4 +47,12 @@ describe("barcode.matchIsbnInIndex", () => {
   it("ignores rows without stored ISBNs", () => {
     expect(matchIsbnInIndex("", index)).toBeNull();
   });
+
+  it("matches a typed OLD ISBN-10 against the stored ISBN-13 (via isbnSearch)", () => {
+    // Slan: stored as ISBN-13, but the antiquarian book prints the pre-2007 ISBN-10.
+    const withOld = [mk({ id: "slan", plTitle: "Slan", isbns: ["9788370012250"], isbnSearch: "9788370012250 8370012256" })];
+    expect(matchIsbnInIndex("8370012256", withOld)?.id).toBe("slan");        // old ISBN-10 typed
+    expect(matchIsbnInIndex("83-7001-225-6", withOld)?.id).toBe("slan");     // with dashes
+    expect(matchIsbnInIndex("9788370012250", withOld)?.id).toBe("slan");     // modern ISBN-13
+  });
 });
