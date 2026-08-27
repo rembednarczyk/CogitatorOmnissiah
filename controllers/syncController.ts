@@ -7,12 +7,21 @@ import { normalizeIsbn } from "../services/isbn";
 
 const log = createLogger("SyncController");
 
+/** Guard: the endpoint needs Notion credentials. Sends 400 and returns false when missing. */
+function requireNotionKeys(res: Response): boolean {
+  if (!process.env.NOTION_API_KEY || !process.env.NOTION_DATABASE_ID) {
+    res.status(400).json({ error: "Brak kluczy API Notion." });
+    return false;
+  }
+  return true;
+}
+
 export const getStats = async (req: Request, res: Response) => {
   try {
     const stats = await syncManager.getStats();
     res.json(stats);
   } catch (error: any) {
-    console.error("Stats Error:", error);
+    log.error("Stats error", { message: error.message });
     res.status(500).json({ error: error.message || "Wystąpił błąd podczas pobierania statystyk." });
   }
 };
@@ -27,7 +36,7 @@ export const getBooks = async (req: Request, res: Response) => {
     const books = await syncManager.getBooks(fresh, all);
     res.json(books);
   } catch (error: any) {
-    console.error("Books Error:", error);
+    log.error("Books error", { message: error.message });
     res.status(500).json({ error: error.message || "Wystąpił błąd podczas pobierania rekordów." });
   }
 };
@@ -39,7 +48,7 @@ export const getWikiLastUpdate = async (req: Request, res: Response) => {
     const lastUpdate = await syncManager.getWikiLastUpdate(title as string);
     res.json({ lastUpdate });
   } catch (error: any) {
-    console.error("Wiki Last Update Error:", error);
+    log.error("Wiki last-update error", { message: error.message });
     res.status(500).json({ error: error.message || "Wystąpił błąd podczas pobierania daty aktualizacji." });
   }
 };
@@ -95,7 +104,7 @@ export const getNotionSchema = async (req: Request, res: Response) => {
     }
     res.json(properties);
   } catch (error: any) {
-    console.error("Notion API Error:", error);
+    log.error("Notion schema error", { message: error.message });
     res.status(500).json({ error: error.message || "Wystąpił błąd podczas pobierania schematu." });
   }
 };
@@ -159,9 +168,7 @@ export const stopIntegrityCheck = makeStopHandler("Zatrzymano skanowanie integra
 export const runSync = async (req: Request, res: Response) => {
   const { awardName, pageTitle, syncAll } = req.body as SyncParams;
 
-  if (!process.env.NOTION_API_KEY || !process.env.NOTION_DATABASE_ID) {
-    return res.status(400).json({ error: "Brak kluczy API Notion." });
-  }
+  if (!requireNotionKeys(res)) return;
 
   await executeSyncTask(
     req,
@@ -198,20 +205,25 @@ export const stopSchemaSync = makeStopHandler("Zatrzymano inicjalizację schemat
 // a given branch), it cannot inject arbitrary tags into the Notion base.
 const ALLOWED_SOURCE_TAGS = new Set(["Przeczytane", "Posiadam", "Biblioteka", "Biblioteka 9"]);
 
+/** Validate + default the „Źródło" tag (mark/unmark share this). */
+function resolveSourceTag(tag: unknown): { tag: string } | { error: string } {
+  const sourceTag = (tag as string) ?? "Przeczytane";
+  if (!ALLOWED_SOURCE_TAGS.has(sourceTag)) return { error: `Niedozwolony znacznik: ${sourceTag}.` };
+  return { tag: sourceTag };
+}
+
 export const markAsRead = async (req: Request, res: Response) => {
   try {
     const { pageId, tag } = req.body;
     if (!pageId) return res.status(400).json({ error: "Missing pageId parameter" });
 
-    const sourceTag = tag ?? "Przeczytane";
-    if (!ALLOWED_SOURCE_TAGS.has(sourceTag)) {
-      return res.status(400).json({ error: `Niedozwolony znacznik: ${sourceTag}.` });
-    }
+    const resolved = resolveSourceTag(tag);
+    if ("error" in resolved) return res.status(400).json({ error: resolved.error });
 
-    await syncManager.markAsRead(pageId, sourceTag);
+    await syncManager.markAsRead(pageId, resolved.tag);
     res.json({ success: true });
   } catch (error: any) {
-    console.error("Mark as Read Error:", error);
+    log.error("Mark as read error", { message: error.message });
     res.status(500).json({ error: error.message || "Wystąpił błąd podczas oznaczania pozycji." });
   }
 };
@@ -245,23 +257,19 @@ export const unmarkAsRead = async (req: Request, res: Response) => {
     const { pageId, tag } = req.body;
     if (!pageId) return res.status(400).json({ error: "Missing pageId parameter" });
 
-    const sourceTag = tag ?? "Przeczytane";
-    if (!ALLOWED_SOURCE_TAGS.has(sourceTag)) {
-      return res.status(400).json({ error: `Niedozwolony znacznik: ${sourceTag}.` });
-    }
+    const resolved = resolveSourceTag(tag);
+    if ("error" in resolved) return res.status(400).json({ error: resolved.error });
 
-    await syncManager.unmarkRead(pageId, sourceTag);
+    await syncManager.unmarkRead(pageId, resolved.tag);
     res.json({ success: true });
   } catch (error: any) {
-    console.error("Unmark as Read Error:", error);
+    log.error("Unmark as read error", { message: error.message });
     res.status(500).json({ error: error.message || "Wystąpił błąd podczas usuwania znacznika." });
   }
 };
 
 export const checkVintedAvailability = async (req: Request, res: Response) => {
-  if (!process.env.NOTION_API_KEY || !process.env.NOTION_DATABASE_ID) {
-    return res.status(400).json({ error: "Brak kluczy API Notion." });
-  }
+  if (!requireNotionKeys(res)) return;
 
   // Resume: the frontend can ask to skip books scanned within the last N hours.
   const skipRaw = req.body?.skipScannedWithinHours;
@@ -278,9 +286,7 @@ export const checkVintedAvailability = async (req: Request, res: Response) => {
 export const stopVintedCheck = makeStopHandler("Zatrzymywanie skanowania Vinted...");
 
 export const resolveVintedSellers = async (req: Request, res: Response) => {
-  if (!process.env.NOTION_API_KEY || !process.env.NOTION_DATABASE_ID) {
-    return res.status(400).json({ error: "Brak kluczy API Notion." });
-  }
+  if (!requireNotionKeys(res)) return;
   // No cap by default — resolution is incremental and resumable, so one pass
   // resolves all the missing ones it can. An optional `cap` from the body limits the pass.
   const capRaw = req.body?.cap;
@@ -297,9 +303,7 @@ export const resolveVintedSellers = async (req: Request, res: Response) => {
 export const stopVintedResolveSellers = makeStopHandler("Zatrzymywanie ustalania sprzedawców...");
 
 export const getVintedStored = async (_req: Request, res: Response) => {
-  if (!process.env.NOTION_API_KEY || !process.env.NOTION_DATABASE_ID) {
-    return res.status(400).json({ error: "Brak kluczy API Notion." });
-  }
+  if (!requireNotionKeys(res)) return;
   try {
     res.json(await syncManager.getVintedStored());
   } catch (error: any) {
