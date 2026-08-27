@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.67.2** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.67.3** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,15 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.67.3** — **[Tier 2] Frontend I/O we właściwej warstwie (reużycie prymitywów).** (1) `useVintedResolveSellers`
+  re-implementował pętlę SSE (własny `createStallWatchdog`+fetch+`consumeSSE`+komunikat stall) — jedyne jawne
+  złamanie reguły „transport SSE żyje raz w `useSSEStream`". Przepisany na `useSSEStream("/api/vinted-resolve-
+  sellers", {timeoutMs:120000})`, jak `useVintedCheck` — zostało tylko routowanie eventów. Komunikat stall
+  teraz z `defaultStallMessage` (wspólny). (2) `SearchSection` fetchował inline (`fetchWithTimeout` +
+  `/api/books?fresh=1` + `/api/isbn/…`) — jedyny komponent robiący I/O. Wyciągnięte: `src/utils/http.ts`
+  (`fetchWithTimeout`), `useBooks.refetchFresh()` (świeży indeks, bypass cache, hard timeout — I/O należy do
+  useBooks), `useIsbnLookup` (resolve ISBN→tytuł). `handleScanDetect` to teraz samo UI-wiring (zachowane
+  komunikaty/fallback do indeksu in-memory). Suite 474 zielone, lint czysty, build OK.
 - **1.67.2** — **[Tier 1, PR2] Wspólny `services/bookMatch.ts` (klucz tożsamości + scoring duplikatów) — BEZ
   zmiany reguł.** Konsolidacja rozproszonej logiki dopasowywania rekordów, ale zachowawczo (wybór usera: „tylko
   bezpieczna część"). Trzy prymitywy przeniesione VERBATIM: `robustBookKey` (kanoniczny klucz — z

@@ -2,6 +2,7 @@ import React, { useState, useMemo, useDeferredValue, useRef, useEffect } from "r
 import { motion, AnimatePresence } from "motion/react";
 import { Search, X, Loader2, ScrollText, AlertCircle, ScanBarcode, CheckCircle2, XCircle } from "lucide-react";
 import { useBooks } from "../hooks/useBooks";
+import { useIsbnLookup } from "../hooks/useIsbnLookup";
 import { matchBooks, buildSearchVocab, didYouMean, replaceLastToken } from "../utils/bookSearch";
 import { BookResultCard } from "./search/BookResultCard";
 import { ScanModal } from "./search/ScanModal";
@@ -10,20 +11,10 @@ import { scanSupported, cleanScannedCode, matchIsbnInIndex } from "../utils/barc
 /** Max number of cards we render (DOM guard for an „empty" query = the whole set). */
 const RENDER_CAP = 150;
 
-/** fetch with a hard timeout — a scan must never wedge the UI on a stalled connection. */
-async function fetchWithTimeout(url: string, ms = 12000): Promise<Response> {
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), ms);
-  try {
-    return await fetch(url, { signal: ctrl.signal });
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
 export const SearchSection: React.FC = () => {
   // Full index (award books + cycle volumes) — so the scan/search finds a non-award volume too.
-  const { books, loading, error, fetchBooks, setBooks } = useBooks(true);
+  const { books, loading, error, fetchBooks, refetchFresh } = useBooks(true);
+  const { lookup } = useIsbnLookup();
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -68,9 +59,7 @@ export const SearchSection: React.FC = () => {
       // so the cached list can be stale exactly for a just-enriched book.
       let index = books ?? [];
       try {
-        // fresh=1 bypasses the server's 5-min cache too, so a just-added ISBN is visible.
-        const fresh = await fetchWithTimeout(`/api/books?fresh=1&all=1&t=${Date.now()}`);
-        if (fresh.ok) { index = await fresh.json(); setBooks(index); }
+        index = await refetchFresh();
       } catch {
         // Network hiccup / timeout — fall back to the in-memory index.
       }
@@ -83,8 +72,7 @@ export const SearchSection: React.FC = () => {
       }
 
       // Not stored on any row → resolve the ISBN to a title and fuzzy-search it (variant A).
-      const res = await fetchWithTimeout(`/api/isbn/${encodeURIComponent(code)}`);
-      const book = res.ok ? await res.json() : null;
+      const book = await lookup(code);
       if (book?.title) {
         setQuery(book.title);
         setScanNotice({ kind: "resolved", text: `Rozpoznano przez ISBN: „${book.title}" — szukam w katalogu` });
