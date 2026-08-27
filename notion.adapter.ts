@@ -287,24 +287,22 @@ export class NotionAdapter {
     });
   }
 
-  async resolveDataSourceId(databaseId: string): Promise<string> {
+  // Schema-management methods all target the base the adapter resolved at init
+  // (`actualDataSourceId`) — callers no longer pass an id, so there is no way to
+  // send an update to the wrong source.
+  async retrieveDataSource(): Promise<any> {
     await this.init();
-    return this.actualDataSourceId!;
+    return this.retrieveSource(this.actualDataSourceId!);
   }
 
-  async retrieveDataSource(dataSourceId: string): Promise<any> {
+  async updateDatabaseProperty(propertyName: string, propertyType: string): Promise<void> {
     await this.init();
-    return this.retrieveSource(dataSourceId);
+    await this.updateSource(this.actualDataSourceId!, { [propertyName]: { [propertyType]: {} } });
   }
 
-  async updateDatabaseProperty(databaseId: string, propertyName: string, propertyType: string): Promise<void> {
+  async renameProperty(oldName: string, newName: string): Promise<void> {
     await this.init();
-    await this.updateSource(databaseId, { [propertyName]: { [propertyType]: {} } });
-  }
-
-  async renameProperty(databaseId: string, oldName: string, newName: string): Promise<void> {
-    await this.init();
-    await this.updateSource(databaseId, { [oldName]: { name: newName } });
+    await this.updateSource(this.actualDataSourceId!, { [oldName]: { name: newName } });
   }
 
   async updatePage(pageId: string, properties: any): Promise<void> {

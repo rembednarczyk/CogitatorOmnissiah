@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.67.12** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.67.13** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,16 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.67.13** — **[Tier 4, PR5] Adapter schema-methods bez wyciekającego id (warstwowanie).**
+  `notion.adapter.ts`: `retrieveDataSource()`/`updateDatabaseProperty(name,type)`/`renameProperty(old,new)` gubią
+  vestigialny parametr `databaseId`/`dataSourceId` i celują wewnętrznie w `this.actualDataSourceId!`; usunięto
+  `resolveDataSourceId` (był tylko przelotem przez `init()`). Naprawia realny bug: metody brały przekazane id, więc
+  gdyby wywołujący podał surowe `databaseId` w trybie data-source, update poszedłby na złe źródło — teraz nie ma
+  jak. `schemaValidationService` traci odczyt `process.env.NOTION_DATABASE_ID` + `resolveDataSourceId`;
+  `cyclesSyncService` traci martwy `resolveDataSourceId` (wynik nigdy nieużywany). Testy zaktualizowane (bez
+  `'actual-id'`/`'test-ds-id'` jako 1. arg). Zero zmiany zachowania. Suite 473 zielone, lint czysty, build OK.
+  **Tier 4 (i cały przegląd architektury) zamknięty**; kosmetyczne renamy (`useConfig`, `SanctityDebugger`,
+  relokacja `isbn.ts`) świadomie pominięte jako low-value churn.
 - **1.67.12** — **[Tier 4, PR4] Typowanie `useSyncManager` + relokacja typów domenowych stats.** (1) `sync: any`/
   `FULL_SYNC_STEPS[].sync: any`/`clearOthers(any)`/`handleSyncAction(any)` → `type SyncInstance =
   ReturnType<typeof useSync>` (kontrakt rytuału już nie wymazany). Payloady wyników zostają `any[]` (heterogen).

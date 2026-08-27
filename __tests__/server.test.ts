@@ -19,7 +19,6 @@ vi.mock('../notion.adapter', () => {
   NotionAdapter.prototype.queryAllBooks = vi.fn().mockResolvedValue([]);
   NotionAdapter.prototype.updatePage = vi.fn().mockResolvedValue(undefined);
   NotionAdapter.prototype.addRow = vi.fn().mockResolvedValue({ id: 'new-page-id' });
-  NotionAdapter.prototype.resolveDataSourceId = vi.fn().mockResolvedValue('test-ds-id');
   NotionAdapter.prototype.retrieveDataSource = vi.fn().mockResolvedValue({ properties: {} });
   NotionAdapter.prototype.updateDatabaseProperty = vi.fn().mockResolvedValue(undefined);
   NotionAdapter.prototype.createColumnIfNeeded = vi.fn().mockResolvedValue(undefined);
