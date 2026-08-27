@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.55.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.56.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,17 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.56.0** — **Skryptorium: wyszukiwanie po ISBN (pełnym/częściowym) + stary ISBN-10.** Dotąd wyszukiwarka
+  szukała tylko po tytule/oryginale/autorze — ISBN-ów NIE. Teraz `matchBooks` matchuje też ISBN: token
+  numeryczny ≥4 cyfr (po odsianiu myślników) porównywany do blobu ISBN książki (substring → działa fragment).
+  Blob (`BookIndexEntry.isbnSearch`, budowany w `toSearchIndex`) zawiera KAŻDY zapisany ISBN-13 ORAZ jego
+  odtworzoną formę ISBN-10 (`isbn13to10` — dla prefiksu 978), więc STARE numery sprzed 2007 też trafiają
+  (np. Slan: zapisany `9788370012250` → szukalny także jako `8370012256`). Spacje między formami blokują
+  dopasowanie w poprzek dwóch ISBN-ów; próg 4 cyfr ucina szum („83"). +8 testów (round-trip 13↔10, pełny/
+  częściowy/stary ISBN, próg, AND z tytułem). ODPOWIEDŹ na pytania: (1) tak, teraz szuka po części ISBN
+  (w polu wyszukiwarki; skan nadal robi match DOKŁADNY po pełnym kodzie); (2) starych ISBN-ów NIE gubimy —
+  `normalizeIsbn` konwertuje 10→13 przy zapisie, a polskie (978-83) są priorytetyzowane; forma 10 jest
+  dodatkowo indeksowana do wyszukiwania.
 - **1.55.0** — **ISBN pollution: polskie ISBN-y na początek + limit + auto-czyszczenie.** Realny bug: dla
   „451° Fahrenheita" enrichment zebrał 130+ obcych wydań → lista URWAŁA się na limicie 2000 zn. Notion,
   ucinając m.in. polski ISBN (skan by nie trafiał). Fix: `prioritizeIsbns(isbns, cap=40)` (`services/isbn.ts`)
@@ -932,12 +943,18 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
     odłożony (v1 = Android/Chrome). (b) multi-edition ISBN — ✅ ROZWIĄZANE (1.52.0): zapisujemy WSZYSTKIE
     ISBN-y wydań (`isbns: string[]`), więc barcode dowolnej edycji trafia w wiersz (use case = „mam tę
     książkę", nie „tę edycję").
-  - **DO ZROBIENIA: zawężenie enrichmentu (pollution ISBN).** Generyczne tytuły („Miecz dla króla") przez
-    title-only fallback + 3 źródła × 2 tytuły × 20 wyników zbierają DZIESIĄTKI niepowiązanych wydań (realny
-    przypadek: 72 ISBN-y na 1 pozycji). Ryzyko: FAŁSZYWE trafienia skanu (kod obcej książki pasuje do naszej).
-    Kandydaci na fix: wymagać zgodności autora w wynikach (Google `inauthor`/OL `author_name`/BN autor),
-    NIE robić title-only fallback dla krótkich/generycznych tytułów, twardy limit ISBN-ów na pozycję,
-    filtr prefiksu (preferuj 978-83 dla polskich). Do przemyślenia z użytkownikiem.
+  - **DO ZROBIENIA: zawężenie enrichmentu (pollution ISBN) U ŹRÓDŁA.** Objaw ZAŁAGODZONY w 1.55.0
+    (`prioritizeIsbns`: polskie na początek + cap 40 + auto-cleanup), ale nadal ŚCIĄGAMY dziesiątki obcych
+    wydań (generyczne tytuły przez title-only fallback + 3 źródła × 2 tytuły × 20 wyników; realne przypadki
+    72 i 130+ ISBN-ów). Ryzyko szczątkowe: FAŁSZYWE trafienia skanu. Kandydaci: wymagać zgodności autora w
+    wynikach (Google `inauthor`/OL `author_name`/BN autor), NIE robić title-only fallback dla krótkich/
+    generycznych tytułów, ewentualnie przechowywać TYLKO polskie (978-83). Do przemyślenia z użytkownikiem.
+  - **DO ZROBIENIA (odłożone, decyzja użytkownika „narazie nie robimy"): OCR cyfr ISBN z kamery.** Dziś skaner
+    czyta TYLKO kod kreskowy (`BarcodeDetector` → cyfry z pasków EAN-13); wydrukowanego numeru ISBN wzrokowo
+    NIE odczyta (to OCR). Alternatywa dla cyfr JUŻ jest: pole „wpisz ISBN ręcznie" w oknie skanera
+    (`inputMode=numeric`). Gdyby kiedyś dodawać OCR („nakieruj na numer"): `TextDetector` praktycznie martwy →
+    trzeba biblioteki (np. Tesseract.js, ~kilka MB, wolniej), suma kontrolna ISBN do odfiltrowania błędów.
+    Cięższy, osobny feature.
 
 - **Vinted znowu zablokował skaner — alternatywy w zanadrzu** — NOTATKA (Vinted ubił skan z IP Render/datacenter).
   Co JUŻ mamy (obrona pasywna): throttle 3–5 s + jitter na każdej ścieżce, pula User-Agent (rotacja,

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { normalizeIsbn, isValidIsbn13, isValidIsbn10, isbn10to13, prioritizeIsbns } from "../isbn";
+import { normalizeIsbn, isValidIsbn13, isValidIsbn10, isbn10to13, isbn13to10, prioritizeIsbns } from "../isbn";
 
 describe("isbn helpers", () => {
   it("validates ISBN-13 checksums", () => {
@@ -16,6 +16,14 @@ describe("isbn helpers", () => {
 
   it("converts ISBN-10 to ISBN-13", () => {
     expect(isbn10to13("0306406152")).toBe("9780306406157");
+  });
+
+  it("converts a 978 ISBN-13 back to its old ISBN-10 (round-trip)", () => {
+    // Slan, Van Vogt — old Polish ISBN-10 (see BN catalogue).
+    expect(isbn13to10("9788370012250")).toBe("8370012256");
+    expect(isbn13to10(isbn10to13("0306406152"))).toBe("0306406152");
+    expect(isbn13to10("9791234567896")).toBeNull(); // 979 has no ISBN-10 equivalent
+    expect(isbn13to10("0306406152")).toBeNull();     // not an ISBN-13
   });
 
   it("normalizes messy input to a canonical ISBN-13", () => {

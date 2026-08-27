@@ -16,6 +16,35 @@ const INDEX: BookIndexEntry[] = [
   mk({ plTitle: "Solaris", origTitle: "Solaris", author: "Stanisław Lem" }),
 ];
 
+describe("matchBooks — ISBN search", () => {
+  // „Slan" carries both the modern ISBN-13 and its old ISBN-10 (built by the index).
+  const withIsbn = mk({ plTitle: "Slan", author: "Van Vogt", isbns: ["9788370012250"], isbnSearch: "9788370012250 8370012256" });
+  const idx = [...INDEX, withIsbn];
+
+  it("finds a book by its full modern ISBN-13", () => {
+    expect(matchBooks("9788370012250", idx).map((b) => b.plTitle)).toContain("Slan");
+  });
+
+  it("finds a book by its old ISBN-10 (pre-2007)", () => {
+    expect(matchBooks("8370012256", idx).map((b) => b.plTitle)).toEqual(["Slan"]);
+  });
+
+  it("finds a book by a PARTIAL ISBN and tolerates dashes", () => {
+    expect(matchBooks("978-83-7001", idx).map((b) => b.plTitle)).toEqual(["Slan"]);
+    expect(matchBooks("370012", idx).map((b) => b.plTitle)).toEqual(["Slan"]);
+  });
+
+  it("ignores very short numeric fragments (<4 digits) to avoid noise", () => {
+    // „83" would otherwise match every Polish ISBN.
+    expect(matchBooks("83", idx).map((b) => b.plTitle)).not.toContain("Slan");
+  });
+
+  it("combines an ISBN fragment with a title/author token (AND)", () => {
+    expect(matchBooks("slan 370012", idx).map((b) => b.plTitle)).toEqual(["Slan"]);
+    expect(matchBooks("hyperion 370012", idx)).toHaveLength(0); // ISBN belongs to another book
+  });
+});
+
 describe("bookSearch.fold", () => {
   it("folds Polish diacritics per-char (incl. ł which NFD does not decompose)", () => {
     expect(fold("Żółw")).toBe("zolw");

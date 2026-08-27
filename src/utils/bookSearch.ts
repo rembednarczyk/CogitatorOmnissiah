@@ -40,7 +40,15 @@ export function matchBooks(query: string, index: BookIndexEntry[]): BookIndexEnt
     const title = fold(displayTitle(b));
     const orig = fold(b.origTitle);
     const author = fold(b.author);
-    const matchesAll = tokens.every((t) => title.includes(t) || orig.includes(t) || author.includes(t));
+    // Digit-only blob of the book's ISBN forms (ISBN-13 + old ISBN-10) for full/partial
+    // ISBN search. Spaces between forms stop a query from matching across two ISBNs.
+    const isbnBlob = (b.isbnSearch || "").toLowerCase();
+    const matchesAll = tokens.every((t) => {
+      if (title.includes(t) || orig.includes(t) || author.includes(t)) return true;
+      // A numeric token of ≥4 digits may be a (partial) ISBN — match it against the ISBN blob.
+      const digits = t.replace(/[^0-9x]/g, "");
+      return digits.length >= 4 && isbnBlob.includes(digits);
+    });
     if (!matchesAll) continue;
 
     const t0 = tokens[0];
