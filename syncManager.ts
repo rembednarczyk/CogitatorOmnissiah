@@ -15,6 +15,7 @@ import { VintedSyncService } from "./services/vintedSyncService";
 import { CycleLookupService } from "./services/cycleLookupService";
 import { CycleHarvestService } from "./services/cycleHarvestService";
 import { aggregateCycleRows } from "./services/cycleRows";
+import { lookupIsbn } from "./services/isbnLookupService";
 import { toSearchIndex } from "./services/bookSearchIndex";
 import { ConfigService } from "./services/configService";
 import { createLogger, classifyHttpError } from "./logger";
@@ -188,6 +189,11 @@ class SyncManager {
 
   async getCycle(title: string, author: string) {
     return await cycleLookupService.lookup(title, author);
+  }
+
+  /** Resolves a scanned/typed ISBN to a book (title + author) via Google Books. */
+  async lookupIsbn(code: string) {
+    return await lookupIsbn(code);
   }
 
   /**

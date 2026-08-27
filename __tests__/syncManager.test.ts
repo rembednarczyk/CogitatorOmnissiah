@@ -133,6 +133,36 @@ describe("GET /api/cycles-harvest", () => {
   });
 });
 
+describe("GET /api/isbn/:code", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    process.env.NOTION_API_KEY = "test-key";
+    process.env.NOTION_DATABASE_ID = "test-db";
+  });
+
+  it("rejects an invalid ISBN with 400 and never calls the resolver", async () => {
+    const spy = vi.spyOn(syncManager, "lookupIsbn").mockResolvedValue(null as any);
+    const res = await request(app).get("/api/isbn/not-an-isbn");
+    expect(res.status).toBe(400);
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it("returns 404 when the ISBN resolves to nothing", async () => {
+    const spy = vi.spyOn(syncManager, "lookupIsbn").mockResolvedValue(null as any);
+    const res = await request(app).get("/api/isbn/9780306406157");
+    expect(res.status).toBe(404);
+    expect(spy).toHaveBeenCalledWith("9780306406157");
+  });
+
+  it("returns the resolved book on a hit", async () => {
+    const book = { isbn: "9780306406157", title: "T", author: "A", source: "google-books" as const };
+    vi.spyOn(syncManager, "lookupIsbn").mockResolvedValue(book);
+    const res = await request(app).get("/api/isbn/0306406152"); // ISBN-10 → normalized to 13
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(book);
+  });
+});
+
 describe("POST /api/mark-as-read", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
