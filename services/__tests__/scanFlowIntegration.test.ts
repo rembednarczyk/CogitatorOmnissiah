@@ -48,10 +48,14 @@ describe("scan flow integration (mapper → search index → match)", () => {
     expect(matchIsbnInIndex("8370012256", index)?.plTitle).toBe("Miecz dla Króla");
   });
 
-  it("DROPS the book from the index when it is a cycle volume (Tom cyklu)", () => {
+  it("keeps a cycle volume out of the award-only index, but includes it when awardOnly=false", () => {
     const book = mapPageToBook(page("9788375900019", "Tom cyklu"));
-    const index = toSearchIndex([book]);
-    expect(index).toHaveLength(0);
-    expect(matchIsbnInIndex("9788375900019", index)).toBeNull();
+    // Default (Regał) — award-only → dropped.
+    expect(toSearchIndex([book])).toHaveLength(0);
+    expect(matchIsbnInIndex("9788375900019", toSearchIndex([book]))).toBeNull();
+    // Full (scan / Skryptorium) — included and scannable.
+    const full = toSearchIndex([book], false);
+    expect(full).toHaveLength(1);
+    expect(matchIsbnInIndex("9788375900019", full)?.plTitle).toBe("Miecz dla Króla");
   });
 });

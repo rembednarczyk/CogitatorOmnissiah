@@ -2,7 +2,6 @@ import pLimit from "p-limit";
 import { NotionAdapter } from "../notion.adapter";
 import { NotionBook, SyncEvent } from "../src/types";
 import { lookupIsbnsByTitle } from "./isbnLookupService";
-import { isAwardBook } from "./bookCategory";
 import { prioritizeIsbns } from "./isbn";
 import { createLogger } from "../logger";
 
@@ -25,12 +24,12 @@ function isbnListsEqual(a: string[], b: string[]): boolean {
  * identifies the row. Variant A (resolve → fuzzy search) is the fallback when nothing
  * is stored.
  *
- * EVERY award book is (re)processed and results are MERGED into the stored list — a
- * row that already had, say, only the original-language ISBN gains its Polish edition
- * ISBN on a re-run. A row is written only when the merge adds something new (no
- * needless writes). Books are looked up by BOTH their Polish and original titles,
- * because Biblioteka Narodowa indexes the Polish title („Diuna"), not the original
- * („Dune"). Cycle sibling volumes are excluded — barcode lookup is an award concern.
+ * EVERY tracked book with a title is (re)processed — award books AND cycle sibling
+ * volumes (so a scan finds a non-award volume too) — and results are MERGED into the
+ * stored list: a row that already had, say, only the original-language ISBN gains its
+ * Polish edition ISBN on a re-run. A row is written only when the merge adds something
+ * new (no needless writes). Books are looked up by BOTH their Polish and original titles,
+ * because Biblioteka Narodowa indexes the Polish title („Diuna"), not the original („Dune").
  */
 export class IsbnEnrichService {
   constructor(private notion: NotionAdapter) {}
@@ -45,10 +44,10 @@ export class IsbnEnrichService {
 
       if (checkCancellation()) { sendEvent({ type: "status", message: "Przerwano Rytuał Sygnatur." }); return; }
 
-      // Every award book with a title — re-processed and merged (not gap-filled), so
-      // already-populated rows still gain newly-found (e.g. Polish) edition ISBNs.
+      // Every tracked book with a title (award books AND cycle volumes) — re-processed and
+      // merged (not gap-filled), so already-populated rows still gain newly-found ISBNs and
+      // a scan can match a non-award cycle volume too.
       const targets = rawBooks
-        .filter(isAwardBook)
         .filter((b) => (b.plTitle && b.plTitle.trim()) || (b.origTitle && b.origTitle.trim()));
 
       // Make sure the column exists before any write (schema ritual may not have run).

@@ -24,10 +24,9 @@ const complete = (events: any[]) => events.find((e) => e.type === "complete")?.r
 describe("IsbnEnrichService", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("processes every award book (not just empty ones) and writes the edition list", async () => {
+  it("processes every titled book (not just empty ones) and writes the edition list", async () => {
     const notion = makeNotion([
-      { id: "1", plTitle: "Diuna", origTitle: "Dune", author: "Herbert" },              // no ISBNs yet
-      { id: "3", plTitle: "Tom", origTitle: "", author: "Y", kategoria: "Tom cyklu" },   // not an award → excluded
+      { id: "1", plTitle: "Diuna", origTitle: "Dune", author: "Herbert" },
     ]);
     mockedLookup.mockResolvedValue(["9780441172719", "9788375780635"]);
 
@@ -35,7 +34,7 @@ describe("IsbnEnrichService", () => {
     const svc = new IsbnEnrichService(notion as any);
     await svc.runIsbnEnrich((e) => events.push(e), () => false);
 
-    // Only the award book is looked up — by BOTH its titles (Polish + original).
+    // Looked up by BOTH its titles (Polish + original).
     expect(mockedLookup).toHaveBeenCalledWith("Diuna", "Herbert");
     expect(mockedLookup).toHaveBeenCalledWith("Dune", "Herbert");
     expect(notion.updatePage).toHaveBeenCalledTimes(1);
@@ -45,6 +44,22 @@ describe("IsbnEnrichService", () => {
 
     const result = complete(events);
     expect(result.updated).toBe(1);
+  });
+
+  it("also enriches non-award cycle volumes (so a scan can find them)", async () => {
+    const notion = makeNotion([
+      { id: "1", plTitle: "Nagrodzona", origTitle: "", author: "A" },
+      { id: "2", plTitle: "Tom cyklu 3", origTitle: "", author: "B", kategoria: "Tom cyklu" },
+    ]);
+    mockedLookup.mockResolvedValue(["9788375780635"]);
+
+    const events: any[] = [];
+    const svc = new IsbnEnrichService(notion as any);
+    await svc.runIsbnEnrich((e) => events.push(e), () => false);
+
+    expect(mockedLookup).toHaveBeenCalledWith("Tom cyklu 3", "B"); // the cycle volume IS processed
+    expect(notion.updatePage).toHaveBeenCalledWith("2", { ISBN: expect.anything() });
+    expect(complete(events).updated).toBe(2);
   });
 
   it("MERGES newly-found ISBNs into a row that already has some (e.g. adds the Polish one)", async () => {
