@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { IsbnEnrichService } from "../isbnEnrichService";
 
-// The reverse Google Books lookup is mocked — we test the ritual's orchestration
-// (filtering, idempotent skip, writes), not the HTTP call.
+// The reverse catalog lookup is mocked — we test the ritual's orchestration
+// (filtering, merge, writes), not the HTTP calls.
 vi.mock("../isbnLookupService", () => ({
   lookupIsbnsByTitle: vi.fn(),
 }));
@@ -24,11 +24,10 @@ const complete = (events: any[]) => events.find((e) => e.type === "complete")?.r
 describe("IsbnEnrichService", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("enriches only award books that lack ISBNs, and writes all edition codes as a list", async () => {
+  it("processes every award book (not just empty ones) and writes the edition list", async () => {
     const notion = makeNotion([
-      { id: "1", plTitle: "Diuna", origTitle: "Dune", author: "Herbert" },              // target
-      { id: "2", plTitle: "Ma ISBN", origTitle: "Has ISBN", author: "X", isbns: ["9788375780635"] }, // already has ISBNs → skip
-      { id: "3", plTitle: "Tom", origTitle: "", author: "Y", kategoria: "Tom cyklu" },   // not an award → skip
+      { id: "1", plTitle: "Diuna", origTitle: "Dune", author: "Herbert" },              // no ISBNs yet
+      { id: "3", plTitle: "Tom", origTitle: "", author: "Y", kategoria: "Tom cyklu" },   // not an award → excluded
     ]);
     mockedLookup.mockResolvedValue(["9780441172719", "9788375780635"]);
 
@@ -36,20 +35,50 @@ describe("IsbnEnrichService", () => {
     const svc = new IsbnEnrichService(notion as any);
     await svc.runIsbnEnrich((e) => events.push(e), () => false);
 
-    // Only the one target book was looked up + written.
-    expect(mockedLookup).toHaveBeenCalledTimes(1);
+    // Only the award book is looked up — by BOTH its titles (Polish + original).
+    expect(mockedLookup).toHaveBeenCalledWith("Diuna", "Herbert");
     expect(mockedLookup).toHaveBeenCalledWith("Dune", "Herbert");
     expect(notion.updatePage).toHaveBeenCalledTimes(1);
     expect(notion.updatePage).toHaveBeenCalledWith("1", { ISBN: expect.anything() });
-    // The full edition list is joined into the written value.
     expect(notion.buildPropertyValue).toHaveBeenCalledWith("9780441172719, 9788375780635", "rich_text");
 
     const result = complete(events);
-    expect(result.synced).toBe(1);
-    expect(result.skipped).toBe(1); // one award book already had ISBNs
+    expect(result.updated).toBe(1);
   });
 
-  it("records a book as skipped when Google Books finds no ISBN (no write)", async () => {
+  it("MERGES newly-found ISBNs into a row that already has some (e.g. adds the Polish one)", async () => {
+    const notion = makeNotion([
+      { id: "1", plTitle: "Diuna", origTitle: "Dune", author: "Herbert", isbns: ["9780441172719"] },
+    ]);
+    // Catalog now returns the original AND a Polish edition ISBN.
+    mockedLookup.mockResolvedValue(["9780441172719", "9788375780635"]);
+
+    const events: any[] = [];
+    const svc = new IsbnEnrichService(notion as any);
+    await svc.runIsbnEnrich((e) => events.push(e), () => false);
+
+    // Existing ISBN preserved, the new Polish one appended.
+    expect(notion.buildPropertyValue).toHaveBeenCalledWith("9780441172719, 9788375780635", "rich_text");
+    expect(complete(events).updated).toBe(1);
+  });
+
+  it("leaves a row unchanged (no write) when the catalogs add nothing new", async () => {
+    const notion = makeNotion([
+      { id: "1", plTitle: "Diuna", origTitle: "Dune", author: "Herbert", isbns: ["9780441172719"] },
+    ]);
+    mockedLookup.mockResolvedValue(["9780441172719"]); // already stored
+
+    const events: any[] = [];
+    const svc = new IsbnEnrichService(notion as any);
+    await svc.runIsbnEnrich((e) => events.push(e), () => false);
+
+    expect(notion.updatePage).not.toHaveBeenCalled();
+    const result = complete(events);
+    expect(result.updated).toBe(0);
+    expect(result.unchanged).toBe(1);
+  });
+
+  it("records a book as skipped when the catalogs find no ISBN (no write)", async () => {
     const notion = makeNotion([{ id: "1", plTitle: "Nieznana", origTitle: "", author: "Z" }]);
     mockedLookup.mockResolvedValue([]);
 
@@ -59,8 +88,21 @@ describe("IsbnEnrichService", () => {
 
     expect(notion.updatePage).not.toHaveBeenCalled();
     const result = complete(events);
-    expect(result.synced).toBe(0);
+    expect(result.updated).toBe(0);
     expect(result.summary.skipped).toContain("Nieznana");
+  });
+
+  it("reports a book as errored when every lookup throws (and keeps existing ISBNs)", async () => {
+    const notion = makeNotion([{ id: "1", plTitle: "Diuna", origTitle: "", author: "Z" }]);
+    mockedLookup.mockRejectedValue(new Error("wszystkie źródła 429"));
+
+    const events: any[] = [];
+    const svc = new IsbnEnrichService(notion as any);
+    await svc.runIsbnEnrich((e) => events.push(e), () => false);
+
+    expect(notion.updatePage).not.toHaveBeenCalled();
+    const result = complete(events);
+    expect(result.errors.some((e: string) => e.includes("Diuna"))).toBe(true);
   });
 
   it("creates the ISBN column before writing", async () => {
