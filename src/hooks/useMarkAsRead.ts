@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import type { IdentifiedBooks } from "./useStats";
+import type { IdentifiedBooks } from "../types/stats";
 import { markReadRequest } from "../utils/http";
 
 type BookRef = { id: string; title: string; author: string; year?: number | null };
