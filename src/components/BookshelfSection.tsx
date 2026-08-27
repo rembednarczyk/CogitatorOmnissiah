@@ -8,6 +8,7 @@ import { ShelfId, ReadOverrides, isRead, splitShelves, featuredReads } from "../
 import { planInsertion } from "../utils/shelfInsertion";
 import { ShelfSkin, SHELF_SKINS, skinClass, loadSkin, saveSkin } from "../utils/shelfSkin";
 import { useEffectiveConfig } from "../hooks/useAppConfig";
+import { useTheme } from "../hooks/useTheme";
 import { Shelf } from "./shelf/Shelf";
 import { CoverCard } from "./shelf/CoverCard";
 import { ShelfFrame } from "./shelf/ShelfFrame";
@@ -22,6 +23,11 @@ export const BookshelfSection: React.FC = () => {
   const [dragging, setDragging] = useState<BookIndexEntry | null>(null);
   const [moveError, setMoveError] = useState<string | null>(null);
   const [skin, setSkin] = useState<ShelfSkin>(loadSkin);
+  const { theme } = useTheme();
+  // Jasny motyw „Librem" = jeden regał jak z makiety: wymuszamy matową skórę
+  // (`noospheric`) i chowamy przełącznik. Zapisany wybór skóry zostaje dla
+  // motywu ciemnego — nie nadpisujemy `skin`, tylko klasę renderowaną tutaj.
+  const renderedSkin: ShelfSkin = theme === "light" ? "noospheric" : skin;
   // UI knobs: number of „Regał" rows per page + precise drop.
   const uiCfg = useEffectiveConfig().ui;
   const rowsPerPage = uiCfg.shelfRowsPerPage;
@@ -135,22 +141,25 @@ export const BookshelfSection: React.FC = () => {
         Przeciągnij wolumin między regałami · strzałkami przełączasz segmenty „Regał N"
       </p>
 
-      {/* „Regał" skin switch (Holo+ / Relikwiarz) — choice persists in localStorage */}
-      <div className="flex items-center justify-center gap-2 -mt-3">
-        <span className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Skóra</span>
-        <div className="inline-flex rounded-lg border border-white/10 overflow-hidden">
-          {SHELF_SKINS.map((s) => (
-            <button
-              key={s.id}
-              onClick={() => setSkin(s.id)}
-              aria-pressed={skin === s.id}
-              className={`px-3 py-1 text-[11px] font-bold uppercase tracking-wider font-display transition-colors ${skin === s.id ? "bg-cyan-500/20 text-cyan-200" : "text-slate-400 hover:text-slate-200 hover:bg-white/5"}`}
-            >
-              {s.label}
-            </button>
-          ))}
+      {/* „Regał" skin switch (Holo+ / Klasyczny) — choice persists in localStorage.
+          Ukryty w jasnym motywie: tam regał ma jeden wygląd (jak z makiety). */}
+      {theme !== "light" && (
+        <div className="flex items-center justify-center gap-2 -mt-3">
+          <span className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Skóra</span>
+          <div className="inline-flex rounded-lg border border-white/10 overflow-hidden">
+            {SHELF_SKINS.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => setSkin(s.id)}
+                aria-pressed={skin === s.id}
+                className={`px-3 py-1 text-[11px] font-bold uppercase tracking-wider font-display transition-colors ${skin === s.id ? "bg-cyan-500/20 text-cyan-200" : "text-slate-400 hover:text-slate-200 hover:bg-white/5"}`}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {moveError && (
         <div className="glass-card p-4 rounded-2xl border-red-500/30 bg-red-500/5 max-w-2xl mx-auto flex items-center gap-3">
@@ -176,7 +185,7 @@ export const BookshelfSection: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className={skinClass(skin)}>
+        <div className={skinClass(renderedSkin)}>
         <RoomDecor>
           {/* „Wyróżnione" shelf (covers facing out) */}
           {featured.length > 0 && (
