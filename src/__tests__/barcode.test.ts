@@ -27,20 +27,24 @@ describe("barcode.looksLikeBookIsbn", () => {
 
 describe("barcode.matchIsbnInIndex", () => {
   const index = [
-    mk({ id: "a", plTitle: "Diuna", isbn: "9788375780635" }),
+    mk({ id: "a", plTitle: "Diuna", isbns: ["9788375780635", "9788373196919"] }),
     mk({ id: "b", plTitle: "Bez ISBN" }),
-    mk({ id: "c", plTitle: "Inna", isbn: "9780306406157" }),
+    mk({ id: "c", plTitle: "Inna", isbns: ["9780306406157"] }),
   ];
 
-  it("finds the entry whose stored ISBN equals the scanned code (digit-only compare)", () => {
+  it("matches on the first stored edition ISBN (digit-only compare)", () => {
     expect(matchIsbnInIndex("978-83-7578-063-5", index)?.id).toBe("a");
+  });
+
+  it("matches on any OTHER stored edition ISBN too", () => {
+    expect(matchIsbnInIndex("9788373196919", index)?.id).toBe("a");
   });
 
   it("returns null when no row carries that ISBN", () => {
     expect(matchIsbnInIndex("9799999999992", index)).toBeNull();
   });
 
-  it("ignores rows without a stored ISBN", () => {
+  it("ignores rows without stored ISBNs", () => {
     expect(matchIsbnInIndex("", index)).toBeNull();
   });
 });

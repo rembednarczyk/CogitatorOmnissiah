@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.51.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.52.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,15 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.52.0** — **Skaner ISBN: wiele wydań na pozycję (multi-edition) — koniec zastrzeżenia multi-edition.**
+  Decyzja użytkownika: use case = „czy w ogóle mam tę książkę", nie „tę konkretną edycję" → zapisujemy
+  WSZYSTKIE ISBN-y wydań, nie jeden best-match. `lookupIsbnByTitle`→`lookupIsbnsByTitle` (zbiera zdedupowane
+  ISBN-13 ze WSZYSTKICH woluminów, `maxResults` 5→20, ISBN-10→13). `IsbnEnrichService` zapisuje listę
+  (`isbns.join(", ")`) w kolumnie `ISBN`; gap-fill po pustej liście (idempotentnie). Mapper parsuje `ISBN`
+  na `NotionBook.isbns: string[]` (split po `,`/`;`/spacji, dedup); indeks niesie `BookIndexEntry.isbns`.
+  Frontend `matchIsbnInIndex` sprawdza przynależność skanu do listy (`isbns.some`) — barcode DOWOLNEGO
+  wydania trafia w wiersz. Testy zaktualizowane (multi-edycja, dedup 10/13). Zastrzeżenie multi-edition
+  z Otwartych pozycji ZDJĘTE.
 - **1.51.0** — **Skryptorium: skaner kodów kreskowych — PR3 (mobilny skan UI, feature domknięty).**
   Przycisk skanu (ikona ScanBarcode) obok pola wyszukiwarki, widoczny TYLKO gdy natywny `BarcodeDetector`
   jest dostępny (`scanSupported()` — Android/Chrome). `ScanModal` (`src/components/search/ScanModal.tsx`):
@@ -848,9 +857,9 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
     `ScanModal` (`BarcodeDetector` + fallback ręczny), `src/utils/barcode.ts`; w `SearchSection` exact-match
     po `isbn` (B) → tytuł, else `GET /api/isbn/:code` (A) → tytuł, banery wyniku.
   - **ZASTRZEŻENIA / ODŁOŻONE**: (a) iOS Safari NIE ma natywnego `BarcodeDetector` — fallback `@zxing/browser`
-    odłożony (v1 = Android/Chrome); (b) multi-edition ISBN — książka ma wiele ISBN wydań, wzbogacanie (B)
-    zapisuje JEDNO „najlepsze" z Google Books, często ≠ ISBN fizycznego egzemplarza → wariant A (resolve→tytuł
-    →fuzzy) jest bezpieczniejszą siecią; docelowo można trzymać listę ISBN wydań, nie jeden.
+    odłożony (v1 = Android/Chrome). (b) multi-edition ISBN — ✅ ROZWIĄZANE (1.52.0): zapisujemy WSZYSTKIE
+    ISBN-y wydań (`isbns: string[]`), więc barcode dowolnej edycji trafia w wiersz (use case = „mam tę
+    książkę", nie „tę edycję").
 
 - **Vinted znowu zablokował skaner — alternatywy w zanadrzu** — NOTATKA (Vinted ubił skan z IP Render/datacenter).
   Co JUŻ mamy (obrona pasywna): throttle 3–5 s + jitter na każdej ścieżce, pula User-Agent (rotacja,

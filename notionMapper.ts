@@ -85,8 +85,13 @@ export function mapPageToBook(page: NotionPage): NotionBook {
   const shelfOrderProp = getProp(props, "ShelfOrder");
   const shelfOrder = shelfOrderProp?.type === "number" && typeof shelfOrderProp.number === "number" ? shelfOrderProp.number : undefined;
 
-  // Canonical ISBN-13 (rich_text; filled by the enrichment ritual) — enables a direct barcode match.
-  const isbn = getPlainText(getProp(props, "ISBN")).trim() || undefined;
+  // Canonical ISBN-13s across editions (rich_text; filled by the enrichment ritual). Stored
+  // as a delimited list — ANY of them matching a scanned barcode identifies this book, since
+  // the use case is „do I own this title at all", not „this exact edition".
+  const isbnRaw = getPlainText(getProp(props, "ISBN"));
+  const isbns = isbnRaw
+    ? Array.from(new Set(isbnRaw.split(/[\s,;]+/).map((s) => s.trim()).filter(Boolean)))
+    : [];
 
   return {
     id: page.id,
@@ -107,6 +112,6 @@ export function mapPageToBook(page: NotionPage): NotionBook {
     cykl,
     cyklNr,
     shelfOrder,
-    isbn
+    isbns
   };
 }

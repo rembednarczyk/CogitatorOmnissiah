@@ -1,7 +1,7 @@
 import pLimit from "p-limit";
 import { NotionAdapter } from "../notion.adapter";
 import { NotionBook, SyncEvent } from "../src/types";
-import { lookupIsbnByTitle } from "./isbnLookupService";
+import { lookupIsbnsByTitle } from "./isbnLookupService";
 import { isAwardBook } from "./bookCategory";
 import { createLogger } from "../logger";
 
@@ -10,14 +10,14 @@ const log = createLogger("IsbnEnrich");
 /**
  * Enrichment ritual for the barcode "variant B": fills the „ISBN" column on award
  * books that lack one, by looking the book up on Google Books by title (+ author).
- * A stored canonical ISBN-13 lets a mobile scan match a row DIRECTLY, without any
- * on-scan external call.
+ * Stored ISBNs let a mobile scan match a row DIRECTLY, without any on-scan external call.
  *
- * Caveat (see backlog): a title has many edition ISBNs; we store ONE "best match"
- * from Google Books, which often differs from the physical copy in hand — so the
- * scan flow keeps variant A (resolve → fuzzy search) as its safety net.
+ * We store the canonical ISBN-13s of ALL editions we can resolve (a delimited list),
+ * because the use case is „do I own this title at all", not „this exact edition" — so
+ * a barcode of any edition (hardback, paperback, reissue) still identifies the row.
+ * Variant A (resolve → fuzzy search) remains the fallback when nothing is stored.
  *
- * Idempotent: books that already carry an ISBN are skipped, so re-running only fills
+ * Idempotent: books that already carry any ISBN are skipped, so re-running only fills
  * the gaps. Cycle sibling volumes are excluded — barcode lookup is an award concern.
  */
 export class IsbnEnrichService {
@@ -33,10 +33,10 @@ export class IsbnEnrichService {
 
       if (checkCancellation()) { sendEvent({ type: "status", message: "Przerwano Rytuał Sygnatur." }); return; }
 
-      // Award books only, and only those still missing an ISBN (idempotent gap-fill).
+      // Award books only, and only those still missing ISBNs (idempotent gap-fill).
       const targets = rawBooks
         .filter(isAwardBook)
-        .filter((b) => !(b.isbn && b.isbn.trim().length > 0))
+        .filter((b) => !(b.isbns && b.isbns.length > 0))
         .filter((b) => (b.plTitle && b.plTitle.trim()) || (b.origTitle && b.origTitle.trim()));
 
       const alreadyHave = rawBooks.filter(isAwardBook).length - targets.length;
@@ -65,14 +65,15 @@ export class IsbnEnrichService {
         if (!title) return;
 
         try {
-          const isbn = await lookupIsbnByTitle(title, book.author);
-          if (!isbn) {
+          const isbns = await lookupIsbnsByTitle(title, book.author);
+          if (isbns.length === 0) {
             summary.skipped.push(label);
             return;
           }
-          await this.notion.updatePage(book.id, { "ISBN": this.notion.buildPropertyValue(isbn, "rich_text") });
+          // Store all edition ISBNs as a delimited list — any of them matches a scan.
+          await this.notion.updatePage(book.id, { "ISBN": this.notion.buildPropertyValue(isbns.join(", "), "rich_text") });
           updatedCount++;
-          summary.updated.push(`${label} (ISBN: ${isbn})`);
+          summary.updated.push(`${label} (ISBN: ${isbns.join(", ")})`);
         } catch (err: any) {
           log.warn("Błąd wzbogacania ISBN", { book: label, error: err?.message });
           errors.push({ book: label, error: err?.message || "nieznany błąd" });

@@ -30,15 +30,16 @@ export function looksLikeBookIsbn(raw: string): boolean {
 }
 
 /**
- * Direct match (variant B): find the index entry whose stored ISBN equals the
- * scanned code (compared digit-only, so stored formatting doesn't matter).
- * Returns null when nothing carries that ISBN.
+ * Direct match (variant B): find the index entry whose stored ISBNs include the
+ * scanned code (compared digit-only, so stored formatting doesn't matter). A book
+ * carries the ISBNs of all its editions, so a barcode of any edition matches.
+ * Returns null when no row carries that ISBN.
  */
 export function matchIsbnInIndex(code: string, index: BookIndexEntry[]): BookIndexEntry | null {
   const target = cleanScannedCode(code);
   if (!target) return null;
   for (const b of index) {
-    if (b.isbn && cleanScannedCode(b.isbn) === target) return b;
+    if (b.isbns?.some((i) => cleanScannedCode(i) === target)) return b;
   }
   return null;
 }
