@@ -1,7 +1,7 @@
 {
   "name": "react-example",
   "private": true,
-  "version": "1.47.2",
+  "version": "1.48.0",
   "type": "module",
   "engines": {
     "node": ">=18 <21"
@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "tsx server.ts",
     "start": "node dist/server.cjs",
-    "build": "vite build && esbuild server.ts --bundle --platform=node --target=node18 --external:vite --outfile=dist/server.cjs --format=cjs",
+    "build": "vite build && esbuild server.ts --bundle --platform=node --target=node18 --external:vite --external:playwright-core --outfile=dist/server.cjs --format=cjs",
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
@@ -45,5 +45,8 @@
     "typescript": "~5.8.2",
     "vite": "^6.2.0",
     "vitest": "^4.1.2"
+  },
+  "optionalDependencies": {
+    "playwright-core": "^1.62.1"
   }
 }

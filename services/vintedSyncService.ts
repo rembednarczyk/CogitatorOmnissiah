@@ -106,7 +106,7 @@ export class VintedSyncService {
       let session: VintedSession = { userAgent: "", cookie: "" };
       if (v.primeSession && candidates.length > 0) {
         sendEvent({ type: "status", message: "Rozgrzewanie sesji Vinted (ciasteczko Cloudflare)..." });
-        session = await primeVintedSession(httpsAgent, { uaPool: cfg.scraping.userAgents, timeoutMs: v.requestTimeoutMs });
+        session = await primeVintedSession(httpsAgent, { uaPool: cfg.scraping.userAgents, timeoutMs: v.requestTimeoutMs, useBrowser: v.primeWithBrowser });
         sendEvent({ type: "status", message: session.cookie
           ? `Sesja Vinted rozgrzana (${cookieCount(session.cookie)} ciasteczek, stały UA). Skanuję...`
           : "Nie udało się rozgrzać sesji (brak ciasteczek) — skanuję bez primingu." });
@@ -291,7 +291,7 @@ export class VintedSyncService {
       let session: VintedSession = { userAgent: "", cookie: "" };
       if (v.primeSession) {
         sendEvent({ type: "status", message: "Rozgrzewanie sesji Vinted (ciasteczko Cloudflare)..." });
-        session = await primeVintedSession(httpsAgent, { uaPool: cfg.scraping.userAgents, timeoutMs: v.requestTimeoutMs });
+        session = await primeVintedSession(httpsAgent, { uaPool: cfg.scraping.userAgents, timeoutMs: v.requestTimeoutMs, useBrowser: v.primeWithBrowser });
 
         // SELF-HEAL (as in the scan): a primed session can change the offer-page VARIANT so the
         // seller markers vanish → extractVintedSeller would silently fail on every page. Validate
