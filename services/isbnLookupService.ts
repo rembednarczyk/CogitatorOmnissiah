@@ -50,3 +50,31 @@ export async function lookupIsbn(rawCode: string): Promise<IsbnBook | null> {
     return null;
   }
 }
+
+/**
+ * Reverse lookup for the enrichment ritual (barcode "variant B"): given a book's
+ * title (+ optional author), find its canonical ISBN-13 via Google Books so it can
+ * be stored on the row and matched directly by a scan. Picks the first volume that
+ * carries a usable ISBN (preferring ISBN-13, falling back to a normalized ISBN-10).
+ * Returns the ISBN-13 string, or null when nothing usable is found. Throws only on
+ * an unexpected error so the caller can report it per book.
+ */
+export async function lookupIsbnByTitle(title: string, author?: string): Promise<string | null> {
+  const cleanTitle = (title || "").trim();
+  if (!cleanTitle) return null;
+  const parts = [`intitle:${cleanTitle}`];
+  const cleanAuthor = (author || "").trim();
+  if (cleanAuthor) parts.push(`inauthor:${cleanAuthor}`);
+
+  const res = await axios.get(GOOGLE_BOOKS, { params: { q: parts.join("+"), maxResults: 5 }, timeout: 10000 });
+  const items: any[] = Array.isArray(res.data?.items) ? res.data.items : [];
+  for (const item of items) {
+    const ids: any[] = item?.volumeInfo?.industryIdentifiers || [];
+    // Prefer an ISBN-13; otherwise take an ISBN-10 and let normalizeIsbn convert it.
+    const isbn13 = ids.find((x) => x?.type === "ISBN_13")?.identifier;
+    const isbn10 = ids.find((x) => x?.type === "ISBN_10")?.identifier;
+    const normalized = normalizeIsbn(isbn13 || isbn10 || "");
+    if (normalized) return normalized;
+  }
+  return null;
+}

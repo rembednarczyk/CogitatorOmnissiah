@@ -57,5 +57,6 @@ describe('SchemaValidationService', () => {
     expect(mockNotion.updateDatabaseProperty).toHaveBeenCalledWith('actual-id', 'Źródło', 'multi_select');
     expect(mockNotion.updateDatabaseProperty).toHaveBeenCalledWith('actual-id', 'VintedData', 'rich_text');
     expect(mockNotion.updateDatabaseProperty).toHaveBeenCalledWith('actual-id', 'ShelfOrder', 'number');
+    expect(mockNotion.updateDatabaseProperty).toHaveBeenCalledWith('actual-id', 'ISBN', 'rich_text');
   });
 });

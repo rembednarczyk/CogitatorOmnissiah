@@ -1,5 +1,5 @@
 import React from "react";
-import { Settings, Search, RefreshCw, AlertTriangle, Sparkles, Database, BookOpen, Layers } from "lucide-react";
+import { Settings, Search, RefreshCw, AlertTriangle, Sparkles, Database, BookOpen, Layers, Barcode } from "lucide-react";
 import { motion } from "motion/react";
 import { useSync } from "../hooks/useSync";
 import { RitualButton } from "./stats/RitualButton";
@@ -12,6 +12,7 @@ interface OtherToolsCardProps {
   seriesSync: ReturnType<typeof useSync>;
   cyclesSync: ReturnType<typeof useSync>;
   cyclesHarvestSync: ReturnType<typeof useSync>;
+  isbnEnrichSync: ReturnType<typeof useSync>;
   duplicatesSync: ReturnType<typeof useSync>;
   lpSync: ReturnType<typeof useSync>;
   handleSyncSchema: () => void;
@@ -20,6 +21,7 @@ interface OtherToolsCardProps {
   handleSyncSeries: () => void;
   handleCyclesSync: () => void;
   handleCyclesHarvest: () => void;
+  handleIsbnEnrich: () => void;
   handleSyncDuplicates: () => void;
   handleSyncLp: () => void;
   handleResetSync?: () => void;
@@ -33,6 +35,7 @@ export const OtherToolsCard: React.FC<OtherToolsCardProps> = ({
   seriesSync,
   cyclesSync,
   cyclesHarvestSync,
+  isbnEnrichSync,
   duplicatesSync,
   lpSync,
   handleSyncSchema,
@@ -41,6 +44,7 @@ export const OtherToolsCard: React.FC<OtherToolsCardProps> = ({
   handleSyncSeries,
   handleCyclesSync,
   handleCyclesHarvest,
+  handleIsbnEnrich,
   handleSyncDuplicates,
   handleSyncLp,
   handleResetSync,
@@ -55,6 +59,7 @@ export const OtherToolsCard: React.FC<OtherToolsCardProps> = ({
     { color: "amber", icon: Layers, title: "Rytuał Żniw Cykli", subtitle: "Materializacja sąsiednich tomów cykli jako wiersze bazy (Kategoria: Tom cyklu) — oznaczalne i skanowane na Vinted", onClick: handleCyclesHarvest, animate: cyclesHarvestSync.state.loading ? "spin" : undefined },
     { color: "rose", icon: BookOpen, title: "Rytuał Wydania", subtitle: "Eksploracja i aktualizacja danych o wydawcach z Encyklopedii", onClick: handleSyncPublisher, animate: publisherSync.state.loading ? "pulse" : undefined },
     { color: "indigo", icon: Layers, title: "Rytuał Seryjny", subtitle: "Eksploracja i aktualizacja danych o seriach wydawniczych", onClick: handleSyncSeries, animate: seriesSync.state.loading ? "pulse" : undefined },
+    { color: "emerald", icon: Barcode, title: "Rytuał Sygnatur (ISBN)", subtitle: "Nadawanie kodów ISBN z Google Books — umożliwia skan kodu kreskowego w Skryptorium", onClick: handleIsbnEnrich, animate: isbnEnrichSync.state.loading ? "pulse" : undefined },
     { color: "orange", icon: Search, title: "Rytuał Wykrycia Duplikacji", subtitle: "Identyfikacja i oznaczanie potencjalnych duplikatów w bazie", onClick: handleSyncDuplicates, animate: duplicatesSync.state.loading ? "pulse" : undefined },
   ];
   return (

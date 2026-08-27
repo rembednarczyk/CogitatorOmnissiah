@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.49.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.50.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,20 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.50.0** — **Skryptorium: skaner kodów kreskowych — PR2 (kolumna ISBN + rytuał wzbogacania, wariant B).**
+  Baza może teraz TRZYMAĆ ISBN, żeby skan dopasował wiersz wprost (bez zapytania zewnętrznego na skanie).
+  Kolumna `ISBN` (rich_text) dodana do `requiredProps` (Rytuał Inicjacji Schematu). Nowy rytuał
+  `IsbnEnrichService` (`isbn-enrich`): iteruje książki nagrodowe BEZ ISBN (idempotentny gap-fill), pyta
+  Google Books po tytule (oryginalny→polski) + autorze (`lookupIsbnByTitle`: `intitle:`+`inauthor:`,
+  wybiera 1. wolumin z ISBN-13, fallback ISBN-10→13 przez `normalizeIsbn`), zapisuje `ISBN` na wierszu
+  (`updatePage` + `createColumnIfNeeded`); tomy cykli pominięte (`isAwardBook`). Mapper czyta `ISBN`→`isbn`
+  (`NotionBook.isbn`), indeks wyszukiwarki niesie `isbn` (`BookIndexEntry.isbn`) → PR3 exact-match bez API.
+  Wpięcie: TASK_REGISTRY `isbn-enrich`, controller `runIsbnEnrich`/`stopIsbnEnrich`, routy
+  `/sync-isbn-enrich(+/stop)`, `useSyncManager` `isbnEnrichSync` + przycisk „Rytuał Sygnatur (ISBN)" (ikona
+  Barcode) w OtherToolsCard. CELOWO poza „Wielkim Rytuałem" (pisze dane ze źródła zewnętrznego — uruchamiany
+  świadomie, jak Żniwa/duplikaty). +8 testów (lookupByTitle, enrich orchestration, schema ISBN). ZASTRZEŻENIE
+  multi-edition (patrz Otwarte pozycje): zapis JEDNEGO best-match ISBN ≠ egzemplarz fizyczny → wariant A
+  (resolve→fuzzy) zostaje siecią. NASTĘPNE: PR3 (mobilny skan UI).
 - **1.49.0** — **Skryptorium: skaner kodów kreskowych — PR1 (backend resolver ISBN, wariant A).** Fizyczny
   kod kreskowy = EAN-13 = ISBN-13, ale baza Notion NIE trzyma ISBN → kod nie dopasuje wiersza wprost;
   potrzebna rezolucja ISBN→tytuł, potem istniejąca rozmyta wyszukiwarka. Czyste helpery `services/isbn.ts`
@@ -815,10 +829,9 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
   zależności skanera). Rdzeń problemu: baza Notion NIE trzyma ISBN → kod nie dopasuje wiersza wprost.
   - **PR1 — backend resolver ISBN (wariant A)** — ✅ ZREALIZOWANE (1.49.0). `services/isbn.ts` (`normalizeIsbn`)
     + `services/isbnLookupService.ts` (`lookupIsbn` Google Books, cache) + `GET /api/isbn/:code`.
-  - **PR2 — kolumna `ISBN` w Notion + rytuał wzbogacania (wariant B)** — TODO. Nowa kolumna `ISBN` (rich_text)
-    w `requiredProps` (Rytuał Inicjacji Schematu); rytuał wzbogacania: dla nagrodowych bez ISBN → Google Books
-    po tytule+autorze → zapis „najlepszego dopasowania"; mapper czyta `isbn`; indeks wyszukiwarki dostaje `isbn`
-    (exact-match skanu bez zapytania zewnętrznego).
+  - **PR2 — kolumna `ISBN` w Notion + rytuał wzbogacania (wariant B)** — ✅ ZREALIZOWANE (1.50.0). Kolumna
+    `ISBN` w `requiredProps`; `IsbnEnrichService` (`isbn-enrich`) + `lookupIsbnByTitle`; mapper `isbn`;
+    indeks wyszukiwarki `isbn`; przycisk „Rytuał Sygnatur (ISBN)".
   - **PR3 — frontend skanu (mobile)** — TODO. Przycisk skanu w Skryptorium (tylko gdy `BarcodeDetector`
     dostępny) → modal kamery → exact match po zapisanym `isbn` (B), inaczej resolve→fuzzy-search (A);
     ręczny fallback wpisania ISBN.

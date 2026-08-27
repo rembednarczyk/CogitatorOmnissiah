@@ -39,7 +39,9 @@ export class SchemaValidationService {
         { name: "CyklNr", type: "number" },
         // Closing old debt — until now created lazily by the scanner/shelf.
         { name: "VintedData", type: "rich_text" },
-        { name: "ShelfOrder", type: "number" }
+        { name: "ShelfOrder", type: "number" },
+        // Canonical ISBN-13 filled by the enrichment ritual — enables a direct barcode match.
+        { name: "ISBN", type: "rich_text" }
       ];
 
       // 1. Handle primary (title) column renaming if necessary

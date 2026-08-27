@@ -14,6 +14,7 @@ import { LibraryCheckService } from "./services/libraryCheckService";
 import { VintedSyncService } from "./services/vintedSyncService";
 import { CycleLookupService } from "./services/cycleLookupService";
 import { CycleHarvestService } from "./services/cycleHarvestService";
+import { IsbnEnrichService } from "./services/isbnEnrichService";
 import { aggregateCycleRows } from "./services/cycleRows";
 import { lookupIsbn } from "./services/isbnLookupService";
 import { toSearchIndex } from "./services/bookSearchIndex";
@@ -48,6 +49,7 @@ const libraryCheckService = new LibraryCheckService(notionAdapter, configService
 const vintedSyncService = new VintedSyncService(notionAdapter, configService);
 const cycleLookupService = new CycleLookupService(notionAdapter, wikiAdapter);
 const cycleHarvestService = new CycleHarvestService(notionAdapter, cycleLookupService, configService);
+const isbnEnrichService = new IsbnEnrichService(notionAdapter);
 
 interface SyncTask {
   name: string;
@@ -65,6 +67,7 @@ export type SyncTaskName =
   | "lp"
   | "cycles"
   | "cycles-harvest"
+  | "isbn-enrich"
   | "integrity"
   | "library"
   | "vinted"
@@ -89,6 +92,7 @@ const TASK_REGISTRY: Record<SyncTaskName, (sendEvent: (data: SyncEvent) => void,
   lp:         (s) => (cc) => lpSyncService.runLpSync(s, cc),
   cycles:     (s) => (cc) => cyclesSyncService.runCyclesSync(s, cc),
   "cycles-harvest": (s) => (cc) => cycleHarvestService.runCycleHarvest(s, cc),
+  "isbn-enrich": (s) => (cc) => isbnEnrichService.runIsbnEnrich(s, cc),
   integrity:  (s) => (cc) => integrityService.runIntegrityCheck(s, cc),
   library:    (s, p) => (cc) => libraryCheckService.runLibraryCheck(p.libraryCode, s, cc),
   vinted:     (s, p) => (cc) => vintedSyncService.runVintedCheck(s, cc, p),
