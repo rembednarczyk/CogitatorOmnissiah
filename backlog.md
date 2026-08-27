@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.53.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.54.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,16 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.54.0** — **Rytuał ISBN: merge zamiast gap-fill + zapytanie po OBU tytułach.** Wcześniej rytuał
+  POMIJAŁ pozycje, które miały już jakikolwiek ISBN (gap-fill) → książki uzupełnione samym angielskim
+  ISBN-em nie dostawały polskiego. Teraz **każda** książka nagrodowa jest przetwarzana, a wynik SCALANY z
+  istniejącą listą (`Set(existing) ∪ found`); zapis TYLKO gdy zbiór urósł (bez zbędnych zapisów — licznik
+  `unchanged`). Kluczowe: lookup po OBU tytułach (polski + oryginalny), bo Biblioteka Narodowa indeksuje
+  tytuł POLSKI („Diuna"), a Google/OL oryginalny („Dune") — dwa wywołania `lookupIsbnsByTitle` (każde =
+  unia 3 źródeł), union wyników. Błąd per-książka tylko gdy WSZYSTKIE lookupy padły; istniejące ISBN-y nigdy
+  nie giną. Wynik: `updated`/`unchanged`/`skipped`/`errors`. +4 testy (merge dokłada polski, unchanged bez
+  zapisu, oba tytuły, all-fail→error). KOSZT: każdy przebieg odpytuje każdą książkę (do 2 tytułów × 3 źródła)
+  — rytuał ręczny, akceptowalne.
 - **1.53.0** — **Rytuał ISBN: polskie ISBN-y z Biblioteki Narodowej + unia 3 źródeł.** Skanujemy polskie
   egzemplarze (prefiks 978-83…), których Google/OpenLibrary często nie mają. Dodane 3. źródło:
   **Biblioteka Narodowa** (`data.bn.org.pl/api/institutions/bibs.json`, keyless) — autorytatywne dla polskich
