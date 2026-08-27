@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { normalizeIsbn, isValidIsbn13, isValidIsbn10, isbn10to13 } from "../isbn";
+import { normalizeIsbn, isValidIsbn13, isValidIsbn10, isbn10to13, prioritizeIsbns } from "../isbn";
 
 describe("isbn helpers", () => {
   it("validates ISBN-13 checksums", () => {
@@ -28,5 +28,20 @@ describe("isbn helpers", () => {
     expect(normalizeIsbn("9788375780636")).toBeNull(); // book prefix, bad checksum
     expect(normalizeIsbn("hello")).toBeNull();
     expect(normalizeIsbn("")).toBeNull();
+  });
+});
+
+describe("prioritizeIsbns", () => {
+  it("puts Polish (978-83…) ISBNs first, keeping relative order", () => {
+    const r = prioritizeIsbns(["9780441172719", "9788375780635", "9780007370740", "9788373196919"]);
+    expect(r).toEqual(["9788375780635", "9788373196919", "9780441172719", "9780007370740"]);
+  });
+
+  it("dedupes and caps the list", () => {
+    const foreign = Array.from({ length: 100 }, (_, i) => `978000000${String(1000 + i)}`);
+    const r = prioritizeIsbns(["9788375780635", "9788375780635", ...foreign], 10);
+    expect(r.length).toBe(10);
+    expect(r[0]).toBe("9788375780635");           // Polish kept, first
+    expect(new Set(r).size).toBe(10);              // no duplicates
   });
 });

@@ -3,9 +3,15 @@ import { NotionAdapter } from "../notion.adapter";
 import { NotionBook, SyncEvent } from "../src/types";
 import { lookupIsbnsByTitle } from "./isbnLookupService";
 import { isAwardBook } from "./bookCategory";
+import { prioritizeIsbns } from "./isbn";
 import { createLogger } from "../logger";
 
 const log = createLogger("IsbnEnrich");
+
+/** Order-sensitive equality — so a reordered (Polish-first) or capped list counts as a change. */
+function isbnListsEqual(a: string[], b: string[]): boolean {
+  return a.length === b.length && a.every((v, i) => v === b[i]);
+}
 
 /**
  * Enrichment ritual for the barcode "variant B": fills the „ISBN" column on award
@@ -68,7 +74,7 @@ export class IsbnEnrichService {
         const titles = Array.from(new Set([book.plTitle?.trim(), book.origTitle?.trim()].filter(Boolean))) as string[];
         if (titles.length === 0) return;
 
-        const existing = new Set(book.isbns || []);
+        const existing = book.isbns || [];
         const found = new Set<string>(existing);
         let lastError: string | null = null;
         let anySourceResponded = false;
@@ -93,17 +99,20 @@ export class IsbnEnrichService {
           summary.skipped.push(label); // sources responded, but no ISBN anywhere
           return;
         }
-        if (found.size === existing.size) {
-          unchangedCount++; // already had everything the catalogs know
+
+        // Polish editions first (survive Notion's 2000-char truncation) + capped so a
+        // generic title can't bloat the row. Re-running this also CLEANS UP already-bloated
+        // rows: their capped/reordered list differs from what's stored → rewritten.
+        const finalIsbns = prioritizeIsbns(Array.from(found));
+        if (isbnListsEqual(finalIsbns, existing)) {
+          unchangedCount++; // already stored in the same order, nothing to do
           return;
         }
 
-        // The merge added at least one new ISBN → persist the full deduped list.
-        const merged = Array.from(found);
         try {
-          await this.notion.updatePage(book.id, { "ISBN": this.notion.buildPropertyValue(merged.join(", "), "rich_text") });
+          await this.notion.updatePage(book.id, { "ISBN": this.notion.buildPropertyValue(finalIsbns.join(", "), "rich_text") });
           updatedCount++;
-          summary.updated.push(`${label} (ISBN: ${merged.join(", ")})`);
+          summary.updated.push(`${label} (ISBN: ${finalIsbns.join(", ")})`);
         } catch (err: any) {
           log.warn("Błąd zapisu ISBN", { book: label, error: err?.message });
           errors.push({ book: label, error: err?.message || "nieznany błąd" });
