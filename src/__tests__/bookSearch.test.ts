@@ -29,9 +29,15 @@ describe("matchBooks — ISBN search", () => {
     expect(matchBooks("8370012256", idx).map((b) => b.plTitle)).toEqual(["Slan"]);
   });
 
-  it("finds a book by a PARTIAL ISBN and tolerates dashes", () => {
-    expect(matchBooks("978-83-7001", idx).map((b) => b.plTitle)).toEqual(["Slan"]);
-    expect(matchBooks("370012", idx).map((b) => b.plTitle)).toEqual(["Slan"]);
+  it("finds a book by an ISBN PREFIX (how people type them) and tolerates dashes", () => {
+    expect(matchBooks("978-83-7001", idx).map((b) => b.plTitle)).toEqual(["Slan"]); // prefix of the ISBN-13
+    expect(matchBooks("837001", idx).map((b) => b.plTitle)).toEqual(["Slan"]);       // prefix of the ISBN-10
+  });
+
+  it("matches a long (≥8-digit) fragment mid-ISBN, but not a short one", () => {
+    expect(matchBooks("83700122", idx).map((b) => b.plTitle)).toEqual(["Slan"]); // 8-digit fragment
+    // A short mid-ISBN run (e.g. a year „3700") is NOT a prefix → no noisy match.
+    expect(matchBooks("3700", idx).map((b) => b.plTitle)).not.toContain("Slan");
   });
 
   it("ignores very short numeric fragments (<4 digits) to avoid noise", () => {
@@ -39,9 +45,14 @@ describe("matchBooks — ISBN search", () => {
     expect(matchBooks("83", idx).map((b) => b.plTitle)).not.toContain("Slan");
   });
 
-  it("combines an ISBN fragment with a title/author token (AND)", () => {
-    expect(matchBooks("slan 370012", idx).map((b) => b.plTitle)).toEqual(["Slan"]);
-    expect(matchBooks("hyperion 370012", idx)).toHaveLength(0); // ISBN belongs to another book
+  it("does NOT let a common 4-digit number (e.g. a year) match an ISBN that merely contains it", () => {
+    // „0012" appears mid-ISBN in Slan's numbers but is not a prefix → no false positive.
+    expect(matchBooks("0012", idx).map((b) => b.plTitle)).not.toContain("Slan");
+  });
+
+  it("combines an ISBN prefix with a title/author token (AND)", () => {
+    expect(matchBooks("slan 837001", idx).map((b) => b.plTitle)).toEqual(["Slan"]);
+    expect(matchBooks("hyperion 837001", idx)).toHaveLength(0); // ISBN belongs to another book
   });
 });
 

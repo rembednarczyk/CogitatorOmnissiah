@@ -128,6 +128,24 @@ describe("IsbnEnrichService", () => {
     expect(result.errors.some((e: string) => e.includes("Diuna"))).toBe(true);
   });
 
+  it("reports a mid-run cancellation as a stop, not a false complete", async () => {
+    const notion = makeNotion([
+      { id: "1", plTitle: "A", origTitle: "A", author: "X" },
+      { id: "2", plTitle: "B", origTitle: "B", author: "Y" },
+    ]);
+    mockedLookup.mockResolvedValue(["9788375780635"]);
+    // False on the 1st call (pre-loop guard passes), true afterwards → cancel lands AFTER the
+    // loop starts, exercising the post-loop check (not the pre-loop early return).
+    let calls = 0;
+    const checkCancel = () => calls++ > 0;
+    const events: any[] = [];
+    const svc = new IsbnEnrichService(notion as any);
+    await svc.runIsbnEnrich((e) => events.push(e), checkCancel);
+
+    expect(events.find((e) => e.type === "complete")).toBeUndefined();
+    expect(events.some((e) => e.type === "status" && /Przerwano/.test(e.message))).toBe(true);
+  });
+
   it("creates the ISBN column before writing", async () => {
     const notion = makeNotion([{ id: "1", plTitle: "T", origTitle: "T", author: "A" }]);
     mockedLookup.mockResolvedValue(["9780441172719"]);

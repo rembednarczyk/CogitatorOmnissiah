@@ -10,6 +10,17 @@ import { scanSupported, cleanScannedCode, matchIsbnInIndex } from "../utils/barc
 /** Max number of cards we render (DOM guard for an „empty" query = the whole set). */
 const RENDER_CAP = 150;
 
+/** fetch with a hard timeout — a scan must never wedge the UI on a stalled connection. */
+async function fetchWithTimeout(url: string, ms = 12000): Promise<Response> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  try {
+    return await fetch(url, { signal: ctrl.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export const SearchSection: React.FC = () => {
   const { books, loading, error, fetchBooks, setBooks } = useBooks();
   const [query, setQuery] = useState("");
@@ -43,10 +54,10 @@ export const SearchSection: React.FC = () => {
       let index = books ?? [];
       try {
         // fresh=1 bypasses the server's 5-min cache too, so a just-added ISBN is visible.
-        const fresh = await fetch(`/api/books?fresh=1&t=${Date.now()}`);
+        const fresh = await fetchWithTimeout(`/api/books?fresh=1&t=${Date.now()}`);
         if (fresh.ok) { index = await fresh.json(); setBooks(index); }
       } catch {
-        // Network hiccup — fall back to the in-memory index.
+        // Network hiccup / timeout — fall back to the in-memory index.
       }
 
       const direct = matchIsbnInIndex(code, index);
@@ -57,10 +68,10 @@ export const SearchSection: React.FC = () => {
       }
 
       // Not stored on any row → resolve the ISBN to a title and fuzzy-search it (variant A).
-      const res = await fetch(`/api/isbn/${encodeURIComponent(code)}`);
-      if (res.ok) {
-        const book = await res.json();
-        setQuery(book.title || "");
+      const res = await fetchWithTimeout(`/api/isbn/${encodeURIComponent(code)}`);
+      const book = res.ok ? await res.json() : null;
+      if (book?.title) {
+        setQuery(book.title);
         setScanNotice({ kind: "resolved", text: `Rozpoznano przez ISBN: „${book.title}" — przeszukuję archiwum` });
       } else {
         setScanNotice({ kind: "miss", text: `Nie znaleziono w archiwum książki o ISBN ${code}.` });

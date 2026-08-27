@@ -30,6 +30,7 @@ export const ScanModal: React.FC<Props> = ({ open, onClose, onDetect }) => {
   const [status, setStatus] = useState<"idle" | "starting" | "scanning" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState<string>("");
   const [manual, setManual] = useState("");
+  const [manualErr, setManualErr] = useState("");
 
   // Stop the camera + detection loop and release the stream.
   const teardown = () => {
@@ -80,6 +81,9 @@ export const ScanModal: React.FC<Props> = ({ open, onClose, onDetect }) => {
         };
         rafRef.current = requestAnimationFrame(tick);
       } catch (e: any) {
+        // getUserMedia OR video.play() can reject (denied permission, blocked autoplay) —
+        // release any stream we already acquired so the camera light doesn't stay on.
+        teardown();
         if (cancelled) return;
         setStatus("error");
         setErrorMsg(
@@ -97,8 +101,14 @@ export const ScanModal: React.FC<Props> = ({ open, onClose, onDetect }) => {
 
   const submitManual = (e: React.FormEvent) => {
     e.preventDefault();
-    const code = manual.trim();
-    if (code) finish(code);
+    const digits = manual.replace(/[^0-9Xx]/g, "");
+    // A real ISBN is 10 or 13 chars — reject junk instead of closing with no feedback.
+    if (digits.length !== 10 && digits.length !== 13) {
+      setManualErr("Wpisz pełny ISBN — 10 lub 13 cyfr.");
+      return;
+    }
+    setManualErr("");
+    finish(manual.trim());
   };
 
   return (
@@ -162,7 +172,7 @@ export const ScanModal: React.FC<Props> = ({ open, onClose, onDetect }) => {
                     type="text"
                     inputMode="numeric"
                     value={manual}
-                    onChange={(e) => setManual(e.target.value)}
+                    onChange={(e) => { setManual(e.target.value); if (manualErr) setManualErr(""); }}
                     placeholder="978…"
                     aria-label="Wpisz ISBN ręcznie"
                     className="flex-1 px-4 py-2.5 text-sm bg-slate-950/60 border border-white/10 text-slate-200 rounded-xl focus:outline-none focus:border-cyan-500/50 placeholder-slate-600"
@@ -175,6 +185,7 @@ export const ScanModal: React.FC<Props> = ({ open, onClose, onDetect }) => {
                     Szukaj
                   </button>
                 </div>
+                {manualErr && <p className="text-[11px] text-red-400 font-medium">{manualErr}</p>}
               </form>
             </div>
 

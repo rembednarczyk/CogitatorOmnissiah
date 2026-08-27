@@ -1,4 +1,5 @@
 import { NotionPage, NotionProperty, NotionPageProperties, NotionBook } from "./src/types";
+import { normalizeIsbn } from "./services/isbn";
 
 /**
  * Maps a Notion page → domain `NotionBook`. This is domain logic (not a pure
@@ -87,10 +88,16 @@ export function mapPageToBook(page: NotionPage): NotionBook {
 
   // Canonical ISBN-13s across editions (rich_text; filled by the enrichment ritual). Stored
   // as a delimited list — ANY of them matching a scanned barcode identifies this book, since
-  // the use case is „do I own this title at all", not „this exact edition".
+  // the use case is „do I own this title at all", not „this exact edition". Each token is
+  // normalized to a canonical, checksum-valid ISBN-13 on read (converting a legacy/hand-typed
+  // ISBN-10 → 13 and dropping junk like „ISBN:"), so a dirty column still matches a scan.
   const isbnRaw = getPlainText(getProp(props, "ISBN"));
   const isbns = isbnRaw
-    ? Array.from(new Set(isbnRaw.split(/[\s,;]+/).map((s) => s.trim()).filter(Boolean)))
+    ? Array.from(new Set(
+        isbnRaw.split(/[\s,;]+/)
+          .map((s) => normalizeIsbn(s))
+          .filter((s): s is string => s !== null)
+      ))
     : [];
 
   return {

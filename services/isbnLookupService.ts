@@ -75,10 +75,20 @@ async function queryGoogle(q: string): Promise<string[]> {
   return collectIsbns(Array.isArray(res.data?.items) ? res.data.items : []);
 }
 
-/** Google Books, with a title-only fallback when the author-qualified query is empty. */
+/**
+ * Google Books, with a title-only fallback. The author-qualified query is wrapped so a
+ * transient error (Google 429s keyless calls from datacenter IPs) still lets the title-only
+ * query run — the fallback is meant to cover „author query found nothing", and an error is
+ * just a harsher form of that. If the title-only query also throws, this rejects (a real
+ * outage for this source), which is what the caller's all-sources-failed check expects.
+ */
 async function fromGoogle(title: string, author: string): Promise<string[]> {
   const found = new Set<string>();
-  if (author) (await queryGoogle(`intitle:${title} inauthor:${author}`)).forEach((x) => found.add(x));
+  if (author) {
+    try {
+      (await queryGoogle(`intitle:${title} inauthor:${author}`)).forEach((x) => found.add(x));
+    } catch { /* fall through to the title-only query */ }
+  }
   if (found.size === 0) (await queryGoogle(`intitle:${title}`)).forEach((x) => found.add(x));
   return Array.from(found);
 }
@@ -137,7 +147,11 @@ async function queryBN(params: Record<string, string | number>): Promise<string[
  */
 async function fromBN(title: string, author: string): Promise<string[]> {
   const found = new Set<string>();
-  if (author) (await queryBN({ title, author })).forEach((x) => found.add(x));
+  if (author) {
+    try {
+      (await queryBN({ title, author })).forEach((x) => found.add(x));
+    } catch { /* fall through to the title-only query */ }
+  }
   if (found.size === 0) (await queryBN({ title })).forEach((x) => found.add(x));
   return Array.from(found);
 }
