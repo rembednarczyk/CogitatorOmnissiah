@@ -118,9 +118,9 @@ class SyncManager {
     return await statsService.getStats();
   }
 
-  /** Slimmed-down book index for the „Skryptorium" search (client-side). */
-  async getBooks() {
-    const books = await this.notion.getBooksForStats(undefined, undefined, { cache: true });
+  /** Slimmed-down book index for the „Skryptorium" search (client-side). `fresh` bypasses the cache. */
+  async getBooks(fresh = false) {
+    const books = await this.notion.getBooksForStats(undefined, undefined, { cache: !fresh });
     return toSearchIndex(books);
   }
 
