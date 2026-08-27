@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.61.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.62.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,18 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.62.0** — **Jasny motyw: spójny repaint boho przez zmienne koloru Tailwinda (start dopieszczania od „Kolekcji").**
+  Zamiast dziesiątek per-utility remapów, warstwa `:root[data-theme="light"]` nadpisuje teraz **`--color-*`**
+  Tailwinda — przez które przechodzą WSZYSTKIE utility: `bg/text/border/from/via/to` **oraz** warianty alpha
+  `…/NN` (color-mix). Efekt: gradienty, wypełnienia pasków (ProgressBar, histogram dekad, publishing) i pigułki
+  robią się lniane naraz (wcześniej remapowane były tylko płaskie kolory → gradienty zostawały cyan/blue).
+  Mapowanie rodzin na paletę makiety: cyan/blue/sky→**clay**, emerald/green/teal/indigo/purple/violet→**sage**,
+  amber/yellow/orange→**ochre**, rose/red/pink→**brick**, slate→ciepłe neutralne (papier/len/inkaust). Zachowane
+  struktury: `.glass-card`, `.text-gradient`, linki, scrollbar, białe-alpha ramki (poza rampą slate), `text-white`
+  (okładki/przyciski). Ciemny motyw (bez `data-theme`/`="dark"`) na defaultach — bez zmian. Repaint dotyka
+  wszystkich zakładek, ale weryfikowany pod „Kolekcję" (KPI/paski/oś czasu/dostępność/oficyny) wg `design/
+  Main.dc.html`. Suite 463 zielone, lint czysty, build OK. NASTĘPNE (opcjonalnie): głębszy re-layout dashboardu
+  „Kolekcja" 1:1 do makiety (rząd KPI + dwie kolumny) — większa zmiana, do potwierdzenia.
 - **1.61.0** — **Pełny rebrand nazewnictwa UI: „Cogitator Omnissiah" → „Librem"** (ciepły, biblioteczny ton
   zamiast liturgicznego 40k). Wordmark `COGITATOR OMNISSIAH`→`LIBREM`, podtytuł→„Twoja kolekcja nagradzanej
   fantastyki". Zakładki: Statystyki Archiwum→**Kolekcja**, Skryptorium→**Katalog**, Liturgie
