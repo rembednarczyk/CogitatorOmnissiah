@@ -60,8 +60,8 @@ export interface NotionBook {
   cyklNr?: number;
   /** Manual shelf ordering key (column „ShelfOrder"; fractional-year scale). */
   shelfOrder?: number;
-  /** Canonical ISBN-13 (column „ISBN") — filled by the enrichment ritual; enables a direct barcode match. */
-  isbn?: string;
+  /** Canonical ISBN-13s across editions (column „ISBN") — filled by the enrichment ritual; ANY of them matches a barcode. */
+  isbns?: string[];
 }
 
 /**
@@ -81,8 +81,8 @@ export interface BookIndexEntry {
   partOfCycle: boolean;
   /** Manual shelf ordering key (precise drag&drop); absent → sort by year. */
   shelfOrder?: number;
-  /** Canonical ISBN-13 (if enriched) — lets a barcode scan match a row directly. */
-  isbn?: string;
+  /** Canonical ISBN-13s across editions (if enriched) — a barcode of ANY edition matches this row. */
+  isbns?: string[];
 }
 
 export interface SyncState {

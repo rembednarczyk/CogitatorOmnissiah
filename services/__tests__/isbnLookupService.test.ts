@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import axios from "axios";
-import { lookupIsbn, lookupIsbnByTitle } from "../isbnLookupService";
+import { lookupIsbn, lookupIsbnsByTitle } from "../isbnLookupService";
 
 vi.mock("axios");
 const mockedGet = axios.get as unknown as ReturnType<typeof vi.fn>;
@@ -29,37 +29,42 @@ describe("lookupIsbn", () => {
   });
 });
 
-describe("lookupIsbnByTitle", () => {
+describe("lookupIsbnsByTitle", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("returns null for an empty title without hitting the API", async () => {
-    const r = await lookupIsbnByTitle("   ", "Herbert");
-    expect(r).toBeNull();
+  it("returns [] for an empty title without hitting the API", async () => {
+    const r = await lookupIsbnsByTitle("   ", "Herbert");
+    expect(r).toEqual([]);
     expect(mockedGet).not.toHaveBeenCalled();
   });
 
-  it("queries intitle+inauthor and returns the first usable ISBN-13", async () => {
+  it("queries intitle+inauthor and collects deduped ISBN-13s across editions", async () => {
     mockedGet.mockResolvedValue({
-      data: { items: [{ volumeInfo: { industryIdentifiers: [{ type: "ISBN_10", identifier: "0441172717" }, { type: "ISBN_13", identifier: "9780441172719" }] } }] },
+      data: { items: [
+        { volumeInfo: { industryIdentifiers: [{ type: "ISBN_10", identifier: "0441172717" }, { type: "ISBN_13", identifier: "9780441172719" }] } },
+        { volumeInfo: { industryIdentifiers: [{ type: "ISBN_13", identifier: "9788375780635" }] } },
+        { volumeInfo: { industryIdentifiers: [{ type: "ISBN_13", identifier: "9780441172719" }] } }, // dup edition
+      ] },
     });
-    const r = await lookupIsbnByTitle("Dune", "Frank Herbert");
-    expect(r).toBe("9780441172719");
+    const r = await lookupIsbnsByTitle("Dune", "Frank Herbert");
+    // ISBN-10 of the first volume normalizes to the same 13 as its ISBN_13 → deduped.
+    expect(r).toEqual(["9780441172719", "9788375780635"]);
     const q = mockedGet.mock.calls[0][1].params.q;
     expect(q).toContain("intitle:Dune");
     expect(q).toContain("inauthor:Frank Herbert");
   });
 
-  it("falls back to ISBN-10 and normalizes it to ISBN-13", async () => {
+  it("converts an ISBN-10-only edition to ISBN-13", async () => {
     mockedGet.mockResolvedValue({
       data: { items: [{ volumeInfo: { industryIdentifiers: [{ type: "ISBN_10", identifier: "0306406152" }] } }] },
     });
-    const r = await lookupIsbnByTitle("Some Book");
-    expect(r).toBe("9780306406157");
+    const r = await lookupIsbnsByTitle("Some Book");
+    expect(r).toEqual(["9780306406157"]);
   });
 
-  it("returns null when no volume carries a usable ISBN", async () => {
+  it("returns [] when no volume carries a usable ISBN", async () => {
     mockedGet.mockResolvedValue({ data: { items: [{ volumeInfo: { industryIdentifiers: [{ type: "OTHER", identifier: "xyz" }] } }] } });
-    const r = await lookupIsbnByTitle("Nothing");
-    expect(r).toBeNull();
+    const r = await lookupIsbnsByTitle("Nothing");
+    expect(r).toEqual([]);
   });
 });
