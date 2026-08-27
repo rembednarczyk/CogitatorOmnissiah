@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.62.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.63.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,17 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.63.0** — **Regał: jasny wariant skór + FIX kontrastu nagłówków sekcji.** (1) Skóry regału (`.skin-holo`/
+  `.skin-noospheric`) niosą własne, twarde gradienty ciemnego drewna/neonu w `--sk-*`/`--noo-*` — NIE przechodzą
+  przez `--color-*`, więc w jasnym motywie regał zostawał ciemny na papierze. Dodana warstwa
+  `[data-theme="light"] .skin-*` nadpisuje wspólne `--sk-*`/`--noo-*` dla OBU skór → ciepły, jasny regał (len +
+  jasny dąb, plate/board/cog/plinth/foot + „pokój" RoomDecor + poświata) wg `design/Regal.dc.html`. Grzbiety
+  (jewel-tone z `CLOTH_PALETTE`) zostają — czytają się jak realne książki na lnie; gwiazdka „Wyróżnione" →
+  clay. (2) **FIX (regresja z 1.62.0):** repaint 1.62.0 mapował tylko shade'y `--color-*-400..700`, więc
+  nagłówki sekcji używające `text-*-100/90` (Katalog/Regał/Rynek/Synchronizacja h2, kornisz ShelfFrame) spadały
+  na jasne defaulty Tailwinda → prawie niewidoczne na papierze. Dodane GŁĘBOKIE tony `--color-*-100/200/300`
+  (w tej apce te shade'y są używane WYŁĄCZNIE jako kolor tekstu, nie tła — zweryfikowane grepem) → nagłówki i
+  etykiety znów czytelne. Suite 463 zielone, lint czysty, build OK. NASTĘPNE: kolejna zakładka albo re-layout.
 - **1.62.0** — **Jasny motyw: spójny repaint boho przez zmienne koloru Tailwinda (start dopieszczania od „Kolekcji").**
   Zamiast dziesiątek per-utility remapów, warstwa `:root[data-theme="light"]` nadpisuje teraz **`--color-*`**
   Tailwinda — przez które przechodzą WSZYSTKIE utility: `bg/text/border/from/via/to` **oraz** warianty alpha
