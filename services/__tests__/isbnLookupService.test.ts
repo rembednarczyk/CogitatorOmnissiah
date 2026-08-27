@@ -52,6 +52,25 @@ describe("lookupIsbnsByTitle", () => {
     const q = mockedGet.mock.calls[0][1].params.q;
     expect(q).toContain("intitle:Dune");
     expect(q).toContain("inauthor:Frank Herbert");
+    // Terms MUST be space-joined, never a literal plus (axios escapes it to %2B, giving 0 results).
+    expect(q).not.toContain("+");
+    expect(q).toBe("intitle:Dune inauthor:Frank Herbert");
+  });
+
+  it("uses only the first author from a multi-value author field", async () => {
+    mockedGet.mockResolvedValue({ data: { items: [{ volumeInfo: { industryIdentifiers: [{ type: "ISBN_13", identifier: "9780441172719" }] } }] } });
+    await lookupIsbnsByTitle("Dune", "Frank Herbert, Kevin Anderson");
+    expect(mockedGet.mock.calls[0][1].params.q).toBe("intitle:Dune inauthor:Frank Herbert");
+  });
+
+  it("falls back to a title-only query when the author query yields nothing", async () => {
+    mockedGet
+      .mockResolvedValueOnce({ data: { items: [] } }) // author query → empty
+      .mockResolvedValueOnce({ data: { items: [{ volumeInfo: { industryIdentifiers: [{ type: "ISBN_13", identifier: "9788375780635" }] } }] } });
+    const r = await lookupIsbnsByTitle("Rare", "Obscure Author");
+    expect(r).toEqual(["9788375780635"]);
+    expect(mockedGet).toHaveBeenCalledTimes(2);
+    expect(mockedGet.mock.calls[1][1].params.q).toBe("intitle:Rare");
   });
 
   it("converts an ISBN-10-only edition to ISBN-13", async () => {
@@ -62,9 +81,9 @@ describe("lookupIsbnsByTitle", () => {
     expect(r).toEqual(["9780306406157"]);
   });
 
-  it("returns [] when no volume carries a usable ISBN", async () => {
+  it("returns [] when no volume carries a usable ISBN (both queries)", async () => {
     mockedGet.mockResolvedValue({ data: { items: [{ volumeInfo: { industryIdentifiers: [{ type: "OTHER", identifier: "xyz" }] } }] } });
-    const r = await lookupIsbnsByTitle("Nothing");
+    const r = await lookupIsbnsByTitle("Nothing", "Someone");
     expect(r).toEqual([]);
   });
 });
