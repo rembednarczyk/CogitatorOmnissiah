@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.67.8** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.67.9** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,14 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.67.9** — **[Tier 4, PR1] Backend higiena: martwy kod + cykl importów + logger + nieużywana zależność.**
+  (1) Usunięty martwy `WikiAdapter.fetchPageContentWithSlots` (zero prod-wywołań, łamał kontrakt błędu —
+  zwracał `""` zamiast rzucać) + jego test i mock w `server.test`. (2) Cykl `vintedSession ↔ browserPrime`
+  zerwany: `parseSetCookie` → nowy `services/cookies.ts` (re-export z `vintedSession` dla kompatybilności;
+  `browserPrime` importuje z `cookies`). (3) `console.*` → strukturalny `createLogger` w `duplicateSyncService`
+  (drop 2 debug, 1 → `log.info`) i `lpSyncService` (`log.error`). (4) `DuplicateSyncService` — usunięta
+  nieużywana zależność `WikiAdapter` (konstruktor + wiring w `syncManager` + test). Suite 473 zielone (−1 =
+  usunięty test martwego kodu), lint czysty, build OK.
 - **1.67.8** — **[Tier 3, A3] `BookshelfSection` — kolejka zapisów/optymistyka → `useShelfMutations`.** Z ciała
   komponentu wyniesione: serializowana kolejka „latest-wins" per książka (`pendingRef`/`runningRef`, guard na
   nieatomowy `mutateMultiSelect`), optymistyczne overrides „przeczytane" + rollback, optymistyczny zapis

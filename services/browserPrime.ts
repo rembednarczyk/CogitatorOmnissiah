@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { VintedSession } from "./vintedHttp";
-import { parseSetCookie } from "./vintedSession";
+import { parseSetCookie } from "./cookies";
 
 const VINTED_HOME = "https://www.vinted.pl/";
 

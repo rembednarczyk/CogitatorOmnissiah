@@ -103,28 +103,4 @@ describe('WikiAdapter', () => {
       expect(failedTitles).toEqual(['Solaris', 'Diuna']);
     });
   });
-
-  describe('fetchPageContentWithSlots', () => {
-    it('fetches page content from main slot', async () => {
-      const mockResponse = {
-        data: {
-          query: {
-            pages: {
-              '123': {
-                revisions: [{
-                  slots: {
-                    main: { '*': 'Slot Content' }
-                  }
-                }]
-              }
-            }
-          }
-        }
-      };
-      mockGet.mockResolvedValueOnce(mockResponse);
-      
-      const content = await wikiAdapter.fetchPageContentWithSlots('Test Title');
-      expect(content).toBe('Slot Content');
-    });
-  });
 });
