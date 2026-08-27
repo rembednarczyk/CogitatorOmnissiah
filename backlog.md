@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.67.9** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.67.10** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,12 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.67.10** — **[Tier 4, PR2] Kontroler: wspólny guard kluczy + walidacja tagu + strukturalne logi.**
+  `requireNotionKeys(res)` zastępuje 4× skopiowany guard `NOTION_API_KEY`/`DATABASE_ID` (runSync/checkVinted/
+  resolveVinted/getVintedStored). `resolveSourceTag(tag)` zastępuje 2× zdublowaną walidację `ALLOWED_SOURCE_TAGS`
+  (mark/unmark). 6× `console.error` → strukturalny `log.error` (stats/books/wikiLastUpdate/notionSchema/mark/
+  unmark) — spójne z resztą kontrolera. Zero zmiany zachowania (te same statusy/komunikaty). Suite 473 zielone,
+  lint czysty, build OK.
 - **1.67.9** — **[Tier 4, PR1] Backend higiena: martwy kod + cykl importów + logger + nieużywana zależność.**
   (1) Usunięty martwy `WikiAdapter.fetchPageContentWithSlots` (zero prod-wywołań, łamał kontrakt błędu —
   zwracał `""` zamiast rzucać) + jego test i mock w `server.test`. (2) Cykl `vintedSession ↔ browserPrime`
