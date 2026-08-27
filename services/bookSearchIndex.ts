@@ -25,5 +25,6 @@ export function toSearchIndex(books: NotionBook[]): BookIndexEntry[] {
       series: b.currentSeria || "",
       partOfCycle: b.currentCzesccyklu ?? false,
       shelfOrder: b.shelfOrder,
+      isbn: b.isbn,
     }));
 }

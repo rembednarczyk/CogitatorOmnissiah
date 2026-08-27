@@ -22,11 +22,11 @@ import { IntegrityCheckResult } from "../types";
 export const LiturgySection: React.FC<{ sm: ReturnType<typeof useSyncManager> }> = ({ sm }) => {
   const { configStatus, schema, schemaLoading, schemaError, fetchSchema } = useConfig();
   const {
-    sync, publisherSync, seriesSync, cyclesSync, cyclesHarvestSync, lpSync, integritySync, duplicatesSync, purifySync, schemaSync,
+    sync, publisherSync, seriesSync, cyclesSync, cyclesHarvestSync, isbnEnrichSync, lpSync, integritySync, duplicatesSync, purifySync, schemaSync,
     syncs, isAnySyncLoading, fullSyncResults, clearFullSyncResults,
     handleAwardChange, handleSync, handleFullSync, handleResetSync,
     handleSyncSchema, handleSyncPurify, handleSyncPublisher, handleSyncSeries,
-    handleCyclesSync, handleCyclesHarvest, handleSyncLp, handleSyncDuplicates,
+    handleCyclesSync, handleCyclesHarvest, handleIsbnEnrich, handleSyncLp, handleSyncDuplicates,
   } = sm;
 
   return (
@@ -61,6 +61,7 @@ export const LiturgySection: React.FC<{ sm: ReturnType<typeof useSyncManager> }>
           seriesSync={seriesSync}
           cyclesSync={cyclesSync}
           cyclesHarvestSync={cyclesHarvestSync}
+          isbnEnrichSync={isbnEnrichSync}
           duplicatesSync={duplicatesSync}
           lpSync={lpSync}
           handleSyncSchema={handleSyncSchema}
@@ -69,6 +70,7 @@ export const LiturgySection: React.FC<{ sm: ReturnType<typeof useSyncManager> }>
           handleSyncSeries={handleSyncSeries}
           handleCyclesSync={handleCyclesSync}
           handleCyclesHarvest={handleCyclesHarvest}
+          handleIsbnEnrich={handleIsbnEnrich}
           handleSyncDuplicates={handleSyncDuplicates}
           handleSyncLp={handleSyncLp}
           handleResetSync={handleResetSync}

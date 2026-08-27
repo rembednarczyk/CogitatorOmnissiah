@@ -85,6 +85,9 @@ export function mapPageToBook(page: NotionPage): NotionBook {
   const shelfOrderProp = getProp(props, "ShelfOrder");
   const shelfOrder = shelfOrderProp?.type === "number" && typeof shelfOrderProp.number === "number" ? shelfOrderProp.number : undefined;
 
+  // Canonical ISBN-13 (rich_text; filled by the enrichment ritual) — enables a direct barcode match.
+  const isbn = getPlainText(getProp(props, "ISBN")).trim() || undefined;
+
   return {
     id: page.id,
     plTitle,
@@ -103,6 +106,7 @@ export function mapPageToBook(page: NotionPage): NotionBook {
     vintedData,
     cykl,
     cyklNr,
-    shelfOrder
+    shelfOrder,
+    isbn
   };
 }
