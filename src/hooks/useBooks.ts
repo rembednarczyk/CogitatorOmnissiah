@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { BookIndexEntry } from "../types";
+import { fetchWithTimeout } from "../utils/http";
 
 /**
  * Fetches the slimmed-down book index from `GET /api/books` ONCE and holds it in state.
@@ -29,9 +30,24 @@ export function useBooks(all = false) {
     }
   }, [all]);
 
+  /**
+   * Fetch the FRESHEST index (bypasses the server's 5-min cache) with a hard
+   * timeout, update state, and return the data. Used by the scan flow: an ISBN
+   * may have been added by the enrichment ritual after this page mounted, so the
+   * in-memory list can be stale exactly for a just-enriched book. Rejects on
+   * failure/timeout so the caller can fall back to the current index.
+   */
+  const refetchFresh = useCallback(async (): Promise<BookIndexEntry[]> => {
+    const res = await fetchWithTimeout(`/api/books?fresh=1&${all ? "all=1&" : ""}t=${Date.now()}`);
+    if (!res.ok) throw new Error("Błąd podczas pobierania książek");
+    const data = await res.json();
+    setBooks(data);
+    return data;
+  }, [all]);
+
   useEffect(() => {
     fetchBooks();
   }, [fetchBooks]);
 
-  return { books, loading, error, fetchBooks, setBooks };
+  return { books, loading, error, fetchBooks, refetchFresh, setBooks };
 }
