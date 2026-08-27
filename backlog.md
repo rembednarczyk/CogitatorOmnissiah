@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.67.3** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.67.4** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,12 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.67.4** — **[Tier 3] `StatsService.getStats` (~200-liniowa god-metoda) → czysty `statsAggregator.ts`.**
+  11 agregacji (author/awardBooks/ownedUnread/awardCoverage/allAwards/availability/publisher/series/cycle/
+  decade/yearly/library) wyciągnięte VERBATIM jako czyste `books[] → stat` (dołączają do istniejącego
+  `computeMarketStats`). `StatsService` to teraz fetch → filtr (award + niepusty plTitle) → delegacja →
+  złożenie (209→42 linie). Zero zmiany zachowania — test `statsService.test` (end-to-end przez getStats)
+  zielony bez zmian. Suite 474 zielone, lint czysty, build OK.
 - **1.67.3** — **[Tier 2] Frontend I/O we właściwej warstwie (reużycie prymitywów).** (1) `useVintedResolveSellers`
   re-implementował pętlę SSE (własny `createStallWatchdog`+fetch+`consumeSSE`+komunikat stall) — jedyne jawne
   złamanie reguły „transport SSE żyje raz w `useSSEStream`". Przepisany na `useSSEStream("/api/vinted-resolve-
