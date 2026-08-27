@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.52.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.52.2** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,17 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.52.2** — **Rytuał ISBN: fallback OpenLibrary + WIDOCZNE błędy (dalej nic nie łapał po 1.52.1).** Po
+  fixie kodowania (1.52.1) na Renderze dalej pusto — HIPOTEZA: Google Books ostro limituje keyless z IP
+  datacenter (Render) → każde zapytanie 429/403 → wszystko leciało do BŁĘDÓW, a `SingleSyncSummary` błędów
+  NIE pokazywał → wyglądało jak „0 znalezionych". Dwie zmiany: (1) **2 źródła** w `lookupIsbnsByTitle` —
+  Google Books, a gdy pusto LUB nieosiągalne → **OpenLibrary** (`openlibrary.org/search.json`, keyless,
+  tolerancyjne dla IP serwerowych; `doc.isbn` = ISBN-y wszystkich wydań). Union, dedup, ISBN-10→13. Rzuca
+  wyjątek TYLKO gdy OBA źródła padną (prawdziwa awaria vs „brak dopasowania" = skip). (2) **Panel „Błędy —
+  nie zapisano"** w `SingleSyncSummary` (czerwony, kopiowalny) — rytuał, który wywalił się na każdej książce,
+  nie wygląda już jak „nic nie znalazł". +3 testy (OL fallback, throw-gdy-oba-padną, [] gdy brak dopasowania).
+  Uwaga: nieweryfikowalne w sandboxie (proxy blokuje OL i limituje Google) — do potwierdzenia na Renderze;
+  jak dalej pusto, panel błędów pokaże DOKŁADNĄ przyczynę (429/403/timeout).
 - **1.52.1** — **FIX: rytuał ISBN nic nie znajdował (błędne kodowanie zapytania Google Books).** Root cause:
   `lookupIsbnsByTitle` łączył człony zapytania literalnym „+" (`intitle:X+inauthor:Y`), a axios koduje „+"
   jako `%2B` (literalny plus) → Google Books widział JEDEN śmieciowy token → 0 wyników dla KAŻDEJ książki

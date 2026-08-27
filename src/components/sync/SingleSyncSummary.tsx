@@ -20,6 +20,9 @@ export const SingleSyncSummary: React.FC<{ sync: ReturnType<typeof useSync>; onC
   const theme = { text: t.text, border: t.border, bg: t.bgSoft };
 
   const hasDetails = summary && (summary.added?.length > 0 || summary.updated?.length > 0 || summary.duplicates?.length > 0 || summary.skipped?.length > 0);
+  // Errors are a distinct channel from „skipped" (no match): an API outage / rate-limit
+  // must be visible, or a ritual that errored on every book looks like it just found nothing.
+  const errors: string[] = Array.isArray(activeResult?.errors) ? activeResult.errors : [];
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className={`glass-card p-8 rounded-3xl ${theme.border}`}>
@@ -66,6 +69,14 @@ export const SingleSyncSummary: React.FC<{ sync: ReturnType<typeof useSync>; onC
               />
             )}
           </div>
+        )}
+
+        {errors.length > 0 && (
+          <SummaryDetailPanel
+            title="Błędy — nie zapisano" count={errors.length} icon={<XCircle className="w-4 h-4" />}
+            accentClass="text-red-400" rowClass="border-red-500/30 bg-red-500/5" rowTextClass="text-red-300" items={errors}
+            onCopy={() => copy(errors.join("\n"))} copied={copied} copyTitle="Kopiuj listę błędów"
+          />
         )}
       </div>
     </motion.div>
