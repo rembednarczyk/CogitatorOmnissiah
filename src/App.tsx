@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { Database, Terminal, ArrowUp, XCircle, AlertTriangle, RefreshCw, Cog, ShoppingCart, ScrollText, Library } from "lucide-react";
+import { Database, Terminal, ArrowUp, XCircle, AlertTriangle, RefreshCw, Cog, ShoppingCart, ScrollText, Library, Sun, Moon } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import { useTheme } from "./hooks/useTheme";
 import { StatsSection } from "./components/StatsSection";
 import { SearchSection } from "./components/SearchSection";
 import { BookshelfSection } from "./components/BookshelfSection";
@@ -18,6 +19,7 @@ const tabTransition = { initial: { opacity: 0, y: 20 }, animate: { opacity: 1, y
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabId>('stats');
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const { theme, toggle: toggleTheme } = useTheme();
 
   // A single manager instance — its `anyError` feeds the global error card (visible
   // on every tab), and the same instance goes to LiturgySection via the `sm` prop.
@@ -40,7 +42,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-cyan-500/30 selection:text-white relative overflow-hidden">
-      <ParticleBackground />
+      {theme === 'dark' && <ParticleBackground />}
 
       <div className="relative z-10 max-w-5xl mx-auto px-6 py-16 space-y-12">
         {/* Header */}
@@ -64,7 +66,9 @@ export default function App() {
           </motion.button>
           <div className="flex-1">
             <h1 className="text-4xl md:text-5xl font-bold tracking-tighter font-display mb-2 flex items-center justify-center md:justify-start gap-3 flex-wrap">
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 drop-shadow-[0_0_20px_rgba(34,211,238,0.3)]">
+              <span className={theme === 'light'
+                ? "bg-clip-text text-transparent bg-gradient-to-r from-[#c98a63] to-[#a9603d]"
+                : "bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 drop-shadow-[0_0_20px_rgba(34,211,238,0.3)]"}>
                 COGITATOR OMNISSIAH
               </span>
               <span className="text-[10px] font-mono font-bold tracking-widest text-cyan-400/70 bg-cyan-500/10 border border-cyan-500/20 rounded-full px-2 py-0.5 self-center" title="Wersja rytuału">
@@ -76,6 +80,20 @@ export default function App() {
               Protokół Synchronizacji Danych Archiwalnych
             </p>
           </div>
+
+          {/* Theme toggle — jasny „Librem" / ciemny „Warhammer" */}
+          <motion.button
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.96 }}
+            onClick={toggleTheme}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-slate-900/80 border border-cyan-500/30 text-slate-300 backdrop-blur-md shadow-lg transition-colors hover:border-cyan-400/50"
+            title={theme === 'light' ? 'Przełącz na motyw ciemny' : 'Przełącz na motyw jasny'}
+            aria-label={theme === 'light' ? 'Przełącz na motyw ciemny' : 'Przełącz na motyw jasny'}
+          >
+            {theme === 'light'
+              ? <><Moon className="w-4 h-4" /><span className="text-xs font-bold uppercase tracking-widest">Ciemny</span></>
+              : <><Sun className="w-4 h-4 text-amber-400" /><span className="text-xs font-bold uppercase tracking-widest">Jasny</span></>}
+          </motion.button>
         </motion.header>
 
         <TabNav tabs={tabs} active={activeTab} onSelect={(id) => setActiveTab(id as TabId)} />

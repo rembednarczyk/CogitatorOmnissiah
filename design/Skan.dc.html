@@ -1,0 +1,110 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Mulish:wght@400;500;600;700&display=swap">
+  <style>
+    :root{
+      --paper:#F3ECDF; --card:#FBF6EC; --ink:#3A342B; --muted:#8C8069;
+      --line:#E4D9C4; --clay:#C07A56; --sage:#7E8A6B; --ochre:#CE9B3F;
+      --serif:"Cormorant Garamond", Georgia, serif; --sans:"Mulish", system-ui, sans-serif;
+    }
+    *{box-sizing:border-box;}
+    body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);}
+    a{color:var(--clay);} a:hover{color:#a6603f;}
+    h1,h2,h3{margin:0;font-family:var(--serif);font-weight:600;}
+  </style>
+</helmet>
+
+<div style="width:390px;height:844px;background:var(--paper);display:flex;flex-direction:column;padding:26px 20px 24px;gap:18px;position:relative;overflow:hidden;">
+
+  <!-- top bar -->
+  <div style="display:flex;align-items:center;justify-content:space-between;">
+    <div style="display:flex;align-items:center;gap:11px;">
+      <div style="width:36px;height:36px;border-radius:11px;background:linear-gradient(150deg,#c98a63,#a9603d);display:flex;align-items:center;justify-content:center;">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fbf3e6" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2 2 0 0 1 6 4h5v16H6a2 2 0 0 1-2-1.5z"/><path d="M20 5.5A2 2 0 0 0 18 4h-5v16h5a2 2 0 0 0 2-1.5z"/></svg>
+      </div>
+      <div>
+        <div style="font-family:var(--serif);font-size:22px;font-weight:700;line-height:1;">Librem</div>
+        <div style="font-size:11px;color:var(--muted);letter-spacing:.16em;text-transform:uppercase;font-weight:700;margin-top:2px;">Katalog</div>
+      </div>
+    </div>
+    <div style="width:36px;height:36px;border-radius:11px;border:1px solid var(--line);background:var(--card);display:flex;align-items:center;justify-content:center;color:var(--muted);">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+    </div>
+  </div>
+
+  <!-- search row -->
+  <div style="display:flex;gap:10px;">
+    <div style="flex:1;display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:0 14px;height:50px;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b6a98a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <span style="color:#b6a98a;font-size:14px;">Tytuł, autor lub ISBN…</span>
+    </div>
+    <button style="width:50px;height:50px;border-radius:16px;background:linear-gradient(150deg,#c98a63,#a9603d);border:none;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 20px -12px #a9603d;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fbf3e6" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5v14"/><path d="M6 5v14"/><path d="M10 5v14"/><path d="M14 5v14"/><path d="M18 5v14"/><path d="M21 5v14"/></svg>
+    </button>
+  </div>
+
+  <!-- scan sheet -->
+  <div style="margin-top:6px;background:var(--card);border:1px solid var(--line);border-radius:26px;box-shadow:0 24px 50px -30px rgba(58,52,43,.7);padding:20px;display:flex;flex-direction:column;gap:16px;">
+
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div style="width:44px;height:44px;border-radius:50%;background:#f0e0cf;border:1px solid #e6cdb6;display:flex;align-items:center;justify-content:center;color:var(--clay);">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5v14"/><path d="M7 5v14"/><path d="M11 5v14"/><path d="M15 5v14"/><path d="M19 5v14"/></svg>
+      </div>
+      <div style="flex:1;">
+        <div style="font-family:var(--serif);font-size:20px;font-weight:700;">Skan sygnatury</div>
+        <div style="font-size:12.5px;color:var(--muted);">Nakieruj kamerę na kod kreskowy</div>
+      </div>
+      <div style="width:30px;height:30px;border-radius:9px;color:var(--muted);display:flex;align-items:center;justify-content:center;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </div>
+    </div>
+
+    <!-- camera viewport -->
+    <div style="position:relative;border-radius:18px;overflow:hidden;height:250px;background:radial-gradient(120% 90% at 50% 25%,#4a4136,#2b2620);">
+      <!-- warm vignette + faux depth -->
+      <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(206,155,63,.10),transparent 40%);"></div>
+      <!-- guide frame -->
+      <div style="position:absolute;inset:16px;border:2px solid rgba(240,224,207,.35);border-radius:14px;"></div>
+      <!-- corners -->
+      <div style="position:absolute;left:16px;top:16px;width:26px;height:26px;border-left:3px solid var(--ochre);border-top:3px solid var(--ochre);border-radius:8px 0 0 0;"></div>
+      <div style="position:absolute;right:16px;top:16px;width:26px;height:26px;border-right:3px solid var(--ochre);border-top:3px solid var(--ochre);border-radius:0 8px 0 0;"></div>
+      <div style="position:absolute;left:16px;bottom:16px;width:26px;height:26px;border-left:3px solid var(--ochre);border-bottom:3px solid var(--ochre);border-radius:0 0 0 8px;"></div>
+      <div style="position:absolute;right:16px;bottom:16px;width:26px;height:26px;border-right:3px solid var(--ochre);border-bottom:3px solid var(--ochre);border-radius:0 0 8px 0;"></div>
+      <!-- scan line -->
+      <div style="position:absolute;left:30px;right:30px;top:50%;height:2px;background:linear-gradient(90deg,transparent,#e8b24a,transparent);box-shadow:0 0 14px 2px rgba(232,178,74,.55);"></div>
+      <!-- faux barcode being read -->
+      <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;gap:3px;align-items:center;opacity:.5;">
+        <span style="width:2px;height:44px;background:#f0e0cf;"></span><span style="width:4px;height:44px;background:#f0e0cf;"></span><span style="width:2px;height:44px;background:#f0e0cf;"></span><span style="width:3px;height:44px;background:#f0e0cf;"></span><span style="width:2px;height:44px;background:#f0e0cf;"></span><span style="width:5px;height:44px;background:#f0e0cf;"></span><span style="width:2px;height:44px;background:#f0e0cf;"></span><span style="width:3px;height:44px;background:#f0e0cf;"></span><span style="width:4px;height:44px;background:#f0e0cf;"></span><span style="width:2px;height:44px;background:#f0e0cf;"></span>
+      </div>
+      <!-- torch button (on) -->
+      <button style="position:absolute;top:14px;right:14px;width:42px;height:42px;border-radius:50%;border:1px solid #e9c98f;background:rgba(233,178,74,.92);display:flex;align-items:center;justify-content:center;box-shadow:0 0 20px -2px rgba(232,178,74,.7);">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3a2f16" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2h6l-1 8h-4z"/><path d="M9 10h6l-2 12z"/><path d="M10 6h4"/></svg>
+      </button>
+    </div>
+
+    <!-- manual entry -->
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div style="font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:700;display:flex;align-items:center;gap:7px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M7 10h.01M12 10h.01M17 10h.01M7 14h10"/></svg>
+        Lub wpisz ISBN ręcznie
+      </div>
+      <div style="display:flex;gap:9px;">
+        <div style="flex:1;height:46px;border:1px solid var(--line);border-radius:14px;background:#fff;display:flex;align-items:center;padding:0 14px;color:#b6a98a;font-size:14px;">978…</div>
+        <button style="padding:0 20px;height:46px;border:none;border-radius:14px;background:var(--sage);color:#f6f4ea;font-weight:700;font-size:14px;">Szukaj</button>
+      </div>
+    </div>
+  </div>
+
+  <p style="text-align:center;font-size:12.5px;color:var(--muted);font-style:italic;font-family:var(--serif);margin:4px 0 0;">Zeskanuj książkę w antykwariacie — sprawdzimy, czy jest już w Twojej kolekcji.</p>
+
+</div>
+</x-dc>
+</body>
+</html>

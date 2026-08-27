@@ -11,6 +11,15 @@
       type="image/svg+xml"
       href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='14'%20fill='%23020617'/%3E%3Cg%20fill='none'%20stroke='%2322d3ee'%20stroke-width='3.5'%20stroke-linejoin='round'%3E%3Cpath%20d='M32%206v8M32%2050v8M6%2032h8M50%2032h8M13.5%2013.5l5.7%205.7M44.8%2044.8l5.7%205.7M50.5%2013.5l-5.7%205.7M19.2%2044.8l-5.7%205.7'/%3E%3Ccircle%20cx='32'%20cy='32'%20r='16'/%3E%3C/g%3E%3Ccircle%20cx='32'%20cy='32'%20r='6.5'%20fill='%23a855f7'/%3E%3C/svg%3E"
     />
+    <script>
+      // Set the theme before React mounts so there's no flash. Default: light (Librem).
+      (function () {
+        try {
+          var t = localStorage.getItem('librem-theme');
+          document.documentElement.dataset.theme = (t === 'dark' || t === 'light') ? t : 'light';
+        } catch (e) { document.documentElement.dataset.theme = 'light'; }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

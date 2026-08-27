@@ -1,0 +1,100 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,600&family=Mulish:wght@400;500;600;700&display=swap">
+  <style>
+    :root{
+      --paper:#F3ECDF; --card:#FBF6EC; --ink:#3A342B; --muted:#8C8069;
+      --line:#E4D9C4; --clay:#C07A56; --sage:#7E8A6B; --ochre:#CE9B3F;
+      --serif:"Cormorant Garamond", Georgia, serif; --sans:"Mulish", system-ui, sans-serif;
+    }
+    *{box-sizing:border-box;}
+    body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);}
+    a{color:var(--clay);} a:hover{color:#a6603f;}
+    h1,h2,h3{margin:0;font-family:var(--serif);font-weight:600;}
+    .eyebrow{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);font-weight:700;}
+    .spine{width:44px;border-radius:4px 4px 2px 2px;display:flex;align-items:center;justify-content:center;box-shadow:2px 3px 6px -3px rgba(58,52,43,.55), inset 0 0 0 1px rgba(255,255,255,.12);cursor:pointer;position:relative;}
+    .spine span{writing-mode:vertical-rl;transform:rotate(180deg);font-family:var(--serif);font-weight:600;font-size:13px;letter-spacing:.3px;padding:14px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-height:100%;}
+    .dot{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:5px;height:5px;border-radius:50%;}
+  </style>
+</helmet>
+
+<div style="max-width:1040px;margin:0 auto;padding:44px 40px 60px;display:flex;flex-direction:column;gap:26px;">
+
+  <div style="display:flex;align-items:center;gap:14px;">
+    <div style="width:44px;height:44px;border-radius:13px;background:linear-gradient(150deg,#c98a63,#a9603d);display:flex;align-items:center;justify-content:center;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fbf3e6" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4v16"/><path d="M8 4v16"/><path d="M12 4v16"/><path d="m16 5 4 15"/></svg>
+    </div>
+    <div>
+      <h1 style="font-size:30px;">Regał</h1>
+      <p style="margin:0;color:var(--muted);font-size:13px;font-style:italic;font-family:var(--serif);">Ułożone wg dekady i roku — jak na prawdziwej półce</p>
+    </div>
+  </div>
+
+  <!-- Shelf frame -->
+  <div style="background:linear-gradient(180deg,#efe6d5,#eaddc6);border:1px solid var(--line);border-radius:24px;padding:30px 30px 18px;box-shadow:0 18px 40px -30px rgba(58,52,43,.6);">
+
+    <!-- decade label -->
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <span style="font-family:var(--serif);font-size:15px;font-weight:700;color:var(--clay);background:#f7ecdc;border:1px solid #e6cdb6;border-radius:8px;padding:3px 12px;">Lata 80.</span>
+      <span style="height:1px;flex:1;background:#d8c7a8;"></span>
+      <span style="font-size:12px;color:var(--muted);">141 woluminów</span>
+    </div>
+
+    <!-- Row 1 -->
+    <div style="display:flex;align-items:flex-end;gap:7px;height:190px;">
+      <div class="spine" style="height:180px;background:linear-gradient(180deg,#b8623f,#9c4f31);"><span style="color:#f8ebdc;">Neuromancer</span><span class="dot" style="background:#e8b24a;"></span></div>
+      <div class="spine" style="height:168px;background:linear-gradient(180deg,#8b9673,#727e5c);"><span style="color:#f4f1e6;">Hyperion</span></div>
+      <div class="spine" style="height:186px;background:linear-gradient(180deg,#d7ae5a,#c4933a);"><span style="color:#3a2f16;">Diuna</span><span class="dot" style="background:#8b5a2b;"></span></div>
+      <div class="spine" style="height:172px;background:linear-gradient(180deg,#e7dcc6,#d8c9a8);"><span style="color:#5a4d38;">Solaris</span></div>
+      <div class="spine" style="height:180px;background:linear-gradient(180deg,#a9603d,#8c4c2f);"><span style="color:#f7e8dc;">Miecz dla Króla</span></div>
+      <div class="spine" style="height:164px;background:linear-gradient(180deg,#7e8a6b,#67734f);"><span style="color:#f4f1e6;">Slan</span></div>
+      <div class="spine" style="height:188px;background:linear-gradient(180deg,#c98a63,#b06a4a);"><span style="color:#f7e8dc;">Nieustanne wojny</span></div>
+      <div class="spine" style="height:170px;background:linear-gradient(180deg,#cf9b3f,#b7852c);"><span style="color:#3a2f16;">Ubik</span></div>
+      <div class="spine" style="height:178px;background:linear-gradient(180deg,#efe6d0,#ddceac);"><span style="color:#5a4d38;">Fundacja</span></div>
+      <div class="spine" style="height:160px;background:linear-gradient(180deg,#8b9673,#727e5c);"><span style="color:#f4f1e6;">Ród</span></div>
+      <div class="spine" style="height:184px;background:linear-gradient(180deg,#b8623f,#9c4f31);"><span style="color:#f7e8dc;">Gra Endera</span></div>
+      <div class="spine" style="height:174px;background:linear-gradient(180deg,#d7ae5a,#c4933a);"><span style="color:#3a2f16;">Trylogia</span></div>
+    </div>
+
+    <!-- board -->
+    <div style="height:14px;margin:0 -6px 26px;border-radius:4px;background:linear-gradient(180deg,#caa877,#a9835a);box-shadow:0 8px 14px -8px rgba(58,52,43,.7);"></div>
+
+    <!-- Row 2 -->
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <span style="font-family:var(--serif);font-size:15px;font-weight:700;color:var(--clay);background:#f7ecdc;border:1px solid #e6cdb6;border-radius:8px;padding:3px 12px;">Lata 90.</span>
+      <span style="height:1px;flex:1;background:#d8c7a8;"></span>
+      <span style="font-size:12px;color:var(--muted);">118 woluminów</span>
+    </div>
+    <div style="display:flex;align-items:flex-end;gap:7px;height:180px;">
+      <div class="spine" style="height:170px;background:linear-gradient(180deg,#8b9673,#727e5c);"><span style="color:#f4f1e6;">Przypływ</span></div>
+      <div class="spine" style="height:182px;background:linear-gradient(180deg,#c98a63,#b06a4a);"><span style="color:#f7e8dc;">Anathem</span></div>
+      <div class="spine" style="height:158px;background:linear-gradient(180deg,#e7dcc6,#d8c9a8);"><span style="color:#5a4d38;">Kwiaty</span></div>
+      <div class="spine" style="height:176px;background:linear-gradient(180deg,#d7ae5a,#c4933a);"><span style="color:#3a2f16;">Snow Crash</span><span class="dot" style="background:#8b5a2b;"></span></div>
+      <div class="spine" style="height:186px;background:linear-gradient(180deg,#a9603d,#8c4c2f);"><span style="color:#f7e8dc;">Wyspa</span></div>
+      <div class="spine" style="height:166px;background:linear-gradient(180deg,#7e8a6b,#67734f);"><span style="color:#f4f1e6;">Riverworld</span></div>
+      <div class="spine" style="height:178px;background:linear-gradient(180deg,#efe6d0,#ddceac);"><span style="color:#5a4d38;">Xenocyd</span></div>
+      <div class="spine" style="height:172px;background:linear-gradient(180deg,#b8623f,#9c4f31);"><span style="color:#f7e8dc;">Cyberiada</span></div>
+      <div class="spine" style="height:162px;background:linear-gradient(180deg,#cf9b3f,#b7852c);"><span style="color:#3a2f16;">Blask</span></div>
+      <div class="spine" style="height:184px;background:linear-gradient(180deg,#c98a63,#b06a4a);"><span style="color:#f7e8dc;">Timescape</span></div>
+      <div class="spine" style="height:168px;background:linear-gradient(180deg,#8b9673,#727e5c);"><span style="color:#f4f1e6;">Startide</span></div>
+    </div>
+    <div style="height:14px;margin:0 -6px 0;border-radius:4px;background:linear-gradient(180deg,#caa877,#a9835a);box-shadow:0 8px 14px -8px rgba(58,52,43,.7);"></div>
+  </div>
+
+  <div style="display:flex;gap:20px;align-items:center;color:var(--muted);font-size:12.5px;">
+    <span style="display:flex;align-items:center;gap:7px;"><span style="width:9px;height:9px;border-radius:50%;background:#e8b24a;"></span>nagroda</span>
+    <span style="display:flex;align-items:center;gap:7px;"><span style="width:9px;height:9px;border-radius:50%;background:#8b5a2b;"></span>przeczytana</span>
+    <span style="margin-left:auto;font-style:italic;font-family:var(--serif);">Przeciągnij grzbiet, aby przestawić na półce</span>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "x": 0, "y": 0, "w": 1040, "h": 1180, "title": "Kolekcja" },
+    { "file": "Regal.dc.html", "x": 1160, "y": 0, "w": 1040, "h": 760, "title": "Regał" },
+    { "file": "Skan.dc.html", "x": 1160, "y": 880, "w": 390, "h": 844, "title": "Katalog + skaner" }
+  ],
+  "annotations": [
+    { "id": "brief", "x": 0, "y": -150, "w": 620, "text": "Librem — kierunek: jasne boho\nPaleta lniana: oat/paper · glina · szałwia · ochra · atramentowy brąz\nTypografia: Cormorant Garamond (nagłówki) + Mulish (UI)\nNazewnictwo zneutralizowane z 40k → Kolekcja · Regał · Katalog · Synchronizacja · Rynek" }
+  ],
+  "launch": { "view": "canvas" }
+}
