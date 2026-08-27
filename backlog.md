@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.50.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.51.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,18 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.51.0** — **Skryptorium: skaner kodów kreskowych — PR3 (mobilny skan UI, feature domknięty).**
+  Przycisk skanu (ikona ScanBarcode) obok pola wyszukiwarki, widoczny TYLKO gdy natywny `BarcodeDetector`
+  jest dostępny (`scanSupported()` — Android/Chrome). `ScanModal` (`src/components/search/ScanModal.tsx`):
+  strumień tylnej kamery (`getUserMedia facingMode:environment`) → pętla `detector.detect(video)` po
+  `ean_13`/`ean_8`/`upc_a`, pierwszy kod wyglądający na książkowy ISBN (`looksLikeBookIsbn`: 13 cyfr, prefix
+  978/979) → callback; zawsze dostępny fallback ręcznego wpisania ISBN (brak kamery/uprawnień/API). Czysty
+  helper `src/utils/barcode.ts` (`scanSupported`, `cleanScannedCode`, `looksLikeBookIsbn`, `matchIsbnInIndex`)
+  + 6 testów. Logika w `SearchSection`: kod → dopasowanie WPROST po `entry.isbn` (wariant B) → ustaw zapytanie
+  na tytuł + baner „Trafienie w archiwum"; brak → `GET /api/isbn/:code` (wariant A) → ustaw zapytanie na
+  rozpoznany tytuł (fuzzy) + baner „Rozpoznano przez ISBN"; pudło → baner błędu. Sprzątanie strumienia przy
+  zamknięciu/unmount. **Feature skanera kompletny (A+B).** ZASTRZEŻENIA nadal aktualne: iOS bez natywnego API
+  (fallback ZXing odłożony), multi-edition ISBN (wariant A jako sieć).
 - **1.50.0** — **Skryptorium: skaner kodów kreskowych — PR2 (kolumna ISBN + rytuał wzbogacania, wariant B).**
   Baza może teraz TRZYMAĆ ISBN, żeby skan dopasował wiersz wprost (bez zapytania zewnętrznego na skanie).
   Kolumna `ISBN` (rich_text) dodana do `requiredProps` (Rytuał Inicjacji Schematu). Nowy rytuał
@@ -823,7 +835,7 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
 
 ## Otwarte pozycje
 
-- **Skryptorium: skaner kodów kreskowych (mobile) — feature W TOKU (A+B), 3 PR-y.** Cel: LOOKUP
+- **Skryptorium: skaner kodów kreskowych (mobile) — feature ZREALIZOWANY (A+B), 3 PR-y.** Cel: LOOKUP
   („czy ta fizyczna książka to jedna z moich śledzonych nagrodowych?"), NIE dodawanie do bazy. Decyzje
   użytkownika: A+B, zgoda na Google Books (external), sprzęt=Android → natywny `BarcodeDetector` (bez nowej
   zależności skanera). Rdzeń problemu: baza Notion NIE trzyma ISBN → kod nie dopasuje wiersza wprost.
@@ -832,9 +844,9 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
   - **PR2 — kolumna `ISBN` w Notion + rytuał wzbogacania (wariant B)** — ✅ ZREALIZOWANE (1.50.0). Kolumna
     `ISBN` w `requiredProps`; `IsbnEnrichService` (`isbn-enrich`) + `lookupIsbnByTitle`; mapper `isbn`;
     indeks wyszukiwarki `isbn`; przycisk „Rytuał Sygnatur (ISBN)".
-  - **PR3 — frontend skanu (mobile)** — TODO. Przycisk skanu w Skryptorium (tylko gdy `BarcodeDetector`
-    dostępny) → modal kamery → exact match po zapisanym `isbn` (B), inaczej resolve→fuzzy-search (A);
-    ręczny fallback wpisania ISBN.
+  - **PR3 — frontend skanu (mobile)** — ✅ ZREALIZOWANE (1.51.0). Przycisk skanu (gdy `scanSupported()`),
+    `ScanModal` (`BarcodeDetector` + fallback ręczny), `src/utils/barcode.ts`; w `SearchSection` exact-match
+    po `isbn` (B) → tytuł, else `GET /api/isbn/:code` (A) → tytuł, banery wyniku.
   - **ZASTRZEŻENIA / ODŁOŻONE**: (a) iOS Safari NIE ma natywnego `BarcodeDetector` — fallback `@zxing/browser`
     odłożony (v1 = Android/Chrome); (b) multi-edition ISBN — książka ma wiele ISBN wydań, wzbogacanie (B)
     zapisuje JEDNO „najlepsze" z Google Books, często ≠ ISBN fizycznego egzemplarza → wariant A (resolve→tytuł
