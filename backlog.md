@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.66.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.67.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,15 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.67.0** — **Kolekcja: nagłówkowy rząd 4 KPI (makieta) — responsywny desktop + mobile.** Nowy `KpiRow`
+  (`src/components/stats/KpiRow.tsx`) nad kartami, STAŁY (nie wchodzi w masonry z drag&drop — kolejność kart
+  zachowana). 4 KPI z `Stats`: **Woluminy** = `awardBooksStats.total`; **Przeczytane** = `read/total%` (+pasek);
+  **Posiadane** = Σ`decadeStats.owned`; **Do zdobycia** = `total − Σowned` (clamp ≥0). Layout: `grid grid-cols-2
+  md:grid-cols-4` → desktop 4 w rzędzie, mobile 2×2; liczby `font-display tabular-nums` `text-3xl md:text-4xl`
+  (serif w jasnym = makieta). Kolory/tło/pasek przez klasy palety (`text-slate-100`/`emerald`/`cyan`/`amber`,
+  `bg-slate-800` track) → spójne w obu motywach automatycznie. Wpięte w `StatsSection` nad hintem układania,
+  po guardach `!stats`. Suite 463 zielone, lint czysty, build OK. (Karty poniżej — histogram/dostępność/oficyny
+  itd. — bez zmian; masonry z reorderem zostaje.)
 - **1.66.1** — **Jasny Regał: pieczęcie nagród w palecie boho + fix zjadanej prawej strzałki pagera.**
   (1) Kropki nagród na grzbiecie (`AWARD_MARKS`: Hugo #fbbf24 / Nebula #c084fc / Locus #38bdf8 — neon) dostały
   klasy `spine-award spine-award-<key>`; w jasnym motywie `[data-theme="light"] .skin-noospheric .spine-award*`

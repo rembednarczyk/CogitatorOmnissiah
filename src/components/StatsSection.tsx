@@ -16,6 +16,7 @@ import { PublishingCard } from "./stats/PublishingCard";
 import { DecadeHistogram } from "./stats/DecadeHistogram";
 import { MarketCard } from "./stats/MarketCard";
 import { CyclesHarvestCard } from "./stats/CyclesHarvestCard";
+import { KpiRow } from "./stats/KpiRow";
 import { useEffectiveConfig, persistStatsOrder } from "../hooks/useAppConfig";
 import { orderByIds, moveId, distributeColumns } from "../utils/statsLayout";
 
@@ -335,6 +336,9 @@ export const StatsSection: React.FC = () => {
           </motion.div>
         </button>
       </div>
+
+      {/* „Twoja kolekcja" — stały rząd KPI (nad kartami; nie wchodzi w masonry). */}
+      <KpiRow stats={stats} />
 
       {arranging && (
         <div className="flex items-center justify-center gap-2 text-[11px] text-amber-300/80 uppercase tracking-widest font-bold">
