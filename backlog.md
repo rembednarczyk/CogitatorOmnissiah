@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.59.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.60.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,16 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.60.0** — **Przełącznik motywu: jasny „Librem" (boho) / ciemny „Warhammer" — DOMYŚLNIE JASNY.**
+  Fundament pod pełny rebrand na Librem (makieta zaakceptowana). Silnik motywu: `data-theme` na `<html>`
+  + `localStorage("librem-theme")`; inline-skrypt w `index.html` ustawia motyw przed montażem Reacta
+  (bez FOUC), domyślnie `light`. Hook `src/hooks/useTheme.ts` (`{theme, toggle}`, SSR-safe). W `App.tsx`:
+  przycisk Sun/Moon w headerze, `ParticleBackground` renderowany tylko w `dark`, gradient tytułu zależny
+  od motywu. `src/index.css`: warstwa `:root[data-theme="light"]` — natywne style zostają ciemne
+  (Warhammer, nietknięte), a jasny motyw remapuje najczęstsze klasy utility (slate/cyan/purple/amber/
+  rose/emerald → paleta boho: paper/card/ink/muted/line/clay/sage/ochre/brick) + fonty Cormorant Garamond
+  + Mulish. To FUNDAMENT (szeroki flip) — dopieszczanie per-zakładka do makiety i pełny rebrand nazewnictwa
+  jeszcze przed nami. Suite 463 zielone, lint czysty, build OK.
 - **1.59.0** — **Skaner ISBN obejmuje też książki bez nagród (tomy cykli).** Dotąd `toSearchIndex` był
   nagrodowo-only → skan nie znajdował tomów cykli (`Kategoria="Tom cyklu"`). Zmiany: (1) `toSearchIndex(books,
   awardOnly=true)` — Regał zostaje nagrodowo-only, ale nowy wariant „wszystko"; (2) `getBooks(fresh, all)` +
