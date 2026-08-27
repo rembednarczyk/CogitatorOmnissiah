@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.54.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.54.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,16 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.54.1** — **FIX: skaner „nie znaleziono" mimo zapisanego ISBN (nieświeży indeks w apce).** Root cause:
+  `useBooks` pobiera indeks TYLKO przy montowaniu; jeśli apka mobilna była otwarta PRZED rytuałem ISBN, jej
+  lista w pamięci nie miała jeszcze ISBN-ów → `matchIsbnInIndex` szukał w nieświeżych danych → miss (potem
+  wariant A/Google 429 → „nie znaleziono"). Test integracyjny (mapper→index→match) POTWIERDZIŁ, że logika
+  dopasowania jest poprawna (w izolacji trafia), więc problem = dane, nie kod. Fix: przy skanie pobieramy
+  ŚWIEŻY `/api/books` i dopasowujemy do niego (skan to rzadka, świadoma akcja — jeden refetch OK); świeża
+  lista aktualizuje też stan (`setBooks` wystawione z `useBooks`). Komunikat miss doprecyzowany. +3 testy
+  integracyjne (single ISBN, ISBN z listy, tom cyklu wykluczony z indeksu). UWAGA na przyszłość: wiersze
+  `Kategoria="Tom cyklu"` są CELOWO poza indeksem Skryptorium → skan tomu cyklu nie trafi (osobna decyzja,
+  gdyby trzeba skanować też tomy).
 - **1.54.0** — **Rytuał ISBN: merge zamiast gap-fill + zapytanie po OBU tytułach.** Wcześniej rytuał
   POMIJAŁ pozycje, które miały już jakikolwiek ISBN (gap-fill) → książki uzupełnione samym angielskim
   ISBN-em nie dostawały polskiego. Teraz **każda** książka nagrodowa jest przetwarzana, a wynik SCALANY z

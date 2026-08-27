@@ -32,5 +32,5 @@ export function useBooks() {
     fetchBooks();
   }, [fetchBooks]);
 
-  return { books, loading, error, fetchBooks };
+  return { books, loading, error, fetchBooks, setBooks };
 }
