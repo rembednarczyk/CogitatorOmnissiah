@@ -6,7 +6,7 @@ export type ShelfSkin = "holo" | "noospheric";
 
 export const SHELF_SKINS: { id: ShelfSkin; label: string }[] = [
   { id: "holo", label: "Holo+" },
-  { id: "noospheric", label: "Relikwiarz" },
+  { id: "noospheric", label: "Klasyczny" },
 ];
 
 const KEY = "shelfSkin";

@@ -25,12 +25,12 @@ export const IntegrityCheckCard: React.FC<IntegrityCheckCardProps> = ({
     return status ? (
       <div className="flex items-center gap-2 text-emerald-400 font-bold text-[9px] uppercase tracking-widest bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
         <CheckCircle className="w-2.5 h-2.5" />
-        [ ZATWIERDZONO ]
+        [ SPÓJNE ]
       </div>
     ) : (
       <div className="flex items-center gap-2 text-red-400 font-bold text-[9px] uppercase tracking-widest bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/20 animate-pulse">
         <AlertTriangle className="w-2.5 h-2.5" />
-        [ HEREZJA ]
+        [ NIESPÓJNE ]
       </div>
     );
   };
@@ -74,20 +74,20 @@ export const IntegrityCheckCard: React.FC<IntegrityCheckCardProps> = ({
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <ShieldAlert className={`w-4 h-4 text-cyan-400 ${state.loading ? 'animate-pulse' : ''}`} />
-          <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Skaner Sanctity</h3>
+          <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Kontrola spójności</h3>
         </div>
         
         <motion.button
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
-          onClick={() => integritySync.startSync({}, undefined, "Inicjowanie Skanera Sanctity...")}
+          onClick={() => integritySync.startSync({}, undefined, "Uruchamianie kontroli spójności...")}
           disabled={isAnySyncLoading}
           className={`p-2 rounded-full border transition-all ${
             state.loading 
               ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.4)] animate-pulse' 
               : 'bg-slate-800/50 border-slate-700 text-slate-500 hover:text-cyan-400 hover:border-cyan-500/30'
           }`}
-          title="Inicjuj Skanowanie Sanctity"
+          title="Uruchom kontrolę spójności"
         >
           {state.loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Activity className="w-4 h-4" />}
         </motion.button>

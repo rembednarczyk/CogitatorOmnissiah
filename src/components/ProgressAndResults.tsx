@@ -36,7 +36,7 @@ export const ProgressAndResults: React.FC<ProgressAndResultsProps> = ({
       <div className="flex items-center justify-between mb-6">
         <div className="flex flex-col">
           <h3 className={`text-lg font-bold font-display ${theme.text} uppercase tracking-widest mb-1`}>
-            {state.statusMessage || "Rytuał w toku..."}
+            {state.statusMessage || "Operacja w toku..."}
           </h3>
           <div className="text-xs text-slate-500 font-bold uppercase tracking-tighter">
             {formatETA(progress.current, progress.total, state.startTime)}

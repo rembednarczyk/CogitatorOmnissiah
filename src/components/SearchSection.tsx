@@ -78,7 +78,7 @@ export const SearchSection: React.FC = () => {
       const direct = matchIsbnInIndex(code, index);
       if (direct) {
         setQuery(direct.plTitle || direct.origTitle);
-        setScanNotice({ kind: "exact", text: `Trafienie w archiwum: „${direct.plTitle || direct.origTitle}"` });
+        setScanNotice({ kind: "exact", text: `Znaleziono: „${direct.plTitle || direct.origTitle}"` });
         return;
       }
 
@@ -87,9 +87,9 @@ export const SearchSection: React.FC = () => {
       const book = res.ok ? await res.json() : null;
       if (book?.title) {
         setQuery(book.title);
-        setScanNotice({ kind: "resolved", text: `Rozpoznano przez ISBN: „${book.title}" — przeszukuję archiwum` });
+        setScanNotice({ kind: "resolved", text: `Rozpoznano przez ISBN: „${book.title}" — szukam w katalogu` });
       } else {
-        setScanNotice({ kind: "miss", text: `Nie znaleziono w archiwum książki o ISBN ${code}.` });
+        setScanNotice({ kind: "miss", text: `Nie znaleziono w katalogu książki o ISBN ${code}.` });
       }
     } catch {
       setScanNotice({ kind: "miss", text: "Błąd rozpoznawania ISBN — spróbuj ponownie lub wpisz tytuł ręcznie." });
@@ -118,14 +118,14 @@ export const SearchSection: React.FC = () => {
         <div className="flex items-center gap-4">
           <ScrollText className="w-6 h-6 text-cyan-400" />
           <h2 className="text-xl font-bold font-display uppercase tracking-[0.4em] text-cyan-100/90 whitespace-nowrap">
-            Skryptorium
+            Katalog
           </h2>
         </div>
         <div className="h-px flex-1 bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent" />
       </div>
 
       <p className="text-center text-[11px] text-slate-500 uppercase tracking-widest font-bold -mt-4">
-        Przeszukiwanie zapisów archiwum — tytuł, tytuł oryginalny, autor
+        Szukaj po tytule, tytule oryginalnym lub autorze
       </p>
 
       {/* Search field */}
@@ -139,7 +139,7 @@ export const SearchSection: React.FC = () => {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Wpisz fragment tytułu lub nazwisko autora…"
-              aria-label="Przeszukaj archiwum"
+              aria-label="Przeszukaj katalog"
               className="w-full pl-14 pr-12 py-4 text-sm bg-slate-950/60 border border-white/10 text-slate-200 rounded-2xl focus:outline-none focus:border-cyan-500/50 focus:ring-4 focus:ring-cyan-500/5 placeholder-slate-500 transition-all"
             />
             {query && (
@@ -194,7 +194,7 @@ export const SearchSection: React.FC = () => {
         <p className="text-center text-xs text-slate-500 font-bold tracking-widest uppercase">
           {query.trim()
             ? `Znaleziono ${results.length} ${results.length === 1 ? "wolumin" : "woluminów"} z ${total}`
-            : `${total} woluminów w archiwum`}
+            : `${total} woluminów w katalogu`}
           {results.length > RENDER_CAP && ` · pokazano ${RENDER_CAP} — zawęź zapytanie`}
         </p>
       )}
@@ -222,16 +222,16 @@ export const SearchSection: React.FC = () => {
         <div className="text-center py-20 space-y-3">
           <ScanBarcode className="w-10 h-10 text-cyan-500/40 mx-auto" />
           <p className="text-sm text-slate-400 italic">
-            {canScan ? "Zeskanuj kod kreskowy lub wpisz tytuł, aby przeszukać archiwum." : "Wpisz tytuł lub nazwisko autora, aby przeszukać archiwum."}
+            {canScan ? "Zeskanuj kod kreskowy lub wpisz tytuł, aby przeszukać katalog." : "Wpisz tytuł lub nazwisko autora, aby przeszukać katalog."}
           </p>
-          <p className="text-[11px] text-slate-600 uppercase tracking-widest font-bold">{total} woluminów w archiwum</p>
+          <p className="text-[11px] text-slate-600 uppercase tracking-widest font-bold">{total} woluminów w katalogu</p>
         </div>
       ) : results.length === 0 ? (
         <div className="text-center py-16 space-y-4">
           <p className="text-sm text-slate-400 italic">
             {query.trim()
-              ? `Archiwum milczy — żaden wolumin nie pasuje do „${query}".`
-              : "Archiwum jest puste — brak rekordów do przeszukania."}
+              ? `Brak wyników — żaden wolumin nie pasuje do „${query}".`
+              : "Katalog jest pusty — brak rekordów do przeszukania."}
           </p>
           {query.trim() && suggestions.length > 0 && (
             <p className="text-sm text-slate-400">

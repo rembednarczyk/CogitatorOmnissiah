@@ -24,7 +24,7 @@ export const DecadeHistogram: React.FC<{ decades: DecadeStat[] }> = ({ decades }
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-bold font-display uppercase tracking-widest text-amber-400 flex items-center gap-2">
           <BarChart3 className="w-4 h-4" />
-          Oś Czasu Archiwum
+          Oś czasu
         </h3>
         {peak && (
           <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-amber-300/80">

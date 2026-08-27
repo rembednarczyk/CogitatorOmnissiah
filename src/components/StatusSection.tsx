@@ -32,21 +32,21 @@ export const StatusSection: React.FC<StatusSectionProps> = ({ configStatus }) =>
     >
       <h2 className="text-xl font-bold font-display flex items-center gap-3 mb-8 uppercase tracking-widest text-cyan-400">
         <Zap className="w-5 h-5" />
-        Status Ducha Maszyny
+        Status połączeń
       </h2>
       
       {configStatus.loading ? (
         <div className="flex items-center gap-4 text-slate-400 animate-pulse">
           <Loader2 className="w-6 h-6 animate-spin" />
-          <span className="font-medium">Inicjalizacja Duchów Maszyny...</span>
+          <span className="font-medium">Sprawdzanie połączeń...</span>
         </div>
       ) : (
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
-              { label: "NOTION_API_KEY", status: configStatus.hasNotionKey, ok: "Pieczęć Przyłożona", err: "Brak Autoryzacji" },
-              { label: "NOTION_DATABASE_ID", status: configStatus.hasDatabaseId, ok: "Baza Zlokalizowana", err: "Baza Nieznana" },
-              { label: "STATUS PROCESÓW", status: !configStatus.isSyncing, ok: "Gotowość do Pracy", err: "Synchronizacja w Toku" }
+              { label: "NOTION_API_KEY", status: configStatus.hasNotionKey, ok: "Połączono", err: "Brak autoryzacji" },
+              { label: "NOTION_DATABASE_ID", status: configStatus.hasDatabaseId, ok: "Baza znaleziona", err: "Baza nieznana" },
+              { label: "STATUS PROCESÓW", status: !configStatus.isSyncing, ok: "Gotowe", err: "Synchronizacja w toku" }
             ].map((item, idx) => (
               <motion.div 
                 key={item.label}
@@ -67,7 +67,7 @@ export const StatusSection: React.FC<StatusSectionProps> = ({ configStatus }) =>
           </div>
 
           <div className="pt-4 border-t border-slate-800/50">
-            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-4 ml-1">Sektory Archiwum Encyklopedii</div>
+            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-4 ml-1">Źródła (Encyklopedia Fantastyki)</div>
             <div className="flex flex-wrap gap-4">
               {WIKI_LINKS.map((link, idx) => (
                 <motion.div

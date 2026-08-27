@@ -14,7 +14,7 @@ export const VintedSection: React.FC = () => {
         <div className="flex items-center gap-4">
           <ShoppingCart className="w-6 h-6 text-rose-400" />
           <h2 className="text-xl font-bold font-display uppercase tracking-[0.4em] text-rose-100/90 whitespace-nowrap">
-            Skaner Vinted
+            Rynek
           </h2>
         </div>
         <div className="h-px flex-1 bg-gradient-to-r from-transparent via-rose-500/20 to-transparent"></div>

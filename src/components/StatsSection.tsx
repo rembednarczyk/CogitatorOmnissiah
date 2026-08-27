@@ -65,7 +65,7 @@ export const StatsSection: React.FC = () => {
         >
           <BarChart3 className="w-12 h-12" />
         </motion.div>
-        <p className="text-cyan-400 font-display uppercase tracking-widest animate-pulse">Analiza Logów Archiwalnych...</p>
+        <p className="text-cyan-400 font-display uppercase tracking-widest animate-pulse">Wczytywanie kolekcji...</p>
       </div>
     );
   }
@@ -111,7 +111,7 @@ export const StatsSection: React.FC = () => {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="glass-card p-6 rounded-3xl border-purple-500/10 space-y-6">
           <h3 className="text-sm font-bold font-display uppercase tracking-widest text-purple-500 flex items-center gap-2 mb-4">
             <Award className="w-4 h-4" />
-            Progres Archiwum Nagród
+            Postęp kolekcji
           </h3>
           <div className="space-y-6">
             <ProgressBar current={stats.awardBooksStats.read} total={stats.awardBooksStats.total} label="Polskie wydania z listy nagród" icon={Book} color="purple" />

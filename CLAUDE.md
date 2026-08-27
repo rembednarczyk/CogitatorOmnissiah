@@ -38,7 +38,7 @@ Vitest, organized into `__tests__/` subdirectories: `/__tests__/` (adapters, ser
 ## Conventions
 
 - Tailwind CSS only; glassmorphism theme (`slate-950` background, `cyan-400`/`purple-500` accents); `motion/react` for animations; `lucide-react` icons.
-- UI copy and domain naming use Warhammer 40k "Adeptus Mechanicus" flavor (rituals, Machine Spirit, sanctity) — preserve it.
+- **Branding: "Librem"** — warm, literary "your book collection" voice (Kolekcja, Regał, Katalog, Synchronizacja, Rynek, Ustawienia). The old Warhammer 40k "Adeptus Mechanicus" flavor (rituals, Machine Spirit, sanctity) has been retired from user-facing copy (v1.61.0) — do NOT reintroduce it. Domain/data identifiers stay untouched (Notion column names like `AppConfig`, `Kategoria="Tom cyklu"`, TASK_REGISTRY keys, backend service copy). The dark theme keeps the 40k glassmorphism *visual* look, but its *copy* is Librem like everything else.
 - After major architectural changes, update `COGITATOR_GUIDELINES.md` and `README.md` to match the implementation (see guidelines §8).
 
 ## Workflow rules

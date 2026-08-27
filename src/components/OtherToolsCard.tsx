@@ -52,15 +52,15 @@ export const OtherToolsCard: React.FC<OtherToolsCardProps> = ({
 }) => {
   // All rituals in one idiom (`RitualButton` + central `ritualButtonTheme`).
   const rituals: { color: RitualColor; icon: typeof Database; title: string; subtitle: string; onClick: () => void; animate?: "spin" | "pulse" }[] = [
-    { color: "emerald", icon: Database, title: "Rytuał Inicjacji Schematu", subtitle: "Weryfikacja i kreacja brakujących kolumn w bazie Notion", onClick: handleSyncSchema, animate: schemaSync.state.loading ? "pulse" : undefined },
-    { color: "amber", icon: Sparkles, title: "Rytuał Puryfikacji", subtitle: "Oczyszczanie tytułów z nadmiarowych znaków i formatowania", onClick: handleSyncPurify, animate: purifySync.state.loading ? "pulse" : undefined },
-    { color: "purple", icon: RefreshCw, title: "Rytuał Rekonstrukcji Liczb", subtitle: "Rekalkulacja i naprawa numeracji porządkowej rekordów", onClick: handleSyncLp, animate: lpSync.state.loading ? "spin" : undefined },
-    { color: "blue", icon: RefreshCw, title: "Rytuał Oznaczania Cykli", subtitle: "Automatyczne przypisywanie książek do cykli wydawniczych", onClick: handleCyclesSync, animate: cyclesSync.state.loading ? "spin" : undefined },
-    { color: "amber", icon: Layers, title: "Rytuał Żniw Cykli", subtitle: "Materializacja sąsiednich tomów cykli jako wiersze bazy (Kategoria: Tom cyklu) — oznaczalne i skanowane na Vinted", onClick: handleCyclesHarvest, animate: cyclesHarvestSync.state.loading ? "spin" : undefined },
-    { color: "rose", icon: BookOpen, title: "Rytuał Wydania", subtitle: "Eksploracja i aktualizacja danych o wydawcach z Encyklopedii", onClick: handleSyncPublisher, animate: publisherSync.state.loading ? "pulse" : undefined },
-    { color: "indigo", icon: Layers, title: "Rytuał Seryjny", subtitle: "Eksploracja i aktualizacja danych o seriach wydawniczych", onClick: handleSyncSeries, animate: seriesSync.state.loading ? "pulse" : undefined },
-    { color: "emerald", icon: Barcode, title: "Rytuał Sygnatur (ISBN)", subtitle: "Nadawanie kodów ISBN z Google Books — umożliwia skan kodu kreskowego w Skryptorium", onClick: handleIsbnEnrich, animate: isbnEnrichSync.state.loading ? "pulse" : undefined },
-    { color: "orange", icon: Search, title: "Rytuał Wykrycia Duplikacji", subtitle: "Identyfikacja i oznaczanie potencjalnych duplikatów w bazie", onClick: handleSyncDuplicates, animate: duplicatesSync.state.loading ? "pulse" : undefined },
+    { color: "emerald", icon: Database, title: "Inicjacja schematu", subtitle: "Weryfikacja i kreacja brakujących kolumn w bazie Notion", onClick: handleSyncSchema, animate: schemaSync.state.loading ? "pulse" : undefined },
+    { color: "amber", icon: Sparkles, title: "Porządkowanie tytułów", subtitle: "Oczyszczanie tytułów z nadmiarowych znaków i formatowania", onClick: handleSyncPurify, animate: purifySync.state.loading ? "pulse" : undefined },
+    { color: "purple", icon: RefreshCw, title: "Rekonstrukcja numeracji", subtitle: "Rekalkulacja i naprawa numeracji porządkowej rekordów", onClick: handleSyncLp, animate: lpSync.state.loading ? "spin" : undefined },
+    { color: "blue", icon: RefreshCw, title: "Oznaczanie cykli", subtitle: "Automatyczne przypisywanie książek do cykli wydawniczych", onClick: handleCyclesSync, animate: cyclesSync.state.loading ? "spin" : undefined },
+    { color: "amber", icon: Layers, title: "Zbieranie tomów cykli", subtitle: "Materializacja sąsiednich tomów cykli jako wiersze bazy (Kategoria: Tom cyklu) — oznaczalne i skanowane na Vinted", onClick: handleCyclesHarvest, animate: cyclesHarvestSync.state.loading ? "spin" : undefined },
+    { color: "rose", icon: BookOpen, title: "Wydawcy", subtitle: "Eksploracja i aktualizacja danych o wydawcach z Encyklopedii", onClick: handleSyncPublisher, animate: publisherSync.state.loading ? "pulse" : undefined },
+    { color: "indigo", icon: Layers, title: "Serie", subtitle: "Eksploracja i aktualizacja danych o seriach wydawniczych", onClick: handleSyncSeries, animate: seriesSync.state.loading ? "pulse" : undefined },
+    { color: "emerald", icon: Barcode, title: "Nadawanie ISBN", subtitle: "Nadawanie kodów ISBN z Google Books — umożliwia skan kodu kreskowego w Katalogu", onClick: handleIsbnEnrich, animate: isbnEnrichSync.state.loading ? "pulse" : undefined },
+    { color: "orange", icon: Search, title: "Wykrywanie duplikatów", subtitle: "Identyfikacja i oznaczanie potencjalnych duplikatów w bazie", onClick: handleSyncDuplicates, animate: duplicatesSync.state.loading ? "pulse" : undefined },
   ];
   return (
     <motion.div 
@@ -71,7 +71,7 @@ export const OtherToolsCard: React.FC<OtherToolsCardProps> = ({
     >
       <h2 className="text-xl font-bold font-display flex items-center gap-3 mb-6 uppercase tracking-widest text-cyan-400">
         <Settings className="w-5 h-5" />
-        Narzędzia Serwomechanizmów Adeptus
+        Narzędzia
       </h2>
       
       <div className="grid grid-cols-1 gap-4 flex-1">

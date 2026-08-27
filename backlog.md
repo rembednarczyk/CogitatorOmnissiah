@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.60.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.61.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,18 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.61.0** — **Pełny rebrand nazewnictwa UI: „Cogitator Omnissiah" → „Librem"** (ciepły, biblioteczny ton
+  zamiast liturgicznego 40k). Wordmark `COGITATOR OMNISSIAH`→`LIBREM`, podtytuł→„Twoja kolekcja nagradzanej
+  fantastyki". Zakładki: Statystyki Archiwum→**Kolekcja**, Skryptorium→**Katalog**, Liturgie
+  Synchronizacji→**Synchronizacja**, Skaner Vinted→**Rynek**, Sanktuarium Kalibracji→**Ustawienia** (Regał bez
+  zmian). Zret-owane w całym UI: „Rytuał X"→nazwy opisowe (Porządkowanie tytułów, Oznaczanie cykli, Wydawcy,
+  Serie, Nadawanie ISBN, Wykrywanie duplikatów…), Skaner Sanctity→**Kontrola spójności** ([ZATWIERDZONO]/
+  [HEREZJA]→[SPÓJNE]/[NIESPÓJNE]), Duch Maszyny→**połączenia**, „archiwum"→**katalog/kolekcja**, skórka regału
+  Relikwiarz→**Klasyczny**, ticker AVE·OMNISSIAH→LIBREM. `index.html` title/description/theme-color. **NIE
+  ruszane** (dane): kolumny Notion (`AppConfig`, `Kategoria="Tom cyklu"`), TASK_REGISTRY, `awardName:"Wszystkie
+  Nagrody"`, backendowe copy (`Przerwano Rytuał Wydania.` itp.). Zaktualizowane asercje w `App.test.tsx` +
+  `CLAUDE.md` (konwencja brandingu). Suite 463 zielone, lint czysty, build OK. Ciemny motyw = wygląd 40k, ale
+  copy jak wszędzie = Librem. NASTĘPNE: wizualne dopieszczenie zakładek do makiety Librem.
 - **1.60.0** — **Przełącznik motywu: jasny „Librem" (boho) / ciemny „Warhammer" — DOMYŚLNIE JASNY.**
   Fundament pod pełny rebrand na Librem (makieta zaakceptowana). Silnik motywu: `data-theme` na `<html>`
   + `localStorage("librem-theme")`; inline-skrypt w `index.html` ustawia motyw przed montażem Reacta

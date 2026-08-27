@@ -33,7 +33,7 @@ export const AvailabilityCard: React.FC<{ stats: AvailabilityStats }> = ({ stats
       </h3>
 
       {total === 0 ? (
-        <p className="text-slate-400 text-sm italic text-center py-8">Wszystko przeczytane — Archiwum domknięte.</p>
+        <p className="text-slate-400 text-sm italic text-center py-8">Wszystko przeczytane — kolekcja domknięta.</p>
       ) : (
         <>
           <div className="flex items-baseline gap-2">

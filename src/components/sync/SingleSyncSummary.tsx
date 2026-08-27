@@ -27,7 +27,7 @@ export const SingleSyncSummary: React.FC<{ sync: ReturnType<typeof useSync>; onC
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className={`glass-card p-8 rounded-3xl ${theme.border}`}>
       <div className="flex items-center justify-between mb-8">
-        <h3 className={`text-xl font-bold font-display ${theme.text} uppercase tracking-widest`}>Zapisy Archiwisty Adeptus</h3>
+        <h3 className={`text-xl font-bold font-display ${theme.text} uppercase tracking-widest`}>Zapisane zmiany</h3>
         <button onClick={onClose} className="text-slate-500 hover:text-slate-200 transition-colors">
           <XCircle className="w-6 h-6" />
         </button>
@@ -43,7 +43,7 @@ export const SingleSyncSummary: React.FC<{ sync: ReturnType<typeof useSync>; onC
           </div>
         ) : (
           <div className={`p-6 ${theme.bg} border ${theme.border} rounded-2xl text-center mb-8`}>
-            <div className={`${theme.text} font-bold uppercase tracking-widest mb-2`}>Rytuał Zakończony Pomyślnie</div>
+            <div className={`${theme.text} font-bold uppercase tracking-widest mb-2`}>Synchronizacja zakończona</div>
             <div className="text-slate-400 text-sm">
               Przetworzono {activeResult.found || 0} woluminów. Zaktualizowano {activeResult.updated || 0} wpisów.
             </div>

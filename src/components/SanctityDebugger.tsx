@@ -66,7 +66,7 @@ export const SanctityDebugger: React.FC<SanctityDebuggerProps> = ({ result }) =>
           <Bug className="w-5 h-5 text-amber-400" />
         </div>
         <div>
-          <h3 className="text-sm font-bold uppercase tracking-[0.3em] text-amber-400">Protokół Debugowania Sanctity</h3>
+          <h3 className="text-sm font-bold uppercase tracking-[0.3em] text-amber-400">Diagnostyka spójności</h3>
           <p className="text-[10px] text-slate-500 font-mono mt-1">ANALIZA ROZBIEŻNOŚCI STRUKTURALNYCH [NOTION vs WIKI]</p>
         </div>
       </div>

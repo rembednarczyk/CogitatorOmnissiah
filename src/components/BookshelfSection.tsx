@@ -127,7 +127,7 @@ export const BookshelfSection: React.FC = () => {
         <div className="h-px flex-1 bg-gradient-to-r from-transparent via-amber-500/20 to-transparent" />
         <div className="flex items-center gap-4">
           <Library className="w-6 h-6 text-amber-300" />
-          <h2 className="text-xl font-bold font-display uppercase tracking-[0.4em] text-amber-100/90 whitespace-nowrap">Regał Archiwum</h2>
+          <h2 className="text-xl font-bold font-display uppercase tracking-[0.4em] text-amber-100/90 whitespace-nowrap">Regał</h2>
         </div>
         <div className="h-px flex-1 bg-gradient-to-r from-transparent via-amber-500/20 to-transparent" />
       </div>
