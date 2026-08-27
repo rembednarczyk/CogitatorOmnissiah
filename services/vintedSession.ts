@@ -2,6 +2,7 @@ import axios from "axios";
 import https from "https";
 import { getRandomUserAgent } from "../scrapingClient";
 import { vintedRequestHeaders, VintedSession } from "./vintedHttp";
+import { primeWithBrowser } from "./browserPrime";
 
 const VINTED_HOME = "https://www.vinted.pl/";
 
@@ -36,8 +37,14 @@ export function parseSetCookie(setCookie: string[] | undefined | null): string {
  */
 export async function primeVintedSession(
   httpsAgent: https.Agent,
-  opts: { uaPool?: string[]; timeoutMs: number },
+  opts: { uaPool?: string[]; timeoutMs: number; useBrowser?: boolean },
 ): Promise<VintedSession> {
+  // Anti-block point 2: try a headless browser first (solves Cloudflare's JS challenge for a
+  // real cf_clearance). Best-effort — no browser / no clearance → fall through to the plain GET.
+  if (opts.useBrowser) {
+    const browserSession = await primeWithBrowser({ timeoutMs: opts.timeoutMs });
+    if (browserSession?.cookie) return browserSession;
+  }
   const userAgent = getRandomUserAgent(opts.uaPool);
   try {
     const res = await axios.get(VINTED_HOME, {

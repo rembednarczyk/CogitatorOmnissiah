@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.47.2** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.48.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,13 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.48.0** — **Vinted anty-blok pkt 2: priming przez headless browser (Playwright).** `browserPrime.ts` —
+  headless Chromium (`playwright-core`, optionalDependency, dynamic import) rozwiązuje wyzwanie JS Cloudflare
+  po prawdziwe `cf_clearance` + UA, wpuszczane do `VintedSession` używanej dalej przez lekki axios. Knob
+  `vinted.primeWithBrowser` (default off) + checkbox w Kalibracji, wpięte w skan i resolve sprzedawców.
+  Best-effort: brak przeglądarki/błąd/brak clearance → fallback do lekkiego primingu. `esbuild --external:
+  playwright-core`. +3 testy (mock playwright). NIE zwalidowane na żywo (proxy sandboxa blokuje CONNECT do
+  Vinted) — do sprawdzenia lokalnie. Zastrzeżenie fingerprintu TLS/JA3 (patrz Otwarte pozycje pkt 2).
 - **1.47.2** — **Audyt skanera Vinted: samonaprawa primingu w resolve sprzedawców + widoczność wznawialności.**
   (1) `resolveSellersToStore` primował sesję BEZ samonaprawy — jeśli rozgrzana sesja psuła wariant strony
   oferty, `extractVintedSeller` po cichu zawodził. Dodana sonda na 1. ofercie (jak w skanie): niezablokowana,
@@ -802,9 +809,17 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
      (i przed resolve sprzedawców) → przejęcie `Set-Cookie` (`cf_clearance` + sesja anon Vinted), niesione
      w `Cookie` + STAŁY UA na kolejnych żądaniach. Knob `vinted.primeSession` (default on). Jeśli okaże się
      niewystarczające → pkt 2.
-  2. **Headless browser (Playwright — JEST w środowisku)** — renderuje JS i przechodzi wyzwanie Cloudflare
-     jak realna przeglądarka. Wariant lekki: użyć TYLKO do primingu cookie (pkt 1), potem dalej lekki fetch;
-     wariant ciężki: cały scrape przez przeglądarkę (wolniej, więcej pamięci — uwaga na OOM 512 MB Render).
+  2. **Headless browser (Playwright)** — ✅ ZREALIZOWANE (1.48.0, wariant lekki: cookie).
+     `services/browserPrime.ts`: headless Chromium (`playwright-core`, optionalDependency, dynamic import)
+     wchodzi na stronę główną, wyzwanie JS Cloudflare się wykonuje, zbieramy `cf_clearance` + UA do
+     `VintedSession`, dalej lekki axios. Knob `vinted.primeWithBrowser` (default off) + checkbox w Kalibracji.
+     Best-effort: brak przeglądarki/`playwright-core`/błąd/brak clearance → fallback do lekkiego primingu →
+     skan bez sesji. Wymaga Chromium po stronie backendu (`VINTED_CHROMIUM_PATH` / `PLAYWRIGHT_BROWSERS_PATH`);
+     respektuje `HTTPS_PROXY`. NIE zwalidowane na żywo w sandboxie (proxy blokuje tunel CONNECT do Vinted) —
+     do sprawdzenia u użytkownika (lokalnie). ZASTRZEŻENIE: `cf_clearance` wiąże się z fingerprintem TLS/JA3,
+     więc ciasteczko z przeglądarki może być odrzucone przez gołe axios — wtedy samonaprawa katalogu porzuca
+     sesję (może pomóc, nigdy nie zaszkodzi). Jeśli mało → wariant ciężki: cały scrape przez przeglądarkę
+     (wolniej, więcej RAM — uwaga na OOM 512 MB Render).
   3. **Wewnętrzne API katalogu** (`/api/v2/catalog/items`, JSON) — dużo mniej pamięci niż 7 MB HTML +
      stabilniejszy parsing, ale wymaga tokenu/cookie z sesji i też pod Cloudflare. Wcześniej odrzucone DLA
      SPRZEDAWCY („brak wjazdu"), lecz z primingiem (pkt 1) warto przetestować dla katalogu.

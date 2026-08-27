@@ -151,6 +151,12 @@ export const ConfigSection: React.FC = () => {
             Włączone
           </label>
         </Field>
+        <Field label="Rozgrzewanie przez przeglądarkę (Playwright)" hint={'Cięższy wariant: headless Chromium rozwiązuje wyzwanie JS Cloudflare po prawdziwe cf_clearance. Wymaga Chromium po stronie serwera (działa lokalnie; na hostingu bez przeglądarki → automatyczny fallback do lekkiego primingu). Działa tylko przy włączonym rozgrzewaniu sesji.'}>
+          <label className="flex items-center gap-2 px-3 py-2 text-sm text-slate-300 cursor-pointer select-none">
+            <input type="checkbox" checked={draft.vinted.primeWithBrowser} onChange={(e) => upd("vinted", { primeWithBrowser: e.target.checked })} className="accent-rose-500 w-4 h-4" />
+            Włączone
+          </label>
+        </Field>
       </SectionCard>
 
       {/* UA pool */}

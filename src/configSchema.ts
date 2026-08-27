@@ -51,6 +51,10 @@ export interface AppConfig {
     excludedSources: string[];
     /** Warm up the session (GET the homepage → Cloudflare cookie) before the scan. */
     primeSession: boolean;
+    /** Warm up via a headless browser (Playwright) — solves Cloudflare's JS challenge for a real
+     *  `cf_clearance`. Needs Chromium on the backend; without it → falls back to the lightweight
+     *  prime. Only takes effect when `primeSession` is on. */
+    primeWithBrowser: boolean;
   };
   scraping: {
     /** User-Agent pool (rotated per request). Refresh every few months. */
@@ -104,6 +108,7 @@ export const DEFAULT_CONFIG: AppConfig = {
     sellerResolveCap: 0,
     excludedSources: ["Posiadam", "Przeczytane", "Audioteka", "Biblioteka", "Biblioteka 9"],
     primeSession: true,
+    primeWithBrowser: false,
   },
   scraping: {
     userAgents: [
@@ -240,6 +245,7 @@ export function mergeConfig(overrides?: unknown): AppConfig {
       sellerResolveCap: clampInt(v.sellerResolveCap, 0, 10000, d.vinted.sellerResolveCap),
       excludedSources: cleanStringList(v.excludedSources, d.vinted.excludedSources, 30, 64),
       primeSession: cleanBool(v.primeSession, d.vinted.primeSession),
+      primeWithBrowser: cleanBool(v.primeWithBrowser, d.vinted.primeWithBrowser),
     },
     scraping: {
       userAgents: cleanStringList(s.userAgents, d.scraping.userAgents, 30, 400),
