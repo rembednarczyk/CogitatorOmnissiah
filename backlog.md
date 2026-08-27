@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.66.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.66.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,15 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.66.1** — **Jasny Regał: pieczęcie nagród w palecie boho + fix zjadanej prawej strzałki pagera.**
+  (1) Kropki nagród na grzbiecie (`AWARD_MARKS`: Hugo #fbbf24 / Nebula #c084fc / Locus #38bdf8 — neon) dostały
+  klasy `spine-award spine-award-<key>`; w jasnym motywie `[data-theme="light"] .skin-noospheric .spine-award*`
+  nadpisuje je (`!important` bije inline) na boho: Hugo→ochra `#CE9B3F`, Nebula→sage `#7E8A6B`, Locus→clay
+  `#C07A56`, cienki ciemny pierścień bez poświaty. Ciemny motyw = neon bez zmian. (2) Pager „Regał N / M" był
+  ucinany z prawej przy większym M: w jasnym `DataTicker` (elastyczny spacer `flex-1`) jest `display:none`, więc
+  `whitespace-nowrap` tytuł nie oddawał miejsca, a `overflow-hidden` kornisza zjadał prawą strzałkę. Fix w
+  `ShelfFrame`: tytuł `truncate min-w-0` (oddaje miejsce), chip licznika i wrapper `headerExtra` → `shrink-0`
+  (pager zawsze w całości). Działa też w ciemnym. Suite 463 zielone, lint czysty, build OK.
 - **1.66.0** — **Jasny Regał: kolory grzbietów z makiety + usunięcie 40k + czytelny kremowy tytuł.** (1) Nowa
   `LIGHT_SPINE_PALETTE` (12 boho mid-tone: clay/sage/ochre/brick/tany) równoległa do `CLOTH_PALETTE`; `spineStyle`
   zwraca `light`, komponenty emitują `--spine-light` (BookSpine/BookStack) i `--cml-a/b` (CoverCard). Warstwa
