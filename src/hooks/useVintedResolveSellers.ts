@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { useSSEStream } from "./useSSEStream";
+import { postStop } from "../utils/http";
 
 /**
  * Stage 2: incrementally fetching sellers for STORED offers (Notion), resumable
@@ -49,11 +50,7 @@ export function useVintedResolveSellers() {
   }, [run]);
 
   const stopResolve = useCallback(async () => {
-    try {
-      await fetch("/api/vinted-resolve-sellers/stop", { method: "POST" });
-    } catch (err) {
-      console.error("Error stopping seller resolution:", err);
-    }
+    await postStop("/api/vinted-resolve-sellers/stop");
   }, []);
 
   return { isResolving, resolveProgress, resolveResult, resolveError, runResolve, stopResolve };

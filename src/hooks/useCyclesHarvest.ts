@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { markReadRequest } from "../utils/http";
 
 export interface VolumeOffer {
   price: number;
@@ -66,13 +67,7 @@ export function useCyclesHarvest() {
     setBusyId(id);
     setError(null);
     try {
-      const url = active ? "/api/mark-as-read" : "/api/unmark-as-read";
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pageId: id, tag }),
-      });
-      if (!res.ok) { const j = await res.json().catch(() => null); throw new Error(j?.error || `Błąd serwera: ${res.status}`); }
+      await markReadRequest(id, tag, active, "Nie udało się zmienić statusu tomu.");
       await fetchHarvest(true);
     } catch (e: any) {
       setError(e?.message || "Nie udało się zmienić statusu tomu.");

@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import type { IdentifiedBooks } from "./useStats";
+import { markReadRequest } from "../utils/http";
 
 type BookRef = { id: string; title: string; author: string; year?: number | null };
 
@@ -28,12 +29,7 @@ export function useMarkAsRead({ identifiedBooks, addBookToLibrarySection, fetchS
     if (markingId) return;
     setMarkingId(pageId);
     try {
-      const res = await fetch("/api/mark-as-read", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pageId, tag })
-      });
-      if (!res.ok) throw new Error("Błąd podczas oznaczania pozycji");
+      await markReadRequest(pageId, tag, true, "Błąd podczas oznaczania pozycji");
       const sourceTag = tag ?? "Przeczytane";
       setMarkedIds(prev => new Set(prev).add(`${sourceTag}:${pageId}`));
 

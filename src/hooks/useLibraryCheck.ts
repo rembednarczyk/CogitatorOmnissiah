@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from "react";
 import { IdentifiedBooks } from "./useStats";
 import { useSSEStream } from "./useSSEStream";
+import { postStop } from "../utils/http";
 
 export type { IdentifiedBooks };
 
@@ -58,11 +59,7 @@ export function useLibraryCheck() {
   }, [run]);
 
   const stopLibraryCheck = useCallback(async () => {
-    try {
-      await fetch("/api/library-check/stop", { method: "POST" });
-    } catch (err) {
-      console.error("Error stopping library check:", err);
-    }
+    await postStop("/api/library-check/stop");
   }, []);
 
   const checkAllLibraries = useCallback(async (branches: { id: string; code: string }[]) => {
