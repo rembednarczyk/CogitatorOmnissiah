@@ -1,0 +1,178 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Mulish:wght@400;500;600;700;800&display=swap">
+  <style>
+    :root{
+      --paper:#F3ECDF; --card:#FBF6EC; --ink:#3A342B; --muted:#8C8069;
+      --line:#E4D9C4; --clay:#C07A56; --sage:#7E8A6B; --ochre:#CE9B3F; --brick:#B0574A;
+      --serif:"Cormorant Garamond", Georgia, serif; --sans:"Mulish", system-ui, sans-serif;
+    }
+    *{box-sizing:border-box;}
+    body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;}
+    a{color:var(--clay);text-decoration:none;} a:hover{color:#a6603f;}
+    h1,h2,h3{margin:0;font-family:var(--serif);font-weight:600;letter-spacing:.2px;}
+    .wrap{max-width:1040px;margin:0 auto;padding:44px 40px 60px;}
+    .eyebrow{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);font-weight:700;}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:22px;box-shadow:0 10px 30px -22px rgba(58,52,43,.5);}
+    .pill{display:inline-flex;align-items:center;gap:9px;padding:11px 18px;border-radius:999px;font-size:13.5px;font-weight:600;color:var(--muted);border:1px solid transparent;}
+    .pill.active{background:#efe4d1;color:var(--ink);border-color:var(--line);box-shadow:inset 0 1px 0 #fff8;}
+    .kpi{font-family:var(--serif);font-weight:700;line-height:1;}
+    .bar{height:9px;border-radius:999px;background:#eaddc6;overflow:hidden;}
+    .barfill{height:100%;border-radius:999px;}
+  </style>
+</helmet>
+
+<div class="wrap" style="display:flex;flex-direction:column;gap:30px;">
+
+  <!-- Header -->
+  <header style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px;">
+    <div style="display:flex;align-items:center;gap:18px;">
+      <div style="width:56px;height:56px;border-radius:18px;background:linear-gradient(150deg,#c98a63,#a9603d);display:flex;align-items:center;justify-content:center;box-shadow:0 12px 24px -14px rgba(169,96,61,.8);">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fbf3e6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2 2 0 0 1 6 4h5v16H6a2 2 0 0 1-2-1.5z"/><path d="M20 5.5A2 2 0 0 0 18 4h-5v16h5a2 2 0 0 0 2-1.5z"/></svg>
+      </div>
+      <div>
+        <div style="display:flex;align-items:baseline;gap:12px;">
+          <h1 style="font-size:40px;letter-spacing:.5px;">Librem</h1>
+          <span style="font-size:11px;font-weight:700;color:var(--clay);background:#f0e0cf;border:1px solid #e6cdb6;border-radius:999px;padding:2px 9px;">v1.59</span>
+        </div>
+        <p style="margin:2px 0 0;color:var(--muted);font-size:14px;font-style:italic;font-family:var(--serif);">Twoja kolekcja nagradzanej fantastyki</p>
+      </div>
+    </div>
+    <button style="width:44px;height:44px;border-radius:14px;background:var(--card);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 0 1-4 0v-.1A1.6 1.6 0 0 0 6.6 19l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 3 13.4H3a2 2 0 0 1 0-4h.1A1.6 1.6 0 0 0 4.6 6.6L4.5 6.5a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 10 3V3a2 2 0 0 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8"/></svg>
+    </button>
+  </header>
+
+  <!-- Tabs -->
+  <nav style="display:flex;gap:8px;flex-wrap:wrap;padding:7px;background:#efe7d8;border:1px solid var(--line);border-radius:999px;align-self:flex-start;">
+    <span class="pill active">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="11" width="3" height="6"/><rect x="12" y="7" width="3" height="10"/><rect x="17" y="13" width="3" height="4"/></svg>
+      Kolekcja</span>
+    <span class="pill">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4v16"/><path d="M8 4v16"/><path d="M12 4v16"/><path d="m16 5 4 15"/></svg>
+      Regał</span>
+    <span class="pill">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      Katalog</span>
+    <span class="pill">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>
+      Synchronizacja</span>
+    <span class="pill">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h3l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.4a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>
+      Rynek</span>
+  </nav>
+
+  <div style="display:flex;align-items:center;gap:14px;margin-top:2px;">
+    <h2 style="font-size:26px;">Twoja kolekcja</h2>
+    <span style="height:1px;flex:1;background:linear-gradient(90deg,var(--line),transparent);"></span>
+  </div>
+
+  <!-- KPI row -->
+  <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;">
+    <div class="card" style="padding:22px;">
+      <div class="eyebrow">Woluminy</div>
+      <div class="kpi" style="font-size:44px;margin:10px 0 2px;color:var(--ink);">692</div>
+      <div style="font-size:12.5px;color:var(--muted);">nagrody + tomy cykli</div>
+    </div>
+    <div class="card" style="padding:22px;">
+      <div class="eyebrow">Przeczytane</div>
+      <div class="kpi" style="font-size:44px;margin:10px 0 8px;color:var(--sage);">58%</div>
+      <div class="bar"><div class="barfill" style="width:58%;background:var(--sage);"></div></div>
+    </div>
+    <div class="card" style="padding:22px;">
+      <div class="eyebrow">Posiadane</div>
+      <div class="kpi" style="font-size:44px;margin:10px 0 2px;color:var(--clay);">411</div>
+      <div style="font-size:12.5px;color:var(--muted);">na półce i w bibliotece</div>
+    </div>
+    <div class="card" style="padding:22px;">
+      <div class="eyebrow">Do zdobycia</div>
+      <div class="kpi" style="font-size:44px;margin:10px 0 2px;color:var(--ochre);">149</div>
+      <div style="font-size:12.5px;color:var(--muted);">brakuje w kolekcji</div>
+    </div>
+  </div>
+
+  <!-- Two column -->
+  <div style="display:grid;grid-template-columns:1.35fr 1fr;gap:18px;">
+
+    <!-- Decades -->
+    <div class="card" style="padding:26px;">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:22px;">
+        <h3 style="font-size:20px;">Oś czasu — dekady</h3>
+        <span style="font-size:12px;color:var(--muted);">wg roku wydania</span>
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:14px;height:150px;">
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;height:100%;justify-content:flex-end;">
+          <div style="width:100%;height:38%;background:#e7d9bf;border-radius:8px 8px 0 0;"></div><span style="font-size:11px;color:var(--muted);">60s</span></div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;height:100%;justify-content:flex-end;">
+          <div style="width:100%;height:56%;background:#dcc9a6;border-radius:8px 8px 0 0;"></div><span style="font-size:11px;color:var(--muted);">70s</span></div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;height:100%;justify-content:flex-end;">
+          <div style="width:100%;height:82%;background:linear-gradient(180deg,#d5a24c,#c9922f);border-radius:8px 8px 0 0;box-shadow:0 6px 14px -8px #c9922f;"></div><span style="font-size:11px;color:var(--ink);font-weight:700;">80s</span></div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;height:100%;justify-content:flex-end;">
+          <div style="width:100%;height:70%;background:#c98a63;border-radius:8px 8px 0 0;"></div><span style="font-size:11px;color:var(--muted);">90s</span></div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;height:100%;justify-content:flex-end;">
+          <div style="width:100%;height:64%;background:#c07a56;border-radius:8px 8px 0 0;"></div><span style="font-size:11px;color:var(--muted);">00s</span></div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;height:100%;justify-content:flex-end;">
+          <div style="width:100%;height:48%;background:#b06a4a;border-radius:8px 8px 0 0;"></div><span style="font-size:11px;color:var(--muted);">10s</span></div>
+      </div>
+      <p style="margin:18px 0 0;font-size:12.5px;color:var(--muted);"><span style="color:var(--ochre);font-weight:700;">Złota era</span> Twojej kolekcji to lata 80. — 141 woluminów.</p>
+    </div>
+
+    <!-- Availability -->
+    <div class="card" style="padding:26px;">
+      <h3 style="font-size:20px;margin-bottom:20px;">Dostępność nieprzeczytanych</h3>
+      <div style="display:flex;height:16px;border-radius:999px;overflow:hidden;margin-bottom:20px;">
+        <div style="width:44%;background:var(--clay);"></div>
+        <div style="width:22%;background:var(--sage);"></div>
+        <div style="width:17%;background:var(--ochre);"></div>
+        <div style="width:17%;background:#d8ccb4;"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:13px;">
+        <div style="display:flex;align-items:center;gap:10px;font-size:13.5px;"><span style="width:10px;height:10px;border-radius:3px;background:var(--clay);"></span>Posiadane <b style="margin-left:auto;">128</b></div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:13.5px;"><span style="width:10px;height:10px;border-radius:3px;background:var(--sage);"></span>Biblioteka <b style="margin-left:auto;">64</b></div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:13.5px;"><span style="width:10px;height:10px;border-radius:3px;background:var(--ochre);"></span>Vinted <b style="margin-left:auto;">49</b></div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--muted);"><span style="width:10px;height:10px;border-radius:3px;background:#d8ccb4;"></span>Brak śladu <b style="margin-left:auto;">49</b></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Publishers -->
+  <div class="card" style="padding:26px 28px;">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:20px;">
+      <h3 style="font-size:20px;">Ulubione oficyny</h3>
+      <span style="font-size:12px;color:var(--muted);">udział przeczytań</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <div style="display:flex;align-items:center;gap:16px;">
+        <span style="width:130px;font-size:14px;font-weight:600;">Mag</span>
+        <div class="bar" style="flex:1;"><div class="barfill" style="width:76%;background:linear-gradient(90deg,#c98a63,#c07a56);"></div></div>
+        <span style="width:64px;text-align:right;font-size:13px;color:var(--muted);">62 / 82</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;">
+        <span style="width:130px;font-size:14px;font-weight:600;">Rebis</span>
+        <div class="bar" style="flex:1;"><div class="barfill" style="width:54%;background:linear-gradient(90deg,#c98a63,#c07a56);"></div></div>
+        <span style="width:64px;text-align:right;font-size:13px;color:var(--muted);">31 / 57</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;">
+        <span style="width:130px;font-size:14px;font-weight:600;">Zysk i S-ka</span>
+        <div class="bar" style="flex:1;"><div class="barfill" style="width:100%;background:var(--sage);"></div></div>
+        <span style="width:64px;text-align:right;font-size:13px;color:var(--sage);font-weight:700;">komplet</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;">
+        <span style="width:130px;font-size:14px;font-weight:600;">Solaris</span>
+        <div class="bar" style="flex:1;"><div class="barfill" style="width:41%;background:linear-gradient(90deg,#c98a63,#c07a56);"></div></div>
+        <span style="width:64px;text-align:right;font-size:13px;color:var(--muted);">14 / 34</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>
