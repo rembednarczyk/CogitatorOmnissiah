@@ -1,9 +1,11 @@
 import React, { useState, useMemo, useDeferredValue, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Search, X, Loader2, ScrollText, AlertCircle } from "lucide-react";
+import { Search, X, Loader2, ScrollText, AlertCircle, ScanBarcode, CheckCircle2, XCircle } from "lucide-react";
 import { useBooks } from "../hooks/useBooks";
 import { matchBooks, buildSearchVocab, didYouMean, replaceLastToken } from "../utils/bookSearch";
 import { BookResultCard } from "./search/BookResultCard";
+import { ScanModal } from "./search/ScanModal";
+import { scanSupported, cleanScannedCode, matchIsbnInIndex } from "../utils/barcode";
 
 /** Max number of cards we render (DOM guard for an „empty" query = the whole set). */
 const RENDER_CAP = 150;
@@ -14,9 +16,50 @@ export const SearchSection: React.FC = () => {
   const deferredQuery = useDeferredValue(query);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Barcode scan: native BarcodeDetector is Android/Chrome only, so the button
+  // shows only where it works (the modal keeps a manual-ISBN fallback regardless).
+  const canScan = useMemo(() => scanSupported(), []);
+  const [scanOpen, setScanOpen] = useState(false);
+  const [scanResolving, setScanResolving] = useState(false);
+  // Outcome banner after a scan: exact row hit (B), ISBN-resolved title (A), or miss.
+  const [scanNotice, setScanNotice] = useState<{ kind: "exact" | "resolved" | "miss"; text: string } | null>(null);
+
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  // Turn a scanned/typed code into a search: first a direct row match by stored ISBN
+  // (variant B), else resolve the ISBN → title server-side and fuzzy-search it (variant A).
+  const handleScanDetect = async (rawCode: string) => {
+    setScanOpen(false);
+    setScanNotice(null);
+    const code = cleanScannedCode(rawCode);
+    if (!code) return;
+
+    const direct = matchIsbnInIndex(code, books ?? []);
+    if (direct) {
+      setQuery(direct.plTitle || direct.origTitle);
+      setScanNotice({ kind: "exact", text: `Trafienie w archiwum: „${direct.plTitle || direct.origTitle}"` });
+      return;
+    }
+
+    setScanResolving(true);
+    try {
+      const res = await fetch(`/api/isbn/${encodeURIComponent(code)}`);
+      if (res.ok) {
+        const book = await res.json();
+        setQuery(book.title || "");
+        setScanNotice({ kind: "resolved", text: `Rozpoznano przez ISBN: „${book.title}" — przeszukuję archiwum` });
+      } else {
+        setScanNotice({ kind: "miss", text: `Nie rozpoznano kodu ISBN ${code}. Spróbuj wpisać tytuł ręcznie.` });
+      }
+    } catch {
+      setScanNotice({ kind: "miss", text: "Błąd rozpoznawania ISBN — spróbuj ponownie lub wpisz tytuł ręcznie." });
+    } finally {
+      setScanResolving(false);
+      inputRef.current?.focus();
+    }
+  };
 
   const results = useMemo(() => matchBooks(deferredQuery, books ?? []), [deferredQuery, books]);
   const shown = results.slice(0, RENDER_CAP);
@@ -48,28 +91,65 @@ export const SearchSection: React.FC = () => {
       </p>
 
       {/* Search field */}
-      <div className="relative max-w-2xl mx-auto">
-        <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-cyan-400/50 pointer-events-none" />
-        <input
-          ref={inputRef}
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Wpisz fragment tytułu lub nazwisko autora…"
-          aria-label="Przeszukaj archiwum"
-          className="w-full pl-14 pr-12 py-4 text-sm bg-slate-950/60 border border-white/10 text-slate-200 rounded-2xl focus:outline-none focus:border-cyan-500/50 focus:ring-4 focus:ring-cyan-500/5 placeholder-slate-500 transition-all"
-        />
-        {query && (
-          <button
-            onClick={() => setQuery("")}
-            className="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-white/5 transition-colors"
-            title="Wyczyść"
-            aria-label="Wyczyść zapytanie"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        )}
+      <div className="max-w-2xl mx-auto space-y-3">
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-cyan-400/50 pointer-events-none" />
+            <input
+              ref={inputRef}
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Wpisz fragment tytułu lub nazwisko autora…"
+              aria-label="Przeszukaj archiwum"
+              className="w-full pl-14 pr-12 py-4 text-sm bg-slate-950/60 border border-white/10 text-slate-200 rounded-2xl focus:outline-none focus:border-cyan-500/50 focus:ring-4 focus:ring-cyan-500/5 placeholder-slate-500 transition-all"
+            />
+            {query && (
+              <button
+                onClick={() => setQuery("")}
+                className="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-white/5 transition-colors"
+                title="Wyczyść"
+                aria-label="Wyczyść zapytanie"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+          {canScan && (
+            <button
+              onClick={() => setScanOpen(true)}
+              disabled={scanResolving}
+              title="Skanuj kod kreskowy książki"
+              aria-label="Skanuj kod kreskowy"
+              className="shrink-0 px-4 rounded-2xl border border-cyan-500/30 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 hover:border-cyan-400/50 disabled:opacity-50 transition-all active:scale-95 flex items-center justify-center"
+            >
+              {scanResolving ? <Loader2 className="w-5 h-5 animate-spin" /> : <ScanBarcode className="w-5 h-5" />}
+            </button>
+          )}
+        </div>
+
+        {/* Scan outcome banner */}
+        <AnimatePresence>
+          {scanNotice && (
+            <motion.div
+              initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
+              className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-xs font-medium border ${
+                scanNotice.kind === "miss"
+                  ? "bg-red-500/10 border-red-500/30 text-red-300"
+                  : "bg-cyan-500/10 border-cyan-500/30 text-cyan-200"
+              }`}
+            >
+              {scanNotice.kind === "miss" ? <XCircle className="w-4 h-4 shrink-0" /> : <CheckCircle2 className="w-4 h-4 shrink-0" />}
+              <span className="flex-1">{scanNotice.text}</span>
+              <button onClick={() => setScanNotice(null)} className="p-0.5 opacity-60 hover:opacity-100" aria-label="Zamknij komunikat">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
+
+      <ScanModal open={scanOpen} onClose={() => setScanOpen(false)} onDetect={handleScanDetect} />
 
       {/* Counter */}
       {books && !loading && (
