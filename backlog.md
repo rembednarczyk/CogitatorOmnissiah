@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.54.2** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.54.3** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,15 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.54.3** — **Skan: świeży fetch omija też cache SERWERA (`/api/books?fresh=1`).** Diagnostyka
+  (`scan-debug`) potwierdziła: ISBN JEST zapisany, `kategoria=Nagroda`, `inScanIndex=true` → dane OK, problem
+  = świeżość/klient. `getBooks()` używał 5-min `booksCache` (cache:true); ręczny wpis w Notion NIE unieważnia
+  tego cache → apka podawała starą listę bez nowego ISBN. Poprzedni „świeży fetch" (1.54.1) omijał tylko cache
+  PRZEGLĄDARKI. Teraz `getBooks(fresh)` + `/api/books?fresh=1` (cache:!fresh) — skan pobiera dane prosto z
+  Notion. Jeśli mimo to pudłuje → stary bundle JS w apce (badge wersji `v{__APP_VERSION__}` w nagłówku pokaże;
+  < 1.54.x = twardy refresh). ODNOTOWANE (osobny problem): enrichment nadmuchał „Miecz dla króla" do 72 ISBN
+  (generyczny tytuł → title-only fallback zebrał masę niepowiązanych wydań) → ryzyko FAŁSZYWYCH trafień skanu
+  innych książek; do zawężenia (wymóg autora / bez title-only dla krótkich tytułów / limit) — patrz Otwarte pozycje.
 - **1.54.2** — **Diagnostyka skanu: `GET /api/scan-debug/:code`.** Skaner dalej „nie znajduje" mimo świeżego
   indeksu → endpoint do ustalenia PRZYCZYNY na żywo (Render). Read-only, bez cache: dla kodu zwraca
   `{ input, normalized, totalBooks, scanIndexSize, matchCount, matches: [{title, kategoria, isbns, inScanIndex}] }`
@@ -914,6 +923,12 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
     odłożony (v1 = Android/Chrome). (b) multi-edition ISBN — ✅ ROZWIĄZANE (1.52.0): zapisujemy WSZYSTKIE
     ISBN-y wydań (`isbns: string[]`), więc barcode dowolnej edycji trafia w wiersz (use case = „mam tę
     książkę", nie „tę edycję").
+  - **DO ZROBIENIA: zawężenie enrichmentu (pollution ISBN).** Generyczne tytuły („Miecz dla króla") przez
+    title-only fallback + 3 źródła × 2 tytuły × 20 wyników zbierają DZIESIĄTKI niepowiązanych wydań (realny
+    przypadek: 72 ISBN-y na 1 pozycji). Ryzyko: FAŁSZYWE trafienia skanu (kod obcej książki pasuje do naszej).
+    Kandydaci na fix: wymagać zgodności autora w wynikach (Google `inauthor`/OL `author_name`/BN autor),
+    NIE robić title-only fallback dla krótkich/generycznych tytułów, twardy limit ISBN-ów na pozycję,
+    filtr prefiksu (preferuj 978-83 dla polskich). Do przemyślenia z użytkownikiem.
 
 - **Vinted znowu zablokował skaner — alternatywy w zanadrzu** — NOTATKA (Vinted ubił skan z IP Render/datacenter).
   Co JUŻ mamy (obrona pasywna): throttle 3–5 s + jitter na każdej ścieżce, pula User-Agent (rotacja,

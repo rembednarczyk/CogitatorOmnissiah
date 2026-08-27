@@ -42,7 +42,8 @@ export const SearchSection: React.FC = () => {
       // so the cached list can be stale exactly for a just-enriched book.
       let index = books ?? [];
       try {
-        const fresh = await fetch(`/api/books?t=${Date.now()}`);
+        // fresh=1 bypasses the server's 5-min cache too, so a just-added ISBN is visible.
+        const fresh = await fetch(`/api/books?fresh=1&t=${Date.now()}`);
         if (fresh.ok) { index = await fresh.json(); setBooks(index); }
       } catch {
         // Network hiccup — fall back to the in-memory index.

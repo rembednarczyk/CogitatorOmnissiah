@@ -19,7 +19,10 @@ export const getStats = async (req: Request, res: Response) => {
 
 export const getBooks = async (req: Request, res: Response) => {
   try {
-    const books = await syncManager.getBooks();
+    // `fresh=1` bypasses the 5-min server cache — used by the barcode scan so a
+    // just-enriched (or manually-edited) ISBN is visible immediately.
+    const fresh = req.query.fresh === "1" || req.query.fresh === "true";
+    const books = await syncManager.getBooks(fresh);
     res.json(books);
   } catch (error: any) {
     console.error("Books Error:", error);
