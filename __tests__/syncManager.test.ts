@@ -163,6 +163,23 @@ describe("GET /api/isbn/:code", () => {
   });
 });
 
+describe("GET /api/scan-debug/:code", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    process.env.NOTION_API_KEY = "test-key";
+    process.env.NOTION_DATABASE_ID = "test-db";
+  });
+
+  it("returns the diagnostic payload for a scanned code", async () => {
+    const payload = { input: "9788375900019", normalized: "9788375900019", totalBooks: 1, scanIndexSize: 1, matchCount: 1, matches: [{ title: "Miecz dla Króla", kategoria: "Nagroda", isbns: ["9788375900019"], inScanIndex: true }] };
+    const spy = vi.spyOn(syncManager, "scanDebug").mockResolvedValue(payload as any);
+    const res = await request(app).get("/api/scan-debug/9788375900019");
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(payload);
+    expect(spy).toHaveBeenCalledWith("9788375900019");
+  });
+});
+
 describe("POST /api/mark-as-read", () => {
   beforeEach(() => {
     vi.restoreAllMocks();

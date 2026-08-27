@@ -18,6 +18,8 @@ import { IsbnEnrichService } from "./services/isbnEnrichService";
 import { aggregateCycleRows } from "./services/cycleRows";
 import { lookupIsbn } from "./services/isbnLookupService";
 import { toSearchIndex } from "./services/bookSearchIndex";
+import { isAwardBook } from "./services/bookCategory";
+import { normalizeIsbn } from "./services/isbn";
 import { ConfigService } from "./services/configService";
 import { createLogger, classifyHttpError } from "./logger";
 import { SyncEvent } from "./src/types";
@@ -120,6 +122,34 @@ class SyncManager {
   async getBooks() {
     const books = await this.notion.getBooksForStats(undefined, undefined, { cache: true });
     return toSearchIndex(books);
+  }
+
+  /**
+   * Read-only diagnostic for the barcode scan: for a given code, report exactly what the
+   * server sees — whether the ISBN is stored on any row (award or cycle volume), on which
+   * book, its category, and whether that row is in the award-only Skryptorium index (the
+   * only rows a scan can match). Bypasses the cache so it reflects Notion right now.
+   */
+  async scanDebug(rawCode: string) {
+    const normalized = normalizeIsbn(rawCode);
+    const target = (normalized || rawCode).replace(/\D/g, "");
+    const all = await this.notion.getBooksForStats(undefined, undefined, { cache: false });
+    const matches = all
+      .filter((b) => (b.isbns || []).some((i) => i.replace(/\D/g, "") === target))
+      .map((b) => ({
+        title: b.plTitle || b.origTitle || b.id,
+        kategoria: b.kategoria || "Nagroda",
+        isbns: b.isbns || [],
+        inScanIndex: isAwardBook(b),
+      }));
+    return {
+      input: rawCode,
+      normalized,
+      totalBooks: all.length,
+      scanIndexSize: all.filter(isAwardBook).length,
+      matchCount: matches.length,
+      matches,
+    };
   }
 
   async getNotionSchema() {

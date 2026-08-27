@@ -335,6 +335,17 @@ export const getIsbn = async (req: Request, res: Response) => {
   }
 };
 
+export const getScanDebug = async (req: Request, res: Response) => {
+  const code = typeof req.params.code === "string" ? req.params.code : "";
+  try {
+    const result = await syncManager.scanDebug(code);
+    res.json(result);
+  } catch (error: any) {
+    log.error("Scan debug error", { code, message: error?.message });
+    res.status(500).json({ error: error.message || "Błąd diagnostyki skanu." });
+  }
+};
+
 export const getCyclesHarvest = async (req: Request, res: Response) => {
   try {
     const fresh = req.query.fresh === "1" || req.query.fresh === "true";
