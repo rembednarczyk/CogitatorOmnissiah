@@ -65,7 +65,7 @@ export const ConfigSection: React.FC = () => {
     return (
       <div className="glass-card rounded-3xl p-16 flex items-center justify-center gap-3 text-slate-400">
         <Loader2 className="w-5 h-5 animate-spin text-cyan-400" />
-        <span className="text-sm uppercase tracking-widest font-bold">Wczytywanie kalibracji Cogitatora...</span>
+        <span className="text-sm uppercase tracking-widest font-bold">Wczytywanie ustawień...</span>
       </div>
     );
   }
@@ -90,10 +90,10 @@ export const ConfigSection: React.FC = () => {
         <div className="flex-1">
           <h2 className="text-xl font-bold font-display uppercase tracking-widest text-cyan-400 flex items-center gap-3">
             <Wrench className="w-5 h-5" />
-            Sanktuarium Kalibracji
+            Ustawienia
           </h2>
           <p className="text-xs text-slate-400 mt-1">
-            Knoby Machine Spirit. Wartości poza zakresem są przycinane; zapis trafia do Notion (opis kolumny <span className="font-mono text-cyan-300/80">AppConfig</span>) i przeżywa redeploy.
+            Ustawienia aplikacji. Wartości poza zakresem są przycinane; zapis trafia do Notion (opis kolumny <span className="font-mono text-cyan-300/80">AppConfig</span>) i przeżywa redeploy.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -124,7 +124,7 @@ export const ConfigSection: React.FC = () => {
       )}
 
       {/* Vinted */}
-      <SectionCard icon={<ShoppingCart className="w-4 h-4" />} title="Skaner Vinted" accent="text-rose-400">
+      <SectionCard icon={<ShoppingCart className="w-4 h-4" />} title="Rynek (Vinted)" accent="text-rose-400">
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <NumberField label={'Okno „Kontynuuj” (h)'} hint={'Pomiń książki skanowane w ostatnich N godzinach.'} value={draft.vinted.resumeHours} onChange={(v) => upd("vinted", { resumeHours: v })} />
           <NumberField label="Odstęp min. (ms)" hint="Minimalna przerwa między żądaniami." value={draft.vinted.throttleMinMs} onChange={(v) => upd("vinted", { throttleMinMs: v })} />
@@ -141,7 +141,7 @@ export const ConfigSection: React.FC = () => {
               <option value="relevance">Trafność</option>
             </select>
           </Field>
-          <NumberField label="Limit sprzedawców / przebieg" hint={'0 = bez limitu (rytuał „Ustal sprzedawców”).'} value={draft.vinted.sellerResolveCap} onChange={(v) => upd("vinted", { sellerResolveCap: v })} />
+          <NumberField label="Limit sprzedawców / przebieg" hint={'0 = bez limitu (operacja „Ustal sprzedawców”).'} value={draft.vinted.sellerResolveCap} onChange={(v) => upd("vinted", { sellerResolveCap: v })} />
         </div>
         <ListField label="Źródła wykluczające ze skanu" hint={'Tag „Źródło” = książka pomijana. Jeden tag na linię.'}
           value={draft.vinted.excludedSources} onChange={(v) => upd("vinted", { excludedSources: v })} />
@@ -160,7 +160,7 @@ export const ConfigSection: React.FC = () => {
       </SectionCard>
 
       {/* UA pool */}
-      <SectionCard icon={<Globe className="w-4 h-4" />} title="Kamuflaż noosferyczny (User-Agent)" accent="text-cyan-400">
+      <SectionCard icon={<Globe className="w-4 h-4" />} title="Przeglądarka (User-Agent)" accent="text-cyan-400">
         <ListField label="Pula User-Agentów" rows={7}
           hint={'Rotacja per żądanie (Vinted + biblioteka). Odświeżaj co ~kwartał do bieżących wersji przeglądarek — przestarzałe UA ściągają wykrycie bota. Jeden wpis na linię.'}
           value={draft.scraping.userAgents} onChange={(v) => upd("scraping", { userAgents: v })} />
@@ -190,7 +190,7 @@ export const ConfigSection: React.FC = () => {
       </SectionCard>
 
       {/* Awards */}
-      <SectionCard icon={<Trophy className="w-4 h-4" />} title="Strony nagród (Archiwum Encyklopedii)" accent="text-amber-400">
+      <SectionCard icon={<Trophy className="w-4 h-4" />} title="Strony nagród (Encyklopedia Fantastyki)" accent="text-amber-400">
         <div className="space-y-3">
           {draft.sync.awards.map((a, i) => (
             <div key={i} className="grid grid-cols-[1fr_1.6fr_auto] gap-2 items-end">
@@ -206,7 +206,7 @@ export const ConfigSection: React.FC = () => {
             className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-amber-300 hover:text-amber-200 transition-colors">
             <Plus className="w-4 h-4" /> Dodaj nagrodę
           </button>
-          <p className={hintCls}>Lista zasila dropdown „Liturgie Synchronizacji", pełną synchronizację („Wszystkie Nagrody") i diagnostykę.</p>
+          <p className={hintCls}>Lista zasila dropdown „Synchronizacja", pełną synchronizację („Wszystkie Nagrody") i diagnostykę.</p>
         </div>
       </SectionCard>
 

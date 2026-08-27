@@ -24,7 +24,7 @@ export const VintedBundleList: React.FC<Props> = ({ results, sellers, usingStore
 
   if (bundles.length === 0) {
     return usingStored ? (
-      <p className="text-xs text-slate-500 italic px-2">Żaden sprzedawca nie ma ≥2 książek z listy — brak paczek do złożenia. (Uzupełnij sprzedawców rytuałem „Identyfikacji Handlarzy".)</p>
+      <p className="text-xs text-slate-500 italic px-2">Żaden sprzedawca nie ma ≥2 książek z listy — brak paczek do złożenia. (Uzupełnij sprzedawców operacją „Identyfikacja sprzedawców".)</p>
     ) : null;
   }
 

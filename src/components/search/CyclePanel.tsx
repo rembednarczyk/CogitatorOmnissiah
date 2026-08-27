@@ -87,7 +87,7 @@ export const CyclePanel: React.FC<Props> = ({ title, author, anchor, onClose }) 
           {loading && (
             <div className="flex items-center justify-center gap-2.5 py-8 text-slate-400">
               <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
-              <span className="text-xs uppercase tracking-widest font-bold">Odpytywanie Archiwum Cyklu...</span>
+              <span className="text-xs uppercase tracking-widest font-bold">Wczytywanie cyklu...</span>
             </div>
           )}
 

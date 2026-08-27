@@ -65,7 +65,7 @@ export const VintedScanControls: React.FC<Props> = ({
         icon={isChecking ? Loader2 : Search}
         animate={isChecking ? "spin" : undefined}
         disabled={!isChecking && isResolving}
-        title={isChecking ? "Przerwij Rytuał Skanowania" : "Rytuał Skanowania Vinted"}
+        title={isChecking ? "Przerwij skanowanie" : "Skanowanie Vinted"}
         subtitle={isChecking ? "Zatrzymanie aktywnego przeszukania katalogu" : "Przeszukanie katalogu Vinted — język polski, od 2 PLN"}
         onClick={onScanToggle}
       />
@@ -75,7 +75,7 @@ export const VintedScanControls: React.FC<Props> = ({
           color={isResolving ? "rose" : "emerald"}
           icon={isResolving ? Loader2 : Database}
           animate={isResolving ? "spin" : undefined}
-          title={isResolving ? "Przerwij Identyfikację" : "Rytuał Identyfikacji Handlarzy"}
+          title={isResolving ? "Przerwij identyfikację" : "Identyfikacja sprzedawców"}
           subtitle={isResolving ? "Zatrzymanie dociągania sprzedawców" : "Dociągnięcie sprzedawców do bazy — wznawialny"}
           onClick={onResolveToggle}
         />
@@ -83,14 +83,14 @@ export const VintedScanControls: React.FC<Props> = ({
 
       {!isChecking && !isResolving && (
         usingStored ? (
-          <RitualButton color="indigo" icon={Trash2} title="Rozwiej Przywołanie" subtitle="Powrót do wyników bieżącego skanu" onClick={onClearStored} />
+          <RitualButton color="indigo" icon={Trash2} title="Wyczyść" subtitle="Powrót do wyników bieżącego skanu" onClick={onClearStored} />
         ) : (
           <RitualButton
             color="indigo"
             icon={isLoadingStored ? Loader2 : HardDriveDownload}
             animate={isLoadingStored ? "spin" : undefined}
             disabled={isLoadingStored}
-            title="Rytuał Przywołania z Archiwum"
+            title="Wczytaj z bazy"
             subtitle="Kafelki i paczki ze składowanych danych — bez skanu"
             onClick={onLoadStored}
           />

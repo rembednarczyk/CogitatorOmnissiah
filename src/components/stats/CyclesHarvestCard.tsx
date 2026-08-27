@@ -47,7 +47,7 @@ export const CyclesHarvestCard: React.FC<{ refreshSignal?: number }> = ({ refres
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-bold font-display uppercase tracking-widest text-amber-400 flex items-center gap-2">
           <Layers className="w-4 h-4" />
-          Archiwum Cykli
+          Cykle
         </h3>
         {view && view.totalCycles > 0 && (
           <span className="text-[10px] font-bold tabular-nums text-slate-500 uppercase tracking-wider">{view.totalCycles} cykli</span>
@@ -71,7 +71,7 @@ export const CyclesHarvestCard: React.FC<{ refreshSignal?: number }> = ({ refres
 
       {view && !loading && view.totalCycles === 0 && (
         <p className="text-slate-400 text-sm italic text-center py-8">
-          Brak zebranych cykli. Uruchom <span className="text-amber-300 not-italic font-bold">Rytuał Żniw Cykli</span> w Liturgiach, aby zebrać sąsiednie tomy z Encyklopedii.
+          Brak zebranych cykli. Uruchom <span className="text-amber-300 not-italic font-bold">Zbieranie tomów cykli</span> w Synchronizacji, aby zebrać sąsiednie tomy z Encyklopedii.
         </p>
       )}
 

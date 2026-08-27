@@ -36,12 +36,12 @@ export const SyncAwards: React.FC<SyncAwardsProps> = ({
     >
       <h2 className="text-xl font-bold font-display flex items-center gap-3 mb-6 uppercase tracking-widest text-purple-400">
         <BookOpen className="w-5 h-5" />
-        Rytuał Synchronizacji Nagród
+        Synchronizacja nagród
       </h2>
       
       <div className="space-y-6 flex-1">
         <div className="space-y-2">
-          <label htmlFor="award-select" className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Wybierz Nagrodę do Synchronizacji</label>
+          <label htmlFor="award-select" className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Wybierz nagrodę do synchronizacji</label>
           <select 
             id="award-select"
             value={syncState.awardName || ""} 
@@ -58,7 +58,7 @@ export const SyncAwards: React.FC<SyncAwardsProps> = ({
 
         {syncState.awardName !== "Wszystkie Nagrody" && (
           <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Tytuł Strony w Archiwum Encyklopedii</label>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Tytuł strony w Encyklopedii Fantastyki</label>
             <input 
               type="text" 
               value={syncState.pageTitle || ""} 
@@ -77,7 +77,7 @@ export const SyncAwards: React.FC<SyncAwardsProps> = ({
             className="w-full flex items-center justify-center gap-2 px-6 py-3.5 bg-gradient-to-r from-cyan-600 to-blue-700 hover:from-cyan-500 hover:to-blue-600 text-white rounded-2xl font-bold shadow-xl shadow-cyan-500/20 hover:-translate-y-1 transition-all active:scale-95 disabled:opacity-50 disabled:hover:translate-y-0"
           >
             {syncState.loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <RefreshCw className="w-5 h-5" />}
-            Inicjuj Synchronizację
+            Synchronizuj
           </button>
 
           <button 
@@ -87,9 +87,9 @@ export const SyncAwards: React.FC<SyncAwardsProps> = ({
           >
             <div className="flex items-center gap-2">
               <RefreshCw className={`w-4 h-4 ${isAnySyncLoading ? 'animate-spin' : ''}`} />
-              Rytuał Pełnej Synchronizacji
+              Pełna synchronizacja
             </div>
-            <span className="text-[10px] text-slate-500 uppercase tracking-widest font-medium">Sekwencja 1-7 (Schemat → Puryfikacja → Nagrody → Cykle → Wydania → Serie → Liczby)</span>
+            <span className="text-[10px] text-slate-500 uppercase tracking-widest font-medium">Sekwencja 1–7 (Schemat → Porządkowanie → Nagrody → Cykle → Wydania → Serie → Liczby)</span>
           </button>
         </div>
 

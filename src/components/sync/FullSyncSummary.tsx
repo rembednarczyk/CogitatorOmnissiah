@@ -18,8 +18,8 @@ export const FullSyncSummary: React.FC<{ results: any[]; onClose: () => void }> 
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-8 rounded-3xl border-cyan-500/30 bg-cyan-500/5">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h3 className="text-xl font-bold font-display text-cyan-400 uppercase tracking-widest">Podsumowanie Wielkiego Rytuału</h3>
-          <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mt-1">Pełna Synchronizacja Archiwów Zakończona</p>
+          <h3 className="text-xl font-bold font-display text-cyan-400 uppercase tracking-widest">Podsumowanie synchronizacji</h3>
+          <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mt-1">Pełna synchronizacja zakończona</p>
         </div>
         <button onClick={onClose} className="text-slate-500 hover:text-slate-200 transition-colors" title="Zamknij podsumowanie">
           <XCircle className="w-6 h-6" />

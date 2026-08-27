@@ -34,7 +34,7 @@ export const SchemaSection: React.FC<SchemaSectionProps> = ({
         <div className="flex items-center gap-3">
           <Database className="w-5 h-5 text-cyan-400" />
           <h2 className="text-xl font-bold font-display uppercase tracking-widest text-cyan-400">
-            Katalog Bazy (Schemat Archiwalny)
+            Schemat bazy Notion
           </h2>
         </div>
         <button 
@@ -53,7 +53,7 @@ export const SchemaSection: React.FC<SchemaSectionProps> = ({
             exit={{ opacity: 0, height: 0 }}
             className="overflow-hidden"
           >
-            <p className="text-slate-400 text-sm mb-6">Edytuj strukturę danych w świętym rejestrze Notion.</p>
+            <p className="text-slate-400 text-sm mb-6">Edytuj strukturę danych w bazie Notion.</p>
             
             <button 
               onClick={fetchSchema}
@@ -61,7 +61,7 @@ export const SchemaSection: React.FC<SchemaSectionProps> = ({
               className="flex items-center gap-2 px-6 py-3 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 rounded-2xl font-bold transition-all hover:-translate-y-1 shadow-xl mb-8 disabled:opacity-50"
             >
               <RefreshCw className={`w-5 h-5 ${schemaLoading ? 'animate-spin' : ''}`} />
-              {schemaLoading ? "Przeszukiwanie Archiwów..." : "Odśwież Katalog z Bazy Notion"}
+              {schemaLoading ? "Wczytywanie..." : "Odśwież schemat z bazy Notion"}
             </button>
 
             {schemaError && (

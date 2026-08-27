@@ -33,11 +33,11 @@ export default function App() {
   }, []);
 
   const tabs: TabDef[] = [
-    { id: 'stats', label: 'Statystyki Archiwum', icon: <Database className="w-5 h-5" />, activeClass: 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.2)]' },
+    { id: 'stats', label: 'Kolekcja', icon: <Database className="w-5 h-5" />, activeClass: 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.2)]' },
     { id: 'shelf', label: 'Regał', icon: <Library className="w-5 h-5" />, activeClass: 'bg-amber-500/20 border-amber-500/50 text-amber-300 shadow-[0_0_20px_rgba(251,191,36,0.2)]' },
-    { id: 'search', label: 'Skryptorium', icon: <ScrollText className="w-5 h-5" />, activeClass: 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.2)]' },
-    { id: 'config', label: 'Liturgie Synchronizacji', icon: <Cog className={`w-5 h-5 ${isAnySyncLoading ? 'animate-spin text-purple-400' : ''}`} />, activeClass: 'bg-purple-500/20 border-purple-500/50 text-purple-400 shadow-[0_0_20px_rgba(168,85,247,0.2)]' },
-    { id: 'vinted', label: 'Skaner Vinted', icon: <ShoppingCart className="w-5 h-5" />, activeClass: 'bg-rose-500/20 border-rose-500/50 text-rose-400 shadow-[0_0_20px_rgba(244,63,94,0.2)]' },
+    { id: 'search', label: 'Katalog', icon: <ScrollText className="w-5 h-5" />, activeClass: 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.2)]' },
+    { id: 'config', label: 'Synchronizacja', icon: <Cog className={`w-5 h-5 ${isAnySyncLoading ? 'animate-spin text-purple-400' : ''}`} />, activeClass: 'bg-purple-500/20 border-purple-500/50 text-purple-400 shadow-[0_0_20px_rgba(168,85,247,0.2)]' },
+    { id: 'vinted', label: 'Rynek', icon: <ShoppingCart className="w-5 h-5" />, activeClass: 'bg-rose-500/20 border-rose-500/50 text-rose-400 shadow-[0_0_20px_rgba(244,63,94,0.2)]' },
   ];
 
   return (
@@ -59,8 +59,8 @@ export default function App() {
             className={`p-5 bg-slate-900/80 rounded-2xl border shadow-2xl backdrop-blur-xl cursor-pointer transition-colors ${
               activeTab === 'admin' ? 'border-amber-500/50 shadow-amber-500/20' : 'border-cyan-500/30 shadow-cyan-500/20'
             }`}
-            title="Sanktuarium Kalibracji (konfiguracja)"
-            aria-label="Otwórz konfigurację"
+            title="Ustawienia"
+            aria-label="Otwórz ustawienia"
           >
             <Database className={`w-12 h-12 ${activeTab === 'admin' ? 'text-amber-400' : 'text-cyan-400'}`} />
           </motion.button>
@@ -69,15 +69,15 @@ export default function App() {
               <span className={theme === 'light'
                 ? "bg-clip-text text-transparent bg-gradient-to-r from-[#c98a63] to-[#a9603d]"
                 : "bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 drop-shadow-[0_0_20px_rgba(34,211,238,0.3)]"}>
-                COGITATOR OMNISSIAH
+                LIBREM
               </span>
-              <span className="text-[10px] font-mono font-bold tracking-widest text-cyan-400/70 bg-cyan-500/10 border border-cyan-500/20 rounded-full px-2 py-0.5 self-center" title="Wersja rytuału">
+              <span className="text-[10px] font-mono font-bold tracking-widest text-cyan-400/70 bg-cyan-500/10 border border-cyan-500/20 rounded-full px-2 py-0.5 self-center" title="Wersja aplikacji">
                 v{__APP_VERSION__}
               </span>
             </h1>
             <p className="text-slate-400 text-lg font-medium tracking-wide uppercase flex items-center justify-center md:justify-start gap-2">
               <Terminal className="w-4 h-4 text-purple-500" />
-              Protokół Synchronizacji Danych Archiwalnych
+              Twoja kolekcja nagradzanej fantastyki
             </p>
           </div>
 

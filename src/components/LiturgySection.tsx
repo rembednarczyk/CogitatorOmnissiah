@@ -36,7 +36,7 @@ export const LiturgySection: React.FC<{ sm: ReturnType<typeof useSyncManager> }>
         <div className="flex items-center gap-4">
           <Cog className="w-6 h-6 text-purple-400" />
           <h2 className="text-xl font-bold font-display uppercase tracking-[0.4em] text-purple-100/90 whitespace-nowrap">
-            Liturgie Synchronizacji
+            Synchronizacja
           </h2>
         </div>
         <div className="h-px flex-1 bg-gradient-to-r from-transparent via-purple-500/20 to-transparent"></div>

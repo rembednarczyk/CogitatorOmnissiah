@@ -19,7 +19,7 @@ export function useBooks(all = false) {
     try {
       // `all=1` (Skryptorium/scan) includes cycle volumes; without it (Regał) award-only.
       const res = await fetch(`/api/books?${all ? "all=1&" : ""}t=${Date.now()}`);
-      if (!res.ok) throw new Error("Błąd podczas pobierania rekordów archiwum");
+      if (!res.ok) throw new Error("Błąd podczas pobierania książek");
       const data = await res.json();
       setBooks(data);
     } catch (err: any) {

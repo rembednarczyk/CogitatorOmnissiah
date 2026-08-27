@@ -87,13 +87,13 @@ export function useSyncManager() {
   // `abortOnFail` steps abort the whole thing on error and drop results; the last one
   // (Lp) only appends its result if present, and always closes the summary.
   const FULL_SYNC_STEPS: { sync: any; name: string; color: string; label: string; params?: any; abortOnFail: boolean }[] = [
-    { sync: schemaSync, name: "Schemat", color: "emerald", label: "Krok 1/7: Rytuał Inicjacji Schematu...", abortOnFail: true },
-    { sync: purifySync, name: "Puryfikacja", color: "amber", label: "Krok 2/7: Rytuał Puryfikacji...", abortOnFail: true },
-    { sync, name: "Nagrody", color: "cyan", label: "Krok 3/7: Synchronizacja Nagród...", params: { awardName: "Wszystkie Nagrody", syncAll: true }, abortOnFail: true },
-    { sync: cyclesSync, name: "Cykle", color: "blue", label: "Krok 4/7: Rytuał Oznaczania Cykli...", abortOnFail: true },
-    { sync: publisherSync, name: "Wydawcy", color: "rose", label: "Krok 5/7: Rytuał Wydania...", abortOnFail: true },
-    { sync: seriesSync, name: "Serie", color: "indigo", label: "Krok 6/7: Rytuał Seryjny...", abortOnFail: true },
-    { sync: lpSync, name: "Lubimy Czytać", color: "purple", label: "Krok 7/7: Rytuał Rekonstrukcji Liczb...", abortOnFail: false },
+    { sync: schemaSync, name: "Schemat", color: "emerald", label: "Krok 1/7: Inicjacja schematu...", abortOnFail: true },
+    { sync: purifySync, name: "Porządkowanie", color: "amber", label: "Krok 2/7: Porządkowanie tytułów...", abortOnFail: true },
+    { sync, name: "Nagrody", color: "cyan", label: "Krok 3/7: Synchronizacja nagród...", params: { awardName: "Wszystkie Nagrody", syncAll: true }, abortOnFail: true },
+    { sync: cyclesSync, name: "Cykle", color: "blue", label: "Krok 4/7: Oznaczanie cykli...", abortOnFail: true },
+    { sync: publisherSync, name: "Wydawcy", color: "rose", label: "Krok 5/7: Wydawcy...", abortOnFail: true },
+    { sync: seriesSync, name: "Serie", color: "indigo", label: "Krok 6/7: Serie...", abortOnFail: true },
+    { sync: lpSync, name: "Lubimy Czytać", color: "purple", label: "Krok 7/7: Rekonstrukcja numeracji...", abortOnFail: false },
   ];
 
   const handleFullSync = async () => {

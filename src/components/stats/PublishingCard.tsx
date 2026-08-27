@@ -55,7 +55,7 @@ export const PublishingCard: React.FC<{ publishers: PublisherStat[]; series: Ser
       <div className="space-y-3">
         <h4 className="text-[11px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-1.5"><Building2 className="w-3 h-3" /> Top oficyny</h4>
         {publishers.length === 0 ? (
-          <p className="text-slate-500 text-xs italic">Brak danych — uruchom Rytuał Wydania.</p>
+          <p className="text-slate-500 text-xs italic">Brak danych — uruchom „Wydawcy".</p>
         ) : (
           <div className="space-y-2.5 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
             {publishers.slice(0, 8).map((p) => barRow(p.name, p.read, p.count, `${p.read}/${p.count} przecz.`, p.read >= p.count ? "bg-emerald-500" : "bg-indigo-500"))}
@@ -67,7 +67,7 @@ export const PublishingCard: React.FC<{ publishers: PublisherStat[]; series: Ser
       <div className="space-y-3">
         <h4 className="text-[11px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-1.5"><Layers className="w-3 h-3" /> Serie (posiadane/total)</h4>
         {series.length === 0 ? (
-          <p className="text-slate-500 text-xs italic">Brak danych — uruchom Rytuał Seryjny.</p>
+          <p className="text-slate-500 text-xs italic">Brak danych — uruchom „Serie".</p>
         ) : (
           <div className="space-y-2.5 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
             {series.slice(0, 8).map((s) => barRow(s.name, s.owned, s.count, `${s.owned}/${s.count}${s.owned < s.count ? " · luki" : " · komplet"}`, s.owned >= s.count ? "bg-emerald-500" : "bg-blue-500"))}

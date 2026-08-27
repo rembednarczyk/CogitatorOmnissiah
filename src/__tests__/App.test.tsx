@@ -81,21 +81,21 @@ describe('App Main Flows', () => {
     });
   });
 
-  it('renders Status Ducha Maszyny and award links', async () => {
+  it('renders Status połączeń and award links', async () => {
     render(<App />);
     
-    const configTabButton = screen.getByRole('button', { name: /Liturgie Synchronizacji/i });
+    const configTabButton = screen.getByRole('button', { name: /^Synchronizacja$/i });
     await act(async () => {
       fireEvent.click(configTabButton);
     });
     
     await waitFor(() => {
-      expect(screen.getByText(/Status Ducha Maszyny/i)).toBeInTheDocument();
+      expect(screen.getByText(/Status połączeń/i)).toBeInTheDocument();
     });
     
     await waitFor(() => {
-      expect(screen.getByText(/Pieczęć Przyłożona/i)).toBeInTheDocument();
-      expect(screen.getByText(/Baza Zlokalizowana/i)).toBeInTheDocument();
+      expect(screen.getByText(/Połączono/i)).toBeInTheDocument();
+      expect(screen.getByText(/Baza znaleziona/i)).toBeInTheDocument();
     });
 
     // Check award links
@@ -107,16 +107,16 @@ describe('App Main Flows', () => {
   it('shows all award options in the dropdown', async () => {
     render(<App />);
     
-    const configTabButton = screen.getByRole('button', { name: /Liturgie Synchronizacji/i });
+    const configTabButton = screen.getByRole('button', { name: /^Synchronizacja$/i });
     await act(async () => {
       fireEvent.click(configTabButton);
     });
     
     await waitFor(() => {
-      expect(screen.getByText(/Pieczęć Przyłożona/i)).toBeInTheDocument();
+      expect(screen.getByText(/Połączono/i)).toBeInTheDocument();
     });
 
-    const select = screen.getByLabelText(/Wybierz Nagrodę do Synchronizacji/i) as HTMLSelectElement;
+    const select = screen.getByLabelText(/Wybierz nagrodę do synchronizacji/i) as HTMLSelectElement;
     expect(select).toBeInTheDocument();
     
     const options = Array.from(select.options).map(o => o.value);
@@ -129,16 +129,16 @@ describe('App Main Flows', () => {
   it('handles single award sync flow (UI state)', async () => {
     render(<App />);
     
-    const configTabButton = screen.getByRole('button', { name: /Liturgie Synchronizacji/i });
+    const configTabButton = screen.getByRole('button', { name: /^Synchronizacja$/i });
     await act(async () => {
       fireEvent.click(configTabButton);
     });
     
     await waitFor(() => {
-      expect(screen.getByText(/Pieczęć Przyłożona/i)).toBeInTheDocument();
+      expect(screen.getByText(/Połączono/i)).toBeInTheDocument();
     });
 
-    const syncButton = screen.getByText(/Inicjuj Synchronizację/i);
+    const syncButton = screen.getByText(/Synchronizuj/i);
     fireEvent.click(syncButton);
     
     // Should show loading state (mocking SSE is complex, so we check if it starts)
@@ -148,19 +148,19 @@ describe('App Main Flows', () => {
   it('handles "Wszystkie Nagrody" sync flow', async () => {
     render(<App />);
     
-    const configTabButton = screen.getByRole('button', { name: /Liturgie Synchronizacji/i });
+    const configTabButton = screen.getByRole('button', { name: /^Synchronizacja$/i });
     await act(async () => {
       fireEvent.click(configTabButton);
     });
     
     await waitFor(() => {
-      expect(screen.getByText(/Pieczęć Przyłożona/i)).toBeInTheDocument();
+      expect(screen.getByText(/Połączono/i)).toBeInTheDocument();
     });
 
-    const select = screen.getByLabelText(/Wybierz Nagrodę do Synchronizacji/i);
+    const select = screen.getByLabelText(/Wybierz nagrodę do synchronizacji/i);
     fireEvent.change(select, { target: { value: 'Wszystkie Nagrody' } });
     
-    const syncButton = screen.getByText(/Inicjuj Synchronizację/i);
+    const syncButton = screen.getByText(/Synchronizuj/i);
     fireEvent.click(syncButton);
     
     expect(mockFetch).toHaveBeenCalledWith('/api/sync', expect.objectContaining({
@@ -176,18 +176,18 @@ describe('App Main Flows', () => {
     (global as any).resetLastStreamController();
     render(<App />);
     
-    const configTabButton = screen.getByRole('button', { name: /Liturgie Synchronizacji/i });
+    const configTabButton = screen.getByRole('button', { name: /^Synchronizacja$/i });
     await act(async () => {
       fireEvent.click(configTabButton);
     });
     
-    const select = screen.getByLabelText(/Wybierz Nagrodę do Synchronizacji/i) as HTMLSelectElement;
+    const select = screen.getByLabelText(/Wybierz nagrodę do synchronizacji/i) as HTMLSelectElement;
     await act(async () => {
       fireEvent.change(select, { target: { value: 'Nagroda Hugo' } });
     });
     expect(select.value).toBe('Nagroda Hugo');
 
-    const syncButton = screen.getByText(/Inicjuj Synchronizację/i);
+    const syncButton = screen.getByText(/Synchronizuj/i);
     expect(syncButton).not.toBeDisabled();
 
     await act(async () => {
@@ -231,7 +231,7 @@ describe('App Main Flows', () => {
 
     // Check for completion summary
     await waitFor(() => {
-      expect(screen.getByText(/Zapisy Archiwisty Adeptus/i)).toBeInTheDocument();
+      expect(screen.getByText(/Zapisane zmiany/i)).toBeInTheDocument();
       expect(screen.getByText(/Dodano/i)).toBeInTheDocument();
       expect(screen.getByText('5')).toBeInTheDocument();
       expect(screen.getByText(/Zaktualizowano/i)).toBeInTheDocument();
@@ -244,33 +244,33 @@ describe('App Main Flows', () => {
     });
   });
 
-  it('renders other tools: Rytuał Wydania, Rytuał Oznaczania Cykli, Rytuał Rekonstrukcji Liczb', async () => {
+  it('renders other tools: Wydawcy, Oznaczanie cykli, Rekonstrukcja numeracji', async () => {
     render(<App />);
     
-    const configTabButton = screen.getByRole('button', { name: /Liturgie Synchronizacji/i });
+    const configTabButton = screen.getByRole('button', { name: /^Synchronizacja$/i });
     await act(async () => {
       fireEvent.click(configTabButton);
     });
     
     await waitFor(() => {
-      expect(screen.getByText(/Pieczęć Przyłożona/i)).toBeInTheDocument();
+      expect(screen.getByText(/Połączono/i)).toBeInTheDocument();
     });
 
-    expect(screen.getByText(/Rytuał Wydania/i)).toBeInTheDocument();
-    expect(screen.getByText(/Rytuał Oznaczania Cykli/i)).toBeInTheDocument();
-    expect(screen.getByText(/Rytuał Rekonstrukcji Liczb/i)).toBeInTheDocument();
+    expect(screen.getByText(/Wydawcy/i)).toBeInTheDocument();
+    expect(screen.getByText(/Oznaczanie cykli/i)).toBeInTheDocument();
+    expect(screen.getByText(/Rekonstrukcja numeracji/i)).toBeInTheDocument();
   });
 
   it('renders Schema Editor with correct properties and status', async () => {
     render(<App />);
     
-    const configTabButton = screen.getByRole('button', { name: /Liturgie Synchronizacji/i });
+    const configTabButton = screen.getByRole('button', { name: /^Synchronizacja$/i });
     await act(async () => {
       fireEvent.click(configTabButton);
     });
     
     await waitFor(() => {
-      expect(screen.getByText(/Katalog Bazy \(Schemat Archiwalny\)/i)).toBeInTheDocument();
+      expect(screen.getByText(/Schemat bazy Notion/i)).toBeInTheDocument();
     });
 
     const expandButton = screen.getByRole('button', { name: '' }); // We need to find the chevron button. It's better to find by test id or aria-label, but let's find the section first.
@@ -280,7 +280,7 @@ describe('App Main Flows', () => {
     
     // Instead of adding aria-label, let's just find the button by its icon or class, or just add aria-label to the button in SchemaSection.tsx.
     // Let's just click the button that is next to the heading.
-    const schemaHeading = screen.getByText(/Katalog Bazy \(Schemat Archiwalny\)/i);
+    const schemaHeading = screen.getByText(/Schemat bazy Notion/i);
     const expandBtn = schemaHeading.parentElement?.nextElementSibling as HTMLButtonElement;
     await act(async () => {
       fireEvent.click(expandBtn);
@@ -308,16 +308,16 @@ describe('App Main Flows', () => {
   it('allows deleting options from Schema Editor except for Autor', async () => {
     render(<App />);
     
-    const configTabButton = screen.getByRole('button', { name: /Liturgie Synchronizacji/i });
+    const configTabButton = screen.getByRole('button', { name: /^Synchronizacja$/i });
     await act(async () => {
       fireEvent.click(configTabButton);
     });
     
     await waitFor(() => {
-      expect(screen.getByText(/Katalog Bazy \(Schemat Archiwalny\)/i)).toBeInTheDocument();
+      expect(screen.getByText(/Schemat bazy Notion/i)).toBeInTheDocument();
     });
 
-    const schemaHeading = screen.getByText(/Katalog Bazy \(Schemat Archiwalny\)/i);
+    const schemaHeading = screen.getByText(/Schemat bazy Notion/i);
     const expandBtn = schemaHeading.parentElement?.nextElementSibling as HTMLButtonElement;
     await act(async () => {
       fireEvent.click(expandBtn);
@@ -348,7 +348,7 @@ describe('App Main Flows', () => {
   it('handles Vinted search flow (UI state)', async () => {
     render(<App />);
     
-    const vintedTabButton = screen.getByRole('button', { name: /Skaner Vinted/i });
+    const vintedTabButton = screen.getByRole('button', { name: /^Rynek$/i });
     await act(async () => {
       fireEvent.click(vintedTabButton);
     });
@@ -357,7 +357,7 @@ describe('App Main Flows', () => {
       expect(screen.getByText(/Katalog Beletrystyka/i)).toBeInTheDocument();
     });
     
-    const searchButton = screen.getByText(/Rytuał Skanowania Vinted/i);
+    const searchButton = screen.getByText(/Skanowanie Vinted/i);
     
     await act(async () => {
       fireEvent.click(searchButton);
@@ -365,23 +365,23 @@ describe('App Main Flows', () => {
     
     // Use waitFor because state update might not be immediate
     await waitFor(() => {
-      expect(screen.getByText(/Przerwij Rytuał Skanowania/i)).toBeInTheDocument();
+      expect(screen.getByText(/Przerwij skanowanie/i)).toBeInTheDocument();
     });
   });
 
   it('handles duplicate sync flow (UI state)', async () => {
     render(<App />);
     
-    const configTabButton = screen.getByRole('button', { name: /Liturgie Synchronizacji/i });
+    const configTabButton = screen.getByRole('button', { name: /^Synchronizacja$/i });
     await act(async () => {
       fireEvent.click(configTabButton);
     });
     
     await waitFor(() => {
-      expect(screen.getByText(/Pieczęć Przyłożona/i)).toBeInTheDocument();
+      expect(screen.getByText(/Połączono/i)).toBeInTheDocument();
     });
 
-    const syncButton = screen.getByText(/Rytuał Wykrycia Duplikacji/i);
+    const syncButton = screen.getByText(/Wykrywanie duplikatów/i);
     fireEvent.click(syncButton);
     
     // Should show loading state
@@ -392,12 +392,12 @@ describe('App Main Flows', () => {
     (global as any).resetLastStreamController();
     render(<App />);
     
-    const configTabButton = screen.getByRole('button', { name: /Liturgie Synchronizacji/i });
+    const configTabButton = screen.getByRole('button', { name: /^Synchronizacja$/i });
     await act(async () => {
       fireEvent.click(configTabButton);
     });
     
-    const syncButton = screen.getByText(/Rytuał Wykrycia Duplikacji/i);
+    const syncButton = screen.getByText(/Wykrywanie duplikatów/i);
     expect(syncButton).not.toBeDisabled();
 
     await act(async () => {
@@ -427,7 +427,7 @@ describe('App Main Flows', () => {
 
     // Check for completion summary
     await waitFor(() => {
-      expect(screen.getByText(/Zapisy Archiwisty Adeptus/i)).toBeInTheDocument();
+      expect(screen.getByText(/Zapisane zmiany/i)).toBeInTheDocument();
       expect(screen.getByText(/Solaris <-> Solaris \(aka\)/)).toBeInTheDocument();
       expect(screen.getByText(/Cyberiada <-> Cyberiada \(aka\)/)).toBeInTheDocument();
     });

@@ -34,11 +34,11 @@ export const MarketCard: React.FC<{ market: MarketStats }> = ({ market }) => {
     >
       <h3 className="text-sm font-bold font-display uppercase tracking-widest text-rose-400 flex items-center gap-2 mb-4">
         <Coins className="w-4 h-4" />
-        Rynek Reliktów (Vinted)
+        Rynek (Vinted)
       </h3>
 
       {!hasData ? (
-        <p className="text-slate-400 text-sm italic text-center py-8">Brak składowanych ofert — uruchom Rytuał Skanowania Vinted.</p>
+        <p className="text-slate-400 text-sm italic text-center py-8">Brak zapisanych ofert — uruchom skanowanie Vinted.</p>
       ) : (
         <>
           {/* Completion cost */}

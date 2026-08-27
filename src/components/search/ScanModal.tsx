@@ -159,7 +159,7 @@ export const ScanModal: React.FC<Props> = ({ open, onClose, onDetect }) => {
                   <ScanBarcode className="w-6 h-6 text-cyan-400" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-display font-bold text-slate-100 uppercase tracking-wider">Skan Sygnatury</h3>
+                  <h3 className="text-lg font-display font-bold text-slate-100 uppercase tracking-wider">Skan sygnatury</h3>
                   <p className="text-xs text-slate-500 font-medium">Nakieruj kamerę na kod kreskowy książki</p>
                 </div>
               </div>
