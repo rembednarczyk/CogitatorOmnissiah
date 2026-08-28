@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.77.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.78.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,18 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.78.0** — **[SEC-PR6] Nagłówki bezpieczeństwa + CSP.** `middleware/securityHeaders.ts` montowany PIERWSZY
+  w `app.ts` (więc obejmuje też odpowiedzi 401/403/503 i statyczne SPA) + `app.disable("x-powered-by")`.
+  Nagłówki: CSP, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: same-origin`
+  (celowo NIE `no-referrer` — middleware CSRF używa `Referer` jako fallbacku). **Uczciwie o zakresie**: `script-src`
+  zachowuje `'unsafe-inline'`, bo `index.html` niesie inline-bootstrap motywu/favicony (to on daje brak mignięcia),
+  więc ta CSP **nie chroni realnie przed XSS** — i nie musi: audyt nie znalazł ŻADNEGO sinka HTML w `src/`.
+  Realną wartość dają pozostałe dyrektywy: `frame-ancestors 'none'` (clickjacking — istotne właśnie przy włączonym
+  Basic Auth), `form-action 'self'` (druga linia pod CSRF), `base-uri 'self'`, `object-src 'none'`,
+  `connect-src 'self'`. Allow-listy odbijają to, co apka faktycznie ładuje: Google Fonts (`@import` w index.css)
+  + miniatury Vinted (`*.vinted.net`) + `data:` (favicon SVG). **Zweryfikowane prawdziwą przeglądarką**
+  (Chromium/Playwright na produkcyjnym buildzie): 0 naruszeń CSP, React montuje się, bootstrap motywu działa.
+  +5 testów. Suite 540 zielone, lint czysty, build OK.
 - **1.77.1** — **[SEC-PR5] Bundle backendu przestaje być serwowany publicznie.** Build wrzucał SPA **i**
   `server.cjs` do tego samego `dist/`, a `express.static(dist)` serwował katalog w całości → `GET /server.cjs`
   zwracał 1,7 MB kodu backendu (bez poświadczeń — sprawdzone — ale z pełną mapą tras i logiką walidacji).
