@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.67.13** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.68.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,15 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.68.0** — **Favicon zależny od motywu (boho/40k).** Favicon podąża za jawnym przełącznikiem `data-theme`
+  (NIE za `prefers-color-scheme` — apka rozłącza motyw od OS, więc trik `<link media>` byłby niespójny).
+  Dwie ikony (ten sam emblemat-kompas dla rozpoznawalności karty, różna paleta): **light/boho** = kremowe tło
+  `#FBF6EC`, atrament `#3A342B`, glinka `#C07A56` w rdzeniu; **dark/40k** = dotychczasowa (slate `#020617`, cyan
+  `#22d3ee`, fiolet `#a855f7`). Obie ikony + wiring DOM to JEDNO źródło prawdy w inline-skrypcie `index.html`
+  (`window.__setFavicon`) — ustawiane przed mountem Reacta ⇒ zero mignięcia (spójne z ustawianiem motywu tam);
+  statyczny `<link id="favicon">` domyślnie boho (fallback bez JS). `src/utils/favicon.ts` (`applyFavicon`) tylko
+  przekazuje aktywny motyw z efektu `useTheme` przy każdym toggle. +2 testy (`favicon.test.ts`). Suite 475
+  zielone, lint czysty, build OK.
 - **1.67.13** — **[Tier 4, PR5] Adapter schema-methods bez wyciekającego id (warstwowanie).**
   `notion.adapter.ts`: `retrieveDataSource()`/`updateDatabaseProperty(name,type)`/`renameProperty(old,new)` gubią
   vestigialny parametr `databaseId`/`dataSourceId` i celują wewnętrznie w `this.actualDataSourceId!`; usunięto

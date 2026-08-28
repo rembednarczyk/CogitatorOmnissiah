@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { applyFavicon } from "../utils/favicon";
 
 /**
  * App theme: „light" = Librem (jasny boho), „dark" = Warhammer (dotychczasowy).
@@ -27,6 +28,7 @@ export function useTheme() {
   useEffect(() => {
     if (typeof document !== "undefined") document.documentElement.dataset.theme = theme;
     try { localStorage.setItem(KEY, theme); } catch { /* ignore */ }
+    applyFavicon(theme);
   }, [theme]);
 
   const toggle = useCallback(() => setTheme((t) => (t === "light" ? "dark" : "light")), []);
