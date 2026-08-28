@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.72.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.72.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,17 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.72.1** — **Ujednolicenie poświaty podświetleń (boho vs 40k).** Root-cause: arbitralne
+  `shadow-[0_0_..px_rgba(..)]` niosą literalne RGB i NIE przechodzą przez remap `--color-*`, więc w jasnym motywie
+  zostawały NEONOWE (cyan/purple) na glinianym wypełnieniu (fill już się remapował → zgrzyt fill vs poświata).
+  Fix: semantyczne klasy `.hl-glow-{cyan,amber,purple,rose,cyan-strong}` w `index.css` — CIEMNY = dokładnie
+  dotychczasowe rgba (40k bez zmian), JASNY = ekwiwalent boho (clay/ochre/sage/brick). Podpięte: zakładki
+  (App.tsx ×5), przycisk „Zapisz" (ConfigSection), puls kontroli spójności (IntegrityCheckCard →
+  `hl-glow-cyan-strong`). Dodatkowo naprawione DWA kontrolki mieszające hue wewnątrz siebie: toggle układania kart
+  (`StatsSection` — hover cyan→amber, zgodny z aktywnym amber) i drop-target masonry (`StatsMasonry` — cyan→amber).
+  Reszta przycisków była już wewnętrznie spójna (fill+hover+tekst z jednego koloru). Suite 502 zielone, lint
+  czysty, build OK (klasy obecne w bundlu). MOŻLIWE dalej (opcjonalnie): focus-ring inputów (wszystkie cyan) +
+  segmentowe toggle na wspólny akcent sekcji — jeśli user zechce pełniejszego pokrycia.
 - **1.72.0** — **[RD-PR4] Karta „Tempo czytania" (frontend).** `ReadingPaceCard` na zakładce statystyk (span2,
   obok „Osi czasu"), konsumuje `stats.readingStats`. 3 kafle KPI: „W tym roku" (+ delta vs ubiegły, ↑emerald/
   ↓slate), „Książek/rok" (recentPace), „Z datą łącznie" (totalDated); histogram roczny (słupek = przeczytane w

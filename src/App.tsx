@@ -33,11 +33,11 @@ export default function App() {
   }, []);
 
   const tabs: TabDef[] = [
-    { id: 'stats', label: 'Kolekcja', icon: <Database className="w-5 h-5" />, activeClass: 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.2)]' },
-    { id: 'shelf', label: 'Regał', icon: <Library className="w-5 h-5" />, activeClass: 'bg-amber-500/20 border-amber-500/50 text-amber-300 shadow-[0_0_20px_rgba(251,191,36,0.2)]' },
-    { id: 'search', label: 'Katalog', icon: <ScrollText className="w-5 h-5" />, activeClass: 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.2)]' },
-    { id: 'config', label: 'Synchronizacja', icon: <Cog className={`w-5 h-5 ${isAnySyncLoading ? 'animate-spin text-purple-400' : ''}`} />, activeClass: 'bg-purple-500/20 border-purple-500/50 text-purple-400 shadow-[0_0_20px_rgba(168,85,247,0.2)]' },
-    { id: 'vinted', label: 'Rynek', icon: <ShoppingCart className="w-5 h-5" />, activeClass: 'bg-rose-500/20 border-rose-500/50 text-rose-400 shadow-[0_0_20px_rgba(244,63,94,0.2)]' },
+    { id: 'stats', label: 'Kolekcja', icon: <Database className="w-5 h-5" />, activeClass: 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400 hl-glow-cyan' },
+    { id: 'shelf', label: 'Regał', icon: <Library className="w-5 h-5" />, activeClass: 'bg-amber-500/20 border-amber-500/50 text-amber-300 hl-glow-amber' },
+    { id: 'search', label: 'Katalog', icon: <ScrollText className="w-5 h-5" />, activeClass: 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400 hl-glow-cyan' },
+    { id: 'config', label: 'Synchronizacja', icon: <Cog className={`w-5 h-5 ${isAnySyncLoading ? 'animate-spin text-purple-400' : ''}`} />, activeClass: 'bg-purple-500/20 border-purple-500/50 text-purple-400 hl-glow-purple' },
+    { id: 'vinted', label: 'Rynek', icon: <ShoppingCart className="w-5 h-5" />, activeClass: 'bg-rose-500/20 border-rose-500/50 text-rose-400 hl-glow-rose' },
   ];
 
   return (

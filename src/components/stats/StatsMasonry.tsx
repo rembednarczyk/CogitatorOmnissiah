@@ -59,7 +59,7 @@ export const StatsMasonry: React.FC<{ cards: StatCard[]; savedOrder: string[]; r
       >
         <div className={arranging ? "pointer-events-none" : ""}>{card.node}</div>
         {arranging && (
-          <div className={`absolute inset-0 rounded-3xl border-2 border-dashed pointer-events-none transition-colors ${isOver ? "border-cyan-400/70 bg-cyan-500/5" : "border-amber-500/40"}`} />
+          <div className={`absolute inset-0 rounded-3xl border-2 border-dashed pointer-events-none transition-colors ${isOver ? "border-amber-400/80 bg-amber-500/10" : "border-amber-500/40"}`} />
         )}
         {arranging && !dragging && (
           <div className="absolute top-3 right-3 flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-950/85 border border-amber-500/30 text-amber-300 text-[9px] font-bold uppercase tracking-widest pointer-events-none">
