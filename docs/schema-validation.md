@@ -5,7 +5,7 @@ Ensures the Notion database has the correct structure (columns and types) requir
 
 ## 2. Validation Logic (`runSchemaValidation`)
 - **Source**: Notion database metadata.
-- **Required Properties**:
+- **Required Properties** (source of truth: `requiredProps` in `services/schemaValidationService.ts`):
   - `Lp`: `title` (Primary column)
   - `Autor`: `multi_select`
   - `Rok`: `multi_select`
@@ -14,7 +14,14 @@ Ensures the Notion database has the correct structure (columns and types) requir
   - `Wydawnictwo`: `multi_select`
   - `Seria`: `multi_select`
   - `Nagroda`: `multi_select`
+  - `Źródło`: `multi_select` (read/ownership/library tags)
+  - `Data przeczytania`: `date` (stamped on „Przeczytane", cleared on unmark; feeds reading-velocity stats)
   - `Część cyklu`: `checkbox`
+  - `Kategoria`: `select` (row category: „Tom cyklu" vs award)
+  - `Cykl`: `rich_text` · `CyklNr`: `number` (cycle grouping)
+  - `VintedData`: `rich_text` (stored Vinted results blob)
+  - `ShelfOrder`: `number` (manual shelf ordering)
+  - `ISBN`: `rich_text` (canonical ISBN-13s from the enrichment ritual)
 
 ## 3. Initialization Steps
 - **Primary Column Renaming**:

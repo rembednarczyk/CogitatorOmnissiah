@@ -187,4 +187,41 @@ describe('NotionAdapter', () => {
       });
     });
   });
+
+  describe('setReadDate', () => {
+    it('stamps a calendar-day date on the page', async () => {
+      mockClient.pages.update.mockResolvedValue({});
+
+      await adapter.setReadDate('page-1', '2024-01-15');
+
+      expect(mockClient.pages.update).toHaveBeenCalledWith({
+        page_id: 'page-1',
+        properties: { 'Data przeczytania': { date: { start: '2024-01-15' } } },
+      });
+    });
+
+    it('clears the date when passed null', async () => {
+      mockClient.pages.update.mockResolvedValue({});
+
+      await adapter.setReadDate('page-1', null);
+
+      expect(mockClient.pages.update).toHaveBeenCalledWith({
+        page_id: 'page-1',
+        properties: { 'Data przeczytania': { date: null } },
+      });
+    });
+
+    it('invalidates the books cache after the write', async () => {
+      const page1 = { id: '1', properties: { 'Tytuł polski': { type: 'title', title: [{ plain_text: 'T-1' }] } } };
+      mockClient.dataSources.retrieve.mockResolvedValue({ id: 'test-db-id' });
+      mockClient.dataSources.query.mockResolvedValue({ results: [page1], has_more: false });
+      mockClient.pages.update.mockResolvedValue({});
+
+      await adapter.getBooksForStats(undefined, undefined, { cache: true }); // primes cache
+      await adapter.setReadDate('page-1', '2024-01-15');                     // invalidates
+      await adapter.getBooksForStats(undefined, undefined, { cache: true }); // must refetch
+
+      expect(mockClient.dataSources.query).toHaveBeenCalledTimes(2);
+    });
+  });
 });

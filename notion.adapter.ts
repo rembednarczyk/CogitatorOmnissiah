@@ -244,6 +244,22 @@ export class NotionAdapter {
   }
 
   /**
+   * Stamp or clear the „Data przeczytania" date on a book's page: a calendar-day
+   * ISO string („YYYY-MM-DD") to set, `null` to clear. Written as a raw Notion
+   * date property — the first (and so far only) date column in the base, which the
+   * schema ritual provisions. A page update by id needs no data-source resolution.
+   */
+  async setReadDate(pageId: string, date: string | null): Promise<void> {
+    await withRetry(() => this.notion.pages.update({
+      page_id: pageId,
+      properties: {
+        "Data przeczytania": { date: date ? { start: date } : null }
+      }
+    }));
+    this.invalidateBooksCache();
+  }
+
+  /**
    * Shared core for mutating a multi_select field: fetches the current tags, passes them
    * through `transform` and writes the result. `transform` returns a new tag list or
    * `null` = no change (skip the write and cache invalidation). Add/remove are thin

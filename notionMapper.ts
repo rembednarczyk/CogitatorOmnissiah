@@ -73,6 +73,12 @@ export function mapPageToBook(page: NotionPage): NotionBook {
   const awards = multiSelectNames(getProp(props, "Nagroda"));
   const zrodlo = multiSelectNames(getProp(props, "Źródło"));
 
+  // Read date („Data przeczytania", date) — stamped when the book is marked
+  // „Przeczytane", cleared on unmark. A calendar day („YYYY-MM-DD", no time);
+  // undefined when never read or the column is absent.
+  const readDateProp = getProp(props, "Data przeczytania");
+  const dataPrzeczytania = readDateProp?.type === "date" ? (readDateProp.date?.start || undefined) : undefined;
+
   // Stored Vinted results blob (rich_text; multiple segments are joined in getPlainText).
   const vintedData = getPlainText(getProp(props, "VintedData")) || undefined;
 
@@ -113,6 +119,7 @@ export function mapPageToBook(page: NotionPage): NotionBook {
     lp,
     awards,
     zrodlo,
+    dataPrzeczytania,
     plTitleRichText,
     origTitleRichText,
     vintedData,
