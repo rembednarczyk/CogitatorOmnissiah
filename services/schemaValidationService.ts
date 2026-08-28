@@ -27,6 +27,8 @@ export class SchemaValidationService {
         { name: "Seria", type: "multi_select" },
         { name: "Nagroda", type: "multi_select" },
         { name: "Źródło", type: "multi_select" },
+        // Read date — stamped on „Przeczytane", cleared on unmark; feeds reading-velocity stats.
+        { name: "Data przeczytania", type: "date" },
         { name: "Część cyklu", type: "checkbox" },
         // Cycle columns (volumes as rows) — until now created lazily by the Rytuał Żniw.
         { name: "Kategoria", type: "select" },

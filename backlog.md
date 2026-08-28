@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.68.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.69.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,20 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.69.0** — **[RD-PR1] Struktura kolumny „Data przeczytania" (warstwa 1/N feature „tempo czytania").**
+  Pierwsza właściwość typu `date` w bazie — brak istniejącej konwencji, użyto natywnego kształtu SDK
+  (`{ date: { start } }` / `{ date: null }`, odczyt `prop.date?.start`). (1) `requiredProps` w
+  `schemaValidationService` +`{ name:"Data przeczytania", type:"date" }` (po `Źródło`); `updateDatabaseProperty`
+  obsługuje `date` bez zmian. (2) `NotionProperty.date` + `NotionBook.dataPrzeczytania?` (src/types.ts);
+  `notionMapper` czyta `dataPrzeczytania` (undefined gdy brak). (3) Adapter `setReadDate(pageId, date|null)` (wzór
+  `updateLp` + `invalidateBooksCache`). (4) Ścieżka zapisu: `syncManager.markAsRead` stempluje `todayIso()` (UTC,
+  dzień), `unmarkRead` czyści — **tylko** gdy `tag==="Przeczytane"` (tagi `Biblioteka*`/`Posiadam` nie ruszają
+  daty). Łapane od teraz w przód (historii nie da się cofnąć). Edge: re-mark już-przeczytanej re-stempluje dziś —
+  UI oznacza tylko na przejściu unread→read, więc w praktyce nie zachodzi. (5) `docs/schema-validation.md` lista
+  required-props doprowadzona do zgodności z kodem (brakowało Źródło/Kategoria/Cykl/CyklNr/VintedData/ShelfOrder/
+  ISBN). +7 testów (adapter setReadDate ×3, mapper ×2, schema ×1, syncManager gating ×4 — netto). Suite 482
+  zielone, lint czysty, build OK. **NASTĘPNE (osobne PR)**: statystyki velocity (przeczytane/rok, tempo, prognoza,
+  streaki) czytające `dataPrzeczytania` w `statsService`/`statsAggregator`; ew. surfacing daty na regale/karcie.
 - **1.68.1** — **Przełącznik motywu: pigułka z tekstem → dyskretna ikona księżyc/słońce.** W nagłówku (prawy górny
   róg) zamiast „pigułki" `ikona + Ciemny/Jasny` jest teraz okrągły przycisk 40×40 tylko z ikoną: księżyc w jasnym
   (→ ciemny), słońce (amber) w ciemnym (→ jasny), z delikatną animacją obrotu przy zmianie (`AnimatePresence`,
@@ -1224,14 +1238,12 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
   REKOMENDACJA: pkt 1 ZROBIONY (1.47.0) → obserwować, czy blok ustępuje; jeśli nie, pkt 2 lekki
   (Playwright tylko do cookie — realny challenge-solve, nie tylko puste GET).
 
-- **Data przeczytania + „Tempo czytania" (velocity)** — ODŁOŻONE (wymaga NOWEGO ZAPISU, nie tylko
-  odczytu). Dziś nie mamy kiedy książka została przeczytana — brak pola. Plan: kolumna „Data
-  przeczytania" (date) stemplowana przy oznaczaniu „Przeczytane" (`markAsRead`/`setRead`), czyszczona
-  przy odznaczeniu; mapper czyta ją do `NotionBook`. Odblokowuje: „przeczytane w tym roku: N",
-  serie/wykresy w czasie (miesiąc/rok), tempo (książki/mies.), prognozę domknięcia kolekcji, streaki.
-  Koszt: zmiana ścieżki zapisu (drag&drop regału + przyciski „oznacz przeczytane" w statystykach/
-  bibliotece) + retro-uzupełnienie historycznych dat niemożliwe (od teraz w przód). Rozważyć po
-  zestawie STAT-PR1..4.
+- **Data przeczytania + „Tempo czytania" (velocity)** — WARSTWA STRUKTURALNA ZREALIZOWANA (RD-PR1, 1.69.0):
+  kolumna `Data przeczytania` (date) w schemacie, mapper → `NotionBook.dataPrzeczytania`, adapter `setReadDate`,
+  ścieżka zapisu `markAsRead`/`unmarkRead` stempluje/czyści (gate na tag „Przeczytane"). Dane łapane OD TERAZ
+  w przód (historii nie cofniemy). **POZOSTAJE (osobne PR-y): STATYSTYKI velocity** czytające `dataPrzeczytania` —
+  „przeczytane w tym roku: N", wykresy w czasie (miesiąc/rok), tempo (książki/mies.), prognoza domknięcia
+  kolekcji, streaki (w `statsService`/`statsAggregator`); ewentualnie surfacing daty na regale/karcie książki.
 - (brak) — pipeline persystencji Vinted (ETAP 1–3) kompletny.
 - **Ewentualnie później**: odświeżanie pojedynczej książki/oferty z bazy (re-check
   świeżości), natywna baza „Vinted Offers" (jeśli blob przestanie wystarczać), proxy

@@ -34,6 +34,13 @@ import { SyncEvent } from "./src/types";
 
 const log = createLogger("SyncManager");
 
+/** Today as a Notion calendar day („YYYY-MM-DD", UTC). Day-granular on purpose —
+ *  reading-velocity stats aggregate by month/year, so intra-day precision (and the
+ *  server↔user timezone skew near midnight) doesn't matter. */
+function todayIso(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
 const notionAdapter = new NotionAdapter(process.env.NOTION_API_KEY!, process.env.NOTION_DATABASE_ID!);
 const wikiAdapter = new WikiAdapter();
 /** App configuration (knobs) — defaults + overrides from Notion; injected into the services. */
@@ -199,12 +206,21 @@ class SyncManager {
   // passes a branch tag („Biblioteka" = Felin, „Biblioteka 9" =
   // Bronowice), to mark which branch the item is available in.
   async markAsRead(pageId: string, tag: string = "Przeczytane") {
-    return await this.notion.addTagToMultiSelect(pageId, "Źródło", tag);
+    const res = await this.notion.addTagToMultiSelect(pageId, "Źródło", tag);
+    // Only the „Przeczytane" tag stamps the read date — branch tags („Biblioteka…")
+    // and „Posiadam" mark availability/ownership, not a completed read. Captured
+    // from now forward (historical dates can't be backfilled). Edge: re-marking an
+    // already-read book re-stamps today; the UI marks only on the unread→read
+    // transition, so this doesn't happen in practice.
+    if (tag === "Przeczytane") await this.notion.setReadDate(pageId, todayIso());
+    return res;
   }
 
   /** Removes a „Źródło" tag (inverse of `markAsRead`) — drag&drop on the shelf. */
   async unmarkRead(pageId: string, tag: string = "Przeczytane") {
-    return await this.notion.removeTagFromMultiSelect(pageId, "Źródło", tag);
+    const res = await this.notion.removeTagFromMultiSelect(pageId, "Źródło", tag);
+    if (tag === "Przeczytane") await this.notion.setReadDate(pageId, null);
+    return res;
   }
 
   /** Writes manual shelf ordering keys (precise drag&drop). */

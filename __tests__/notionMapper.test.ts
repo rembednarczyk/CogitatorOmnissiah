@@ -19,6 +19,7 @@ describe("mapPageToBook", () => {
         "Lp": { type: "title", title: rt("1") },
         "Nagroda": { type: "multi_select", multi_select: [{ name: "Nagroda Hugo" }, { name: "Nagroda Locus" }] },
         "Źródło": { type: "multi_select", multi_select: [{ name: "Przeczytane" }] },
+        "Data przeczytania": { type: "date", date: { start: "2024-01-15" } },
       },
     };
 
@@ -35,6 +36,7 @@ describe("mapPageToBook", () => {
       lp: "1",
       awards: ["Nagroda Hugo", "Nagroda Locus"],
       zrodlo: ["Przeczytane"],
+      dataPrzeczytania: "2024-01-15",
     });
   });
 
@@ -51,6 +53,7 @@ describe("mapPageToBook", () => {
     expect(book.awards).toEqual([]);
     expect(book.currentCzesccyklu).toBe(false);
     expect(book.year).toBeUndefined();
+    expect(book.dataPrzeczytania).toBeUndefined();
   });
 
   it("reads a single select award as a one-element list", () => {

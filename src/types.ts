@@ -24,6 +24,7 @@ export interface NotionProperty {
   multi_select?: { name: string; color?: string }[];
   checkbox?: boolean;
   url?: string | null;
+  date?: { start: string; end?: string | null } | null;
   name?: string;
 }
 
@@ -50,6 +51,9 @@ export interface NotionBook {
   kategoria?: string;
   lp?: string;
   zrodlo?: string[];
+  /** Calendar day the book was marked „Przeczytane" (column „Data przeczytania", date; „YYYY-MM-DD").
+   *  Stamped on mark-as-read, cleared on unmark. Undefined = never read / not yet captured. */
+  dataPrzeczytania?: string;
   plTitleRichText?: NotionRichTextItem[];
   origTitleRichText?: NotionRichTextItem[];
   /** JSON blob of stored Vinted results (field „VintedData") — parsed by vintedStore. */

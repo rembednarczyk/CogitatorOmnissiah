@@ -53,6 +53,7 @@ describe('SchemaValidationService', () => {
     expect(mockNotion.updateDatabaseProperty).toHaveBeenCalledWith('Cykl', 'rich_text');
     expect(mockNotion.updateDatabaseProperty).toHaveBeenCalledWith('CyklNr', 'number');
     expect(mockNotion.updateDatabaseProperty).toHaveBeenCalledWith('Źródło', 'multi_select');
+    expect(mockNotion.updateDatabaseProperty).toHaveBeenCalledWith('Data przeczytania', 'date');
     expect(mockNotion.updateDatabaseProperty).toHaveBeenCalledWith('VintedData', 'rich_text');
     expect(mockNotion.updateDatabaseProperty).toHaveBeenCalledWith('ShelfOrder', 'number');
     expect(mockNotion.updateDatabaseProperty).toHaveBeenCalledWith('ISBN', 'rich_text');

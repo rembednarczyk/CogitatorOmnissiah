@@ -15,6 +15,9 @@ vi.mock("../notion.adapter", () => {
   const NotionAdapter = vi.fn();
   NotionAdapter.prototype.init = vi.fn().mockResolvedValue(undefined);
   NotionAdapter.prototype.getSchema = vi.fn().mockResolvedValue({});
+  NotionAdapter.prototype.addTagToMultiSelect = vi.fn().mockResolvedValue(undefined);
+  NotionAdapter.prototype.removeTagFromMultiSelect = vi.fn().mockResolvedValue(undefined);
+  NotionAdapter.prototype.setReadDate = vi.fn().mockResolvedValue(undefined);
   return { NotionAdapter };
 });
 
@@ -230,6 +233,45 @@ describe("POST /api/mark-as-read", () => {
   });
 
   afterAll(() => closeServer());
+});
+
+describe("SyncManager.markAsRead / unmarkRead — Data przeczytania stamping", () => {
+  const notion = (syncManager as any).notion;
+
+  beforeEach(() => {
+    vi.restoreAllMocks(); // undo the markAsRead spy from the HTTP describe above
+    notion.addTagToMultiSelect.mockReset().mockResolvedValue(undefined);
+    notion.removeTagFromMultiSelect.mockReset().mockResolvedValue(undefined);
+    notion.setReadDate.mockReset().mockResolvedValue(undefined);
+  });
+
+  it("stamps today's read date only when the tag is 'Przeczytane'", async () => {
+    await syncManager.markAsRead("page-1", "Przeczytane");
+
+    expect(notion.addTagToMultiSelect).toHaveBeenCalledWith("page-1", "Źródło", "Przeczytane");
+    expect(notion.setReadDate).toHaveBeenCalledTimes(1);
+    expect(notion.setReadDate.mock.calls[0][0]).toBe("page-1");
+    expect(notion.setReadDate.mock.calls[0][1]).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  it("does NOT stamp the date for branch/owned tags", async () => {
+    await syncManager.markAsRead("page-2", "Biblioteka");
+    await syncManager.markAsRead("page-3", "Posiadam");
+
+    expect(notion.setReadDate).not.toHaveBeenCalled();
+  });
+
+  it("clears the date when unmarking 'Przeczytane'", async () => {
+    await syncManager.unmarkRead("page-1", "Przeczytane");
+
+    expect(notion.setReadDate).toHaveBeenCalledWith("page-1", null);
+  });
+
+  it("does NOT touch the date when unmarking a branch/owned tag", async () => {
+    await syncManager.unmarkRead("page-2", "Biblioteka");
+
+    expect(notion.setReadDate).not.toHaveBeenCalled();
+  });
 });
 
 describe("SSE event stream (POST /api/sync)", () => {
