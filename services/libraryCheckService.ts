@@ -4,7 +4,7 @@ import { NotionAdapter } from "../notion.adapter";
 import { SyncEvent } from "../src/types";
 import { withRetry } from "../retry";
 import { createLogger } from "../logger";
-import { getRandomUserAgent, createScrapingAgent } from "../scrapingClient";
+import { getRandomUserAgent, createScrapingAgent, responseSizeLimit } from "../scrapingClient";
 import { parseOpacResults, findBookMatch } from "./opacParser";
 import { ConfigService } from "./configService";
 
@@ -64,7 +64,7 @@ export class LibraryCheckService {
 
         try {
           const response = await withRetry(
-            () => axios.get(url, { httpsAgent, headers, timeout: REQUEST_TIMEOUT }),
+            () => axios.get(url, { httpsAgent, headers, timeout: REQUEST_TIMEOUT, ...responseSizeLimit }),
             2,
             1500,
           );
