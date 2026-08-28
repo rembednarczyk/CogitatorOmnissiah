@@ -84,6 +84,12 @@ export interface AppConfig {
     preciseShelfDrop: boolean;
     /** Card order in „Analizie Zasobów" (section ids). Empty = default order from code. */
     statsOrder: string[];
+    /** Regał (light skin) — strength of the „room" shadow/vignette, 0–200 % (100 = as designed). */
+    shelfRoomShade: number;
+    /** Regał (light skin) — candle glow intensity, 0–200 % (100 = as designed). */
+    candleGlow: number;
+    /** Regał (light skin) — candle flame flicker speed, 50–200 % (100 = as designed; higher = faster). */
+    flameSpeed: number;
   };
 }
 
@@ -143,6 +149,9 @@ export const DEFAULT_CONFIG: AppConfig = {
     shelfRowsPerPage: 5,
     preciseShelfDrop: true,
     statsOrder: [],
+    shelfRoomShade: 100,
+    candleGlow: 100,
+    flameSpeed: 100,
   },
 };
 
@@ -265,6 +274,9 @@ export function mergeConfig(overrides?: unknown): AppConfig {
       shelfRowsPerPage: clampInt(u.shelfRowsPerPage, 1, 12, d.ui.shelfRowsPerPage),
       preciseShelfDrop: cleanBool(u.preciseShelfDrop, d.ui.preciseShelfDrop),
       statsOrder: cleanIdList(u.statsOrder),
+      shelfRoomShade: clampInt(u.shelfRoomShade, 0, 200, d.ui.shelfRoomShade),
+      candleGlow: clampInt(u.candleGlow, 0, 200, d.ui.candleGlow),
+      flameSpeed: clampInt(u.flameSpeed, 50, 200, d.ui.flameSpeed),
     },
   };
 }

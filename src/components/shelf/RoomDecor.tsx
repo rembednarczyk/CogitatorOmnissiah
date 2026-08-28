@@ -1,5 +1,6 @@
 import React from "react";
 import { motion } from "motion/react";
+import { useEffectiveConfig } from "../../hooks/useAppConfig";
 
 /** Cog-wheel sigil (Mechanicus) — room decoration. Color via `style`, so
  *  the skin variables resolve (`var(--sk-room-cog*)`). */
@@ -50,14 +51,14 @@ const flameAnim = (dur: number, delay = 0) => ({
   transition: { duration: dur, repeat: Infinity, ease: "easeInOut" as const, delay },
 });
 
-const CandleCluster: React.FC<{ className?: string; flip?: boolean }> = ({ className, flip }) => (
+const CandleCluster: React.FC<{ className?: string; flip?: boolean; speed?: number }> = ({ className, flip, speed = 1 }) => (
   <div className={`candle-boho absolute pointer-events-none ${className ?? ""}`} aria-hidden style={flip ? { transform: "scaleX(-1)" } : undefined}>
-    {/* warm pooled glow (bigger, slower) */}
+    {/* warm pooled glow (bigger, slower); `speed` = flame flicker multiplier (from config knob). */}
     <motion.div
       className="absolute -left-[46px] -top-[54px] w-[196px] h-[196px] rounded-full"
       style={{ background: "radial-gradient(closest-side, var(--sk-room-glow), transparent)", filter: "blur(8px)" }}
       animate={{ opacity: [0.55, 0.8, 0.5, 0.74, 0.6] }}
-      transition={{ duration: 4.6, repeat: Infinity, ease: "easeInOut" }}
+      transition={{ duration: 4.6 / speed, repeat: Infinity, ease: "easeInOut" }}
     />
     <svg viewBox="0 0 132 152" width="132" height="152">
       <defs>
@@ -71,20 +72,20 @@ const CandleCluster: React.FC<{ className?: string; flip?: boolean }> = ({ class
       <path d="M34 110 q4 16 0 28" stroke="#8a4e33" strokeWidth="3" fill="none" opacity=".55" strokeLinecap="round" />
       <ellipse cx="21" cy="97" rx="13" ry="4.5" fill="#8a4e33" /><ellipse cx="21" cy="95.5" rx="13" ry="4" fill="#cd8f6e" />
       <rect x="19.5" y="82" width="3" height="14" rx="1.5" fill="#4d2c1a" />
-      <motion.path d="M21 58 q11 15 0 34 q-11 -19 0 -34" fill="url(#cc-fl)" {...flameAnim(3.8, 0.5)} />
+      <motion.path d="M21 58 q11 15 0 34 q-11 -19 0 -34" fill="url(#cc-fl)" {...flameAnim(3.8 / speed, 0.5)} />
       {/* tall ivory (center) */}
       <rect x="44" y="52" width="30" height="96" rx="8" fill="url(#cc-iv)" />
       <path d="M44 78 q4 22 0 38 M74 88 q-4 20 0 36" stroke="#d7cbaf" strokeWidth="3" fill="none" opacity=".65" strokeLinecap="round" />
       <ellipse cx="59" cy="53" rx="15" ry="5" fill="#cdbf9f" /><ellipse cx="59" cy="51.5" rx="15" ry="4.5" fill="#efe6cf" />
       <path d="M49 53 q3 10 -2 15 q-4 -6 2 -15" fill="#e9dec4" />
       <rect x="57.5" y="36" width="3" height="16" rx="1.5" fill="#5b4a2e" />
-      <motion.path d="M59 8 q13 18 0 40 q-13 -22 0 -40" fill="url(#cc-fl)" {...flameAnim(4.4)} />
+      <motion.path d="M59 8 q13 18 0 40 q-13 -22 0 -40" fill="url(#cc-fl)" {...flameAnim(4.4 / speed)} />
       {/* medium beeswax (right) */}
       <rect x="84" y="76" width="26" height="72" rx="7" fill="url(#cc-bw)" />
       <path d="M110 96 q4 18 0 32" stroke="#a87e2e" strokeWidth="3" fill="none" opacity=".55" strokeLinecap="round" />
       <ellipse cx="97" cy="77" rx="13" ry="4.5" fill="#a87e2e" /><ellipse cx="97" cy="75.5" rx="13" ry="4" fill="#e6c273" />
       <rect x="95.5" y="60" width="3" height="16" rx="1.5" fill="#4d3c1a" />
-      <motion.path d="M97 34 q12 16 0 36 q-12 -20 0 -36" fill="url(#cc-fl)" {...flameAnim(4.0, 0.9)} />
+      <motion.path d="M97 34 q12 16 0 36 q-12 -20 0 -36" fill="url(#cc-fl)" {...flameAnim(4.0 / speed, 0.9)} />
       {/* wax pool */}
       <ellipse cx="60" cy="149" rx="58" ry="6" fill="#cdbb9a" opacity=".55" />
     </svg>
@@ -111,13 +112,20 @@ const Mote: React.FC<{ i: number }> = ({ i }) => {
  * floor, sconces with flickering light, banner, cog-wheel sigil, dust
  * and vignette. Purely decorative (aria-hidden). Does not touch the book physics.
  */
-export const RoomDecor: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+export const RoomDecor: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Appearance knobs (Konfiguracja → ui). Percent → multiplier: 100 % = as designed.
+  const ui = useEffectiveConfig().ui;
+  const flameSpeed = ui.flameSpeed / 100;
+  return (
   <div
     className="relative rounded-[20px] overflow-hidden px-4 pt-10 pb-[120px] sm:px-8"
     style={{
       background: "var(--sk-room-bg)",
       boxShadow: "inset 0 2px 0 var(--sk-room-inset), var(--sk-room-topshade, inset 0 40px 80px -40px rgba(0,0,0,.7))",
-    }}
+      // The alpha of the room shadows / candle glow scales off these (see index.css).
+      ["--knob-room-shade" as string]: String(ui.shelfRoomShade / 100),
+      ["--knob-candle-glow" as string]: String(ui.candleGlow / 100),
+    } as React.CSSProperties}
   >
     {/* Cog-wheel watermark */}
     <CogMark size={320} color="var(--sk-room-cog)" className="absolute left-1/2 -translate-x-1/2 top-6 opacity-[0.05] pointer-events-none" />
@@ -125,8 +133,8 @@ export const RoomDecor: React.FC<{ children: React.ReactNode }> = ({ children })
     {/* Sconces — dark skin (40k). Boho shows the candle cluster instead. */}
     <Sconce className="left-3 top-16 hidden md:block" />
     <Sconce className="right-3 top-16 hidden md:block" />
-    <CandleCluster className="left-2 top-12 hidden md:block" />
-    <CandleCluster className="right-2 top-12 hidden md:block" flip />
+    <CandleCluster className="left-2 top-12 hidden md:block" speed={flameSpeed} />
+    <CandleCluster className="right-2 top-12 hidden md:block" flip speed={flameSpeed} />
 
     {/* Dust in the air */}
     {Array.from({ length: 16 }).map((_, i) => <Mote key={i} i={i} />)}
@@ -141,4 +149,5 @@ export const RoomDecor: React.FC<{ children: React.ReactNode }> = ({ children })
     {/* Vignette */}
     <div className="absolute inset-0 pointer-events-none" style={{ background: "var(--sk-room-vignette, radial-gradient(120% 90% at 50% 40%, rgba(0,0,0,0) 45%, rgba(0,0,0,.5) 100%))" }} aria-hidden />
   </div>
-);
+  );
+};

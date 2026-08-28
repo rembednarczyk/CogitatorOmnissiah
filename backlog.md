@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.73.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.74.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,7 +69,13 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
-- **1.73.0** — **Regał (boho): tło „sali" putty (wariant C) + grube świece ociekające woskiem (Ś3).**
+- **1.74.0** — **Knoby wyglądu sali regału w Konfiguracji.** Trzy pokrętła (`ui`): `shelfRoomShade` (siła cieni/
+  winiety sali, 0–200%), `candleGlow` (poświata świec, 0–200%), `flameSpeed` (tempo migotania, 50–200%, wyżej=
+  szybciej); default 100. Schema + clamps w `src/configSchema.ts`; edytory (NumberField) w „Kalibracji"
+  (`ConfigSection`). Konsumpcja: alpha cieni/poświaty przez `calc(.X * var(--knob-*, 1))` w `index.css` (jasny
+  skin) — JS ustawia `--knob-room-shade`/`--knob-candle-glow` na `RoomDecor` z wartości % (mnożnik = %/100);
+  `flameSpeed` jako mnożnik dzielący czasy animacji płomieni/glow w `CandleCluster`. Zero migracji (nowe knoby
+  dziedziczą default; storage = tylko diff). Suite 502 zielone, lint czysty, build OK (knoby w bundlu).
   Diagnoza: `--sk-room-bg` w boho był JUŻ jasny (len) — ciemne wrażenie robiły twarde czarne cienie/winieta/
   podłoga w `RoomDecor` (`rgba(0,0,0,.5–.85)`), zwł. dolny pas. (1) Tło → putty/taupe C (`#d9c9ac→#c3ae8b`),
   ciepła oprawa regału; czarne cienie na zmiennych `--sk-room-topshade/-floorshade/-vignette` (fallback = ciemna

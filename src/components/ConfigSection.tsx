@@ -232,6 +232,9 @@ export const ConfigSection: React.FC = () => {
                   Włączony
                 </label>
               </Field>
+              <NumberField label="Regał: cień sali (%)" hint="Jasna skóra: siła cieni/winiety wokół regału. 0–200; 100 = domyślne, 0 = płasko." value={draft.ui.shelfRoomShade} step={5} onChange={(v) => upd("ui", { shelfRoomShade: v })} />
+              <NumberField label="Regał: poświata świec (%)" hint="Jasna skóra: intensywność blasku świec. 0–200; 100 = domyślne." value={draft.ui.candleGlow} step={5} onChange={(v) => upd("ui", { candleGlow: v })} />
+              <NumberField label="Regał: tempo płomienia (%)" hint="Jasna skóra: szybkość migotania świec. 50–200; wyżej = szybciej." value={draft.ui.flameSpeed} step={5} onChange={(v) => upd("ui", { flameSpeed: v })} />
               <NumberField label="Duplikaty: próg autora" hint="0.5–1; wyżej = mniej czułe." value={draft.sync.dupAuthorThreshold} step={0.01} onChange={(v) => upd("sync", { dupAuthorThreshold: v })} />
               <NumberField label="Duplikaty: próg tytułu" hint="0.5–1; dotyczy tytułu PL i oryginalnego." value={draft.sync.dupTitleThreshold} step={0.01} onChange={(v) => upd("sync", { dupTitleThreshold: v })} />
             </div>
