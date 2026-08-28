@@ -78,8 +78,11 @@ export const BookshelfSection: React.FC = () => {
         </div>
         <div className="h-px flex-1 bg-gradient-to-r from-transparent via-amber-500/20 to-transparent" />
       </div>
+      {/* Hint differs by input: a swipe is undiscoverable without saying so, and the
+          chevrons are the mouse affordance. Shown per breakpoint, not per device. */}
       <p className="text-center text-[11px] text-slate-500 uppercase tracking-widest font-bold -mt-4">
-        Przeciągnij wolumin między regałami · strzałkami przełączasz segmenty „Regał N"
+        <span className="hidden sm:inline">Przeciągnij wolumin między regałami · strzałkami przełączasz segmenty „Regał N"</span>
+        <span className="sm:hidden">Przesuń palcem w bok, aby zmienić segment „Regał N"</span>
       </p>
 
       {/* „Regał" skin switch (Holo+ / Klasyczny) — choice persists in localStorage.
