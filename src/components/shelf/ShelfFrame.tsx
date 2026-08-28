@@ -43,7 +43,7 @@ export const ShelfFrame: React.FC<Props> = ({ title, icon, accent, count, highli
       className={`relative rounded-[18px] border-2 transition-all duration-200 ${stateRing}`}
       style={{
         background: "var(--sk-cab-bg)",
-        boxShadow: "0 24px 40px -22px rgba(0,0,0,.85), inset 0 1px 0 rgba(var(--noo-glow),.10), var(--sk-frame-glow)",
+        boxShadow: "var(--sk-frame-drop, 0 24px 40px -22px rgba(0,0,0,.85)), inset 0 1px 0 rgba(var(--noo-glow),.10), var(--sk-frame-glow)",
         ...(highlight === "idle" ? { borderColor: "var(--sk-frame-border)" } : {}),
       }}
     >
@@ -54,13 +54,13 @@ export const ShelfFrame: React.FC<Props> = ({ title, icon, accent, count, highli
           className="absolute top-0 inset-x-0 h-[46px] rounded-t-[16px] flex items-center gap-3 px-4 overflow-hidden"
           style={{
             background: "var(--sk-cornice-bg)",
-            boxShadow: "inset 0 -2px 5px rgba(0,0,0,.6), inset 0 1px 0 rgba(var(--noo-glow),.14)",
+            boxShadow: "var(--sk-cornice-shadow, inset 0 -2px 5px rgba(0,0,0,.6)), inset 0 1px 0 rgba(var(--noo-glow),.14)",
           }}
         >
           {/* Cog-wheel sigil */}
           <CogSigil className="w-7 h-7 shrink-0 drop-shadow-[0_1px_2px_rgba(0,0,0,.6)]" />
           <span className={a.text}>{icon}</span>
-          <h3 className="text-sm font-display font-bold uppercase tracking-[0.22em] text-amber-100/90 truncate min-w-0 drop-shadow-[0_1px_2px_rgba(0,0,0,.7)]">
+          <h3 className="text-sm font-display font-bold uppercase tracking-[0.22em] text-amber-100/90 truncate min-w-0" style={{ filter: "var(--sk-title-shadow, drop-shadow(0 1px 2px rgba(0,0,0,.7)))" }}>
             {title}
           </h3>
           <span className={`shrink-0 px-2 py-0.5 rounded-lg text-[10px] font-bold border ${a.chip}`}>{count}</span>
@@ -76,7 +76,7 @@ export const ShelfFrame: React.FC<Props> = ({ title, icon, accent, count, highli
           className="relative rounded-lg p-3 pt-4 overflow-hidden"
           style={{
             background: "var(--sk-well-bg)",
-            boxShadow: "inset 0 3px 12px rgba(0,0,0,.75), inset 0 -2px 6px rgba(0,0,0,.5)",
+            boxShadow: "var(--sk-well-shadow, inset 0 3px 12px rgba(0,0,0,.75), inset 0 -2px 6px rgba(0,0,0,.5))",
           }}
         >
           <HoloField />

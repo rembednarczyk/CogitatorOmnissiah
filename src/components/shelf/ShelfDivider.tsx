@@ -81,8 +81,8 @@ export const ShelfDivider: React.FC<Props> = ({ label, width = 10, height = SHEL
             ...(toLeft ? { right: 0 } : { left: 0 }),
             color: "var(--sk-plate-text)", fontSize: 11, letterSpacing: "0.06em",
             background: "var(--sk-plate-bg)",
-            boxShadow: "inset 0 0 0 1.5px var(--sk-plate-edge), inset 0 1px 0 rgba(var(--noo-glow),.30), 0 5px 9px -4px #000, 0 0 12px rgba(var(--noo-glow),.25)",
-            textShadow: "0 0 6px rgba(var(--noo-glow),.45)",
+            boxShadow: "inset 0 0 0 1.5px var(--sk-plate-edge), inset 0 1px 0 rgba(var(--noo-glow),.30), var(--sk-plate-drop, 0 5px 9px -4px #000), var(--sk-plate-glow, 0 0 12px rgba(var(--noo-glow),.25))",
+            textShadow: "var(--sk-plate-text-shadow, 0 0 6px rgba(var(--noo-glow),.45))",
           }}
         >
           <CogSigil className="w-[13px] h-[13px] shrink-0 drop-shadow-[0_0_3px_rgba(var(--noo-glow),.6)]" />
