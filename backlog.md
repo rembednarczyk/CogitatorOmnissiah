@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.74.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.74.2** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,7 +69,12 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
-- **1.74.1** — **Świece: małe świeczki nad regałami → grube kapiące, zróżnicowane, nie-lustrzane.** Parametryczny
+- **1.74.2** — **Świece: klastry z tła usunięte, świeca przeniesiona nad górną ramkę regału.** Dwa duże klastry
+  narożne w `RoomDecor` (boho) USUNIĘTE (+ martwy `CandleCluster`/`VARIANTS`); ciemny 40k zachowuje kinkiety.
+  Per-regał `WaxCandle` skalowana teraz przez wymiary SVG (nie transform) → precyzyjne pozycjonowanie; siedzi tuż
+  NAD gzymsem (`-top-[47px]`, scale 0.62 ≈ rozmiar z „czerwonych kwadratów"), w zróżnicowanym, BEZPIECZNYM pasie
+  poziomym (`left-1/4…2/3` z hasha `shelfId`) — nie koliduje z ikoną/tytułem/pagerem i sąsiednie regały różnią się
+  miejscem + grubością. Suite 502 zielone, lint czysty, build OK. Parametryczny
   `Candle` (grubość `w`, ton, wysokość; płomień skalowany girth) + `CandleCluster` z 3 wariantami układu (różny
   ton/wysokość/GRUBOŚĆ → dwa miejsca nigdy nie wyglądają jak lustrzane odbicie) i pojedynczy `WaxCandle`. Rogi
   sali: `variant 0` (lewa) vs `variant 1` + inny offset/scale (prawa) — koniec `flip`-mirror. Cienka świeczka nad

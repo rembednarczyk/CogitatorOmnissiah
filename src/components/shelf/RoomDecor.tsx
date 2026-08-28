@@ -92,48 +92,23 @@ const Candle: React.FC<Spec & { baseY?: number; speed?: number }> = ({ x, w, top
   );
 };
 
-// Distinct three-candle arrangements — different tone order, heights and WIDTHS
-// (girth), so two placements never read as mirror images of each other.
-const VARIANTS: Spec[][] = [
-  [ { x: 6, w: 22, top: 100, tone: "cl", dur: 3.8, delay: 0.5 }, { x: 36, w: 34, top: 56, tone: "iv", dur: 4.4, delay: 0 }, { x: 80, w: 27, top: 82, tone: "bw", dur: 4.0, delay: 0.9 } ],
-  [ { x: 8, w: 30, top: 66, tone: "bw", dur: 4.2, delay: 0.3 }, { x: 46, w: 20, top: 106, tone: "cl", dur: 3.6, delay: 0.8 }, { x: 74, w: 33, top: 84, tone: "iv", dur: 4.0, delay: 0 } ],
-  [ { x: 6, w: 27, top: 88, tone: "iv", dur: 3.9, delay: 0.2 }, { x: 40, w: 21, top: 68, tone: "cl", dur: 4.1, delay: 0.6 }, { x: 72, w: 34, top: 96, tone: "bw", dur: 3.7, delay: 1.0 } ],
-];
-
-export const CandleCluster: React.FC<{ className?: string; variant?: number; scale?: number; speed?: number }> = ({ className, variant = 0, scale = 1, speed = 1 }) => {
-  const candles = VARIANTS[((variant % VARIANTS.length) + VARIANTS.length) % VARIANTS.length];
-  return (
-    <div className={`candle-boho absolute pointer-events-none ${className ?? ""}`} aria-hidden
-      style={scale !== 1 ? { transform: `scale(${scale})`, transformOrigin: "bottom left" } : undefined}>
-      <motion.div
-        className="absolute -left-[46px] -top-[54px] w-[196px] h-[196px] rounded-full"
-        style={{ background: "radial-gradient(closest-side, var(--sk-room-glow), transparent)", filter: "blur(8px)" }}
-        animate={{ opacity: [0.55, 0.8, 0.5, 0.74, 0.6] }}
-        transition={{ duration: 4.6 / speed, repeat: Infinity, ease: "easeInOut" }}
-      />
-      <svg viewBox="0 0 118 152" width="118" height="152">
-        <CandleDefs />
-        {candles.map((c, i) => <Candle key={i} {...c} speed={speed} />)}
-        <ellipse cx="58" cy="149" rx="54" ry="6" fill="#cdbb9a" opacity=".5" />
-      </svg>
-    </div>
-  );
-};
-
-/** A single thick wax candle — replaces the thin candle on top of each shelf. */
-export const WaxCandle: React.FC<{ className?: string; tone?: Tone; w?: number; speed?: number; scale?: number }> = ({ className, tone = "iv", w = 22, speed = 1, scale = 1 }) => {
+/** A single thick wax candle — sits on top of each shelf (above the cornice).
+ *  Sized via the SVG width/height (not a CSS transform), so the element's box
+ *  equals the drawing and it can be positioned precisely above the frame. */
+export const WaxCandle: React.FC<{ className?: string; tone?: Tone; w?: number; speed?: number; scale?: number }> = ({ className, tone = "iv", w = 22, speed = 1, scale = 0.62 }) => {
   const vbw = Math.round(w * 2.3 + 8);
+  const vbh = 82;
   const x = 6;
+  const glow = 62 * scale;
   return (
-    <div className={`candle-boho absolute pointer-events-none ${className ?? ""}`} aria-hidden
-      style={scale !== 1 ? { transform: `scale(${scale})`, transformOrigin: "bottom center" } : undefined}>
+    <div className={`candle-boho absolute pointer-events-none ${className ?? ""}`} aria-hidden>
       <motion.div
-        className="absolute left-1/2 -translate-x-1/2 -top-[24px] w-[64px] h-[64px] rounded-full"
-        style={{ background: "radial-gradient(closest-side, var(--sk-room-glow), transparent)", filter: "blur(5px)" }}
+        className="absolute left-1/2 -translate-x-1/2 rounded-full"
+        style={{ width: glow, height: glow, top: -glow * 0.35, background: "radial-gradient(closest-side, var(--sk-room-glow), transparent)", filter: "blur(5px)" }}
         animate={{ opacity: [0.5, 0.72, 0.48, 0.66, 0.55] }}
         transition={{ duration: 4.4 / speed, repeat: Infinity, ease: "easeInOut" }}
       />
-      <svg viewBox={`0 0 ${vbw} 82`} width={vbw} height="82">
+      <svg viewBox={`0 0 ${vbw} ${vbh}`} width={vbw * scale} height={vbh * scale} style={{ display: "block" }}>
         <CandleDefs />
         <Candle x={x} w={w} top={34} baseY={80} tone={tone} dur={4.1} delay={0} speed={speed} />
         <ellipse cx={x + w / 2} cy="81" rx={w * 0.85} ry="3.5" fill="#cdbb9a" opacity=".45" />
@@ -165,7 +140,6 @@ const Mote: React.FC<{ i: number }> = ({ i }) => {
 export const RoomDecor: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Appearance knobs (Konfiguracja → ui). Percent → multiplier: 100 % = as designed.
   const ui = useEffectiveConfig().ui;
-  const flameSpeed = ui.flameSpeed / 100;
   return (
   <div
     className="relative rounded-[20px] overflow-hidden px-4 pt-10 pb-[120px] sm:px-8"
@@ -180,12 +154,10 @@ export const RoomDecor: React.FC<{ children: React.ReactNode }> = ({ children })
     {/* Cog-wheel watermark */}
     <CogMark size={320} color="var(--sk-room-cog)" className="absolute left-1/2 -translate-x-1/2 top-6 opacity-[0.05] pointer-events-none" />
 
-    {/* Sconces — dark skin (40k). Boho shows the candle cluster instead. */}
+    {/* Sconces — dark skin (40k) only. In boho the candles live on top of each
+        shelf (see Shelf → WaxCandle), so the room background stays clear. */}
     <Sconce className="left-3 top-16 hidden md:block" />
     <Sconce className="right-3 top-16 hidden md:block" />
-    {/* Two clusters — different arrangements + offsets (not a flipped mirror). */}
-    <CandleCluster className="left-2 top-12 hidden md:block" variant={0} speed={flameSpeed} />
-    <CandleCluster className="right-3 top-[68px] hidden md:block" variant={1} scale={0.9} speed={flameSpeed} />
 
     {/* Dust in the air */}
     {Array.from({ length: 16 }).map((_, i) => <Mote key={i} i={i} />)}
