@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.75.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.76.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,18 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.76.0** — **[SEC-PR2] Ochrona CSRF (same-origin) na żądaniach zmieniających stan.** Nowy
+  `middleware/sameOrigin.ts`, montowany w `app.ts` po `basicAuth`, przed `express.json()`. Dla
+  POST/PUT/PATCH/DELETE: podany `Origin` musi mieć ten sam HOST co nasz `Host` (fallback na `Referer`);
+  `Origin: null` i niepoprawne wartości = odrzucone (403). **Brak obu nagłówków = przepuszczamy** — świadomie:
+  przeglądarka ZAWSZE wysyła `Origin` przy cross-origin POST (też z formularza), więc jego brak oznacza klienta
+  nie-przeglądarkowego (curl, `scripts/importReadDates.ts`); blokowanie łamałoby legalny CLI nie zamykając
+  żadnego ataku. Porównanie po HOŚCIE (nie pełnym origin), żeby terminacja TLS na proxy Rendera (https na
+  zewnątrz, http wewnątrz) nie dawała false-reject; port jest częścią hosta, więc dev na innym porcie odpada.
+  **Ten finding istniał WYŁĄCZNIE dzięki włączonemu Basic Auth** — poświadczenia Basic, inaczej niż ciasteczka
+  `SameSite`, przeglądarka dokleja też do żądań cross-site, a rytuały bez ciała (`/api/sync-purify`,
+  `/api/sync/stop`, `/api/sync/reset`) dało się odpalić auto-submitowanym formularzem. +9 testów. Suite 526
+  zielone, lint czysty, build OK.
 - **1.75.0** — **[SEC-PR1] Allow-lista hosta dla URL-i Vinted — zamyka SSRF + 6 sinków `href`.** Nowy
   `services/vintedUrl.ts`: `isVintedUrl` (host = `vinted.pl`/subdomeny, tylko http(s)) i `isVintedPhotoUrl`
   (+`vinted.net` dla CDN). Dopasowanie `h===base || h.endsWith("."+base)` — `evilvinted.pl` i
