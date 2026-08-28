@@ -1,5 +1,6 @@
 import { VintedItem, VintedSeller } from "./vintedParser";
 import { NotionBook } from "../src/types";
+import { isVintedUrl, isVintedPhotoUrl } from "./vintedUrl";
 
 /**
  * Persistent storage of Vinted results in Notion (a JSON blob in a book's text field).
@@ -89,15 +90,52 @@ export function toStoredBookView(book: NotionBook, data: StoredVintedData): Stor
   };
 }
 
-/** VintedItem (from the scan) → StoredOffer (for storage). */
-export function offerFromItem(item: VintedItem): StoredOffer {
+/**
+ * Drops a seller whose profile link isn't a Vinted URL. The parser only ever builds
+ * `https://www.vinted.pl/member/{id}`, so a mismatch means the value didn't come from
+ * the parser — dropping it is self-healing (the next resolve pass re-fetches it).
+ */
+function sanitizeSeller(seller: unknown): VintedSeller | null {
+  if (!seller || typeof seller !== "object") return null;
+  const s = seller as Record<string, unknown>;
+  if (typeof s.id !== "string" || typeof s.login !== "string") return null;
+  if (!isVintedUrl(s.url)) return null;
+  return { id: s.id, login: s.login, url: s.url };
+}
+
+/**
+ * Validates ONE stored offer against the host allow-list. Returns null when the offer
+ * must be dropped entirely (a non-Vinted `url` — the offer's identity is untrustworthy
+ * and it is what the seller-resolve pass would re-fetch). A bad `photo` or `seller` only
+ * loses that field, since the offer itself is still usable.
+ */
+export function sanitizeStoredOffer(raw: unknown): StoredOffer | null {
+  if (!raw || typeof raw !== "object") return null;
+  const o = raw as Record<string, unknown>;
+  if (!isVintedUrl(o.url)) return null;
+  return {
+    url: o.url,
+    title: typeof o.title === "string" ? o.title : undefined,
+    price: typeof o.price === "number" && isFinite(o.price) ? o.price : null,
+    currency: typeof o.currency === "string" ? o.currency : "PLN",
+    photo: isVintedPhotoUrl(o.photo) ? o.photo : null,
+    seller: sanitizeSeller(o.seller),
+    prevPrice: typeof o.prevPrice === "number" && isFinite(o.prevPrice) ? o.prevPrice : undefined,
+    firstSeenAt: typeof o.firstSeenAt === "string" ? o.firstSeenAt : undefined,
+  };
+}
+
+/** VintedItem (from the scan) → StoredOffer (for storage). Returns null for an
+ *  off-site URL — defence in depth, so a hostile scraped link never even gets stored. */
+export function offerFromItem(item: VintedItem): StoredOffer | null {
+  if (!isVintedUrl(item.url)) return null;
   return {
     url: item.url,
     title: item.title,
     price: item.priceValue,
     currency: item.currency,
-    photo: item.photo ?? null,
-    seller: item.seller ?? null,
+    photo: isVintedPhotoUrl(item.photo) ? item.photo : null,
+    seller: sanitizeSeller(item.seller),
   };
 }
 
@@ -114,7 +152,11 @@ export function parseVintedData(raw: string | null | undefined): StoredVintedDat
       return {
         scannedAt: typeof d.scannedAt === "string" ? d.scannedAt : "",
         changedAt: typeof d.changedAt === "string" ? d.changedAt : undefined,
-        offers: d.offers,
+        // Every offer is re-validated on the way OUT of storage, not just on the way in:
+        // the blob lives in Notion, so anything that can write there could otherwise
+        // smuggle an off-site URL past the parser's guarantee (→ SSRF on the re-fetch,
+        // and an unvalidated `href` in the UI). Bad offers are dropped, not repaired.
+        offers: d.offers.map(sanitizeStoredOffer).filter((o: StoredOffer | null): o is StoredOffer => o !== null),
       };
     }
     return null;

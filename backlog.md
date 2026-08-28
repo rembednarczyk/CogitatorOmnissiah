@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.74.3** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.75.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,17 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.75.0** — **[SEC-PR1] Allow-lista hosta dla URL-i Vinted — zamyka SSRF + 6 sinków `href`.** Nowy
+  `services/vintedUrl.ts`: `isVintedUrl` (host = `vinted.pl`/subdomeny, tylko http(s)) i `isVintedPhotoUrl`
+  (+`vinted.net` dla CDN). Dopasowanie `h===base || h.endsWith("."+base)` — `evilvinted.pl` i
+  `vinted.pl.attacker.com` odpadają. Wpięte: (1) `parseVintedData` waliduje KAŻDĄ ofertę na WYJŚCIU ze storage
+  (`sanitizeStoredOffer`) — zły `url` = drop oferty, zły `photo`/`seller` = drop pola; (2) `offerFromItem` zwraca
+  `null` dla obcego hosta (obrona w głąb na wejściu; caller filtruje); (3) filtr przed re-fetchem w
+  `vintedSyncService` z testu PODCIĄGU `/\/items\//` → `isVintedUrl(url) && url.includes("/items/")`. To był
+  realny wektor: `http://169.254.169.254/items/` przechodził stary filtr i był pobierany z wnętrza Rendera
+  z ciasteczkiem `cf_clearance`. +15 testów (m.in. dokładne cele SSRF, suffix-confusion, `javascript:`).
+  Fixture'y z atrapami URL (`"u"`, `"u1"`) w `vintedStore.test`/`marketStats.test` urealnione — nigdy nie były
+  poprawnymi danymi Vinted. Suite 517 zielone, lint czysty, build OK.
 - **1.74.3** — **Świece nad regałem = potrójny klaster (taki był zamysł).** Pojedyncza `WaxCandle` zamieniona z
   powrotem na `CandleCluster` (3 świece), przywrócone `VARIANTS`. Cluster skalowany przez wymiary SVG (nie
   transform) → precyzyjne osadzenie tuż nad gzymsem (`-top-[60px]`, scale 0.42); glow skalowany z rozmiarem.
@@ -1333,6 +1344,44 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
   (`parseReadDate`/`parseImportCsv`/`buildReadDatePlan`). DO ZROBIENIA kiedyś: opakować to w UI (upload CSV w
   Ustawieniach → podgląd planu: dopasowane/niedopasowane/niejednoznaczne → zatwierdź zapis), reużywając tych
   helperów. Nowe rekordy „na bieżąco" już obsłużone automatycznym stemplowaniem przy oznaczaniu „Przeczytane".
+- **SECURITY SWEEP (2026-08-28) — findingi do naprawy, NIC jeszcze nie zrobione.** Pełny audyt (4 obszary:
+  HTTP/auth, sekrety, scrapery, frontend). **Basic Auth JEST włączony na produkcji (potwierdzone przez usera)** —
+  to przelicza wagi: findingi wymagające dostępu do API schodzą na dalszy plan, a na czoło wychodzą te, których
+  auth NIE zasłania. Raport: `docs/security-sweep.md` (jeśli powstanie) / artifact z sesji.
+  - **[1] SSRF w resolve sprzedawców — NAJWYŻSZY priorytet, auth tego NIE chroni.** `vintedSyncService.ts:271`
+    filtruje `/\/items\//.test(o.url)` = test PODCIĄGU, nie hosta; `parseVintedData` (`vintedStore.ts:113-118`)
+    przepuszcza `offers` hurtem (choć `scannedAt`/`changedAt` typuje); `vintedParser.ts:204` przyjmuje dowolny
+    absolutny `http…` ze scrapowanego JSON-a; nagłówki dokładają `Cookie` bez sprawdzenia hosta. Wektor wchodzi
+    przez SCRAPOWANĄ TREŚĆ (nie przez API), więc autoryzacja nie stanowi bariery. Fix: allow-lista hosta+schematu
+    w `parseVintedData` — zamyka też 6 sinków `href` w UI (ten sam root cause).
+  - **[2] CSRF — dotyczy WYŁĄCZNIE stanu z włączonym auth (czyli naszego).** Poświadczenia Basic są dołączane
+    przez przeglądarkę do żądań cross-site; bezparametrowe rytuały (`/api/sync-purify`, `/api/sync/stop`,
+    `/api/sync/reset`, `syncController.ts:183-197`) da się odpalić formularzem z obcej strony. Endpointy z ciałem
+    JSON są bezpieczne (formularz cross-site nie wyśle `application/json`). Fix: check `Origin`/`Referer`.
+  - **[3] Destrukcyjny zapis schematu (footgun, już nie atak).** Walidacja przepuszcza `newOptions: []`
+    (`syncController.ts:126-131`), a `updateSchema` (`notion.adapter.ts:101-106`) PODMIENIA opcje w całości →
+    `PATCH` z pustą listą na `Źródło` czyści tagi w całej kolekcji, nieodwracalnie. Za authem = ryzyko własnej
+    pomyłki/buga, nie obcego. Fix: odrzuć pustą listę + allow-lista edytowalnych kolumn.
+  - **[4] Auth fail-open jako LATENTNE ryzyko.** `basicAuth.ts:29` `if (!user || !pass) return next()`, a
+    `render.yaml` ma `sync: false` → świeży deploy z blueprintu wstaje OTWARTY. Dziś OK, ale jedna pomyłka przy
+    rotacji zmiennych = cicha ekspozycja. Fix: fail-closed w `NODE_ENV=production`.
+  - **[5] `dist/server.cjs` serwowany publicznie** (`server.ts:30-32` — build wrzuca SPA i bundle serwera do tego
+    samego `dist/`). Za authem to non-issue; sprawdzone: ZERO zaszytych poświadczeń w bundlu. Fix przy okazji:
+    build SPA do `dist/public/`.
+  - **[6] Limity zasobów**: nielimitowane `Map` cache (`cycleLookupService.ts:55`, `isbnLookupService.ts:28`) bez
+    TTL/capa; brak `maxContentLength` na wszystkich axiosach (przy 7 MB stronach Vinted i 512 MB Rendera);
+    `/api/cycle` robi do ~34 żądań wychodzących na chybienie. Za authem = tylko własny footgun/wyciek pamięci.
+  - **[7] TLS wyłączony na OPAC** (`libraryCheckService.ts:45-48`, `rejectUnauthorized:false`) — auth nieistotny,
+    to warstwa sieciowa. Kontrolowane (per-agent, bez poświadczeń), ale odpowiedzi decydują o zapisach do Notion.
+    Węższy fix: dopiąć brakujący cert przez `ca:`.
+  - **[8] Drobne**: brak nagłówków bezpieczeństwa (CSP/X-Frame-Options/nosniff), ciasteczka Vinted spłaszczane bez
+    scope’u hosta (`cookies.ts` + `browserPrime.ts:73` bierze WSZYSTKIE ciasteczka kontekstu), `error.message`
+    z upstreamu zwracany dosłownie (leak ID bazy w komunikacie Notion), `nanoid` w npm audit (build-time only).
+  - **ZWERYFIKOWANE JAKO CZYSTE** (nie powtarzać audytu): zero XSS (brak jakiegokolwiek sinka HTML w `src/`),
+    zero sekretów w drzewie i w 286 commitach historii, klucz Notion nigdy nie logowany/nie zwracany/nie w bundlu,
+    `mergeConfig` wzorowy (neutralizuje też prototype pollution), Basic Auth poprawny (`timingSafeEqual`, montowany
+    przed `express.json()` i statykiem), brak SSRF w warstwie HTTP/path traversal/SQL/shell injection, brak ReDoS,
+    lock zadań bez TOCTOU, keepalive SSE sprzątane, Playwright nie odwiedza niezaufanych URL-i.
 - **Prognoza domknięcia kolekcji (reading velocity, dalszy ciąg)** — DO ZROBIENIA. Na bazie `readingStats`
   (`recentPace`) + liczby brakujących (nieprzeczytanych) award-booków policzyć szacunek „przy obecnym tempie
   domkniesz kolekcję ~za X (lat/mies.), ok. rok YYYY". Miejsce: `computeReadingStats` (dołożyć pole `forecast`)
