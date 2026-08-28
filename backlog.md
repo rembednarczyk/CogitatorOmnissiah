@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.74.2** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.74.3** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,11 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.74.3** — **Świece nad regałem = potrójny klaster (taki był zamysł).** Pojedyncza `WaxCandle` zamieniona z
+  powrotem na `CandleCluster` (3 świece), przywrócone `VARIANTS`. Cluster skalowany przez wymiary SVG (nie
+  transform) → precyzyjne osadzenie tuż nad gzymsem (`-top-[60px]`, scale 0.42); glow skalowany z rozmiarem.
+  Wariant + pozycja pozioma (`left-1/4…1/2`) z hasha `shelfId` — sąsiednie regały różnią się układem i miejscem,
+  nie kolidują z nagłówkiem. Tło sali dalej czyste, ciemny 40k bez zmian. Suite 502 zielone, lint czysty, build OK.
 - **1.74.2** — **Świece: klastry z tła usunięte, świeca przeniesiona nad górną ramkę regału.** Dwa duże klastry
   narożne w `RoomDecor` (boho) USUNIĘTE (+ martwy `CandleCluster`/`VARIANTS`); ciemny 40k zachowuje kinkiety.
   Per-regał `WaxCandle` skalowana teraz przez wymiary SVG (nie transform) → precyzyjne pozycjonowanie; siedzi tuż
