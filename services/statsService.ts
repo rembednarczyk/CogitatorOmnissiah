@@ -7,6 +7,7 @@ import {
   computeAuthorStats, computeAwardBooksStats, computeOwnedUnread, computeAwardCoverage,
   computeAllAwardsStats, computeAvailabilityStats, computePublisherStats, computeSeriesStats,
   computeCycleStats, computeDecadeStats, computeYearlyStats, computeLibraryStats,
+  computeReadingStats,
 } from "./statsAggregator";
 
 export class StatsService {
@@ -35,6 +36,7 @@ export class StatsService {
       seriesStats: computeSeriesStats(books),
       cycleStats: computeCycleStats(books),
       decadeStats: computeDecadeStats(books),
+      readingStats: computeReadingStats(books),
       marketStats: computeMarketStats(books),
       libraryStats: computeLibraryStats(books, branches),
     };

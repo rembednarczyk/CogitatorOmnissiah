@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.70.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.71.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,15 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.71.0** — **[RD-PR3] Agregacja „tempa czytania" (backend, warstwa 1/2).** `computeReadingStats` w
+  `statsAggregator` liczy przeczytane **award-booki wg ROKU** z `dataPrzeczytania` (granularność roczna
+  ŚWIADOMA: daty rok-only to `YYYY-01-01`, więc rozbicie miesięczne wymyśliłoby szpic w styczniu — liczymy tylko
+  rok). Zwraca: `perYear` (rosnąco), `totalRead` vs `totalDated` (ile historii ma datę), `thisYear`/`lastYear`,
+  `bestYear` (szczyt), `recentPace` (śr. książek/rok po ukończonych latach od startu, cap 3, bieżący rok wyłączony).
+  `now` wstrzykiwane (testowalność). Typ `ReadingStats` w `src/types/stats.ts` + `Stats.readingStats`; wpięte w
+  `statsService.getStats`. +6 testów. Suite 502 zielone. **NASTĘPNE (RD-PR4, frontend)**: karta „Tempo czytania"
+  na zakładce statystyk (KPI przeczytane w tym roku + delta, recentPace, wykres roczny à la `DecadeHistogram`);
+  potem ew. prognoza domknięcia kolekcji (recentPace + brakujące award-booki) i streaki.
 - **1.70.0** — **[RD-PR2] Jednorazowy import dat przeczytania z CSV (helpery + skrypt).** Czysta,
   przetestowana logika w `services/readDateImport.ts`: `parseReadDate` (rozpoznaje `dd.mm.yyyy` / `yyyy-mm-dd` /
   `yyyy-mm` / `mm.yyyy` / `yyyy`; daty częściowe przyklejane do początku okresu — miesiąc `-01`, rok `-01-01`),

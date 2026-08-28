@@ -53,6 +53,25 @@ export interface AvailabilityStats {
   none: number;
 }
 
+export interface ReadingYearCount { year: number; count: number }
+/** Reading pace over award books, by the year each was marked read. Year-granular
+ *  on purpose (historical dates are often year-only). */
+export interface ReadingStats {
+  /** Books read per calendar year (ascending; only years with ≥1 read). */
+  perYear: ReadingYearCount[];
+  /** Award books marked read (with or without a date). */
+  totalRead: number;
+  /** Of those, how many carry a „Data przeczytania". */
+  totalDated: number;
+  /** Reads in the current / previous calendar year. */
+  thisYear: number;
+  lastYear: number;
+  /** Peak reading year (earliest on a tie), or null when nothing is dated. */
+  bestYear: ReadingYearCount | null;
+  /** Mean books/year over completed years since you started (last 3, current excluded). */
+  recentPace: number;
+}
+
 export interface PublisherStat { name: string; count: number; read: number }
 export interface SeriesStat { name: string; count: number; owned: number; read: number }
 export interface CycleStats { partOfCycle: number; standalone: number; total: number }
@@ -83,6 +102,7 @@ export interface Stats {
   seriesStats: SeriesStat[];
   cycleStats: CycleStats;
   decadeStats: DecadeStat[];
+  readingStats: ReadingStats;
   marketStats: MarketStats;
   libraryStats: LibraryStat[];
 }
