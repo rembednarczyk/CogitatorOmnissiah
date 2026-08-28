@@ -1,4 +1,6 @@
 import axios from "axios";
+import { responseSizeLimit } from "../scrapingClient";
+import { BoundedCache } from "./boundedCache";
 import { normalizeIsbn } from "./isbn";
 import { createLogger } from "../logger";
 
@@ -25,14 +27,16 @@ export interface IsbnBook {
 
 // Process-memory cache keyed by canonical ISBN-13. `null` = looked up, not found
 // (cached to avoid re-hitting the API); transient errors are NOT cached.
-const cache = new Map<string, IsbnBook | null>();
+// Bounded: the key is any checksum-valid ISBN-13, which is trivially generatable in
+// bulk, so an unbounded Map was a slow heap leak driven by request input.
+const cache = new BoundedCache<IsbnBook | null>(2000);
 
 export async function lookupIsbn(rawCode: string): Promise<IsbnBook | null> {
   const isbn = normalizeIsbn(rawCode);
   if (!isbn) return null;
   if (cache.has(isbn)) return cache.get(isbn)!;
   try {
-    const res = await axios.get(GOOGLE_BOOKS, { params: { q: `isbn:${isbn}` }, timeout: 10000 });
+    const res = await axios.get(GOOGLE_BOOKS, { params: { q: `isbn:${isbn}` }, timeout: 10000, ...responseSizeLimit });
     const info = res.data?.items?.[0]?.volumeInfo;
     if (!info?.title) {
       cache.set(isbn, null);
@@ -71,7 +75,7 @@ function collectIsbns(items: any[]): string[] {
 
 /** One Google Books query → deduped ISBN-13s. */
 async function queryGoogle(q: string): Promise<string[]> {
-  const res = await axios.get(GOOGLE_BOOKS, { params: { q, maxResults: 20 }, timeout: 10000 });
+  const res = await axios.get(GOOGLE_BOOKS, { params: { q, maxResults: 20 }, timeout: 10000, ...responseSizeLimit });
   return collectIsbns(Array.isArray(res.data?.items) ? res.data.items : []);
 }
 
@@ -101,7 +105,7 @@ async function fromGoogle(title: string, author: string): Promise<string[]> {
 async function queryOpenLibrary(title: string, author: string): Promise<string[]> {
   const params: Record<string, string | number> = { title, limit: 5, fields: "isbn" };
   if (author) params.author = author;
-  const res = await axios.get(OPEN_LIBRARY, { params, timeout: 10000 });
+  const res = await axios.get(OPEN_LIBRARY, { params, timeout: 10000, ...responseSizeLimit });
   const docs: any[] = Array.isArray(res.data?.docs) ? res.data.docs : [];
   const found = new Set<string>();
   for (const doc of docs) {
@@ -116,7 +120,7 @@ async function queryOpenLibrary(title: string, author: string): Promise<string[]
 
 /** One Biblioteka Narodowa query → deduped ISBN-13s (from MARC 020 $a + the isbnIssn field). */
 async function queryBN(params: Record<string, string | number>): Promise<string[]> {
-  const res = await axios.get(BN_API, { params: { ...params, limit: 20 }, timeout: 10000 });
+  const res = await axios.get(BN_API, { params: { ...params, limit: 20 }, timeout: 10000, ...responseSizeLimit });
   const bibs: any[] = Array.isArray(res.data?.bibs) ? res.data.bibs : [];
   const found = new Set<string>();
   for (const bib of bibs) {

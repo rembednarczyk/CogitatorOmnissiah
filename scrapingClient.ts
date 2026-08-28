@@ -49,3 +49,23 @@ export const createScrapingAgent = (opts: ScrapingAgentOptions = {}) => new http
   maxSockets: opts.maxSockets ?? 5,
   rejectUnauthorized: opts.rejectUnauthorized ?? true,
 });
+
+/**
+ * Hard ceiling on a scraped response body. Axios buffers the whole response in memory
+ * before we ever see it, and none of the calls set a limit — so a slow-drip or
+ * oversized response from any scraped host was an uncapped allocation on a 512 MB
+ * instance. `withRetry` multiplies it: a configurable 6 attempts means one book could
+ * pull six full-size bodies.
+ *
+ * 12 MB is deliberately well ABOVE the ~7 MB Vinted catalog pages this scanner is built
+ * for (see the OOM history in backlog.md) — the point is to stop the pathological case,
+ * not to second-guess normal traffic. Exceeding it rejects the request instead of
+ * filling the heap.
+ */
+export const MAX_RESPONSE_BYTES = 12 * 1024 * 1024;
+
+/** Axios options capping the buffered response — spread into every scraping call. */
+export const responseSizeLimit = {
+  maxContentLength: MAX_RESPONSE_BYTES,
+  maxBodyLength: MAX_RESPONSE_BYTES,
+};

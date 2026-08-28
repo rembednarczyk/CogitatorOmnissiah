@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.78.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.79.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,19 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.79.0** — **[SEC-PR7] Limity zasobów: rozmiar odpowiedzi + ograniczone cache.** (1) `scrapingClient`
+  eksportuje `MAX_RESPONSE_BYTES` (12 MB) + `responseSizeLimit` (`maxContentLength`/`maxBodyLength`), wpięte we
+  WSZYSTKIE 9 wywołań axiosa (Vinted ×4, ISBN ×4, OPAC ×1). Wcześniej żadne nie miało limitu — axios buforuje całe
+  ciało w pamięci, a `withRetry` (do 6 prób) mnożył to razy sześć na 512 MB instancji. 12 MB jest CELOWO powyżej
+  ~7 MB stron katalogu Vinted (patrz historia OOM) — chodzi o ucięcie przypadku patologicznego, nie normalnego
+  ruchu. (2) Nowy `services/boundedCache.ts` (`BoundedCache`, FIFO z twardym capem) zastępuje nielimitowane
+  `Map` w `cycleLookupService` (500 wpisów; klucz z `?title=`/`?author=`, a każde chybienie to do ~34 żądań do
+  wiki) i `isbnLookupService` (2000; klucz = dowolny ISBN-13 z poprawną sumą kontrolną, trywialny do masowego
+  generowania). FIFO nie LRU — świadomie, prostota nad hit-rate; `null` pozostaje legalną WARTOŚCIĄ (obecność
+  przez `has()`, nie truthiness). +6 testów. Suite 546 zielone, lint czysty, build OK.
+  **ŚWIADOMIE POMINIĘTE**: pinning certu OPAC przez `ca:` zamiast `rejectUnauthorized:false` — wymaga prawdziwego
+  certyfikatu pośredniego, którego nie zweryfikuję z tego sandboxa, a wpisanie go na ślepo (plus wygasanie) grozi
+  zepsuciem skanu bibliotecznego. Zostaje jako świadomy dług z uzasadnieniem.
 - **1.78.0** — **[SEC-PR6] Nagłówki bezpieczeństwa + CSP.** `middleware/securityHeaders.ts` montowany PIERWSZY
   w `app.ts` (więc obejmuje też odpowiedzi 401/403/503 i statyczne SPA) + `app.disable("x-powered-by")`.
   Nagłówki: CSP, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: same-origin`

@@ -3,7 +3,7 @@ import { NotionAdapter } from "../notion.adapter";
 import { SyncEvent } from "../src/types";
 import { withRetry } from "../retry";
 import { createLogger } from "../logger";
-import { createScrapingAgent } from "../scrapingClient";
+import { createScrapingAgent, responseSizeLimit } from "../scrapingClient";
 import { parseVintedItems, vintedDiagnostics, looksBlocked, looksEmpty, extractVintedSeller, VintedItem } from "./vintedParser";
 import { NotionBook } from "../src/types";
 import { offerFromItem, parseVintedData, mergeAndDiff, serializeVintedData, computeChangedAt, toStoredBookView, StoredVintedData, StoredOffer, StoredBookView, OfferDiff, EMPTY_DIFF } from "./vintedStore";
@@ -121,7 +121,7 @@ export class VintedSyncService {
         if (session.cookie) {
           try {
             const probeUrl = buildCatalogUrl(v, `${candidates[0].plTitle} ${candidates[0].author || ""}`.trim());
-            const probe = await axios.get(probeUrl, { httpsAgent, headers: vintedRequestHeaders(cfg.scraping.userAgents, session), timeout: v.requestTimeoutMs });
+            const probe = await axios.get(probeUrl, { httpsAgent, headers: vintedRequestHeaders(cfg.scraping.userAgents, session), timeout: v.requestTimeoutMs, ...responseSizeLimit });
             const ph: string = probe.data;
             const d = vintedDiagnostics(ph, 0);
             const usable = looksBlocked(ph) || d.noResultsMarker || d.hasCatalogJson || d.hasFeedGrid || d.itemLinks > 0;
@@ -171,7 +171,7 @@ export class VintedSyncService {
         sendEvent({ type: "search_attempt", result: { id: book.id, title: book.plTitle, author: book.author, url, status: "pending", itemCount: 0 } });
 
         try {
-          const response = await withRetry(async () => axios.get(url, { httpsAgent, headers: vintedRequestHeaders(cfg.scraping.userAgents, session), timeout: v.requestTimeoutMs }), v.retryAttempts, v.retryBackoffMs);
+          const response = await withRetry(async () => axios.get(url, { httpsAgent, headers: vintedRequestHeaders(cfg.scraping.userAgents, session), timeout: v.requestTimeoutMs, ...responseSizeLimit }), v.retryAttempts, v.retryBackoffMs);
 
           const html = response.data;
           log.info(`Odpowiedź Vinted`, { title, chars: html.length, ...memMb() });
@@ -306,7 +306,7 @@ export class VintedSyncService {
         const firstOffer = pending[0]?.offers[0];
         if (session.cookie && firstOffer) {
           try {
-            const probe = await axios.get(firstOffer.url, { httpsAgent, headers: vintedRequestHeaders(cfg.scraping.userAgents, session), timeout: v.requestTimeoutMs });
+            const probe = await axios.get(firstOffer.url, { httpsAgent, headers: vintedRequestHeaders(cfg.scraping.userAgents, session), timeout: v.requestTimeoutMs, ...responseSizeLimit });
             const ph: string = probe.data;
             if (!looksBlocked(ph) && !extractVintedSeller(ph)) {
               session = { userAgent: "", cookie: "" };
@@ -329,7 +329,7 @@ export class VintedSyncService {
           fetched++;
           sendEvent({ type: "progress", message: `Sprzedawca: ${p.book.plTitle} (${fetched}/${target})`, current: fetched, total: target });
           try {
-            const response = await withRetry(async () => axios.get(offer.url, { httpsAgent, headers: vintedRequestHeaders(cfg.scraping.userAgents, session), timeout: v.requestTimeoutMs }), v.retryAttempts, v.retryBackoffMs);
+            const response = await withRetry(async () => axios.get(offer.url, { httpsAgent, headers: vintedRequestHeaders(cfg.scraping.userAgents, session), timeout: v.requestTimeoutMs, ...responseSizeLimit }), v.retryAttempts, v.retryBackoffMs);
             const html = response.data;
             if (looksBlocked(html)) {
               log.warn("Vinted zablokował stronę oferty (sprzedawca, baza)", { url: offer.url });

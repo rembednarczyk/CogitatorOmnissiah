@@ -4,6 +4,7 @@ import { WikiParser } from "../wiki.parser";
 import { NotionBook } from "../src/types";
 import { isWikiAuthorMatch } from "./dataNormalizer";
 import { createLogger } from "../logger";
+import { BoundedCache } from "./boundedCache";
 
 const log = createLogger("CycleLookup");
 
@@ -52,7 +53,9 @@ const MAX_HOPS = 15; // safety cap on walking the chain in each direction
  * In-process memory cache (key: title+author) — a repeat click is instant.
  */
 export class CycleLookupService {
-  private cache = new Map<string, CycleView | null>();
+  // Bounded: the key comes from `?title=`/`?author=`, so an unbounded Map would grow
+  // with every distinct request — and each miss costs up to ~34 wiki fetches.
+  private cache = new BoundedCache<CycleView | null>(500);
 
   constructor(private notion: NotionAdapter, private wiki: WikiAdapter) {}
 
