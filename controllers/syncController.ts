@@ -128,6 +128,30 @@ export const updateNotionSchema = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Nieprawidłowa lista opcji (oczekiwano tablicy { name })." });
     }
 
+    // The write REPLACES a column's option list wholesale, so it is destructive by
+    // nature: removing an option clears that value from every row that used it. The
+    // type allow-list above says nothing about WHICH column or HOW MUCH is removed.
+    // Validate against the live schema rather than a hardcoded column list (which would
+    // drift): the column must already exist, keep its type, and lose at most one option
+    // per request — which is exactly what the editor's add/delete-one flow produces.
+    const schema = await syncManager.getNotionSchema();
+    const existing = schema?.[propertyName];
+    if (!existing) {
+      return res.status(400).json({ error: `Kolumna „${propertyName}" nie istnieje w bazie.` });
+    }
+    if (existing.type !== propertyType) {
+      return res.status(400).json({ error: `Kolumna „${propertyName}" jest typu ${existing.type}, nie ${propertyType}.` });
+    }
+
+    const currentNames: string[] = (existing[propertyType]?.options ?? []).map((o: any) => o?.name).filter((n: any): n is string => typeof n === "string");
+    const keptNames = new Set(newOptions.map((o: { name: string }) => o.name));
+    const removed = currentNames.filter((n) => !keptNames.has(n));
+    if (removed.length > 1) {
+      return res.status(400).json({
+        error: `Odrzucono: żądanie usuwa ${removed.length} opcji naraz z kolumny „${propertyName}". Usuwaj po jednej — masowe czyszczenie kasuje wartości we wszystkich wierszach i jest nieodwracalne.`,
+      });
+    }
+
     await syncManager.updateNotionSchema(propertyName, propertyType, newOptions);
     res.json({ success: true });
   } catch (error: any) {
