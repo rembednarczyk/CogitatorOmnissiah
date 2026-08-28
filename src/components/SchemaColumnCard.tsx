@@ -46,7 +46,7 @@ export const SchemaColumnCard: React.FC<Props> = ({ name, value, isSelectType, o
           )}
         </div>
         <div className="flex flex-col items-end gap-1">
-          <span className="px-3 py-1 bg-cyan-500/10 text-cyan-400 rounded-full text-[9px] font-display border border-cyan-500/20 uppercase tracking-[0.15em] font-black shadow-[0_0_15px_rgba(6,182,212,0.1)]">
+          <span className="px-3 py-1 bg-cyan-500/10 text-cyan-400 rounded-full text-[9px] font-display border border-cyan-500/20 uppercase tracking-[0.15em] font-black hl-glow-cyan">
             {value.type}
           </span>
         </div>

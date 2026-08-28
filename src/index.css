@@ -231,6 +231,26 @@ body {
 [data-theme="light"] .hl-glow-rose        { box-shadow: 0 0 18px rgba(176,87,74,.28); }   /* brick */
 [data-theme="light"] .hl-glow-cyan-strong { box-shadow: 0 0 16px rgba(192,122,86,.42); }
 
+/* REGAŁ — karetka wstawiania podczas przeciągania książki: sygnalizuje POPRAWNE /
+   NIEPOPRAWNE miejsce upuszczenia. Semantyka zielony/czerwony (zamiast dawnego
+   cyan=OK). CIEMNY (40k) = żywe neony; JASNY (boho) = ciepła, ziemista, ale
+   WIDOCZNA na lnie zieleń liściasta / terakota. (Wcześniej inline rgba → nie
+   remapowało się w ogóle.) */
+.drop-caret-valid   { background: linear-gradient(180deg, rgba(52,211,153,.95), rgba(52,211,153,.25)); box-shadow: 0 0 10px rgba(52,211,153,.8); }
+.drop-caret-invalid { background: linear-gradient(180deg, rgba(244,63,94,.9),  rgba(244,63,94,.2));  box-shadow: 0 0 10px rgba(244,63,94,.7); }
+[data-theme="light"] .drop-caret-valid   { background: linear-gradient(180deg, rgba(107,142,62,.95), rgba(107,142,62,.30)); box-shadow: 0 0 11px rgba(107,142,62,.9); }  /* leśna zieleń */
+[data-theme="light"] .drop-caret-invalid { background: linear-gradient(180deg, rgba(180,74,56,.95),  rgba(180,74,56,.30));  box-shadow: 0 0 11px rgba(180,74,56,.9); }   /* terakota */
+
+/* REGAŁ — poświata ramki regału jako CELU upuszczenia (hover w trakcie drag).
+   CIEMNY = dokładnie dotychczasowe 28px rgba akcentu; JASNY = ekwiwalent boho
+   (spójny z ring/tekstem, które już się remapują: emerald/purple→szałwia, cyan→glinka). */
+.shelf-glow-emerald { box-shadow: 0 0 28px rgba(52,211,153,.22); }
+.shelf-glow-cyan    { box-shadow: 0 0 28px rgba(34,211,238,.22); }
+.shelf-glow-purple  { box-shadow: 0 0 28px rgba(168,85,247,.22); }
+[data-theme="light"] .shelf-glow-emerald { box-shadow: 0 0 26px rgba(126,138,107,.30); }
+[data-theme="light"] .shelf-glow-cyan    { box-shadow: 0 0 26px rgba(192,122,86,.30); }
+[data-theme="light"] .shelf-glow-purple  { box-shadow: 0 0 26px rgba(126,138,107,.30); }
+
 /* KATALOG: tytuły wyników na serif (Cormorant) — podpis makiety „Librem".
    Tylko jasny motyw; ciemny „Warhammer" zostaje na sans (bez zmian). */
 [data-theme="light"] .result-title {
