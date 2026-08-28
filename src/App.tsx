@@ -81,18 +81,33 @@ export default function App() {
             </p>
           </div>
 
-          {/* Theme toggle — jasny „Librem" / ciemny „Warhammer" */}
+          {/* Theme toggle — dyskretna ikona księżyc/słońce (jasny „Librem" / ciemny „Warhammer") */}
           <motion.button
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.96 }}
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.92 }}
             onClick={toggleTheme}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-slate-900/80 border border-cyan-500/30 text-slate-300 backdrop-blur-md shadow-lg transition-colors hover:border-cyan-400/50"
+            className={`shrink-0 grid place-items-center w-10 h-10 rounded-full border backdrop-blur-md shadow-sm transition-colors ${
+              theme === 'light'
+                ? 'border-[#e4d9c4] bg-[#fbf6ec]/70 text-[#8c8069] hover:text-[#c07a56] hover:border-[#c07a56]/50'
+                : 'border-cyan-500/30 bg-slate-900/70 text-slate-300 hover:text-cyan-300 hover:border-cyan-400/50'
+            }`}
             title={theme === 'light' ? 'Przełącz na motyw ciemny' : 'Przełącz na motyw jasny'}
             aria-label={theme === 'light' ? 'Przełącz na motyw ciemny' : 'Przełącz na motyw jasny'}
           >
-            {theme === 'light'
-              ? <><Moon className="w-4 h-4" /><span className="text-xs font-bold uppercase tracking-widest">Ciemny</span></>
-              : <><Sun className="w-4 h-4 text-amber-400" /><span className="text-xs font-bold uppercase tracking-widest">Jasny</span></>}
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.span
+                key={theme}
+                initial={{ rotate: -90, opacity: 0, scale: 0.6 }}
+                animate={{ rotate: 0, opacity: 1, scale: 1 }}
+                exit={{ rotate: 90, opacity: 0, scale: 0.6 }}
+                transition={{ duration: 0.2 }}
+                className="grid place-items-center"
+              >
+                {theme === 'light'
+                  ? <Moon className="w-[18px] h-[18px]" />
+                  : <Sun className="w-[18px] h-[18px] text-amber-400" />}
+              </motion.span>
+            </AnimatePresence>
           </motion.button>
         </motion.header>
 
