@@ -28,7 +28,11 @@ export async function startServer() {
     });
     app.use(vite.middlewares);
   } else if (process.env.NODE_ENV === "production") {
-    const distPath = path.join(process.cwd(), "dist");
+    // Only the built SPA — NOT `dist/`, which also contains the bundled backend
+    // (`server.cjs`). Serving `dist/` wholesale published the entire backend at
+    // `GET /server.cjs`: no credentials in it, but a complete route map and the
+    // validation logic. The static root now holds exactly what is meant to be public.
+    const distPath = path.join(process.cwd(), "dist", "public");
     app.use(express.static(distPath));
     app.get("*", (req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
