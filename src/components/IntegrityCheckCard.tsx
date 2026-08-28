@@ -74,7 +74,7 @@ export const IntegrityCheckCard: React.FC<IntegrityCheckCardProps> = ({
           disabled={isAnySyncLoading}
           className={`p-2 rounded-full border transition-all ${
             state.loading 
-              ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.4)] animate-pulse' 
+              ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400 hl-glow-cyan-strong animate-pulse'
               : 'bg-slate-800/50 border-slate-700 text-slate-500 hover:text-cyan-400 hover:border-cyan-500/30'
           }`}
           title="Uruchom kontrolę spójności"

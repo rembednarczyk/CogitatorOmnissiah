@@ -212,6 +212,25 @@ body {
 /* Nagłówki na serif (klasa font-display używana w całej apce). */
 [data-theme="light"] .font-display { letter-spacing: .2px; }
 
+/* ============================================================================
+   PODŚWIETLENIE / POŚWIATA aktywnego elementu — spójna z kolorem PRZEWODNIM
+   przycisku. Problem: arbitralne `shadow-[0_0_..px_rgba(..)]` niosą literalne
+   RGB i NIE przechodzą przez remap `--color-*`, więc w jasnym motywie zostawały
+   neonowe (cyan/purple z 40k) na ciepłym, glinianym wypełnieniu → zgrzyt.
+   Rozwiązanie: semantyczne klasy poświaty. CIEMNY = dokładnie dotychczasowe
+   rgba (motyw 40k bez zmian), JASNY = ekwiwalent boho (clay/ochre/sage/brick).
+   Używane wszędzie zamiast surowych shadow-[…] przy akcentach przycisków. */
+.hl-glow-cyan        { box-shadow: 0 0 20px rgba(34,211,238,.2); }
+.hl-glow-amber       { box-shadow: 0 0 20px rgba(251,191,36,.2); }
+.hl-glow-purple      { box-shadow: 0 0 20px rgba(168,85,247,.2); }
+.hl-glow-rose        { box-shadow: 0 0 20px rgba(244,63,94,.2); }
+.hl-glow-cyan-strong { box-shadow: 0 0 15px rgba(34,211,238,.4); }
+[data-theme="light"] .hl-glow-cyan        { box-shadow: 0 0 18px rgba(192,122,86,.30); } /* clay */
+[data-theme="light"] .hl-glow-amber       { box-shadow: 0 0 18px rgba(206,155,63,.30); } /* ochre */
+[data-theme="light"] .hl-glow-purple      { box-shadow: 0 0 18px rgba(126,138,107,.30); } /* sage */
+[data-theme="light"] .hl-glow-rose        { box-shadow: 0 0 18px rgba(176,87,74,.28); }   /* brick */
+[data-theme="light"] .hl-glow-cyan-strong { box-shadow: 0 0 16px rgba(192,122,86,.42); }
+
 /* KATALOG: tytuły wyników na serif (Cormorant) — podpis makiety „Librem".
    Tylko jasny motyw; ciemny „Warhammer" zostaje na sans (bez zmian). */
 [data-theme="light"] .result-title {

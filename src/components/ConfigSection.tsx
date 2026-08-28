@@ -111,7 +111,7 @@ export const ConfigSection: React.FC = () => {
           </button>
           <button
             onClick={save} disabled={saving}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-cyan-500/15 border border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/25 disabled:opacity-50 transition-all text-xs font-bold uppercase tracking-widest shadow-[0_0_15px_rgba(34,211,238,0.15)]"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-cyan-500/15 border border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/25 disabled:opacity-50 transition-all text-xs font-bold uppercase tracking-widest hl-glow-cyan"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Zapisz

@@ -110,7 +110,7 @@ export const StatsSection: React.FC = () => {
         )}
         <button
           onClick={reorder.toggle}
-          className={`p-2 rounded-lg transition-colors border ${reorder.arranging ? "bg-amber-500/15 text-amber-300 border-amber-500/40" : "border-transparent text-slate-500 hover:text-cyan-400 hover:bg-slate-900"}`}
+          className={`p-2 rounded-lg transition-colors border ${reorder.arranging ? "bg-amber-500/15 text-amber-300 border-amber-500/40" : "border-transparent text-slate-500 hover:text-amber-400 hover:bg-slate-900"}`}
           title={reorder.arranging ? "Zakończ układanie kart" : "Ułóż karty (przeciągnij i upuść)"}
           aria-label="Przełącz tryb układania kart"
         >
