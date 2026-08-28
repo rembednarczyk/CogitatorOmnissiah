@@ -7,6 +7,7 @@ import { createScrapingAgent } from "../scrapingClient";
 import { parseVintedItems, vintedDiagnostics, looksBlocked, looksEmpty, extractVintedSeller, VintedItem } from "./vintedParser";
 import { NotionBook } from "../src/types";
 import { offerFromItem, parseVintedData, mergeAndDiff, serializeVintedData, computeChangedAt, toStoredBookView, StoredVintedData, StoredOffer, StoredBookView, OfferDiff, EMPTY_DIFF } from "./vintedStore";
+import { isVintedUrl } from "./vintedUrl";
 import { selectAndOrderCandidates } from "./vintedScanPlanner";
 import { vintedRequestHeaders, memMb, throttle, classifyVintedError, VintedSession } from "./vintedHttp";
 import { primeVintedSession, cookieCount } from "./vintedSession";
@@ -52,7 +53,8 @@ export class VintedSyncService {
    */
   private async persistBookOffers(book: NotionBook, items: VintedItem[], scannedAt: string): Promise<OfferDiff> {
     try {
-      const fresh = items.map(offerFromItem);
+      // `offerFromItem` returns null for an off-site URL (host allow-list) — drop those.
+      const fresh = items.map(offerFromItem).filter((o): o is StoredOffer => o !== null);
       const prevData = parseVintedData(book.vintedData);
       const { offers, diff } = mergeAndDiff(fresh, prevData?.offers, scannedAt);
       const changedAt = computeChangedAt(prevData, diff, scannedAt);
@@ -268,7 +270,11 @@ export class VintedSyncService {
       for (const book of allBooks) {
         const data = parseVintedData(book.vintedData);
         if (!data) continue;
-        const nulls = data.offers.filter((o) => o.seller == null && /\/items\//.test(o.url));
+        // Host check, not a substring test: `/\/items\//` alone also matched
+        // e.g. `http://169.254.169.254/items/`, which was then fetched from inside the
+        // host network WITH the session cookie attached. `parseVintedData` already
+        // drops off-site URLs; this is the second gate on the exact value we re-fetch.
+        const nulls = data.offers.filter((o) => o.seller == null && isVintedUrl(o.url) && o.url.includes("/items/"));
         if (nulls.length) { pending.push({ book, data, offers: nulls }); totalPending += nulls.length; }
       }
 

@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.74.3** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.75.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,17 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.75.0** — **[SEC-PR1] Allow-lista hosta dla URL-i Vinted — zamyka SSRF + 6 sinków `href`.** Nowy
+  `services/vintedUrl.ts`: `isVintedUrl` (host = `vinted.pl`/subdomeny, tylko http(s)) i `isVintedPhotoUrl`
+  (+`vinted.net` dla CDN). Dopasowanie `h===base || h.endsWith("."+base)` — `evilvinted.pl` i
+  `vinted.pl.attacker.com` odpadają. Wpięte: (1) `parseVintedData` waliduje KAŻDĄ ofertę na WYJŚCIU ze storage
+  (`sanitizeStoredOffer`) — zły `url` = drop oferty, zły `photo`/`seller` = drop pola; (2) `offerFromItem` zwraca
+  `null` dla obcego hosta (obrona w głąb na wejściu; caller filtruje); (3) filtr przed re-fetchem w
+  `vintedSyncService` z testu PODCIĄGU `/\/items\//` → `isVintedUrl(url) && url.includes("/items/")`. To był
+  realny wektor: `http://169.254.169.254/items/` przechodził stary filtr i był pobierany z wnętrza Rendera
+  z ciasteczkiem `cf_clearance`. +15 testów (m.in. dokładne cele SSRF, suffix-confusion, `javascript:`).
+  Fixture'y z atrapami URL (`"u"`, `"u1"`) w `vintedStore.test`/`marketStats.test` urealnione — nigdy nie były
+  poprawnymi danymi Vinted. Suite 517 zielone, lint czysty, build OK.
 - **1.74.3** — **Świece nad regałem = potrójny klaster (taki był zamysł).** Pojedyncza `WaxCandle` zamieniona z
   powrotem na `CandleCluster` (3 świece), przywrócone `VARIANTS`. Cluster skalowany przez wymiary SVG (nie
   transform) → precyzyjne osadzenie tuż nad gzymsem (`-top-[60px]`, scale 0.42); glow skalowany z rozmiarem.
