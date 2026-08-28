@@ -15,7 +15,9 @@ services:
         sync: false
       - key: NOTION_DATABASE_ID
         sync: false
-      # Opcjonalna ochrona hasłem (ustaw obie, aby wymusić Basic Auth):
+      # WYMAGANE w produkcji: bez obu wartości serwis odpowiada 503 na wszystko
+      # poza /api/health (fail-closed — patrz middleware/basicAuth.ts). Wpisz je
+      # w dashboardzie; `sync: false` oznacza, że blueprint ich NIE dostarcza.
       - key: BASIC_AUTH_USER
         sync: false
       - key: BASIC_AUTH_PASSWORD

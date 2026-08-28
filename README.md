@@ -233,7 +233,8 @@ Skopiuj `.env.example` do `.env` i uzupełnij:
 | `NOTION_API_KEY` | ✅ | Token integracji Notion. |
 | `NOTION_DATABASE_ID` | ✅ | ID docelowej bazy Notion. |
 | `PORT` | ➖ | Port serwera (domyślnie `3000`). |
-| `BASIC_AUTH_USER` / `BASIC_AUTH_PASSWORD` | ➖ | Ustaw **obie**, aby włączyć ochronę hasłem (HTTP Basic Auth) na publicznym URL. Puste = brak autoryzacji. |
+| `BASIC_AUTH_USER` / `BASIC_AUTH_PASSWORD` | ⚠️ w produkcji | Ustaw **obie**, aby włączyć ochronę hasłem (HTTP Basic Auth). W dev puste = brak autoryzacji; w produkcji brak = **503 na wszystko poza `/api/health`** (fail-closed). |
+| `ALLOW_PUBLIC_ACCESS` | ➖ | Dokładnie `true` = świadoma zgoda na produkcję bez hasła (wyłącza fail-closed). |
 
 ---
 
@@ -278,7 +279,7 @@ SSE za proxy Rendera jest zahartowane po stronie serwera (padding wymuszający f
 
 To narzędzie osobiste bez wieloużytkownikowej autoryzacji, ale na publicznym URL warto je chronić:
 
-- **Ochrona hasłem (opt-in):** ustaw `BASIC_AUTH_USER` + `BASIC_AUTH_PASSWORD`, aby wymusić HTTP Basic Auth na całym serwisie (SPA + API). Bez tych zmiennych autoryzacja jest wyłączona (brak lockoutu). `/api/health` pozostaje otwarte dla health checku.
+- **Ochrona hasłem (fail-closed w produkcji):** ustaw `BASIC_AUTH_USER` + `BASIC_AUTH_PASSWORD`, aby wymusić HTTP Basic Auth na całym serwisie (SPA + API). W developmencie brak tych zmiennych oznacza brak autoryzacji (wygoda lokalna), ale **w produkcji brak = 503 na wszystko poza `/api/health`** — żeby pominięcie konfiguracji nie wystawiło bazy Notion publicznie po cichu. Świadome wystawienie bez hasła wymaga `ALLOW_PUBLIC_ACCESS=true`. `/api/health` pozostaje otwarte dla health checku.
 - **Walidacja mutacji schematu:** `PATCH /api/notion/schema` przyjmuje wyłącznie typy `select`/`multi_select` i poprawną listę opcji `{ name }` — reszta jest odrzucana (400).
 
 ---

@@ -9,12 +9,24 @@ function safeEqual(a: string, b: string): boolean {
 }
 
 /**
- * Opt-in HTTP Basic Auth.
+ * HTTP Basic Auth — opt-in in development, FAIL-CLOSED in production.
  *
- * Active only when BOTH BASIC_AUTH_USER and BASIC_AUTH_PASSWORD are set —
- * otherwise the middleware lets everything through
- * (default behavior, no lockout of an existing deployment).
+ * Active whenever BOTH BASIC_AUTH_USER and BASIC_AUTH_PASSWORD are set.
  * `/api/health` is always open (hosting health check).
+ *
+ * WHAT HAPPENS WITHOUT CREDENTIALS. This used to `next()` unconditionally, which made
+ * "no protection" the default state — and `render.yaml` declares both variables with
+ * `sync: false`, i.e. the blueprint does NOT provision them. A fresh deploy therefore
+ * came up serving every Notion-mutating endpoint to the internet, silently. Now:
+ *
+ *   - development / tests → still a no-op, so local work needs no setup;
+ *   - production          → 503 on everything but the health probe.
+ *
+ * The refusal is deliberately loud-but-recoverable rather than a boot failure: the
+ * health probe keeps answering (so the host doesn't flap the service) while nothing
+ * else is served, and setting the two variables fixes it without a redeploy of code.
+ * A genuinely public deployment is still possible — but it now takes an explicit,
+ * auditable `ALLOW_PUBLIC_ACCESS=true` instead of an omission nobody notices.
  *
  * Protects the whole service (SPA + API): the browser shows the native prompt, and
  * same-origin `fetch` from the SPA automatically attaches credentials after login.
@@ -25,11 +37,20 @@ export function basicAuth(getEnv: () => NodeJS.ProcessEnv = () => process.env) {
     const user = env.BASIC_AUTH_USER;
     const pass = env.BASIC_AUTH_PASSWORD;
 
-    // Opt-in: without configured credentials we don't enforce authorization.
-    if (!user || !pass) return next();
-
-    // The health check must be reachable without logging in (hosting monitoring).
+    // The health check must be reachable without logging in (hosting monitoring),
+    // in every branch below — including the fail-closed one.
     if (req.path === "/api/health") return next();
+
+    if (!user || !pass) {
+      const openOnPurpose = env.ALLOW_PUBLIC_ACCESS === "true";
+      if (env.NODE_ENV === "production" && !openOnPurpose) {
+        return res.status(503).send(
+          "Serwis nie jest skonfigurowany: brak BASIC_AUTH_USER / BASIC_AUTH_PASSWORD. " +
+          "Ustaw je, albo świadomie wystaw publicznie przez ALLOW_PUBLIC_ACCESS=true."
+        );
+      }
+      return next(); // dev/test, or an explicit opt-out
+    }
 
     const header = req.headers.authorization || "";
     const [scheme, encoded] = header.split(" ");

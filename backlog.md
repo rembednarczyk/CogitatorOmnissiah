@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.76.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.77.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,15 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.77.0** — **[SEC-PR4] Auth fail-closed w produkcji (koniec z cichym otwarciem).** `basicAuth` przestaje
+  bezwarunkowo przepuszczać przy braku poświadczeń: dev/test = dalej no-op (wygoda lokalna), **produkcja bez
+  `BASIC_AUTH_USER`/`BASIC_AUTH_PASSWORD` = 503 na wszystko poza `/api/health`**. Powód: `render.yaml` deklaruje
+  obie zmienne z `sync: false`, więc blueprint ich NIE dostarcza — świeży deploy wstawał otwarty i nic tego nie
+  sygnalizowało. Świadome wystawienie publiczne nadal możliwe, ale wymaga jawnego `ALLOW_PUBLIC_ACCESS=true`
+  (dokładnie „true"; „1" nie wystarcza) — zamiast pominięcia, którego nikt nie zauważa. Odmowa jest głośna, ale
+  odwracalna (nie boot-failure): health probe dalej odpowiada, więc hosting nie flapuje usługi, a ustawienie
+  zmiennych naprawia stan bez redeployu kodu. Zaktualizowane `.env.example`, `README.md` (tabela zmiennych +
+  sekcja wdrożenia) i komentarz w `render.yaml`. +5 testów. Suite 535 zielone, lint czysty, build OK.
 - **1.76.1** — **[SEC-PR3] Guard na destrukcyjny zapis schematu Notion.** `PATCH /api/notion/schema` PODMIENIA
   listę opcji w całości, więc usunięcie opcji czyści wartość we WSZYSTKICH wierszach; allow-lista typu nic o tym
   nie mówiła. Walidacja teraz przeciwko ŻYWEMU schematowi (`getNotionSchema()`), nie zaszytej liście kolumn
