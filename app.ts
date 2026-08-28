@@ -2,6 +2,7 @@ import express from "express";
 import syncRoutes from "./routes/syncRoutes";
 import { basicAuth } from "./middleware/basicAuth";
 import { sameOrigin } from "./middleware/sameOrigin";
+import { securityHeaders } from "./middleware/securityHeaders";
 
 /**
  * Express app wiring (no listening). Static/Vite and `listen` live in
@@ -10,8 +11,15 @@ import { sameOrigin } from "./middleware/sameOrigin";
  */
 export const app = express();
 
-// Opt-in Basic Auth (active only when BASIC_AUTH_USER + _PASSWORD are set).
-// Must come first, to protect the SPA and static files too.
+// Don't advertise the stack.
+app.disable("x-powered-by");
+
+// Security response headers (CSP, nosniff, frame/referrer policy) — first, so they
+// apply to every response including 401/403/503 and the static SPA.
+app.use(securityHeaders());
+
+// Basic Auth: opt-in in dev, fail-closed in production (see middleware/basicAuth.ts).
+// Must come early, to protect the SPA and static files too.
 app.use(basicAuth());
 // CSRF: reject state-changing requests that state a foreign origin. Mounted before the
 // routes (and before the body parser — nothing needs parsing to make this decision).
