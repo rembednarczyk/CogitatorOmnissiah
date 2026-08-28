@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.79.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.80.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,17 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.80.0** — **Swipe do przełączania segmentów regału (mobile).** Nowy `src/hooks/useHorizontalSwipe.ts`
+  (zwraca handlery touch do rozlania na element). Sedno nie w wykrywaniu gestu, tylko w NIE kradzeniu cudzych:
+  (1) swipe liczy się tylko gdy poziomy dystans DOMINUJE nad pionowym (`|dx| > |dy| * 1.4`), więc zwykłe
+  przewijanie strony nigdy nie przerzuci półki; (2) **nigdy nie wołamy `preventDefault` na `touchmove`** — to
+  właśnie ono blokowałoby scroll (i omija problem pasywnych listenerów); (3) drugi palec = anulowanie (pinch-zoom
+  zostaje przeglądarce); (4) próg 50 px i cap 800 ms, żeby wolne przeciąganie nie uchodziło za flick.
+  `Shelf.tsx`: nawigacja stron wyciągnięta do `goPrev`/`goNext` — swipe i strzałki dzielą JEDNĄ implementację;
+  gest wyłączony przy `pageCount === 1` i w trakcie drag&drop książki. Podpowiedź w `BookshelfSection`
+  rozdzielona per breakpoint (mobile: „Przesuń palcem w bok…", desktop: dotychczasowa o strzałkach) — swipe jest
+  nieodkrywalny bez napisania o nim. +9 testów (głównie przypadki, w których swipe NIE ma zadziałać). Suite 555
+  zielone, lint czysty, build OK.
 - **1.79.0** — **[SEC-PR7] Limity zasobów: rozmiar odpowiedzi + ograniczone cache.** (1) `scrapingClient`
   eksportuje `MAX_RESPONSE_BYTES` (12 MB) + `responseSizeLimit` (`maxContentLength`/`maxBodyLength`), wpięte we
   WSZYSTKIE 9 wywołań axiosa (Vinted ×4, ISBN ×4, OPAC ×1). Wcześniej żadne nie miało limitu — axios buforuje całe

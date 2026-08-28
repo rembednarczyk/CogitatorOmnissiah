@@ -9,6 +9,7 @@ import { ShelfRow, EmptyShelfRow, GapBoundary, GapCaret } from "./ShelfRow";
 import { ShelfFrame, ShelfAccent } from "./ShelfFrame";
 import { CandleCluster } from "./RoomDecor";
 import { useEffectiveConfig } from "../../hooks/useAppConfig";
+import { useHorizontalSwipe } from "../../hooks/useHorizontalSwipe";
 
 interface Props {
   shelfId: ShelfId;
@@ -91,12 +92,6 @@ export const Shelf: React.FC<Props> = ({ shelfId, title, icon, accent, books, on
     return () => ro.disconnect();
   }, []);
 
-  const rootProps: React.HTMLAttributes<HTMLDivElement> = {
-    onDragOver: (e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; if (!over) setOver(true); },
-    onDragLeave: (e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOver(false); },
-    onDrop: (e) => { e.preventDefault(); setOver(false); onDropBook(shelfId); },
-  };
-
   const { items, slotByKey } = buildShelfItems(books);
   const rows = width > 0 ? packAndLayout(items, { rowWidth: width }) : [];
 
@@ -107,17 +102,36 @@ export const Shelf: React.FC<Props> = ({ shelfId, title, icon, accent, books, on
   const shown = segments[cur] ?? [];
   const pad = pageSize ? Math.max(0, pageSize - shown.length) : 0;
 
+  // One implementation of paging, shared by the chevrons and the touch swipe.
+  const goPrev = () => setPage(Math.max(0, cur - 1));
+  const goNext = () => setPage(Math.min(pageCount - 1, cur + 1));
+
+  // Swipe left = next segment (content moves the way the finger does). Disabled while
+  // dragging a book, so a touch-drag can never be read as a page flip.
+  const swipe = useHorizontalSwipe({
+    onSwipeLeft: goNext,
+    onSwipeRight: goPrev,
+    enabled: pageCount > 1 && !dragging,
+  });
+
+  const rootProps: React.HTMLAttributes<HTMLDivElement> = {
+    onDragOver: (e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; if (!over) setOver(true); },
+    onDragLeave: (e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOver(false); },
+    onDrop: (e) => { e.preventDefault(); setOver(false); onDropBook(shelfId); },
+    ...swipe,
+  };
+
   const headerExtra = (
     <div className="flex items-center gap-2">
       {dragging && <span className="text-[10px] uppercase tracking-widest text-amber-200/70 font-bold">upuść tutaj</span>}
       {pageSize && pageCount > 1 && (
         <div className="flex items-center gap-1.5">
-          <button onClick={() => setPage((p) => Math.max(0, Math.min(p, pageCount - 1) - 1))} disabled={cur === 0}
+          <button onClick={goPrev} disabled={cur === 0}
             className="p-1 rounded-md text-amber-200/70 hover:text-amber-100 disabled:opacity-30" aria-label="Poprzedni regał">
             <ChevronLeft className="w-4 h-4" />
           </button>
           <span className="text-[10px] font-display font-bold uppercase tracking-widest text-amber-200/80">Regał {cur + 1}<span className="text-amber-200/60"> / {pageCount}</span></span>
-          <button onClick={() => setPage((p) => Math.min(pageCount - 1, Math.min(p, pageCount - 1) + 1))} disabled={cur >= pageCount - 1}
+          <button onClick={goNext} disabled={cur >= pageCount - 1}
             className="p-1 rounded-md text-amber-200/70 hover:text-amber-100 disabled:opacity-30" aria-label="Następny regał">
             <ChevronRight className="w-4 h-4" />
           </button>
