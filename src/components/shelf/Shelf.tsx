@@ -38,7 +38,9 @@ export const Shelf: React.FC<Props> = ({ shelfId, title, icon, accent, books, on
   const candleH = Array.from(shelfId).reduce((a, c) => a + c.charCodeAt(0), 0);
   const candleTone = (["iv", "bw", "cl"] as const)[candleH % 3];
   const candleW = [19, 24, 28][candleH % 3];
-  const candleLeftCls = ["left-4", "left-8", "left-12"][candleH % 3];
+  // Varied horizontal spot in a safe band (past the header icon, before the pager)
+  // so candles don't collide with the header and neighbouring shelves differ.
+  const candleLeftCls = ["left-1/4", "left-1/3", "left-1/2", "left-2/3"][candleH % 4];
   const [over, setOver] = useState(false);
   const [page, setPage] = useState(0);
   const wellRef = useRef<HTMLDivElement>(null);
@@ -134,7 +136,7 @@ export const Shelf: React.FC<Props> = ({ shelfId, title, icon, accent, books, on
         <div className="absolute -top-[13px] left-1/2 -translate-x-1/2 w-[8px] h-[13px] rounded-[50%_50%_45%_45%/60%_60%_40%_40%]"
           style={{ background: "radial-gradient(circle at 50% 72%, #fff3c0, #ffb03a 55%, #ff6a00)", boxShadow: "0 0 14px 5px rgba(255,150,40,.5)" }} />
       </div>
-      <WaxCandle className={`-top-[38px] ${candleLeftCls} z-20`} tone={candleTone} w={candleW} scale={0.6} speed={flameSpeed} />
+      <WaxCandle className={`-top-[47px] ${candleLeftCls} z-20`} tone={candleTone} w={candleW} speed={flameSpeed} />
 
       <ShelfFrame
         title={title} icon={icon} accent={accent} count={books.length}
