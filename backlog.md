@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.69.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.70.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,15 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.70.0** — **[RD-PR2] Jednorazowy import dat przeczytania z CSV (helpery + skrypt).** Czysta,
+  przetestowana logika w `services/readDateImport.ts`: `parseReadDate` (rozpoznaje `dd.mm.yyyy` / `yyyy-mm-dd` /
+  `yyyy-mm` / `mm.yyyy` / `yyyy`; daty częściowe przyklejane do początku okresu — miesiąc `-01`, rok `-01-01`),
+  `parseImportCsv` (średnik + BOM + nagłówek), `buildReadDatePlan` (dwustopniowe dopasowanie: exact `robustBookKey`
+  autor+tytuł, potem fallback po UNIKALNYM tytule — nigdy nie wymyśla wiersza; zwija duplikaty biorąc NAJWCZEŚNIEJSZĄ
+  datę; pomija już-datowane bez `--overwrite`). Skrypt `scripts/importReadDates.ts` (poza appem): DRY-RUN domyślnie,
+  `--apply` zapisuje przez `setReadDate`, `--overwrite` nadpisuje. Wymaga NOTION_* w env. +14 testów. Zweryfikowane
+  na realnym CSV usera (712 wierszy: 473 dzień / 19 miesiąc / 220 rok, zero nierozpoznanych, zakres 1993→2026).
+  UWAGA: właściwy import (queryAllBooks + zapis) user robi u siebie — sandbox nie ma kluczy Notion.
 - **1.69.0** — **[RD-PR1] Struktura kolumny „Data przeczytania" (warstwa 1/N feature „tempo czytania").**
   Pierwsza właściwość typu `date` w bazie — brak istniejącej konwencji, użyto natywnego kształtu SDK
   (`{ date: { start } }` / `{ date: null }`, odczyt `prop.date?.start`). (1) `requiredProps` w
@@ -1244,6 +1253,11 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
   w przód (historii nie cofniemy). **POZOSTAJE (osobne PR-y): STATYSTYKI velocity** czytające `dataPrzeczytania` —
   „przeczytane w tym roku: N", wykresy w czasie (miesiąc/rok), tempo (książki/mies.), prognoza domknięcia
   kolekcji, streaki (w `statsService`/`statsAggregator`); ewentualnie surfacing daty na regale/karcie książki.
+- **Import dat przeczytania z CSV — feature w aplikacji (przyszłość).** Jednorazowy import zrobiony skryptem
+  `scripts/importReadDates.ts` (RD-PR2, 1.70.0) na bazie czystych helperów `services/readDateImport.ts`
+  (`parseReadDate`/`parseImportCsv`/`buildReadDatePlan`). DO ZROBIENIA kiedyś: opakować to w UI (upload CSV w
+  Ustawieniach → podgląd planu: dopasowane/niedopasowane/niejednoznaczne → zatwierdź zapis), reużywając tych
+  helperów. Nowe rekordy „na bieżąco" już obsłużone automatycznym stemplowaniem przy oznaczaniu „Przeczytane".
 - (brak) — pipeline persystencji Vinted (ETAP 1–3) kompletny.
 - **Ewentualnie później**: odświeżanie pojedynczej książki/oferty z bazy (re-check
   świeżości), natywna baza „Vinted Offers" (jeśli blob przestanie wystarczać), proxy
