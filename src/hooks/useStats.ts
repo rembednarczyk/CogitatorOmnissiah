@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 
 export type {
   AuthorStat, AwardCoverageStat, YearlyStat, LibraryStat, IdentifiedBook, AvailabilityStats,
-  PublisherStat, SeriesStat, CycleStats, DecadeStat, CheapOffer, PriceDrop, TopSeller, MarketStats,
+  PublisherStat, SeriesStat, CycleStats, DecadeStat, ReadingYearCount, ReadingStats,
+  CheapOffer, PriceDrop, TopSeller, MarketStats,
   Stats, IdentifiedBooks,
 } from "../types/stats";
 import type { Stats } from "../types/stats";

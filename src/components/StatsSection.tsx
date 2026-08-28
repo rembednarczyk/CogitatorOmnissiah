@@ -7,6 +7,7 @@ import { useMarkAsRead } from "../hooks/useMarkAsRead";
 import { AvailabilityCard } from "./stats/AvailabilityCard";
 import { PublishingCard } from "./stats/PublishingCard";
 import { DecadeHistogram } from "./stats/DecadeHistogram";
+import { ReadingPaceCard } from "./stats/ReadingPaceCard";
 import { MarketCard } from "./stats/MarketCard";
 import { CyclesHarvestCard } from "./stats/CyclesHarvestCard";
 import { KpiRow } from "./stats/KpiRow";
@@ -77,6 +78,7 @@ export const StatsSection: React.FC = () => {
     { id: "publishing", node: <PublishingCard publishers={stats.publisherStats} series={stats.seriesStats} cycles={stats.cycleStats} /> },
     { id: "cyclesHarvest", node: <CyclesHarvestCard refreshSignal={refreshTick} /> },
     { id: "decades", span2: true, node: <DecadeHistogram decades={stats.decadeStats} /> },
+    { id: "readingPace", span2: true, node: <ReadingPaceCard reading={stats.readingStats} /> },
     { id: "yearly", node: <YearlyCard years={stats.yearlyStats} /> },
     { id: "ownedUnread", node: <OwnedUnreadCard books={stats.ownedUnread} markingId={markingId} onMarkAsRead={markAsRead} /> },
     { id: "library", node: <LibraryProgressCard libraries={stats.libraryStats} onMarkAsRead={markAsRead} markingId={markingId} /> },

@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.71.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.72.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,7 +69,16 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
-- **1.71.0** — **[RD-PR3] Agregacja „tempa czytania" (backend, warstwa 1/2).** `computeReadingStats` w
+- **1.72.0** — **[RD-PR4] Karta „Tempo czytania" (frontend).** `ReadingPaceCard` na zakładce statystyk (span2,
+  obok „Osi czasu"), konsumuje `stats.readingStats`. 3 kafle KPI: „W tym roku" (+ delta vs ubiegły, ↑emerald/
+  ↓slate), „Książek/rok" (recentPace), „Z datą łącznie" (totalDated); histogram roczny (słupek = przeczytane w
+  danym roku, bieżący rok + rekord podświetlone), stopka „X/Y przeczytanych ma datę" gdy niepełne pokrycie. Puste
+  → zachęta do oznaczania. Paleta jak `DecadeHistogram` (amber nagłówek/rekord, cyan słupki, slate track) → auto-
+  adaptacja w obu skórach przez remap zmiennych. `ReadingStats`/`ReadingYearCount` dodane do re-eksportu w
+  `useStats`; karta wpięta do rejestru w `StatsSection` (nowe id „readingPace" dopina się na końcu zapisanego
+  układu — istniejący userzy je zobaczą). Suite 502 zielone, lint czysty, build OK. **Feature „tempo czytania"
+  domknięty w podstawie**; opcjonalnie później: prognoza domknięcia kolekcji (recentPace + brakujące award-booki),
+  streaki, surfacing daty na karcie książki. `computeReadingStats` w
   `statsAggregator` liczy przeczytane **award-booki wg ROKU** z `dataPrzeczytania` (granularność roczna
   ŚWIADOMA: daty rok-only to `YYYY-01-01`, więc rozbicie miesięczne wymyśliłoby szpic w styczniu — liczymy tylko
   rok). Zwraca: `perYear` (rosnąco), `totalRead` vs `totalDated` (ile historii ma datę), `thisYear`/`lastYear`,
@@ -1256,12 +1265,12 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
   REKOMENDACJA: pkt 1 ZROBIONY (1.47.0) → obserwować, czy blok ustępuje; jeśli nie, pkt 2 lekki
   (Playwright tylko do cookie — realny challenge-solve, nie tylko puste GET).
 
-- **Data przeczytania + „Tempo czytania" (velocity)** — WARSTWA STRUKTURALNA ZREALIZOWANA (RD-PR1, 1.69.0):
-  kolumna `Data przeczytania` (date) w schemacie, mapper → `NotionBook.dataPrzeczytania`, adapter `setReadDate`,
-  ścieżka zapisu `markAsRead`/`unmarkRead` stempluje/czyści (gate na tag „Przeczytane"). Dane łapane OD TERAZ
-  w przód (historii nie cofniemy). **POZOSTAJE (osobne PR-y): STATYSTYKI velocity** czytające `dataPrzeczytania` —
-  „przeczytane w tym roku: N", wykresy w czasie (miesiąc/rok), tempo (książki/mies.), prognoza domknięcia
-  kolekcji, streaki (w `statsService`/`statsAggregator`); ewentualnie surfacing daty na regale/karcie książki.
+- **Data przeczytania + „Tempo czytania" (velocity)** — ZREALIZOWANE (RD-PR1..4, 1.69.0–1.72.0): kolumna +
+  mapper + ścieżka zapisu (stempel na „Przeczytane"), jednorazowy import historii z CSV (skrypt), agregacja
+  `computeReadingStats` (przeczytane award-booki wg ROKU) i karta „Tempo czytania" na statystykach (KPI w tym roku
+  + delta, tempo książek/rok, histogram roczny). Granularność ROCZNA (daty rok-only = 1 stycznia, więc bez
+  rozbicia miesięcznego). **OPCJONALNIE później**: prognoza domknięcia kolekcji (recentPace + brakujące
+  award-booki), streaki, surfacing daty przeczytania na karcie książki/regale.
 - **Import dat przeczytania z CSV — feature w aplikacji (przyszłość).** Jednorazowy import zrobiony skryptem
   `scripts/importReadDates.ts` (RD-PR2, 1.70.0) na bazie czystych helperów `services/readDateImport.ts`
   (`parseReadDate`/`parseImportCsv`/`buildReadDatePlan`). DO ZROBIENIA kiedyś: opakować to w UI (upload CSV w
