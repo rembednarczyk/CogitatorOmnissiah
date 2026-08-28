@@ -326,11 +326,14 @@ body {
   --sk-room-floor: linear-gradient(180deg,#c6b08a 0,#b7a07b 45%,#a8916c 100%);
   --sk-room-cog: #b79a63;
   --sk-room-mote: rgba(150,110,60,.30);
-  --sk-room-glow: rgba(206,155,63,.30);
+  /* Knoby (Konfiguracja → ui): `--knob-candle-glow` i `--knob-room-shade` to
+     mnożniki (1 = domyślne), ustawiane w JS na `RoomDecor` z wartości % z configu.
+     calc() na kanale alpha skaluje poświatę świec i siłę cieni sali. */
+  --sk-room-glow: rgba(206,155,63, calc(.30 * var(--knob-candle-glow, 1)));
   --sk-room-flame: radial-gradient(circle at 50% 72%, #fff3c0, #eaa53f 55%, #cf7a26);
-  --sk-room-topshade: inset 0 30px 70px -52px rgba(58,52,43,.16);
-  --sk-room-floorshade: inset 0 14px 26px -16px rgba(58,52,43,.20);
-  --sk-room-vignette: radial-gradient(120% 95% at 50% 38%, rgba(58,52,43,0) 58%, rgba(58,52,43,.10) 100%);
+  --sk-room-topshade: inset 0 30px 70px -52px rgba(58,52,43, calc(.16 * var(--knob-room-shade, 1)));
+  --sk-room-floorshade: inset 0 14px 26px -16px rgba(58,52,43, calc(.20 * var(--knob-room-shade, 1)));
+  --sk-room-vignette: radial-gradient(120% 95% at 50% 38%, rgba(58,52,43,0) 58%, rgba(58,52,43, calc(.10 * var(--knob-room-shade, 1))) 100%);
 }
 /* Divider (żyła/smużka/sygil) — cieplejszy akcent na jasnym dębie. */
 [data-theme="light"] .skin-holo .shelf-divider,
