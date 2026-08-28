@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.76.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.76.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,14 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.76.1** — **[SEC-PR3] Guard na destrukcyjny zapis schematu Notion.** `PATCH /api/notion/schema` PODMIENIA
+  listę opcji w całości, więc usunięcie opcji czyści wartość we WSZYSTKICH wierszach; allow-lista typu nic o tym
+  nie mówiła. Walidacja teraz przeciwko ŻYWEMU schematowi (`getNotionSchema()`), nie zaszytej liście kolumn
+  (która by się rozjeżdżała): (1) kolumna musi ISTNIEĆ (koniec z dorzucaniem śmieciowych kolumn), (2) typ musi
+  zgadzać się z faktycznym typem kolumny, (3) jedno żądanie może usunąć **maksymalnie 1 opcję**. Punkt (3) jest
+  celowo policzony, nie „odrzuć pustą listę": UI kasuje opcje POJEDYNCZO, więc usunięcie ostatniej opcji legalnie
+  daje pustą listę — blanket-blokada zepsułaby prawdziwą funkcję. +5 testów (masowe czyszczenie 3 opcji,
+  usunięcie dokładnie jednej = przechodzi, nieznana kolumna, niezgodny typ). Suite 530 zielone, lint czysty.
 - **1.76.0** — **[SEC-PR2] Ochrona CSRF (same-origin) na żądaniach zmieniających stan.** Nowy
   `middleware/sameOrigin.ts`, montowany w `app.ts` po `basicAuth`, przed `express.json()`. Dla
   POST/PUT/PATCH/DELETE: podany `Origin` musi mieć ten sam HOST co nasz `Host` (fallback na `Referer`);

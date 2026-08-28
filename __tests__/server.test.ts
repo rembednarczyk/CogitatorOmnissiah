@@ -13,7 +13,9 @@ vi.mock('../notion.adapter', () => {
   const NotionAdapter = vi.fn();
   NotionAdapter.prototype.init = vi.fn().mockResolvedValue(undefined);
   NotionAdapter.prototype.getSchema = vi.fn().mockResolvedValue({
-    "Autor": { type: "multi_select", multi_select: { options: [] } }
+    "Autor": { type: "multi_select", multi_select: { options: [] } },
+    // A populated column, to exercise the „how many options does this write remove?" guard.
+    "Źródło": { type: "multi_select", multi_select: { options: [{ name: "Przeczytane" }, { name: "Posiadam" }, { name: "Biblioteka" }] } },
   });
   NotionAdapter.prototype.updateSchema = vi.fn().mockResolvedValue(undefined);
   NotionAdapter.prototype.queryAllBooks = vi.fn().mockResolvedValue([]);
@@ -82,6 +84,40 @@ describe('Backend API Endpoints', () => {
       .patch('/api/notion/schema')
       .send({ propertyName: 'Autor', propertyType: 'multi_select', newOptions: "not-an-array" });
     expect(res.status).toBe(400);
+  });
+
+  it('PATCH /api/notion/schema refuses to wipe a column (mass option removal)', async () => {
+    // The write replaces the option list wholesale, so an empty list clears the value
+    // from every row that used it — irreversible. This is the destructive case.
+    const res = await request(app)
+      .patch('/api/notion/schema')
+      .send({ propertyName: 'Źródło', propertyType: 'multi_select', newOptions: [] });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/usuwa 3 opcji/);
+  });
+
+  it('PATCH /api/notion/schema still allows removing exactly one option (the editor flow)', async () => {
+    const res = await request(app)
+      .patch('/api/notion/schema')
+      .send({ propertyName: 'Źródło', propertyType: 'multi_select', newOptions: [{ name: 'Przeczytane' }, { name: 'Posiadam' }] });
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ success: true });
+  });
+
+  it('PATCH /api/notion/schema rejects an unknown column (no junk columns)', async () => {
+    const res = await request(app)
+      .patch('/api/notion/schema')
+      .send({ propertyName: 'Nieistniejąca', propertyType: 'multi_select', newOptions: [{ name: 'x' }] });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/nie istnieje/);
+  });
+
+  it('PATCH /api/notion/schema rejects a type that mismatches the live column', async () => {
+    const res = await request(app)
+      .patch('/api/notion/schema')
+      .send({ propertyName: 'Autor', propertyType: 'select', newOptions: [{ name: 'x' }] });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/jest typu multi_select/);
   });
 
   it('POST /api/sync starts a sync stream', async () => {
