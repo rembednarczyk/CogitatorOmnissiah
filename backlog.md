@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.72.2** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.72.3** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,7 +69,15 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
-- **1.72.2** — **Regał: karetka drag&drop na semantyczny zielony/czerwony + sweep neonów.** Karetka wstawiania
+- **1.72.3** — **Regał (boho): nagłówki/gzyms/plakietki „Cień papieru" (wariant C).** Twarde czarne cienie z
+  drewna 40k (`rgba(0,0,0,.6–.85)`) czytały się na lnie jak brud: halo pod tytułem gzymsu + czarny inset „wchodzący
+  do wnętrza" regału. Przeniesione na zmienne `--sk-*` z FALLBACKIEM = obecna wartość ciemna (40k bez zmian) i
+  NADPISANIEM w jasnej skórze = wariant C: miękkie, CIEPŁE cienie NA ZEWNĄTRZ. Nowe zmienne (`ShelfFrame` +
+  `ShelfDivider`): `--sk-frame-drop` (miękki ciepły cień pod regałem), `--sk-cornice-shadow`/`--sk-well-shadow`
+  (delikatny ciepły inset zamiast czarnego mułu), `--sk-title-shadow: none` (tytuł bez halo), `--sk-plate-drop`
+  (plakietka „siada" ciepłym cieniem) + `--sk-plate-glow: none` + `--sk-plate-text-shadow: none`. Cogi/holo/HUD i
+  tak ukryte w boho (`.dc-40k display:none`), więc ich cienie pominięte. Makieta 4 wariantów pokazana userowi →
+  wybór C. Suite 502 zielone, lint czysty, build OK (zmienne w bundlu). Karetka wstawiania
   (poprawne/niepoprawne miejsce, `ShelfRow`) niosła inline `rgba` (valid=CYAN, invalid=rose) → nie remapowała się
   wcale. Teraz klasy `.drop-caret-valid/invalid`: ciemny = żywe (emerald/rose), boho = ciepła leśna zieleń
   `rgba(107,142,62)` / terakota `rgba(180,74,56)` — widoczne na lnie. Semantyka zielony=OK zamiast cyan.
