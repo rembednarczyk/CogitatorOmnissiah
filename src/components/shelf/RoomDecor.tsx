@@ -40,57 +40,107 @@ const Sconce: React.FC<{ className?: string }> = ({ className }) => (
 );
 
 /**
- * Boho candle cluster (variant Ś3): three thick, wax-dripping candles of varying
- * height (ivory / clay / beeswax), replacing the thin 40k sconce in the LIGHT skin
- * only (`.candle-boho` — dark keeps its sconce). Flame is bigger and flickers more
- * slowly than the sconce, per the design review.
+ * Boho candles: thick, wax-dripping pillars replacing the thin 40k sconce in the
+ * LIGHT skin only (`.candle-boho` — dark keeps its sconce). A single parametric
+ * `Candle` (varying thickness = „objętość", tone and height) composes into a
+ * `CandleCluster` (three, several distinct arrangements so nothing reads as a
+ * mirror image) or a lone `WaxCandle` (for the shelf tops). Flame scales with the
+ * candle's girth and flickers slowly.
  */
-const flameAnim = (dur: number, delay = 0) => ({
-  style: { transformOrigin: "50% 100%", transformBox: "fill-box" as const },
-  animate: { scaleY: [1, 1.12, 0.95, 1.07, 1], scaleX: [1, 0.95, 1.05, 0.97, 1], opacity: [0.9, 1, 0.85, 1, 0.92] },
-  transition: { duration: dur, repeat: Infinity, ease: "easeInOut" as const, delay },
-});
+type Tone = "iv" | "bw" | "cl";
+const TONE: Record<Tone, { grad: string; rimD: string; rimL: string; wick: string; drip: string }> = {
+  iv: { grad: "cc-iv", rimD: "#cdbf9f", rimL: "#efe6cf", wick: "#5b4a2e", drip: "#d7cbaf" },
+  bw: { grad: "cc-bw", rimD: "#a87e2e", rimL: "#e6c273", wick: "#4d3c1a", drip: "#a87e2e" },
+  cl: { grad: "cc-cl", rimD: "#8a4e33", rimL: "#cd8f6e", wick: "#4d2c1a", drip: "#8a4e33" },
+};
 
-const CandleCluster: React.FC<{ className?: string; flip?: boolean; speed?: number }> = ({ className, flip, speed = 1 }) => (
-  <div className={`candle-boho absolute pointer-events-none ${className ?? ""}`} aria-hidden style={flip ? { transform: "scaleX(-1)" } : undefined}>
-    {/* warm pooled glow (bigger, slower); `speed` = flame flicker multiplier (from config knob). */}
-    <motion.div
-      className="absolute -left-[46px] -top-[54px] w-[196px] h-[196px] rounded-full"
-      style={{ background: "radial-gradient(closest-side, var(--sk-room-glow), transparent)", filter: "blur(8px)" }}
-      animate={{ opacity: [0.55, 0.8, 0.5, 0.74, 0.6] }}
-      transition={{ duration: 4.6 / speed, repeat: Infinity, ease: "easeInOut" }}
-    />
-    <svg viewBox="0 0 132 152" width="132" height="152">
-      <defs>
-        <linearGradient id="cc-iv" x1="0" x2="1"><stop offset="0" stopColor="#e6ddc8" /><stop offset=".4" stopColor="#f5efe1" /><stop offset="1" stopColor="#ddd2b8" /></linearGradient>
-        <linearGradient id="cc-bw" x1="0" x2="1"><stop offset="0" stopColor="#c99a3f" /><stop offset=".4" stopColor="#e6bd68" /><stop offset="1" stopColor="#b98a34" /></linearGradient>
-        <linearGradient id="cc-cl" x1="0" x2="1"><stop offset="0" stopColor="#b06a44" /><stop offset=".4" stopColor="#cd8f6e" /><stop offset="1" stopColor="#9a5636" /></linearGradient>
-        <radialGradient id="cc-fl" cx=".5" cy=".7" r=".7"><stop offset="0" stopColor="#fff6cf" /><stop offset=".5" stopColor="#ffc35f" /><stop offset="1" stopColor="#ef7a1e" /></radialGradient>
-      </defs>
-      {/* short clay (left) */}
-      <rect x="8" y="96" width="26" height="52" rx="7" fill="url(#cc-cl)" />
-      <path d="M34 110 q4 16 0 28" stroke="#8a4e33" strokeWidth="3" fill="none" opacity=".55" strokeLinecap="round" />
-      <ellipse cx="21" cy="97" rx="13" ry="4.5" fill="#8a4e33" /><ellipse cx="21" cy="95.5" rx="13" ry="4" fill="#cd8f6e" />
-      <rect x="19.5" y="82" width="3" height="14" rx="1.5" fill="#4d2c1a" />
-      <motion.path d="M21 58 q11 15 0 34 q-11 -19 0 -34" fill="url(#cc-fl)" {...flameAnim(3.8 / speed, 0.5)} />
-      {/* tall ivory (center) */}
-      <rect x="44" y="52" width="30" height="96" rx="8" fill="url(#cc-iv)" />
-      <path d="M44 78 q4 22 0 38 M74 88 q-4 20 0 36" stroke="#d7cbaf" strokeWidth="3" fill="none" opacity=".65" strokeLinecap="round" />
-      <ellipse cx="59" cy="53" rx="15" ry="5" fill="#cdbf9f" /><ellipse cx="59" cy="51.5" rx="15" ry="4.5" fill="#efe6cf" />
-      <path d="M49 53 q3 10 -2 15 q-4 -6 2 -15" fill="#e9dec4" />
-      <rect x="57.5" y="36" width="3" height="16" rx="1.5" fill="#5b4a2e" />
-      <motion.path d="M59 8 q13 18 0 40 q-13 -22 0 -40" fill="url(#cc-fl)" {...flameAnim(4.4 / speed)} />
-      {/* medium beeswax (right) */}
-      <rect x="84" y="76" width="26" height="72" rx="7" fill="url(#cc-bw)" />
-      <path d="M110 96 q4 18 0 32" stroke="#a87e2e" strokeWidth="3" fill="none" opacity=".55" strokeLinecap="round" />
-      <ellipse cx="97" cy="77" rx="13" ry="4.5" fill="#a87e2e" /><ellipse cx="97" cy="75.5" rx="13" ry="4" fill="#e6c273" />
-      <rect x="95.5" y="60" width="3" height="16" rx="1.5" fill="#4d3c1a" />
-      <motion.path d="M97 34 q12 16 0 36 q-12 -20 0 -36" fill="url(#cc-fl)" {...flameAnim(4.0 / speed, 0.9)} />
-      {/* wax pool */}
-      <ellipse cx="60" cy="149" rx="58" ry="6" fill="#cdbb9a" opacity=".55" />
-    </svg>
-  </div>
+const CandleDefs = () => (
+  <defs>
+    <linearGradient id="cc-iv" x1="0" x2="1"><stop offset="0" stopColor="#e6ddc8" /><stop offset=".4" stopColor="#f5efe1" /><stop offset="1" stopColor="#ddd2b8" /></linearGradient>
+    <linearGradient id="cc-bw" x1="0" x2="1"><stop offset="0" stopColor="#c99a3f" /><stop offset=".4" stopColor="#e6bd68" /><stop offset="1" stopColor="#b98a34" /></linearGradient>
+    <linearGradient id="cc-cl" x1="0" x2="1"><stop offset="0" stopColor="#b06a44" /><stop offset=".4" stopColor="#cd8f6e" /><stop offset="1" stopColor="#9a5636" /></linearGradient>
+    <radialGradient id="cc-fl" cx=".5" cy=".7" r=".7"><stop offset="0" stopColor="#fff6cf" /><stop offset=".5" stopColor="#ffc35f" /><stop offset="1" stopColor="#ef7a1e" /></radialGradient>
+  </defs>
 );
+
+interface Spec { x: number; w: number; top: number; tone: Tone; dur: number; delay: number }
+
+/** One thick, wax-dripping candle. Flame size scales with the candle's width. */
+const Candle: React.FC<Spec & { baseY?: number; speed?: number }> = ({ x, w, top, tone, dur, delay, baseY = 148, speed = 1 }) => {
+  const t = TONE[tone];
+  const cx = x + w / 2;
+  const H = Math.min(44, Math.max(26, Math.round(w * 1.3)));
+  const A = Math.round(H * 0.32);
+  const flameBase = top - 4;
+  const round = (n: number) => Math.round(n);
+  return (
+    <g>
+      <rect x={x} y={top} width={w} height={baseY - top} rx={Math.min(9, w / 3)} fill={`url(#${t.grad})`} />
+      <path d={`M${x + w} ${top + 16} q4 ${round(w * 0.7)} 0 ${round(w * 1.15)}`} stroke={t.drip} strokeWidth="3" fill="none" opacity=".5" strokeLinecap="round" />
+      {w > 24 && <path d={`M${x} ${top + 26} q-3 ${round(w * 0.55)} 0 ${round(w * 0.9)}`} stroke={t.drip} strokeWidth="2.5" fill="none" opacity=".4" strokeLinecap="round" />}
+      <ellipse cx={cx} cy={top + 1} rx={w / 2 + 2} ry={Math.max(4, w * 0.16)} fill={t.rimD} />
+      <ellipse cx={cx} cy={top - 0.5} rx={w / 2 + 2} ry={Math.max(3.5, w * 0.15)} fill={t.rimL} />
+      <rect x={cx - 1.5} y={top - 16} width="3" height="16" rx="1.5" fill={t.wick} />
+      <motion.path
+        d={`M${cx} ${flameBase - H} q${A} ${round(H * 0.45)} 0 ${H} q${-A} ${-round(H * 0.55)} 0 ${-H}`}
+        fill="url(#cc-fl)"
+        style={{ transformOrigin: "50% 100%", transformBox: "fill-box" }}
+        animate={{ scaleY: [1, 1.12, 0.95, 1.07, 1], scaleX: [1, 0.95, 1.05, 0.97, 1], opacity: [0.9, 1, 0.85, 1, 0.92] }}
+        transition={{ duration: dur / speed, repeat: Infinity, ease: "easeInOut", delay }}
+      />
+    </g>
+  );
+};
+
+// Distinct three-candle arrangements — different tone order, heights and WIDTHS
+// (girth), so two placements never read as mirror images of each other.
+const VARIANTS: Spec[][] = [
+  [ { x: 6, w: 22, top: 100, tone: "cl", dur: 3.8, delay: 0.5 }, { x: 36, w: 34, top: 56, tone: "iv", dur: 4.4, delay: 0 }, { x: 80, w: 27, top: 82, tone: "bw", dur: 4.0, delay: 0.9 } ],
+  [ { x: 8, w: 30, top: 66, tone: "bw", dur: 4.2, delay: 0.3 }, { x: 46, w: 20, top: 106, tone: "cl", dur: 3.6, delay: 0.8 }, { x: 74, w: 33, top: 84, tone: "iv", dur: 4.0, delay: 0 } ],
+  [ { x: 6, w: 27, top: 88, tone: "iv", dur: 3.9, delay: 0.2 }, { x: 40, w: 21, top: 68, tone: "cl", dur: 4.1, delay: 0.6 }, { x: 72, w: 34, top: 96, tone: "bw", dur: 3.7, delay: 1.0 } ],
+];
+
+export const CandleCluster: React.FC<{ className?: string; variant?: number; scale?: number; speed?: number }> = ({ className, variant = 0, scale = 1, speed = 1 }) => {
+  const candles = VARIANTS[((variant % VARIANTS.length) + VARIANTS.length) % VARIANTS.length];
+  return (
+    <div className={`candle-boho absolute pointer-events-none ${className ?? ""}`} aria-hidden
+      style={scale !== 1 ? { transform: `scale(${scale})`, transformOrigin: "bottom left" } : undefined}>
+      <motion.div
+        className="absolute -left-[46px] -top-[54px] w-[196px] h-[196px] rounded-full"
+        style={{ background: "radial-gradient(closest-side, var(--sk-room-glow), transparent)", filter: "blur(8px)" }}
+        animate={{ opacity: [0.55, 0.8, 0.5, 0.74, 0.6] }}
+        transition={{ duration: 4.6 / speed, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <svg viewBox="0 0 118 152" width="118" height="152">
+        <CandleDefs />
+        {candles.map((c, i) => <Candle key={i} {...c} speed={speed} />)}
+        <ellipse cx="58" cy="149" rx="54" ry="6" fill="#cdbb9a" opacity=".5" />
+      </svg>
+    </div>
+  );
+};
+
+/** A single thick wax candle — replaces the thin candle on top of each shelf. */
+export const WaxCandle: React.FC<{ className?: string; tone?: Tone; w?: number; speed?: number; scale?: number }> = ({ className, tone = "iv", w = 22, speed = 1, scale = 1 }) => {
+  const vbw = Math.round(w * 2.3 + 8);
+  const x = 6;
+  return (
+    <div className={`candle-boho absolute pointer-events-none ${className ?? ""}`} aria-hidden
+      style={scale !== 1 ? { transform: `scale(${scale})`, transformOrigin: "bottom center" } : undefined}>
+      <motion.div
+        className="absolute left-1/2 -translate-x-1/2 -top-[24px] w-[64px] h-[64px] rounded-full"
+        style={{ background: "radial-gradient(closest-side, var(--sk-room-glow), transparent)", filter: "blur(5px)" }}
+        animate={{ opacity: [0.5, 0.72, 0.48, 0.66, 0.55] }}
+        transition={{ duration: 4.4 / speed, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <svg viewBox={`0 0 ${vbw} 82`} width={vbw} height="82">
+        <CandleDefs />
+        <Candle x={x} w={w} top={34} baseY={80} tone={tone} dur={4.1} delay={0} speed={speed} />
+        <ellipse cx={x + w / 2} cy="81" rx={w * 0.85} ry="3.5" fill="#cdbb9a" opacity=".45" />
+      </svg>
+    </div>
+  );
+};
 
 /** A drifting speck of dust in the light. */
 const Mote: React.FC<{ i: number }> = ({ i }) => {
@@ -133,8 +183,9 @@ export const RoomDecor: React.FC<{ children: React.ReactNode }> = ({ children })
     {/* Sconces — dark skin (40k). Boho shows the candle cluster instead. */}
     <Sconce className="left-3 top-16 hidden md:block" />
     <Sconce className="right-3 top-16 hidden md:block" />
-    <CandleCluster className="left-2 top-12 hidden md:block" speed={flameSpeed} />
-    <CandleCluster className="right-2 top-12 hidden md:block" flip speed={flameSpeed} />
+    {/* Two clusters — different arrangements + offsets (not a flipped mirror). */}
+    <CandleCluster className="left-2 top-12 hidden md:block" variant={0} speed={flameSpeed} />
+    <CandleCluster className="right-3 top-[68px] hidden md:block" variant={1} scale={0.9} speed={flameSpeed} />
 
     {/* Dust in the air */}
     {Array.from({ length: 16 }).map((_, i) => <Mote key={i} i={i} />)}

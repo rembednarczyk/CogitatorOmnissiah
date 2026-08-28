@@ -7,6 +7,8 @@ import { buildShelfItems, chunk } from "../../utils/shelfLayout";
 import { canInsertAt } from "../../utils/shelfInsertion";
 import { ShelfRow, EmptyShelfRow, GapBoundary, GapCaret } from "./ShelfRow";
 import { ShelfFrame, ShelfAccent } from "./ShelfFrame";
+import { WaxCandle } from "./RoomDecor";
+import { useEffectiveConfig } from "../../hooks/useAppConfig";
 
 interface Props {
   shelfId: ShelfId;
@@ -30,6 +32,13 @@ interface Props {
 /** One shelf: wooden body + PHYSICAL layout of volumes (filled shelves, leaning tilted ones). */
 export const Shelf: React.FC<Props> = ({ shelfId, title, icon, accent, books, onDragStart, onDragEnd, onDropBook, onPreciseDrop, draggingBook, preciseEnabled = true, pageSize }) => {
   const dragging = draggingBook !== null;
+  // Boho candle on top of the shelf — thick + wax-dripping, varied per shelf
+  // (tone / girth / offset from the shelf id) so shelves don't look identical.
+  const flameSpeed = useEffectiveConfig().ui.flameSpeed / 100;
+  const candleH = Array.from(shelfId).reduce((a, c) => a + c.charCodeAt(0), 0);
+  const candleTone = (["iv", "bw", "cl"] as const)[candleH % 3];
+  const candleW = [19, 24, 28][candleH % 3];
+  const candleLeftCls = ["left-4", "left-8", "left-12"][candleH % 3];
   const [over, setOver] = useState(false);
   const [page, setPage] = useState(0);
   const wellRef = useRef<HTMLDivElement>(null);
@@ -118,12 +127,14 @@ export const Shelf: React.FC<Props> = ({ shelfId, title, icon, accent, books, on
 
   return (
     <div className="relative">
-      {/* Candle on top of the shelf */}
-      <div className="absolute -top-[26px] left-8 z-20 pointer-events-none" aria-hidden>
+      {/* Candle on top of the shelf. Dark (40k) = thin taper; boho = a thick,
+          wax-dripping candle, varied per shelf so they don't look identical. */}
+      <div className="dc-40k absolute -top-[26px] left-8 z-20 pointer-events-none" aria-hidden>
         <div className="w-[9px] h-[24px] mx-auto rounded-[2px] bg-gradient-to-b from-[#e8dcc0] via-[#d8c8a2] to-[#b9a271]" />
         <div className="absolute -top-[13px] left-1/2 -translate-x-1/2 w-[8px] h-[13px] rounded-[50%_50%_45%_45%/60%_60%_40%_40%]"
           style={{ background: "radial-gradient(circle at 50% 72%, #fff3c0, #ffb03a 55%, #ff6a00)", boxShadow: "0 0 14px 5px rgba(255,150,40,.5)" }} />
       </div>
+      <WaxCandle className={`-top-[38px] ${candleLeftCls} z-20`} tone={candleTone} w={candleW} scale={0.6} speed={flameSpeed} />
 
       <ShelfFrame
         title={title} icon={icon} accent={accent} count={books.length}
