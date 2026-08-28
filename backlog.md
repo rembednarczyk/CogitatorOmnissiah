@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.74.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.74.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,7 +69,13 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
-- **1.74.0** — **Knoby wyglądu sali regału w Konfiguracji.** Trzy pokrętła (`ui`): `shelfRoomShade` (siła cieni/
+- **1.74.1** — **Świece: małe świeczki nad regałami → grube kapiące, zróżnicowane, nie-lustrzane.** Parametryczny
+  `Candle` (grubość `w`, ton, wysokość; płomień skalowany girth) + `CandleCluster` z 3 wariantami układu (różny
+  ton/wysokość/GRUBOŚĆ → dwa miejsca nigdy nie wyglądają jak lustrzane odbicie) i pojedynczy `WaxCandle`. Rogi
+  sali: `variant 0` (lewa) vs `variant 1` + inny offset/scale (prawa) — koniec `flip`-mirror. Cienka świeczka nad
+  każdym regałem (`Shelf`) → w boho zastąpiona grubym kapiącym `WaxCandle` (scale 0.6), z tonem/grubością/pozycją
+  wyprowadzonymi z hasha `shelfId` (sąsiednie regały różnią się objętością i miejscem); ciemny 40k zachowuje
+  cienką świeczkę (`.dc-40k`). Tempo płomienia dalej z knoba `flameSpeed`. Suite 502 zielone, lint czysty, build OK. Trzy pokrętła (`ui`): `shelfRoomShade` (siła cieni/
   winiety sali, 0–200%), `candleGlow` (poświata świec, 0–200%), `flameSpeed` (tempo migotania, 50–200%, wyżej=
   szybciej); default 100. Schema + clamps w `src/configSchema.ts`; edytory (NumberField) w „Kalibracji"
   (`ConfigSection`). Konsumpcja: alpha cieni/poświaty przez `calc(.X * var(--knob-*, 1))` w `index.css` (jasny
