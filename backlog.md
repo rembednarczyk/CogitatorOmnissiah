@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.68.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.68.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,11 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.68.1** — **Przełącznik motywu: pigułka z tekstem → dyskretna ikona księżyc/słońce.** W nagłówku (prawy górny
+  róg) zamiast „pigułki" `ikona + Ciemny/Jasny` jest teraz okrągły przycisk 40×40 tylko z ikoną: księżyc w jasnym
+  (→ ciemny), słońce (amber) w ciemnym (→ jasny), z delikatną animacją obrotu przy zmianie (`AnimatePresence`,
+  rotate ±90°). Styl dopasowany do obu motywów (boho: `#fbf6ec`/`#e4d9c4`/glinka hover; 40k: slate/cyan). Etykiety
+  `title`/`aria-label` zachowane (dostępność ikony-przycisku). Tylko `src/App.tsx`. Suite 475 zielone, lint czysty.
 - **1.68.0** — **Favicon zależny od motywu (boho/40k).** Favicon podąża za jawnym przełącznikiem `data-theme`
   (NIE za `prefers-color-scheme` — apka rozłącza motyw od OS, więc trik `<link media>` byłby niespójny).
   Dwie ikony (ten sam emblemat-kompas dla rozpoznawalności karty, różna paleta): **light/boho** = kremowe tło
