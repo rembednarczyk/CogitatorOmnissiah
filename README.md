@@ -138,7 +138,7 @@ flowchart TB
 - **Serwisy** (`/services/`) — po jednym na koncern; orkiestratory (np. `bookSyncService`, `integrityService`) delegują logikę do czystych helperów.
 - **Czyste helpery** — `wiki.parser` (`parseAwardTable`), `bookDiff` (`buildBookUpdates`/`buildAuthorTags`/`buildNewBookProperties`), `vintedParser`, `vintedStore` (merge/diff/`computeChangedAt`), `vintedScanPlanner` (`selectAndOrderCandidates`), `vintedHttp` (nagłówki/throttle/klasyfikacja błędu), `bookSearchIndex`, `dataNormalizer`, `diffEngine`: bez I/O, w pełni testowalne.
 - **Adaptery** — `NotionAdapter`, `WikiAdapter`: czyste wrappery API bez logiki biznesowej. Mapowanie strona Notion → domena wyniesione do `notionMapper`; skanery HTML (biblioteka/Vinted) dzielą `scrapingClient` (rotacja User-Agent + keep-alive). Adaptery rozróżniają „brak danych" od „awarii infrastruktury" (patrz [Obserwowalność](#obserwowalność-i-diagnostyka)).
-- **Frontend** — React 19 SPA (Tailwind CSS, `motion/react`, `lucide-react`), 5 zakładek: Statystyki, **Regał** (wizualizacja półek + drag&drop), **Skryptorium** (wyszukiwarka), Liturgie (rytuały), Vinted. Cała orkiestracja rytuałów w `useSyncManager`. Transport SSE (fetch → `res.ok` → `consumeSSE` + stall watchdog + komunikat błędu) żyje raz w **`useSSEStream`**; hooki strumieniowe (`useSync`, `useVintedCheck`, `useLibraryCheck`) budują na nim i różnią się tylko routingiem zdarzeń. Duży komponent skanera Vinted rozbity na `components/stats/vinted/*`. W dev serwowany przez Vite (middleware), w produkcji jako statyczny build z `dist/`.
+- **Frontend** — React 19 SPA (Tailwind CSS, `motion/react`, `lucide-react`), 5 zakładek: Statystyki, **Regał** (wizualizacja półek + drag&drop), **Skryptorium** (wyszukiwarka), Liturgie (rytuały), Vinted. Cała orkiestracja rytuałów w `useSyncManager`. Transport SSE (fetch → `res.ok` → `consumeSSE` + stall watchdog + komunikat błędu) żyje raz w **`useSSEStream`**; hooki strumieniowe (`useSync`, `useVintedCheck`, `useLibraryCheck`) budują na nim i różnią się tylko routingiem zdarzeń. Duży komponent skanera Vinted rozbity na `components/stats/vinted/*`. W dev serwowany przez Vite (middleware), w produkcji jako statyczny build z `dist/public/` (bundle backendu leży obok, w `dist/`, i **nie** jest serwowany).
 
 Szczegóły zasad architektonicznych: **[`COGITATOR_GUIDELINES.md`](./COGITATOR_GUIDELINES.md)**.
 
@@ -248,7 +248,7 @@ npm run dev      # serwer dev (tsx server.ts) — API + frontend Vite na http://
 Pozostałe komendy:
 
 ```bash
-npm run build    # vite build + esbuild bundle server.ts → dist/server.cjs
+npm run build    # vite build → dist/public/ (SPA) + esbuild bundle server.ts → dist/server.cjs
 npm start        # uruchom produkcyjny build (node dist/server.cjs)
 npm run lint     # tsc --noEmit (tryb strict; brak osobnego lintera)
 npm test         # vitest run (pełny pakiet)

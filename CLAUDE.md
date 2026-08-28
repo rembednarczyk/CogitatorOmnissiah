@@ -6,7 +6,7 @@ Cogitator Omnissiah — a full-stack app that syncs sci-fi book awards (Hugo, Ne
 
 ```bash
 npm run dev      # Start dev server (tsx server.ts — serves API + Vite frontend)
-npm run build    # vite build + esbuild bundle of server.ts → dist/server.cjs
+npm run build    # vite build → dist/public/ (SPA) + esbuild bundle of server.ts → dist/server.cjs (served static root = dist/public only)
 npm run lint     # tsc --noEmit (strict mode; no separate linter configured)
 npm test         # vitest run (full suite)
 npx vitest run <path>   # Run a single test file

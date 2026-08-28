@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.77.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.77.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +69,12 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.77.1** — **[SEC-PR5] Bundle backendu przestaje być serwowany publicznie.** Build wrzucał SPA **i**
+  `server.cjs` do tego samego `dist/`, a `express.static(dist)` serwował katalog w całości → `GET /server.cjs`
+  zwracał 1,7 MB kodu backendu (bez poświadczeń — sprawdzone — ale z pełną mapą tras i logiką walidacji).
+  Teraz `vite build` → `dist/public/` (`build.outDir` + `emptyOutDir`), a statyczny root serwera to `dist/public`;
+  `server.cjs` zostaje w `dist/`, poza zasięgiem. Zweryfikowane po rebuildzie: `dist/public/` zawiera tylko
+  `index.html` + `assets/`. Docs zaktualizowane (README ×2, CLAUDE.md). Suite 535 zielone, lint czysty.
 - **1.77.0** — **[SEC-PR4] Auth fail-closed w produkcji (koniec z cichym otwarciem).** `basicAuth` przestaje
   bezwarunkowo przepuszczać przy braku poświadczeń: dev/test = dalej no-op (wygoda lokalna), **produkcja bez
   `BASIC_AUTH_USER`/`BASIC_AUTH_PASSWORD` = 503 na wszystko poza `/api/health`**. Powód: `render.yaml` deklaruje

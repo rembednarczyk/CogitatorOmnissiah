@@ -10,6 +10,14 @@ export default defineConfig(() => {
     define: {
       __APP_VERSION__: JSON.stringify(version),
     },
+    // The SPA builds into `dist/public/`, NOT `dist/`. `dist/` also holds the bundled
+    // backend (`server.cjs`), and the server serves its static root wholesale — so a
+    // shared directory published the whole backend at `GET /server.cjs`. Keeping the
+    // two apart means the static root contains only what is meant to be public.
+    build: {
+      outDir: 'dist/public',
+      emptyOutDir: true,
+    },
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
