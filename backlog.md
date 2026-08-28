@@ -1276,6 +1276,11 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
   (`parseReadDate`/`parseImportCsv`/`buildReadDatePlan`). DO ZROBIENIA kiedyś: opakować to w UI (upload CSV w
   Ustawieniach → podgląd planu: dopasowane/niedopasowane/niejednoznaczne → zatwierdź zapis), reużywając tych
   helperów. Nowe rekordy „na bieżąco" już obsłużone automatycznym stemplowaniem przy oznaczaniu „Przeczytane".
+- **Prognoza domknięcia kolekcji (reading velocity, dalszy ciąg)** — DO ZROBIENIA. Na bazie `readingStats`
+  (`recentPace`) + liczby brakujących (nieprzeczytanych) award-booków policzyć szacunek „przy obecnym tempie
+  domkniesz kolekcję ~za X (lat/mies.), ok. rok YYYY". Miejsce: `computeReadingStats` (dołożyć pole `forecast`)
+  albo osobna agregacja; render w `ReadingPaceCard` (kafel/pasek). Uwaga na tempo=0 (brak danych z ukończonych
+  lat) → „za mało danych". Ewentualnie także: streaki, surfacing daty przeczytania na karcie książki/regale.
 - (brak) — pipeline persystencji Vinted (ETAP 1–3) kompletny.
 - **Ewentualnie później**: odświeżanie pojedynczej książki/oferty z bazy (re-check
   świeżości), natywna baza „Vinted Offers" (jeśli blob przestanie wystarczać), proxy
