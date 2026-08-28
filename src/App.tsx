@@ -179,7 +179,7 @@ export default function App() {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className="fixed bottom-8 right-8 p-4 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/50 text-cyan-400 rounded-full shadow-[0_0_15px_rgba(34,211,238,0.3)] backdrop-blur-md z-50 transition-colors"
+            className="fixed bottom-8 right-8 p-4 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/50 text-cyan-400 rounded-full hl-glow-cyan backdrop-blur-md z-50 transition-colors"
             title="Powrót na górę"
             aria-label="Powrót na górę"
           >

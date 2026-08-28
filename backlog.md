@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.72.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.72.2** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,7 +69,15 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
-- **1.72.1** — **Ujednolicenie poświaty podświetleń (boho vs 40k).** Root-cause: arbitralne
+- **1.72.2** — **Regał: karetka drag&drop na semantyczny zielony/czerwony + sweep neonów.** Karetka wstawiania
+  (poprawne/niepoprawne miejsce, `ShelfRow`) niosła inline `rgba` (valid=CYAN, invalid=rose) → nie remapowała się
+  wcale. Teraz klasy `.drop-caret-valid/invalid`: ciemny = żywe (emerald/rose), boho = ciepła leśna zieleń
+  `rgba(107,142,62)` / terakota `rgba(180,74,56)` — widoczne na lnie. Semantyka zielony=OK zamiast cyan.
+  **Sweep** arbitralnych/inline poświat, które nie przechodzą przez `--color-*`: (a) glow ramki-regału-celu
+  (`ShelfFrame` emerald/cyan/purple, 28px) → klasy `.shelf-glow-*` (ciemny dokładny, boho szałwia/glinka);
+  (b) przycisk „na górę" (App) i badge schematu (SchemaColumnCard) → `hl-glow-cyan`. ŚWIADOMIE zostawione:
+  linia lasera skanera (ScanModal — leży na ciemnym podglądzie kamery, nie na lnie) i glow tytułu LIBREM (App:71 —
+  już tylko w motywie ciemnym). Suite 502 zielone, lint czysty, build OK (klasy w bundlu). Root-cause: arbitralne
   `shadow-[0_0_..px_rgba(..)]` niosą literalne RGB i NIE przechodzą przez remap `--color-*`, więc w jasnym motywie
   zostawały NEONOWE (cyan/purple) na glinianym wypełnieniu (fill już się remapował → zgrzyt fill vs poświata).
   Fix: semantyczne klasy `.hl-glow-{cyan,amber,purple,rose,cyan-strong}` w `index.css` — CIEMNY = dokładnie

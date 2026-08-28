@@ -142,17 +142,12 @@ export const ShelfRow: React.FC<Props> = ({ row, slotByKey, rowWidth, rowIndex, 
           </div>
         );
       })}
-      {/* Insertion caret — a neon line at the nearest gap (cyan = OK, pink = wrong decade). */}
+      {/* Insertion caret — a line at the nearest gap: green = OK, red = wrong decade.
+          Colors are theme-aware CSS classes (boho gets warm leaf-green / terracotta). */}
       {rowCaret && (
         <div
-          className="absolute pointer-events-none rounded-[2px]"
-          style={{
-            left: rowCaret.x - 1.5, width: 3, top: 4, bottom: 0, zIndex: 50,
-            background: rowCaret.valid
-              ? "linear-gradient(180deg, rgba(34,211,238,.95), rgba(34,211,238,.25))"
-              : "linear-gradient(180deg, rgba(244,63,94,.9), rgba(244,63,94,.2))",
-            boxShadow: rowCaret.valid ? "0 0 10px rgba(34,211,238,.8)" : "0 0 10px rgba(244,63,94,.7)",
-          }}
+          className={`absolute pointer-events-none rounded-[2px] ${rowCaret.valid ? "drop-caret-valid" : "drop-caret-invalid"}`}
+          style={{ left: rowCaret.x - 1.5, width: 3, top: 4, bottom: 0, zIndex: 50 }}
           aria-hidden
         />
       )}

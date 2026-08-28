@@ -4,9 +4,9 @@ import { CogSigil, NoosphericCrest, DataTicker, HoloField, HudCorner } from "./S
 export type ShelfAccent = "emerald" | "cyan" | "purple";
 
 const ACCENT: Record<ShelfAccent, { text: string; chip: string; glow: string; ring: string }> = {
-  emerald: { text: "text-emerald-200", chip: "bg-emerald-500/10 border-emerald-500/30 text-emerald-200", glow: "shadow-[0_0_28px_rgba(52,211,153,.22)]", ring: "border-emerald-400/50" },
-  cyan: { text: "text-cyan-200", chip: "bg-cyan-500/10 border-cyan-500/30 text-cyan-200", glow: "shadow-[0_0_28px_rgba(34,211,238,.22)]", ring: "border-cyan-400/50" },
-  purple: { text: "text-purple-200", chip: "bg-purple-500/10 border-purple-500/30 text-purple-200", glow: "shadow-[0_0_28px_rgba(168,85,247,.22)]", ring: "border-purple-400/50" },
+  emerald: { text: "text-emerald-200", chip: "bg-emerald-500/10 border-emerald-500/30 text-emerald-200", glow: "shelf-glow-emerald", ring: "border-emerald-400/50" },
+  cyan: { text: "text-cyan-200", chip: "bg-cyan-500/10 border-cyan-500/30 text-cyan-200", glow: "shelf-glow-cyan", ring: "border-cyan-400/50" },
+  purple: { text: "text-purple-200", chip: "bg-purple-500/10 border-purple-500/30 text-purple-200", glow: "shelf-glow-purple", ring: "border-purple-400/50" },
 };
 
 interface Props {
