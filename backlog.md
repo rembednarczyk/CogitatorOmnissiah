@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.72.3** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.73.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,7 +69,15 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
-- **1.72.3** — **Regał (boho): nagłówki/gzyms/plakietki „Cień papieru" (wariant C).** Twarde czarne cienie z
+- **1.73.0** — **Regał (boho): tło „sali" putty (wariant C) + grube świece ociekające woskiem (Ś3).**
+  Diagnoza: `--sk-room-bg` w boho był JUŻ jasny (len) — ciemne wrażenie robiły twarde czarne cienie/winieta/
+  podłoga w `RoomDecor` (`rgba(0,0,0,.5–.85)`), zwł. dolny pas. (1) Tło → putty/taupe C (`#d9c9ac→#c3ae8b`),
+  ciepła oprawa regału; czarne cienie na zmiennych `--sk-room-topshade/-floorshade/-vignette` (fallback = ciemna
+  wartość 40k, boho = miękkie ciepłe `rgba(58,52,43,.10–.20)`). (2) Świece: nowy `CandleCluster` (Ś3) — 3 grube
+  świece różnej wysokości (kość/glinka/wosk pszczeli) ze spływami wosku, roztopionym rondem i kałużą; płomienie
+  WIĘKSZE i WOLNIEJSZE (motion `transformBox:fill-box`, dur 3.8–4.4 s, glow 4.6 s). Widoczne TYLKO w boho przez
+  nową klasę `.candle-boho` (odwrotność `.dc-40k`); ciemny motyw zachowuje dotychczasowy cienki kinkiet 40k —
+  nietknięty. Makieta 4 tła + 3 świece pokazana userowi → wybór C + Ś3. Suite 502 zielone, lint czysty, build OK. Twarde czarne cienie z
   drewna 40k (`rgba(0,0,0,.6–.85)`) czytały się na lnie jak brud: halo pod tytułem gzymsu + czarny inset „wchodzący
   do wnętrza" regału. Przeniesione na zmienne `--sk-*` z FALLBACKIEM = obecna wartość ciemna (40k bez zmian) i
   NADPISANIEM w jasnej skórze = wariant C: miękkie, CIEPŁE cienie NA ZEWNĄTRZ. Nowe zmienne (`ShelfFrame` +
