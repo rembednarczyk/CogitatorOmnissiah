@@ -156,6 +156,65 @@ export function computeYearlyStats(books: NotionBook[]) {
     .sort((a, b) => parseInt(a.year) - parseInt(b.year));
 }
 
+/** Calendar year of a stored read date („YYYY-MM-DD"), or null when absent/malformed. */
+const readYearOf = (b: NotionBook): number | null => {
+  const iso = b.dataPrzeczytania;
+  if (!iso) return null;
+  const y = parseInt(iso.slice(0, 4), 10);
+  return Number.isFinite(y) && y > 1000 ? y : null;
+};
+
+/**
+ * Reading pace over AWARD books, by the calendar YEAR each was marked read
+ * („Data przeczytania"). Year granularity is deliberate and load-bearing: much of
+ * the historical data is year-only (imported reads where only the year was known,
+ * stored as Jan 1), so those Jan-1 dates are NOT real January reads — a monthly
+ * breakdown would invent a January spike. We count a book in its read-YEAR and no
+ * finer. Only read books carrying a date land on the timeline; `totalRead` vs
+ * `totalDated` shows how much of the read history is dated. `recentPace` is the
+ * mean books/year over completed years since you started (capped to the last 3;
+ * the current year is excluded because it's still in progress).
+ */
+export function computeReadingStats(books: NotionBook[], now: Date = new Date()) {
+  const currentYear = now.getFullYear();
+  const read = books.filter(isRead);
+
+  const perYearMap: Record<number, number> = {};
+  let totalDated = 0;
+  read.forEach((b) => {
+    const y = readYearOf(b);
+    if (y === null) return;
+    totalDated++;
+    perYearMap[y] = (perYearMap[y] || 0) + 1;
+  });
+
+  const perYear = Object.entries(perYearMap)
+    .map(([year, count]) => ({ year: parseInt(year, 10), count }))
+    .sort((a, b) => a.year - b.year);
+
+  const thisYear = perYearMap[currentYear] || 0;
+  const lastYear = perYearMap[currentYear - 1] || 0;
+
+  // Peak year (earliest on a tie — perYear is ascending, strict `>` keeps the first).
+  const bestYear = perYear.reduce<{ year: number; count: number } | null>(
+    (best, y) => (!best || y.count > best.count ? { year: y.year, count: y.count } : best),
+    null,
+  );
+
+  // Recent pace: mean books/year over completed years since the first dated read,
+  // capped to the last 3 (current year excluded). No completed year → 0.
+  const minYear = perYear.length ? perYear[0].year : currentYear;
+  const windowStart = Math.max(minYear, currentYear - 3);
+  const completedYears: number[] = [];
+  for (let y = windowStart; y <= currentYear - 1; y++) completedYears.push(y);
+  const recentSum = completedYears.reduce((s, y) => s + (perYearMap[y] || 0), 0);
+  const recentPace = completedYears.length
+    ? Math.round((recentSum / completedYears.length) * 10) / 10
+    : 0;
+
+  return { perYear, totalRead: read.length, totalDated, thisYear, lastYear, bestYear, recentPace };
+}
+
 export function computeLibraryStats(books: NotionBook[], branches: { sourceTag: string; name: string }[]) {
   // Branches from config (`library.branches`) — adding a branch in Kalibracja immediately
   // shows up. `id` = the branch's „Źródło" tag (matched by the marker).
