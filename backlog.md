@@ -20,7 +20,7 @@
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
   Każde zadanie śledzimy issue i domykamy przez `Fixes #N` w opisie PR (linkowanie +
   auto-close). Nie tworzymy sztucznych PR-ów/issue bez realnej wartości.
-- Suite: 187+ testów zielonych; `npm run lint` (tsc) czysty.
+- Suite: 555 testów zielonych; `npm run lint` (tsc) czysty; `npm run build` OK.
 
 ## Findings & decyzje (aktualne)
 
@@ -1415,37 +1415,64 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
   (`parseReadDate`/`parseImportCsv`/`buildReadDatePlan`). DO ZROBIENIA kiedyś: opakować to w UI (upload CSV w
   Ustawieniach → podgląd planu: dopasowane/niedopasowane/niejednoznaczne → zatwierdź zapis), reużywając tych
   helperów. Nowe rekordy „na bieżąco" już obsłużone automatycznym stemplowaniem przy oznaczaniu „Przeczytane".
-- **SECURITY SWEEP (2026-08-28) — findingi do naprawy, NIC jeszcze nie zrobione.** Pełny audyt (4 obszary:
+- **SECURITY SWEEP (2026-08-28) — findingi [1]–[6] i [8]-CSP ZREALIZOWANE (1.75.0–1.79.0, PR #349, #351, #353,
+  #355, #357, #359, #361). OTWARTE: [7] TLS na OPAC (świadomie odłożone) + reszta drobiazgów z [8].** Pełny audyt (4 obszary:
   HTTP/auth, sekrety, scrapery, frontend). **Basic Auth JEST włączony na produkcji (potwierdzone przez usera)** —
   to przelicza wagi: findingi wymagające dostępu do API schodzą na dalszy plan, a na czoło wychodzą te, których
   auth NIE zasłania. Raport: `docs/security-sweep.md` (jeśli powstanie) / artifact z sesji.
-  - **[1] SSRF w resolve sprzedawców — NAJWYŻSZY priorytet, auth tego NIE chroni.** `vintedSyncService.ts:271`
+  - **[1] SSRF w resolve sprzedawców — ✅ NAPRAWIONE (1.75.0, PR #349).** `services/vintedUrl.ts`
+    (`isVintedUrl`/`isVintedPhotoUrl`: allow-lista hostów `vinted.pl` (+ `vinted.net` dla zdjęć) i schematu
+    http/s, dopasowanie po sufiksie kropkowym) + `sanitizeStoredOffer` w `vintedStore.ts` (zły `url` → oferta
+    odrzucona, złe `photo`/`seller` → pole ucinane) filtrujące oferty NA WYJŚCIU z bloba, a re-fetch w
+    `vintedSyncService.ts` sprawdza host zamiast podciągu. Zamknęło też 6 sinków `href` w UI.
+    ORYGINALNY OPIS: `vintedSyncService.ts:271`
     filtruje `/\/items\//.test(o.url)` = test PODCIĄGU, nie hosta; `parseVintedData` (`vintedStore.ts:113-118`)
     przepuszcza `offers` hurtem (choć `scannedAt`/`changedAt` typuje); `vintedParser.ts:204` przyjmuje dowolny
     absolutny `http…` ze scrapowanego JSON-a; nagłówki dokładają `Cookie` bez sprawdzenia hosta. Wektor wchodzi
     przez SCRAPOWANĄ TREŚĆ (nie przez API), więc autoryzacja nie stanowi bariery. Fix: allow-lista hosta+schematu
     w `parseVintedData` — zamyka też 6 sinków `href` w UI (ten sam root cause).
-  - **[2] CSRF — dotyczy WYŁĄCZNIE stanu z włączonym auth (czyli naszego).** Poświadczenia Basic są dołączane
+  - **[2] CSRF — ✅ NAPRAWIONE (1.76.0, PR #351).** `middleware/sameOrigin.ts`: dla metod mutujących host z
+    `Origin` (fallback `Referer`) musi się zgadzać z `req.headers.host`, inaczej 403. Brak obu nagłówków →
+    `next()` (świadome przejście dla CLI/curl — przeglądarka zawsze wysyła `Origin` przy cross-site POST).
+    ORYGINALNY OPIS: Poświadczenia Basic są dołączane
     przez przeglądarkę do żądań cross-site; bezparametrowe rytuały (`/api/sync-purify`, `/api/sync/stop`,
     `/api/sync/reset`, `syncController.ts:183-197`) da się odpalić formularzem z obcej strony. Endpointy z ciałem
     JSON są bezpieczne (formularz cross-site nie wyśle `application/json`). Fix: check `Origin`/`Referer`.
-  - **[3] Destrukcyjny zapis schematu (footgun, już nie atak).** Walidacja przepuszcza `newOptions: []`
+  - **[3] Destrukcyjny zapis schematu — ✅ NAPRAWIONE (1.76.1, PR #353).** `syncController.ts` waliduje teraz
+    payload wobec ŻYWEGO schematu Notion: kolumna musi istnieć, typ się zgadzać, a jedno wywołanie może usunąć
+    NAJWYŻEJ jedną opcję. (Świadomie NIE „odrzucaj pustej listy" — UI kasuje opcje po jednej, więc usunięcie
+    ostatniej legalnie daje `[]`; liczymy usunięcia, nie rozmiar.) ORYGINALNY OPIS: Walidacja przepuszcza `newOptions: []`
     (`syncController.ts:126-131`), a `updateSchema` (`notion.adapter.ts:101-106`) PODMIENIA opcje w całości →
     `PATCH` z pustą listą na `Źródło` czyści tagi w całej kolekcji, nieodwracalnie. Za authem = ryzyko własnej
     pomyłki/buga, nie obcego. Fix: odrzuć pustą listę + allow-lista edytowalnych kolumn.
-  - **[4] Auth fail-open jako LATENTNE ryzyko.** `basicAuth.ts:29` `if (!user || !pass) return next()`, a
+  - **[4] Auth fail-open — ✅ NAPRAWIONE (1.77.0, PR #355).** `basicAuth.ts` przy `NODE_ENV=production` bez
+    skonfigurowanych poświadczeń zwraca 503 (zamiast wpuszczać), chyba że świadomie ustawiono
+    `ALLOW_PUBLIC_ACCESS=true`; `/api/health` zawsze przechodzi (health-check platformy).
+    ORYGINALNY OPIS: `basicAuth.ts:29` `if (!user || !pass) return next()`, a
     `render.yaml` ma `sync: false` → świeży deploy z blueprintu wstaje OTWARTY. Dziś OK, ale jedna pomyłka przy
     rotacji zmiennych = cicha ekspozycja. Fix: fail-closed w `NODE_ENV=production`.
-  - **[5] `dist/server.cjs` serwowany publicznie** (`server.ts:30-32` — build wrzuca SPA i bundle serwera do tego
+  - **[5] `dist/server.cjs` serwowany publicznie — ✅ NAPRAWIONE (1.77.1, PR #357).** `vite.config.ts` buduje SPA
+    do `dist/public/` (+`emptyOutDir`), a `server.ts` serwuje statykę WYŁĄCZNIE z `dist/public`; bundle serwera
+    zostaje poza rootem statycznym. Zweryfikowane po treści odpowiedzi (nie po statusie): `GET /server.cjs` →
+    fallback SPA, zero śladów backendu. ORYGINALNY OPIS: (`server.ts:30-32` — build wrzuca SPA i bundle serwera do tego
     samego `dist/`). Za authem to non-issue; sprawdzone: ZERO zaszytych poświadczeń w bundlu. Fix przy okazji:
     build SPA do `dist/public/`.
-  - **[6] Limity zasobów**: nielimitowane `Map` cache (`cycleLookupService.ts:55`, `isbnLookupService.ts:28`) bez
+  - **[6] Limity zasobów — ✅ NAPRAWIONE (1.79.0, PR #361).** `services/boundedCache.ts` (`BoundedCache`, FIFO z
+    twardym capem; `null` jest legalną wartością → obecność przez `has()`) zastąpił gołe `Map` w
+    `cycleLookupService` i `isbnLookupService`; `scrapingClient.ts` eksportuje `responseSizeLimit`
+    (`maxContentLength`/`maxBodyLength` = 12 MB) dopięty do wszystkich wywołań axios w scraperach.
+    ORYGINALNY OPIS: nielimitowane `Map` cache (`cycleLookupService.ts:55`, `isbnLookupService.ts:28`) bez
     TTL/capa; brak `maxContentLength` na wszystkich axiosach (przy 7 MB stronach Vinted i 512 MB Rendera);
     `/api/cycle` robi do ~34 żądań wychodzących na chybienie. Za authem = tylko własny footgun/wyciek pamięci.
-  - **[7] TLS wyłączony na OPAC** (`libraryCheckService.ts:45-48`, `rejectUnauthorized:false`) — auth nieistotny,
-    to warstwa sieciowa. Kontrolowane (per-agent, bez poświadczeń), ale odpowiedzi decydują o zapisach do Notion.
-    Węższy fix: dopiąć brakujący cert przez `ca:`.
-  - **[8] Drobne**: brak nagłówków bezpieczeństwa (CSP/X-Frame-Options/nosniff), ciasteczka Vinted spłaszczane bez
+  - **[7] TLS wyłączony na OPAC — ⏸️ OTWARTE, ŚWIADOMIE ODŁOŻONE.** (`libraryCheckService.ts:45-48`,
+    `rejectUnauthorized:false`) — auth nieistotny, to warstwa sieciowa. Kontrolowane (per-agent, bez poświadczeń),
+    ale odpowiedzi decydują o zapisach do Notion. Węższy fix: dopiąć brakujący cert przez `ca:`. POWÓD ODŁOŻENIA:
+    nie da się tego zmienić „na ślepo" — trzeba najpierw pobrać i obejrzeć realny łańcuch certyfikatów OPAC-a
+    (sandbox tego nie dosięga), a zła zmiana ubija działający rytuał biblioteczny.
+  - **[8] Drobne — CSP ✅ ZROBIONE (1.78.0, PR #359)**: `middleware/securityHeaders.ts` (CSP z `frame-ancestors
+    'none'`, `object-src 'none'`, `img-src` ograniczony do self/data/vinted, `connect-src 'self'`) + `nosniff` +
+    `X-Frame-Options: DENY` + `Referrer-Policy: same-origin`; zweryfikowane realnym Chromium/Playwright (0
+    naruszeń, React montuje się poprawnie). RESZTA OTWARTA: ciasteczka Vinted spłaszczane bez
     scope’u hosta (`cookies.ts` + `browserPrime.ts:73` bierze WSZYSTKIE ciasteczka kontekstu), `error.message`
     z upstreamu zwracany dosłownie (leak ID bazy w komunikacie Notion), `nanoid` w npm audit (build-time only).
   - **ZWERYFIKOWANE JAKO CZYSTE** (nie powtarzać audytu): zero XSS (brak jakiegokolwiek sinka HTML w `src/`),
