@@ -1,10 +1,10 @@
-# Cogitator Omnissiah
+# Librem
 
-**Cogitator Omnissiah** synchronizuje nagrody literackie science‑fiction — **Hugo**, **Nebula** i **Locus** — z *Archiwum Encyklopedii Fantastyki* (MediaWiki) do osobistej bazy **Notion**. Zbiera zwycięzców i nominowanych, wzbogaca ich o wydawcę, serię i przynależność do cyklu, pilnuje integralności danych i pomaga śledzić postępy czytelnicze oraz szukać fizycznych egzemplarzy w bibliotece i na Vinted.
+**Librem** — Twoja kolekcja nagradzanej fantastyki. Synchronizuje nagrody literackie science‑fiction — **Hugo**, **Nebula** i **Locus** — z *Archiwum Encyklopedii Fantastyki* (MediaWiki) do osobistej bazy **Notion**. Zbiera zwycięzców i nominowanych, wzbogaca ich o wydawcę, serię i przynależność do cyklu, pilnuje integralności danych i pomaga śledzić postępy czytelnicze oraz szukać fizycznych egzemplarzy w bibliotece i na Vinted.
 
-Interfejs i nazewnictwo utrzymane są w klimacie Warhammer 40k / Adeptus Mechanicus („rytuały synchronizacji", „Duch Maszyny", „sanctity") — to świadoma konwencja, którą należy zachować przy zmianach.
+Nazewnictwo i teksty interfejsu są ciepłe i literackie (Kolekcja, Regał, Katalog, Synchronizacja, Rynek, Ustawienia). Wcześniejsza konwencja Warhammer 40k / Adeptus Mechanicus została wycofana z tekstów widocznych dla użytkownika (v1.61.0) — **nie przywracamy jej**. Motyw ciemny zachowuje 40‑kowy *wygląd* (glassmorphism, cyan/purple), ale jego *copy* jest takie samo jak w jasnym. Identyfikatory domenowe (nazwy kolumn Notion, klucze `TASK_REGISTRY`, teksty serwisów backendu) pozostają nietknięte.
 
-> **Uwaga o naturze projektu.** To osobiste narzędzie jednego użytkownika, nie usługa wieloosobowa. Endpointy nie są uwierzytelniane — uruchamiaj je za prywatnym hostingiem/siecią, nie wystawiaj publicznie bez własnej warstwy autoryzacji.
+> **Uwaga o naturze projektu.** To osobiste narzędzie jednego użytkownika, nie usługa wieloosobowa. Od v1.77.0 API jest chronione Basic Auth i działa **fail‑closed**: w `NODE_ENV=production` bez `BASIC_AUTH_USER`/`BASIC_AUTH_PASSWORD` serwis odpowiada 503 na wszystko poza `/api/health` (świadome otwarcie wymaga `ALLOW_PUBLIC_ACCESS=true`). Mimo to trzymaj instancję za prywatnym hostingiem — to narzędzie osobiste, nie usługa publiczna.
 
 ---
 
@@ -140,7 +140,7 @@ flowchart TB
 - **Adaptery** — `NotionAdapter`, `WikiAdapter`: czyste wrappery API bez logiki biznesowej. Mapowanie strona Notion → domena wyniesione do `notionMapper`; skanery HTML (biblioteka/Vinted) dzielą `scrapingClient` (rotacja User-Agent + keep-alive). Adaptery rozróżniają „brak danych" od „awarii infrastruktury" (patrz [Obserwowalność](#obserwowalność-i-diagnostyka)).
 - **Frontend** — React 19 SPA (Tailwind CSS, `motion/react`, `lucide-react`), 5 zakładek: Statystyki, **Regał** (wizualizacja półek + drag&drop), **Skryptorium** (wyszukiwarka), Liturgie (rytuały), Vinted. Cała orkiestracja rytuałów w `useSyncManager`. Transport SSE (fetch → `res.ok` → `consumeSSE` + stall watchdog + komunikat błędu) żyje raz w **`useSSEStream`**; hooki strumieniowe (`useSync`, `useVintedCheck`, `useLibraryCheck`) budują na nim i różnią się tylko routingiem zdarzeń. Duży komponent skanera Vinted rozbity na `components/stats/vinted/*`. W dev serwowany przez Vite (middleware), w produkcji jako statyczny build z `dist/public/` (bundle backendu leży obok, w `dist/`, i **nie** jest serwowany).
 
-Szczegóły zasad architektonicznych: **[`COGITATOR_GUIDELINES.md`](./COGITATOR_GUIDELINES.md)**.
+Szczegóły zasad architektonicznych: **[`LIBREM_GUIDELINES.md`](./LIBREM_GUIDELINES.md)**.
 
 ### Stack
 
@@ -330,7 +330,7 @@ Szczegóły algorytmów: **[`docs/`](./docs)** (patrz [indeks](./docs/README.md)
 - **Weryfikacja autora** przy synchronizacji wydawców/serii/cykli — strona o tym samym tytule dotycząca innego dzieła nie nadpisze danych.
 - **Rozróżnienie awarii od braku danych** — pełna awaria pobierania nie raportuje się jako „udany, pusty" sync (patrz niżej).
 
-Decyzje projektowe (np. kategorie Locus, priorytet wydania) są udokumentowane w `docs/` i `COGITATOR_GUIDELINES.md` z adnotacją „nie naprawiać wstecz".
+Decyzje projektowe (np. kategorie Locus, priorytet wydania) są udokumentowane w `docs/` i `LIBREM_GUIDELINES.md` z adnotacją „nie naprawiać wstecz".
 
 ---
 
@@ -376,12 +376,12 @@ npm run lint    # type-check w trybie strict
 
 ## Dokumentacja i konwencje
 
-- **[`COGITATOR_GUIDELINES.md`](./COGITATOR_GUIDELINES.md)** — autorytatywne zasady architektoniczne (backend, frontend, integralność danych, testy, design system). Obowiązują przy każdej zmianie.
+- **[`LIBREM_GUIDELINES.md`](./LIBREM_GUIDELINES.md)** — autorytatywne zasady architektoniczne (backend, frontend, integralność danych, testy, design system). Obowiązują przy każdej zmianie.
 - **[`docs/`](./docs)** — szczegółowa dokumentacja algorytmów per serwis ([indeks](./docs/README.md)).
 - **[`CLAUDE.md`](./CLAUDE.md)** — zwięzła mapa projektu dla asystenta Claude Code.
 
-Konwencje: Tailwind CSS (motyw glassmorphism, `slate-950` + akcenty `cyan-400`/`purple-500`), `motion/react` do animacji, `lucide-react` do ikon; nazewnictwo i teksty UI w klimacie Adeptus Mechanicus. Po większych zmianach architektonicznych aktualizuj `COGITATOR_GUIDELINES.md` i ten plik (zob. wytyczne §8).
+Konwencje: Tailwind CSS (motyw glassmorphism, `slate-950` + akcenty `cyan-400`/`purple-500`), `motion/react` do animacji, `lucide-react` do ikon; nazewnictwo i teksty UI w ciepłym, literackim tonie „Librem". Po większych zmianach architektonicznych aktualizuj `LIBREM_GUIDELINES.md` i ten plik (zob. wytyczne §8).
 
 ---
 
-*Ku chwale Omnissiaha — w służbie zachowania literackich artefaktów w epoce cyfrowej.*
+*Librem — w służbie zachowania literackich artefaktów w epoce cyfrowej.*

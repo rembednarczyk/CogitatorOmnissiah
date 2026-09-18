@@ -64,7 +64,7 @@ export function basicAuth(getEnv: () => NodeJS.ProcessEnv = () => process.env) {
       }
     }
 
-    res.setHeader("WWW-Authenticate", 'Basic realm="Cogitator Omnissiah", charset="UTF-8"');
+    res.setHeader("WWW-Authenticate", 'Basic realm="Librem", charset="UTF-8"');
     return res.status(401).send("Wymagana autoryzacja.");
   };
 }

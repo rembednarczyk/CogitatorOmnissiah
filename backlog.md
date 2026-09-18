@@ -14,7 +14,12 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.80.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.81.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- **Nazwa projektu: „Librem"** (rebranding z „Cogitator Omnissiah", 1.81.0). Plik wytycznych to
+  `LIBREM_GUIDELINES.md`. JEDYNE pozostałe wystąpienie starej nazwy w repo: `render.yaml` →
+  `name: cogitator-omnissiah` — ŚWIADOMIE NIE RUSZANE (zmiana = nowy serwis na Render, nowy URL,
+  ponowne wpisanie sekretów). Nazwa repo na GitHubie (`CogitatorOmmnissiah`, z literówką „mm") też
+  bez zmian — do decyzji użytkownika.
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -69,6 +74,21 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.81.0** — **Rebranding „Cogitator Omnissiah" → „Librem" (warstwa repo/dokumentacji).** UI był już
+  Librem od 1.61.0; ta zmiana domyka TOŻSAMOŚĆ PROJEKTU. `COGITATOR_GUIDELINES.md` → `LIBREM_GUIDELINES.md`
+  (`git mv`, historia zachowana) + wszystkie odwołania (README, CLAUDE.md, docs/README.md oraz komentarze
+  w `src/hooks/useSyncManager.ts` i `src/theme/ritualColors.ts`); H1 wytycznych na „LIBREM: ARCHITECTURAL
+  GUIDELINES (v1.7)"; `metadata.json` `name` → „Librem" (czytany TYLKO przez człowieka — `vite.config.ts`
+  importuje stamtąd wyłącznie `version`); `package.json`/`package-lock.json` `name` z zaszłego
+  `react-example` → `librem`; realm Basic Auth → `Librem`. README: nowy tytuł/lead + USUNIĘTY akapit
+  o konwencji Warhammer 40k (sprzeczny z CLAUDE.md od 1.61.0) + poprawiona NIEAKTUALNA informacja
+  „Endpointy nie są uwierzytelniane" (od 1.77.0 Basic Auth fail-closed).
+  **NIE ZMIENIONE ŚWIADOMIE**: `render.yaml` `name: cogitator-omnissiah` (zmiana w blueprincie = Render
+  tworzy NOWY serwis: nowy URL, utrata historii, ponowne wpisanie sekretów) oraz nazwa repo na GitHubie.
+  **DŁUG POZOSTAŁY**: README wciąż używa 40-kowego słownictwa w opisach (28 wystąpień: „rytuał" ×16,
+  „Skryptorium" ×5, „Puryfikacja" ×2, „Liturgie" ×2, „Sanktuarium", „Sanctity", „Noospheric") — część
+  to legalne identyfikatory domenowe/backendowe, część to nieaktualne nazwy zakładek (UI ma dziś
+  Kolekcja/Regał/Katalog/Synchronizacja/Rynek). Do rozdzielenia w osobnym PR.
 - **1.80.0** — **Swipe do przełączania segmentów regału (mobile).** Nowy `src/hooks/useHorizontalSwipe.ts`
   (zwraca handlery touch do rozlania na element). Sedno nie w wykrywaniu gestu, tylko w NIE kradzeniu cudzych:
   (1) swipe liczy się tylko gdy poziomy dystans DOMINUJE nad pionowym (`|dx| > |dy| * 1.4`), więc zwykłe

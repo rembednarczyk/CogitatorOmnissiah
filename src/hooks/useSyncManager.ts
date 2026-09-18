@@ -12,7 +12,7 @@ type SyncInstance = ReturnType<typeof useSync>;
  * Holds nine `useSync` instances (one per ritual), mutual state clearing, the
  * sequential „Wielki Rytuał" (full sync), and an aggregate result. Extracted
  * from `App.tsx` so the component stays with rendering and the logic lives in the hook
- * (see COGITATOR_GUIDELINES §2 "Logic Isolation").
+ * (see LIBREM_GUIDELINES §2 "Logic Isolation").
  */
 export function useSyncManager() {
   const [fullSyncResults, setFullSyncResults] = useState<any[] | null>(null);

@@ -1,6 +1,6 @@
 # Dokumentacja algorytmów
 
-Szczegółowe opisy działania poszczególnych rytuałów (jeden dokument na koncern synchronizacji). Przed zmianą danego serwisu przeczytaj odpowiadający mu dokument; po zmianie logiki — zaktualizuj go (zob. `COGITATOR_GUIDELINES.md` §8).
+Szczegółowe opisy działania poszczególnych rytuałów (jeden dokument na koncern synchronizacji). Przed zmianą danego serwisu przeczytaj odpowiadający mu dokument; po zmianie logiki — zaktualizuj go (zob. `LIBREM_GUIDELINES.md` §8).
 
 | Dokument | Zakres |
 | --- | --- |
