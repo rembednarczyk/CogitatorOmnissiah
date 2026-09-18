@@ -99,7 +99,9 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
   `RitualButton.tsx`, `ritualColors.ts`, typ `RitualColor`, tablica `rituals`, komentarze „Wielki Rytuał";
   teksty serwisów backendu (`Nieznany rytuał synchronizacji`); `docs/bookshelf.md` („noospheric Adeptus
   Mechanicus skin" — to NAZWA skórki motywu ciemnego, który celowo zachowuje wygląd 40k).
-  To osobny refaktor (~10 plików, churn w importach, zero zysku dla użytkownika) — do decyzji.
+  **DECYZJA UŻYTKOWNIKA (2026-09-18): identyfikatory w kodzie ZOSTAJĄ JAKO PAMIĄTKA — nie przemianowujemy
+  ich ani teraz, ani przy okazji innych zmian.** Zapisane w `CLAUDE.md` (sekcja Conventions) i w
+  `OMNISSIAH_VAULT.md`, żeby nie wracało jako „dług do spłacenia". Temat rebrandingu ZAMKNIĘTY.
 - **1.81.1** — **Domknięcie rebrandingu: `render.yaml` `name` → `librem`.** Użytkownik zweryfikował
   w dashboardzie Rendera, że sekcja Blueprints jest PUSTA — serwis powstał ręcznie, więc Render tego
   pliku nie czyta i zmiana jest bez skutków runtime'owych. Dopisany komentarz nagłówkowy: plik jest

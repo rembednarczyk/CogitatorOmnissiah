@@ -51,9 +51,12 @@ Wycofanie (v1.61.0) dotyczyło **tekstów widocznych dla użytkownika**. Reszta 
 - **Wygląd motywu ciemnego.** Glassmorphism, `slate-950`, akcenty cyan/purple, cząsteczki w tle,
   mosiężne ramy regału i skórka `noospheric` z kołem zębatym Mechanicusa — to nadal estetyka 40k.
   Zmieniło się *copy*, nie *look*. Motyw jasny („Librem", boho) jest osobną, ciepłą stylistyką.
-- **Identyfikatory w kodzie.** `LiturgySection.tsx`, `SanctityDebugger.tsx`, `RitualButton.tsx`,
-  `ritualColors.ts`, tablica `rituals`, komentarze z „Wielkim Rytuałem". Nazwy techniczne, niewidoczne
-  dla użytkownika — zmiana byłaby czystym churnem w importach bez zysku.
+- **Identyfikatory w kodzie — ZOSTAJĄ JAKO PAMIĄTKA (decyzja użytkownika, 2026‑09‑18).**
+  `LiturgySection.tsx`, `SanctityDebugger.tsx`, `RitualButton.tsx`, `ritualColors.ts`, typ `RitualColor`,
+  tablica `rituals`, komentarze z „Wielkim Rytuałem". Nie jest to dług do spłacenia ani przeoczenie —
+  to świadomie zachowany ślad po pierwszym roku projektu. **Nie przemianowywać ich przy okazji innych
+  zmian.** Praktycznie też nie ma po co: są niewidoczne dla użytkownika, a refaktor oznaczałby churn
+  w importach bez żadnego zysku.
 - **Teksty serwisów backendu i identyfikatory domenowe.** Np. `Nieznany rytuał synchronizacji`
   w `syncManager.ts`, klucze `TASK_REGISTRY`, nazwy kolumn Notion. Chronione wprost przez `CLAUDE.md` —
   ich zmiana ruszałaby dane, nie markę.
