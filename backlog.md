@@ -14,12 +14,18 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.81.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
-- **Nazwa projektu: „Librem"** (rebranding z „Cogitator Omnissiah", 1.81.0). Plik wytycznych to
-  `LIBREM_GUIDELINES.md`. JEDYNE pozostałe wystąpienie starej nazwy w repo: `render.yaml` →
-  `name: cogitator-omnissiah` — ŚWIADOMIE NIE RUSZANE (zmiana = nowy serwis na Render, nowy URL,
-  ponowne wpisanie sekretów). Nazwa repo na GitHubie (`CogitatorOmmnissiah`, z literówką „mm") też
-  bez zmian — do decyzji użytkownika.
+- Wersja aplikacji: **1.81.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- **Nazwa projektu: „Librem"** (rebranding z „Cogitator Omnissiah", 1.81.0–1.81.1). Plik wytycznych to
+  `LIBREM_GUIDELINES.md`. ZERO wystąpień starej nazwy w repo.
+- **`render.yaml` NIE jest podpięty jako Blueprint** (zweryfikowane przez użytkownika w dashboardzie —
+  sekcja Blueprints pusta; serwis powstał ręcznie). Render tego pliku NIE czyta → trzymamy go jako
+  dokumentację konfiguracji. Dlatego zmiana `name` na `librem` (1.81.1) była bezpieczna. GDYBY kiedyś
+  podpinać go jako Blueprint: dopasowanie idzie WYŁĄCZNIE po `name`, więc musi zgadzać się z nazwą
+  istniejącego serwisu, inaczej Render tworzy DRUGI serwis (nic nie kasuje, ale zostają dwa).
+- **URL produkcyjny pozostaje `…onrender.com` ze starej nazwy** — subdomena jest przypisywana przy
+  TWORZENIU serwisu i zmiana nazwy jej nie rusza (otwarty feature request u Rendera). Jedyne wyjścia:
+  nowy serwis albo własna domena. Świadomie zostawiamy jak jest.
+- Nazwa repo na GitHubie (`CogitatorOmmnissiah`, z literówką „mm") bez zmian — do decyzji użytkownika.
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -74,6 +80,12 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.81.1** — **Domknięcie rebrandingu: `render.yaml` `name` → `librem`.** Użytkownik zweryfikował
+  w dashboardzie Rendera, że sekcja Blueprints jest PUSTA — serwis powstał ręcznie, więc Render tego
+  pliku nie czyta i zmiana jest bez skutków runtime'owych. Dopisany komentarz nagłówkowy: plik jest
+  dokumentacją konfiguracji, a przy ewentualnym podpięciu Blueprintu `name` musi zgadzać się z nazwą
+  istniejącego serwisu (dopasowanie idzie tylko po niej). Po tej zmianie w repo nie ma już ANI JEDNEGO
+  wystąpienia starej nazwy.
 - **1.81.0** — **Rebranding „Cogitator Omnissiah" → „Librem" (warstwa repo/dokumentacji).** UI był już
   Librem od 1.61.0; ta zmiana domyka TOŻSAMOŚĆ PROJEKTU. `COGITATOR_GUIDELINES.md` → `LIBREM_GUIDELINES.md`
   (`git mv`, historia zachowana) + wszystkie odwołania (README, CLAUDE.md, docs/README.md oraz komentarze
