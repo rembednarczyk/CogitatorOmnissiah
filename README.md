@@ -264,15 +264,29 @@ Port pochodzi ze zmiennej `PORT` (domyślnie `3000`).
 
 ## Wdrożenie (Render)
 
-Repozytorium zawiera blueprint **[`render.yaml`](./render.yaml)**:
+Produkcja: **https://librem.onrender.com**. Serwis jest utworzony **ręcznie** jako *Web Service* —
+**`render.yaml` NIE jest podpięty jako Blueprint**, więc Render tego pliku nie czyta; trzymamy go jako
+dokumentację konfiguracji. Ustawienia serwisu (Settings):
 
-- **Runtime:** Node
-- **Build:** `npm ci --include=dev && npm run build`
-- **Start:** `npm start`
-- **Health check:** `/api/health`
-- **Zmienne:** ustaw `NOTION_API_KEY`, `NOTION_DATABASE_ID` (oraz opcjonalnie `BASIC_AUTH_USER`/`BASIC_AUTH_PASSWORD`) jako sekrety; `NODE_ENV=production`.
+| Ustawienie | Wartość | Dlaczego |
+| --- | --- | --- |
+| Repository | `rembednarczyk/librem` | |
+| Branch | `main` | deploy leci z `main`, nie z brancha roboczego |
+| Auto-Deploy | `On Commit` | domyślnie włączone — każdy push/merge na `main` przebudowuje serwis |
+| Build Command | `npm ci --include=dev && npm run build` | **krytyczne**: `vite`, `esbuild` i `typescript` są w `devDependencies`, a przy `NODE_ENV=production` samo `npm ci` je pomija i build się wywala |
+| Start Command | `npm start` | (`node dist/server.cjs`) |
+| Health Check Path | `/api/health` | endpoint jest celowo trywialny i otwarty (nie dotyka Notion), więc odpowiada nawet bez sekretów |
 
-Możesz wdrożyć jako *Blueprint* (Render odczyta `render.yaml`) albo ręcznie jako *Web Service* z powyższymi ustawieniami. Na darmowym planie instancja usypia po ~15 min bezczynności (pierwsze wejście po przerwie trwa ~30–60 s).
+**Zmienne środowiskowe:** `NOTION_API_KEY`, `NOTION_DATABASE_ID`, `BASIC_AUTH_USER`, `BASIC_AUTH_PASSWORD`
+oraz `NODE_ENV=production`. Bez obu zmiennych `BASIC_AUTH_*` produkcja odpowiada **503** na wszystko poza
+`/api/health` (fail-closed — patrz [Bezpieczeństwo](#bezpieczeństwo)).
+
+**Wersja Node:** przypięta w [`.node-version`](./.node-version) do `20`. Render wybiera wersję wg priorytetu
+`NODE_VERSION` → `.node-version` → `.nvmrc` → `engines`, a jego **domyślna** wersja dla nowo tworzonych
+serwisów idzie w górę z czasem (dziś Node 24) i złamałaby `engines` (`>=18 <21`). Pin usuwa tę zależność
+od daty utworzenia serwisu.
+
+Na darmowym planie instancja usypia po ~15 min bezczynności (pierwsze wejście po przerwie trwa ~30–60 s).
 
 SSE za proxy Rendera jest zahartowane po stronie serwera (padding wymuszający flush, `X-Accel-Buffering: no`, częsty keepalive) — patrz [Rozwiązywanie problemów](#rozwiązywanie-problemów).
 

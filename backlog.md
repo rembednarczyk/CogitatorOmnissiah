@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.82.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.82.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - **Nazwa projektu: „Librem"** (rebranding z „Cogitator Omnissiah", 1.81.0–1.81.1). Plik wytycznych to
   `LIBREM_GUIDELINES.md`. ZERO wystąpień starej nazwy w repo.
 - **`render.yaml` NIE jest podpięty jako Blueprint** (zweryfikowane przez użytkownika w dashboardzie —
@@ -85,6 +85,17 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.82.1** — **Pin wersji Node (`.node-version` = 20) + urealniona sekcja wdrożenia w README.**
+  Render wybiera Node wg priorytetu `NODE_VERSION` → `.node-version` → `.nvmrc` → `engines`, a jego
+  DOMYŚLNA wersja zależy od DATY UTWORZENIA serwisu i rośnie (dla serwisów tworzonych po 2026-09-17 to
+  Node 24) — czyli nowy serwis `librem` mógł wstać na wersji łamiącej `engines` (`>=18 <21`). Pin usuwa
+  tę zależność. README: usunięte twierdzenie, że repo wdraża się blueprintem (NIE jest podpięty), dodana
+  tabela ustawień serwisu z uzasadnieniami — w tym `npm ci --include=dev`, bez którego build pada,
+  bo `vite`/`esbuild`/`typescript` siedzą w `devDependencies`.
+  **UWAGA/NIESPÓJNOŚĆ DO DECYZJI**: sandbox deweloperski działa na Node 22.22.2 (tam przechodzi cały
+  suite), a `engines` deklaruje `<21`. Pin ustawiłem na 20, bo mieści się w ZADEKLAROWANYM kontrakcie —
+  nie poszerzałem `engines` samodzielnie. Do rozstrzygnięcia: albo poszerzyć `engines` do `<23` i pinować
+  22 (pinować to, na czym się testuje), albo zostawić 20.
 - **1.82.0** — **Dług nazewniczy domknięty + `OMNISSIAH_VAULT.md`.** README opisywał UI sprzed v1.61.0:
   zakładki „Skryptorium"/„Liturgie" (dziś **Katalog**/**Synchronizacja**), zadania „Puryfikacja",
   „Sanctity", „Żniwa Cykli", „Sanktuarium Kalibracji". To była NIEAKTUALNA DOKUMENTACJA, nie kwestia
