@@ -3,7 +3,7 @@
  * added by the Rytuał Żniw. Rows without „Kategoria" set are treated as award ones
  * (backward compatibility — existing entries lack this field).
  *
- * Award consumers (stats, integrity, Skryptorium/Regał index) filter on
+ * Award consumers (stats, integrity, Katalog/Regał index) filter on
  * `isAwardBook`; the Vinted scanner deliberately takes EVERYTHING (we want to scan cycle volumes too).
  */
 export const CYCLE_VOLUME_CATEGORY = "Tom cyklu";

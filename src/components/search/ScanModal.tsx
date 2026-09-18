@@ -16,7 +16,7 @@ interface BarcodeDetectorLike { detect(source: CanvasImageSource): Promise<Detec
 type BarcodeDetectorCtor = new (opts?: { formats?: string[] }) => BarcodeDetectorLike;
 
 /**
- * Mobile barcode scanner for Skryptorium. Streams the rear camera into a <video>
+ * Mobile barcode scanner for Katalog. Streams the rear camera into a <video>
  * and polls the native BarcodeDetector for an EAN-13 (= book ISBN-13). On a hit it
  * hands the code up (parent decides: direct row match, ISBN resolve, or „not found").
  * A manual ISBN field is always available as a fallback (bad light, denied camera,

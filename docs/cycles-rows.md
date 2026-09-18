@@ -9,7 +9,7 @@ Poboczne (nienagrodzone) tomy cykli są **realnymi wierszami bazy**, oddzielonym
 - `CyklNr` (number): pozycja w cyklu (kolejność czytania).
 - `Lp` (kolumna tytułowa) tomu cyklu = stabilna etykieta „Nazwa cyklu (nr)"; prawdziwy tytuł żyje w `Tytuł polski` (z linkiem do encyklopedii).
 
-Rozdział egzekwuje `services/bookCategory.ts` (`isAwardBook`/`isCycleVolume`). Filtrują: statystyki, integralność, indeks Regału/Skryptorium, numeracja Lp, wykrywanie duplikatów, promocja w book-sync. **Skaner Vinted CELOWO nie filtruje** — ma skanować też tomy.
+Rozdział egzekwuje `services/bookCategory.ts` (`isAwardBook`/`isCycleVolume`). Filtrują: statystyki, integralność, indeks Regału/Katalog, numeracja Lp, wykrywanie duplikatów, promocja w book-sync. **Skaner Vinted CELOWO nie filtruje** — ma skanować też tomy.
 
 ## 1. Podgląd cyklu (`CycleLookupService`, na żądanie, bez zapisu)
 
@@ -19,7 +19,7 @@ Rozdział egzekwuje `services/bookCategory.ts` (`isAwardBook`/`isCycleVolume`). 
 3. Chodzi po łańcuchu prev/next (`MAX_HOPS=15`, visited-set) → uporządkowana lista tomów, wzbogacona o linki `{{Cykl}}`.
 4. Krzyżuje każdy tom z bazą (`normTitle`) → `inBase`/`read`/`owned`/`awarded` + `unreadBefore`.
 - **Nazwa cyklu**: `|cykl=` jeśli jest; inaczej tytuł PIERWSZEGO tomu (stabilny między kotwicami) — NIE generyczne „Cykl" (inaczej wszystkie bezimienne cykle zlałyby się w jedną grupę).
-- Cache w pamięci procesu (klucz `title|author`). Używane przez `CyclePanel` w Skryptorium (klik badge „cykl").
+- Cache w pamięci procesu (klucz `title|author`). Używane przez `CyclePanel` w Katalog (klik badge „cykl").
 
 ## 2. Żniwa (`CycleHarvestService`, rytuał `cycles-harvest`)
 

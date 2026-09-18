@@ -14,7 +14,7 @@ import { formatETA } from "../utils/time";
 import { IntegrityCheckResult } from "../types";
 
 /**
- * Contents of the „Liturgie Synchronizacji" tab — rituals + their results + schema.
+ * Contents of the „Synchronizacja" tab — sync tasks + their results + schema.
  * `useSyncManager` lives in `App` (its `anyError` feeds the global error card), so
  * that same instance arrives via the `sm` prop; its own config state (schema)
  * is fetched locally via `useConfig`.

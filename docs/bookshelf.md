@@ -90,7 +90,7 @@ instead of one ~700-tall list. On narrow screens the two bookcases stack vertica
 The row builder is shared (`buildShelfItems` + `chunk` in `utils/shelfLayout.ts`; one row → `ShelfRow`).
 
 ## 2. Data
-- Reuses **`GET /api/books`** (`BookIndexEntry[]`, see [skryptorium-search.md](./skryptorium-search.md)) —
+- Reuses **`GET /api/books`** (`BookIndexEntry[]`, see [catalog-search.md](./catalog-search.md)) —
   the same slim index the search uses. Read state is derived from the `zrodlo` (Źródło) tag
   `Przeczytane`; nothing extra is fetched.
 

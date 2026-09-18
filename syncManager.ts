@@ -127,7 +127,7 @@ class SyncManager {
   }
 
   /**
-   * Slimmed-down book index for the „Skryptorium" search (client-side). `fresh` bypasses
+   * Slimmed-down book index for the „Katalog" search (client-side). `fresh` bypasses
    * the cache; `all` includes cycle volumes too (award-only by default, for the Regał).
    */
   async getBooks(fresh = false, all = false) {
@@ -138,7 +138,7 @@ class SyncManager {
   /**
    * Read-only diagnostic for the barcode scan: for a given code, report exactly what the
    * server sees — whether the ISBN is stored on any row (award or cycle volume), on which
-   * book, its category, and whether that row is in the award-only Skryptorium index (the
+   * book, its category, and whether that row is in the award-only Katalog index (the
    * only rows a scan can match). Bypasses the cache so it reflects Notion right now.
    */
   async scanDebug(rawCode: string) {

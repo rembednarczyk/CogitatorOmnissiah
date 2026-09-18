@@ -31,7 +31,7 @@ export const getBooks = async (req: Request, res: Response) => {
     // `fresh=1` bypasses the 5-min server cache — used by the barcode scan so a
     // just-enriched (or manually-edited) ISBN is visible immediately.
     const fresh = req.query.fresh === "1" || req.query.fresh === "true";
-    // `all=1` includes cycle volumes (not just award books) — the full Skryptorium / scan index.
+    // `all=1` includes cycle volumes (not just award books) — the full Katalog / scan index.
     const all = req.query.all === "1" || req.query.all === "true";
     const books = await syncManager.getBooks(fresh, all);
     res.json(books);
@@ -336,7 +336,7 @@ export const getVintedStored = async (_req: Request, res: Response) => {
 };
 
 /**
- * Cycle preview for a book (Skryptorium) — fetches the wiki page on demand, builds
+ * Cycle preview for a book (Katalog) — fetches the wiki page on demand, builds
  * the volume list and cross-refs the base. Does NOT write anything to Notion. 404 = the book
  * is not in a cycle / no data on the wiki.
  */

@@ -51,7 +51,7 @@ export default function App() {
           animate={{ opacity: 1, y: 0 }}
           className="flex flex-col md:flex-row items-center gap-8 text-center md:text-left"
         >
-          {/* Logo = entry to the Sanktuarium Kalibracji (admin tab, outside the nav bar). */}
+          {/* Logo = entry to the Ustawienia (admin tab, outside the nav bar). */}
           <motion.button
             whileHover={{ scale: 1.05, rotate: 5 }}
             whileTap={{ scale: 0.95 }}

@@ -14,7 +14,7 @@
 
 ## Stan bieżący
 
-- Wersja aplikacji: **1.81.1** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
+- Wersja aplikacji: **1.82.0** (źródło prawdy: `metadata.json`; mirror w `package.json` + `package-lock.json`).
 - **Nazwa projektu: „Librem"** (rebranding z „Cogitator Omnissiah", 1.81.0–1.81.1). Plik wytycznych to
   `LIBREM_GUIDELINES.md`. ZERO wystąpień starej nazwy w repo.
 - **`render.yaml` NIE jest podpięty jako Blueprint** (zweryfikowane przez użytkownika w dashboardzie —
@@ -22,10 +22,15 @@
   dokumentację konfiguracji. Dlatego zmiana `name` na `librem` (1.81.1) była bezpieczna. GDYBY kiedyś
   podpinać go jako Blueprint: dopasowanie idzie WYŁĄCZNIE po `name`, więc musi zgadzać się z nazwą
   istniejącego serwisu, inaczej Render tworzy DRUGI serwis (nic nie kasuje, ale zostają dwa).
-- **URL produkcyjny pozostaje `…onrender.com` ze starej nazwy** — subdomena jest przypisywana przy
-  TWORZENIU serwisu i zmiana nazwy jej nie rusza (otwarty feature request u Rendera). Jedyne wyjścia:
-  nowy serwis albo własna domena. Świadomie zostawiamy jak jest.
-- Nazwa repo na GitHubie (`CogitatorOmmnissiah`, z literówką „mm") bez zmian — do decyzji użytkownika.
+- **Subdomena Rendera jest niezmienialna** — przypisywana przy TWORZENIU serwisu, zmiana nazwy jej nie
+  rusza (otwarty feature request u Rendera). Dlatego nowy adres wymagał nowego serwisu.
+- **Repo: `rembednarczyk/Librem`** (przemianowane 2026-09-18, literówka „mm" zniknęła). Remote lokalny
+  zaktualizowany.
+- **Produkcja: `https://librem.onrender.com`** — użytkownik postawił NOWY serwis 1:1 (stary URL
+  `cogitator-omnissiah.onrender.com` był nieusuwalny, subdomeny Rendera nie da się zmienić). Blueprint
+  nadal NIE podpięty.
+- **`OMNISSIAH_VAULT.md`** — pamiątka po dawnej nazwie + słownik dekodujący nazewnictwo 40k. Nic go nie
+  czyta; służy do czytania starej historii gita.
 - Branch roboczy: `claude/book-aggregator-setup-t6kfvd`. Deploy leci z `main` — zmiany
   muszą trafić na `main` (PR + merge), inaczej redeploy serwuje stary kod.
 - **Konwencja PR/issue**: jedna logiczna zmiana = jeden granularny PR (nie batchujemy).
@@ -80,6 +85,21 @@
 
 Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze na górze.
 
+- **1.82.0** — **Dług nazewniczy domknięty + `OMNISSIAH_VAULT.md`.** README opisywał UI sprzed v1.61.0:
+  zakładki „Skryptorium"/„Liturgie" (dziś **Katalog**/**Synchronizacja**), zadania „Puryfikacja",
+  „Sanctity", „Żniwa Cykli", „Sanktuarium Kalibracji". To była NIEAKTUALNA DOKUMENTACJA, nie kwestia
+  klimatu — wszystkie nazwy zrównane z tym, co UI pokazuje naprawdę (źródło prawdy: tablica `rituals`
+  w `OtherToolsCard.tsx` + `tabs` w `App.tsx`). „Rytuał" jako rzeczownik pospolity → „zadanie".
+  `docs/skryptorium-search.md` → `docs/catalog-search.md` (+ 3 odwołania). Komentarze w kodzie
+  podające złą nazwę zakładki poprawione. Przy okazji: DOPISANY brakujący wiersz tabeli **Nadawanie
+  ISBN** (`/api/sync-isbn-enrich`, `/api/isbn/:code`) — feature istniał od 1.50.0, ale README go nie znało.
+  Nowy `OMNISSIAH_VAULT.md`: pamiątka + SŁOWNIK DEKODUJĄCY stare nazwy (potrzebny do czytania historii
+  gita i starych issues) + spis tego, co z 40k zostało świadomie.
+  **NIE RUSZONE (świadomie)**: identyfikatory w kodzie — `LiturgySection.tsx`, `SanctityDebugger.tsx`,
+  `RitualButton.tsx`, `ritualColors.ts`, typ `RitualColor`, tablica `rituals`, komentarze „Wielki Rytuał";
+  teksty serwisów backendu (`Nieznany rytuał synchronizacji`); `docs/bookshelf.md` („noospheric Adeptus
+  Mechanicus skin" — to NAZWA skórki motywu ciemnego, który celowo zachowuje wygląd 40k).
+  To osobny refaktor (~10 plików, churn w importach, zero zysku dla użytkownika) — do decyzji.
 - **1.81.1** — **Domknięcie rebrandingu: `render.yaml` `name` → `librem`.** Użytkownik zweryfikował
   w dashboardzie Rendera, że sekcja Blueprints jest PUSTA — serwis powstał ręcznie, więc Render tego
   pliku nie czyta i zmiana jest bez skutków runtime'owych. Dopisany komentarz nagłówkowy: plik jest
@@ -98,7 +118,7 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
   **NIE ZMIENIONE ŚWIADOMIE**: `render.yaml` `name: cogitator-omnissiah` (zmiana w blueprincie = Render
   tworzy NOWY serwis: nowy URL, utrata historii, ponowne wpisanie sekretów) oraz nazwa repo na GitHubie.
   **DŁUG POZOSTAŁY**: README wciąż używa 40-kowego słownictwa w opisach (28 wystąpień: „rytuał" ×16,
-  „Skryptorium" ×5, „Puryfikacja" ×2, „Liturgie" ×2, „Sanktuarium", „Sanctity", „Noospheric") — część
+  „Katalog" ×5, „Puryfikacja" ×2, „Liturgie" ×2, „Sanktuarium", „Sanctity", „Noospheric") — część
   to legalne identyfikatory domenowe/backendowe, część to nieaktualne nazwy zakładek (UI ma dziś
   Kolekcja/Regał/Katalog/Synchronizacja/Rynek). Do rozdzielenia w osobnym PR.
 - **1.80.0** — **Swipe do przełączania segmentów regału (mobile).** Nowy `src/hooks/useHorizontalSwipe.ts`
@@ -461,8 +481,8 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
   „Kolekcja" 1:1 do makiety (rząd KPI + dwie kolumny) — większa zmiana, do potwierdzenia.
 - **1.61.0** — **Pełny rebrand nazewnictwa UI: „Cogitator Omnissiah" → „Librem"** (ciepły, biblioteczny ton
   zamiast liturgicznego 40k). Wordmark `COGITATOR OMNISSIAH`→`LIBREM`, podtytuł→„Twoja kolekcja nagradzanej
-  fantastyki". Zakładki: Statystyki Archiwum→**Kolekcja**, Skryptorium→**Katalog**, Liturgie
-  Synchronizacji→**Synchronizacja**, Skaner Vinted→**Rynek**, Sanktuarium Kalibracji→**Ustawienia** (Regał bez
+  fantastyki". Zakładki: Statystyki Archiwum→**Kolekcja**, Katalog→**Katalog**, Liturgie
+  Synchronizacji→**Synchronizacja**, Skaner Vinted→**Rynek**, Ustawienia→**Ustawienia** (Regał bez
   zmian). Zret-owane w całym UI: „Rytuał X"→nazwy opisowe (Porządkowanie tytułów, Oznaczanie cykli, Wydawcy,
   Serie, Nadawanie ISBN, Wykrywanie duplikatów…), Skaner Sanctity→**Kontrola spójności** ([ZATWIERDZONO]/
   [HEREZJA]→[SPÓJNE]/[NIESPÓJNE]), Duch Maszyny→**połączenia**, „archiwum"→**katalog/kolekcja**, skórka regału
@@ -484,10 +504,10 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
 - **1.59.0** — **Skaner ISBN obejmuje też książki bez nagród (tomy cykli).** Dotąd `toSearchIndex` był
   nagrodowo-only → skan nie znajdował tomów cykli (`Kategoria="Tom cyklu"`). Zmiany: (1) `toSearchIndex(books,
   awardOnly=true)` — Regał zostaje nagrodowo-only, ale nowy wariant „wszystko"; (2) `getBooks(fresh, all)` +
-  `GET /api/books?all=1`; (3) `useBooks(all)` — **Skryptorium** (`SearchSection`) i skan używają `all=1`
+  `GET /api/books?all=1`; (3) `useBooks(all)` — **Katalog** (`SearchSection`) i skan używają `all=1`
   (award + tomy cykli), **Regał** (`BookshelfSection`) domyślnie nagrodowo-only; (4) `isbnEnrichService`
   przetwarza teraz KAŻDY wiersz z tytułem (usunięty filtr `isAwardBook`), więc tomy cykli też dostają ISBN.
-  Efekt: skan tomu cyklu trafia; klasyczne szukanie w Skryptorium też pokazuje tomy cykli (spójne — „szukaj
+  Efekt: skan tomu cyklu trafia; klasyczne szukanie w Katalog też pokazuje tomy cykli (spójne — „szukaj
   po wszystkim, co śledzę"); Regał i statystyki nagrodowe bez zmian. +2 testy (enrich tomu cyklu, indeks
   award-only vs all). UWAGA: po redeployie odpal ponownie „Rytuał Sygnatur (ISBN)", żeby dociągnąć ISBN-y
   do tomów cykli (więcej książek = więcej zapytań, rytuał ręczny — OK). (1) Na mobile
@@ -517,7 +537,7 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
   teraz do `isbnSearch` (obie formy: 13 + odtworzone 10), dokładnie jak wyszukiwarka; fallback do `isbns`
   gdy brak `isbnSearch`. Match nadal DOKŁADNY (pełny numer, nie fragment) — cyfrowo, więc myślniki nieważne.
   +2 testy (stary ISBN-10 wpisany, z myślnikami, oraz e2e mapper→index→match).
-- **1.56.0** — **Skryptorium: wyszukiwanie po ISBN (pełnym/częściowym) + stary ISBN-10.** Dotąd wyszukiwarka
+- **1.56.0** — **Katalog: wyszukiwanie po ISBN (pełnym/częściowym) + stary ISBN-10.** Dotąd wyszukiwarka
   szukała tylko po tytule/oryginale/autorze — ISBN-ów NIE. Teraz `matchBooks` matchuje też ISBN: token
   numeryczny ≥4 cyfr (po odsianiu myślników) porównywany do blobu ISBN książki (substring → działa fragment).
   Blob (`BookIndexEntry.isbnSearch`, budowany w `toSearchIndex`) zawiera KAŻDY zapisany ISBN-13 ORAZ jego
@@ -561,7 +581,7 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
   ŚWIEŻY `/api/books` i dopasowujemy do niego (skan to rzadka, świadoma akcja — jeden refetch OK); świeża
   lista aktualizuje też stan (`setBooks` wystawione z `useBooks`). Komunikat miss doprecyzowany. +3 testy
   integracyjne (single ISBN, ISBN z listy, tom cyklu wykluczony z indeksu). UWAGA na przyszłość: wiersze
-  `Kategoria="Tom cyklu"` są CELOWO poza indeksem Skryptorium → skan tomu cyklu nie trafi (osobna decyzja,
+  `Kategoria="Tom cyklu"` są CELOWO poza indeksem Katalog → skan tomu cyklu nie trafi (osobna decyzja,
   gdyby trzeba skanować też tomy).
 - **1.54.0** — **Rytuał ISBN: merge zamiast gap-fill + zapytanie po OBU tytułach.** Wcześniej rytuał
   POMIJAŁ pozycje, które miały już jakikolwiek ISBN (gap-fill) → książki uzupełnione samym angielskim
@@ -609,7 +629,7 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
   Frontend `matchIsbnInIndex` sprawdza przynależność skanu do listy (`isbns.some`) — barcode DOWOLNEGO
   wydania trafia w wiersz. Testy zaktualizowane (multi-edycja, dedup 10/13). Zastrzeżenie multi-edition
   z Otwartych pozycji ZDJĘTE.
-- **1.51.0** — **Skryptorium: skaner kodów kreskowych — PR3 (mobilny skan UI, feature domknięty).**
+- **1.51.0** — **Katalog: skaner kodów kreskowych — PR3 (mobilny skan UI, feature domknięty).**
   Przycisk skanu (ikona ScanBarcode) obok pola wyszukiwarki, widoczny TYLKO gdy natywny `BarcodeDetector`
   jest dostępny (`scanSupported()` — Android/Chrome). `ScanModal` (`src/components/search/ScanModal.tsx`):
   strumień tylnej kamery (`getUserMedia facingMode:environment`) → pętla `detector.detect(video)` po
@@ -621,7 +641,7 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
   rozpoznany tytuł (fuzzy) + baner „Rozpoznano przez ISBN"; pudło → baner błędu. Sprzątanie strumienia przy
   zamknięciu/unmount. **Feature skanera kompletny (A+B).** ZASTRZEŻENIA nadal aktualne: iOS bez natywnego API
   (fallback ZXing odłożony), multi-edition ISBN (wariant A jako sieć).
-- **1.50.0** — **Skryptorium: skaner kodów kreskowych — PR2 (kolumna ISBN + rytuał wzbogacania, wariant B).**
+- **1.50.0** — **Katalog: skaner kodów kreskowych — PR2 (kolumna ISBN + rytuał wzbogacania, wariant B).**
   Baza może teraz TRZYMAĆ ISBN, żeby skan dopasował wiersz wprost (bez zapytania zewnętrznego na skanie).
   Kolumna `ISBN` (rich_text) dodana do `requiredProps` (Rytuał Inicjacji Schematu). Nowy rytuał
   `IsbnEnrichService` (`isbn-enrich`): iteruje książki nagrodowe BEZ ISBN (idempotentny gap-fill), pyta
@@ -635,7 +655,7 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
   świadomie, jak Żniwa/duplikaty). +8 testów (lookupByTitle, enrich orchestration, schema ISBN). ZASTRZEŻENIE
   multi-edition (patrz Otwarte pozycje): zapis JEDNEGO best-match ISBN ≠ egzemplarz fizyczny → wariant A
   (resolve→fuzzy) zostaje siecią. NASTĘPNE: PR3 (mobilny skan UI).
-- **1.49.0** — **Skryptorium: skaner kodów kreskowych — PR1 (backend resolver ISBN, wariant A).** Fizyczny
+- **1.49.0** — **Katalog: skaner kodów kreskowych — PR1 (backend resolver ISBN, wariant A).** Fizyczny
   kod kreskowy = EAN-13 = ISBN-13, ale baza Notion NIE trzyma ISBN → kod nie dopasuje wiersza wprost;
   potrzebna rezolucja ISBN→tytuł, potem istniejąca rozmyta wyszukiwarka. Czyste helpery `services/isbn.ts`
   (`normalizeIsbn`: czyszczenie, walidacja sum kontrolnych ISBN-13/10, konwersja 10→13, odrzut nie-książkowych
@@ -643,7 +663,7 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
   klucza), mapowanie `items[0].volumeInfo`→`{isbn,title,author,year,source}`, cache w pamięci procesu.
   Wpięcie: `syncManager.lookupIsbn`, `GET /api/isbn/:code` (`getIsbn`: 400 zły ISBN / 404 brak / 200 hit,
   `normalizeIsbn` na wejściu). +11 testów. NASTĘPNE: PR2 (kolumna `ISBN` w Notion + rytuał wzbogacania po
-  tytule+autorze → wariant B: skan dopasowuje wprost), PR3 (mobilny przycisk skanu w Skryptorium →
+  tytule+autorze → wariant B: skan dopasowuje wprost), PR3 (mobilny przycisk skanu w Katalog →
   `BarcodeDetector` → exact match po `isbn` (B) else resolve→fuzzy (A) + ręczny fallback ISBN). priming przez headless browser (Playwright).** `browserPrime.ts` —
   headless Chromium (`playwright-core`, optionalDependency, dynamic import) rozwiązuje wyzwanie JS Cloudflare
   po prawdziwe `cf_clearance` + UA, wpuszczane do `VintedSession` używanej dalej przez lekki axios. Knob
@@ -690,20 +710,20 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
 - **1.45.1** — **Podgląd cyklu: popover w miejscu kliknięcia (fix pozycjonowania) + etykieta „Cykl · N".**
   ROOT CAUSE: `CyclePanel` (`position: fixed`) renderowany WEWNĄTRZ transformowanych przodków
   (framer-motion `motion.div`) → fixed liczył się względem karty, nie viewportu (na długiej liście
-  Vinted lądował „na środku", w Skryptorium ucinał pozycje). FIX: `createPortal(→ document.body)`
+  Vinted lądował „na środku", w Katalog ucinał pozycje). FIX: `createPortal(→ document.body)`
   + kotwiczenie w miejscu kliknięcia. Nowy czysty helper `src/utils/popoverPosition.ts`
   (`computePopoverPosition`: nad/pod wg wolnego miejsca, clamp do viewportu, `maxHeight` = dostępna
   przestrzeń → krótka lista się kurczy, długa scrolluje; +5 testów). Zamknięcie na scroll/resize/Esc/
   klik-poza. Kafelek pokazuje teraz „Cykl · N" (hardcoded „Cykl" + numer, bez tytułu; pełna nazwa w
   tooltipie + nagłówku panelu). Współdzielony `CycleTile`/`CyclePanel` → fix działa i w Vinted, i w
-  Skryptorium. Doc `vinted-scanner.md` zaktualizowany.
+  Katalog. Doc `vinted-scanner.md` zaktualizowany.
 - **1.45.0** — **Vinted: interaktywny kafelek cyklu + numer tomu (frontend, część 2/2 feature).**
   Współdzielony `CycleTile` (`src/components/CycleTile.tsx`): klik → `CyclePanel` (`useCycle`
-  + `/api/cycle`), reużyty podgląd tomów ze Skryptorium; etykieta = nazwa cyklu + `· t.N` (z żniw),
+  + `/api/cycle`), reużyty podgląd tomów ze Katalog; etykieta = nazwa cyklu + `· t.N` (z żniw),
   fallback „cykl". Wpięty w kafelki (`VintedBookResultList`) i wiersze paczek (`VintedBundleList`,
   wyjęty z `<a>` oferty → osobny link cena/koszyk). `cykl`/`cyklNr` przepuszczone przez
   `VintedResult`/`StoredBookPayload`/`storedToView`/`SellerBundleEntry`/`groupBySeller`.
-  `BookResultCard` (Skryptorium) też zrefaktorowany na wspólny `CycleTile` (jedno źródło prawdy).
+  `BookResultCard` (Katalog) też zrefaktorowany na wspólny `CycleTile` (jedno źródło prawdy).
   +1 test (propagacja cyklu do paczek). Doc `vinted-scanner.md` zaktualizowany.
 - **1.44.6** — **Vinted: propagacja cyklu przez pipeline (backend, część 1/2 feature).** `StoredBookView`
   + `toStoredBookView` niosą teraz `cykl`/`cyklNr` (obok `partOfCycle`/`year`); wynik `match` z żywego
@@ -790,7 +810,7 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
   FIX (korektność): `bookSyncService` — gdy rytuał nagród trafi na istniejący wiersz `Tom cyklu`
   (tom, który JEDNAK zdobył nagrodę), promuje go do `Kategoria=Nagroda` (inaczej zostałby ukryty w
   statystykach nagród; zapobiega też duplikatowi). Stała `AWARD_CATEGORY`. Audyt potwierdził poprawne
-  filtry (staty/integralność/Regał/Skryptorium/duplikaty/Lp). ODNOTOWANE (nie-bug, decyzje na później):
+  filtry (staty/integralność/Regał/Katalog/duplikaty/Lp). ODNOTOWANE (nie-bug, decyzje na później):
   (a) brak w-appowego oznaczania tomów przeczytane/posiadane — Archiwum jest read-only, widoki nagród
   je wykluczają → oznaczasz w Notion; kandydat do CV-PR3b; (b) skan biblioteki i Vinted CELOWO obejmują
   tomy (Vinted zbiera dane pod UC1, ale nic ich jeszcze nie wyświetla); (c) cyclesSync/publisher/series/
@@ -799,10 +819,10 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
   poboczne tomy cykli NIE uczestniczą w globalnym numerze porządkowym — `lpSyncService` filtruje
   `isAwardBook` (numery nagród zostają czyste 1..N, tomy się nie wciskają; ich kolejność wewnątrz cyklu
   daje `CyklNr`). `duplicateSyncService` też filtruje `isAwardBook` (tomy cykli to odrębne książki, nie
-  duplikaty). Testy. Uczciwa korekta: read-side (staty/integralność/Regał/Skryptorium) był już czysty
+  duplikaty). Testy. Uczciwa korekta: read-side (staty/integralność/Regał/Katalog) był już czysty
   (CV-PR1), ale rytuały PISZĄCE iterują wszystkie wiersze — Vinted CELOWO skanuje tomy; publisher/series/
   purify/biblioteka nieszkodliwie je wzbogacają. NASTĘPNE (CV-PR3b): opcjonalne włączanie cykli w Regale/
-  Skryptorium, sprzątanie kolumny `CycleCache`.
+  Katalog, sprzątanie kolumny `CycleCache`.
 - **1.39.0** — **Cykle jako wiersze — CV-PR2 (Żniwa tworzą wiersze, bloby wycofane).** Rytuał Żniw
   zamiast blobów robi **idempotentny upsert WIERSZY**: dla każdej kotwicy nagrodowej (`Część cyklu`)
   rozwija cykl (`CycleLookupService`) i dla brakujących tomów tworzy wiersz `Kategoria=Tom cyklu` +
@@ -813,7 +833,7 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
   `Cykl`/`CyklNr` (usunięto `cycleCache`). USUNIĘTE: blob `CycleCache` — `saveCycleCache`, `cycleHarvest.ts`
   (build/parse/merge) + test. Nowe kolumny auto-tworzone: `Kategoria`(select), `Cykl`(text), `CyklNr`(number).
   Tomy są teraz oznaczalne (przeczytane/posiadane) i skanowane przez Vinted. NASTĘPNE: CV-PR3 (opcjonalne
-  włączanie cykli w Regale/Skryptorium, duplikaty, szlify).
+  włączanie cykli w Regale/Katalog, duplikaty, szlify).
 - **1.38.0** — **Cykle jako wiersze — decyzja + CV-PR1 (infrastruktura separacji `Kategoria`).**
   DECYZJA użytkownika: poboczne tomy cykli będą REALNYMI wierszami bazy (opcja A: te same wiersze +
   `Kategoria`), żeby dało się je oznaczać przeczytane/posiadane i żeby Vinted je skanował. Gap w blobach:
@@ -821,9 +841,9 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
   nie ma takich wierszy): mapper czyta `Kategoria` (select; pusto = „Nagroda"), `NotionBook.kategoria`,
   helper `isAwardBook`/`isCycleVolume` (`services/bookCategory.ts`). Filtr `isAwardBook` w choke-pointach
   nagrodowych: `statsService.getStats` (1 linia → wszystkie staty), `integrityService` (rok/Lp vs wiki),
-  `toSearchIndex` (Regał + Skryptorium). Vinted CELOWO bez filtra (ma skanować też tomy cykli). Testy.
+  `toSearchIndex` (Regał + Katalog). Vinted CELOWO bez filtra (ma skanować też tomy cykli). Testy.
   NASTĘPNE: CV-PR2 (Żniwa robią idempotentny upsert wierszy `Kategoria=Tom cyklu` zamiast blobów; Archiwum
-  czyta wiersze), CV-PR3 (opcjonalne włączanie cykli w Regale/Skryptorium, sprzątanie blobów, duplikaty).
+  czyta wiersze), CV-PR3 (opcjonalne włączanie cykli w Regale/Katalog, sprzątanie blobów, duplikaty).
 - **1.37.1** — **Żniwa Cykli: poprawki po testach.** (1) Podsumowanie liczyło „1" — bo `summary.updated`
   było jednym zdaniem, a UI liczy count z długości listy; teraz `result.updated = liczba zapisanych`
   + `summary.updated` to RZECZYWISTA lista tytułów (skipped = tytuły bez sąsiednich tomów; pusty 0-case
@@ -833,7 +853,7 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
   `mergeCycleCaches(books)` scala bloby `CycleCache` z wszystkich pozycji w listę cykli (grupa po
   nazwie, dedup tomów po tytule, statusy OR-owane, sort malejąco po `missing`) → `getCyclesHarvest()`
   + `GET /api/cycles-harvest`. Front: `useCyclesHarvest` + `CyclesHarvestCard` (rozwijane cykle,
-  liczniki inBase/total + badge „N do zdobycia", statusy tomów jak Skryptorium, link do Encyklopedii,
+  liczniki inBase/total + badge „N do zdobycia", statusy tomów jak Katalog, link do Encyklopedii,
   ikona nagrody) wpięta jako karta „cyclesHarvest" w Analizie Zasobów. Testy agregacji. Zweryfikowane
   zrzutem. (Później model zmieniony: tomy cykli = REALNE WIERSZE, bloby `CycleCache`/„widma" porzucone — zob. Otwarte pozycje.)
 - **1.36.0** — **Cykle: Rytuał Żniw (harvest struktury do blobu per-pozycja) — Etap 1 backend (CYH-PR1).**
@@ -870,7 +890,7 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
 - **1.34.1** — **Podgląd cyklu: linki do Encyklopedii.** Każdy tom w `CyclePanel` ma ikonę
   „otwórz w Encyklopedii" (nowa karta) — URL `index.php?title=<tytuł z _>` (wzorzec jak w parserze),
   `stopPropagation` by nie zamykać modala. Wygodny podgląd tomu bez ręcznego szukania.
-- **1.34.0** — **Podgląd cyklu — Skryptorium (CYC-PR2).** Badge „cykl" w `BookResultCard` jest
+- **1.34.0** — **Podgląd cyklu — Katalog (CYC-PR2).** Badge „cykl" w `BookResultCard` jest
   teraz KLIKALNY → modal `CyclePanel`. `useCycle` (GET /api/cycle, cache per title+author w ref).
   Panel: nazwa cyklu, ostrzeżenie „przed tą pozycją N nieprzeczytanych tomów — nadrób dla fabuły"
   (unreadBefore), uporządkowana lista tomów ze statusem (przeczytana/posiadana/w bazie/brak +
@@ -930,7 +950,7 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
   (rok → dekada → fizyka). Mapper/typy (`NotionBook.shelfOrder`, `BookIndexEntry.shelfOrder`),
   indeks wyszukiwarki, adapter `setShelfOrders` (sekwencyjnie, partie małe), `POST /api/shelf-order`
   (limit 40 wpisów, walidacja). Bez zmiany zachowania — sort i UI dropu w następnym PR.
-- **1.27.0** — **Zakładka „Sanktuarium Kalibracji" (frontend, CFG-PR2).** Klik w LOGO (nagłówek)
+- **1.27.0** — **Zakładka „Ustawienia" (frontend, CFG-PR2).** Klik w LOGO (nagłówek)
   otwiera ukrytą zakładkę `admin` (ponowny klik wraca do statystyk; logo amber gdy aktywna).
   `ConfigSection`: sekcje Vinted / pula UA / filie OPAC (edytor wierszy) / strony nagród (edytor)
   / Zaawansowane (zwijane: timeout/retry, równoległości, progi duplikatów, rzędy regału, wykluczenia
@@ -1194,7 +1214,7 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
   VintedCheckItem = FAITHFUL/czyste). 2 realne bugi w nowych featurach naprawione:
   (1) Regał: wyścig drag&drop — zapisy per-książka SERIALIZOWANE (latest-wins, `pendingRef`/
   `runningRef`), koniec nakładających się nieatomowych RMW rozjeżdżających Notion z UI.
-  (2) Skryptorium/Regał: `useBooks` startuje `loading=true` (fetch w useEffect po paint dawał
+  (2) Katalog/Regał: `useBooks` startuje `loading=true` (fetch w useEffect po paint dawał
   mignięcie pustego stanu); SearchSection rozróżnia pusty-query („Archiwum jest puste") od braku
   trafień. Minor „overrides nie czyszczone" — poprawne przy single-fetch, zostawione.
 - **1.15.6** — `useSSEStream` (deferred z audytu god-object): wspólny transport SSE
@@ -1245,20 +1265,20 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
   Czysta `sortBundles(bundles, mode)` (`count`: najwięcej książek → remis najtańsza suma;
   `price`: najtańsza `totalValue` → remis najwięcej książek), zwraca kopię (bez mutacji).
   `groupBySeller` deleguje do `sortBundles(..,"count")`. Toggle w nagłówku paczek. +3 testy.
-- **1.13.1** — Skryptorium (#84): klik podpowiedzi podmienia TYLKO ostatni token (czysta
+- **1.13.1** — Katalog (#84): klik podpowiedzi podmienia TYLKO ostatni token (czysta
   `replaceLastToken`), nie całe pole. „Greg Vear" + „Bear" → „Greg Bear" (nie samo „Bear").
   Fokus wraca do inputu. +4 testy.
-- **1.13.0** — Skryptorium „Czy chodziło Ci o…" (#82): fuzzy-podpowiedzi na literówki. Gdy
+- **1.13.0** — Katalog „Czy chodziło Ci o…" (#82): fuzzy-podpowiedzi na literówki. Gdy
   `matchBooks`=0, `didYouMean` liczy Levenshteina między OSTATNIM tokenem zapytania a słownikiem
   `buildSearchVocab` (słowa tytułów PL+oryg + autorów, dedupe po foldzie, display z wielką literą);
   próg wg długości (≤4→1, ≤7→2, dłuższe→3), odsiew po |Δlen|, pomija dystans 0. UI: klikalne
   „Perelandra?" ustawia query. +6 testów. Wszystko client-side.
-- **1.12.1** — Skryptorium fixy (#80): (1) indeks dopuszcza rekordy z tytułem PL **lub**
+- **1.12.1** — Katalog fixy (#80): (1) indeks dopuszcza rekordy z tytułem PL **lub**
   oryginalnym (nieprzetłumaczone książki wypadały — 684 pokazywało ~389); karta/ranking
   używają tytułu efektywnego `plTitle || origTitle`. (2) badge nagród i tagi źródła w dwóch
   osobnych wierszach (ikony `Award`/`Tag`). (3) zakładki równej szerokości (`sm:flex-1` +
   `items-stretch`, `tracking-wide`, `px-4`). +1 test (origTitle-only).
-- **1.12.0** — „Skryptorium": wyszukiwarka rekordów archiwum (4. zakładka). Nowy
+- **1.12.0** — „Katalog": wyszukiwarka rekordów archiwum (4. zakładka). Nowy
   `GET /api/books` zwraca odchudzony `BookIndexEntry[]` (mapper `services/bookSearchIndex.ts`,
   reużywa `getBooksForStats({cache})`). Front filtruje CAŁOŚĆ client-side (`useBooks` fetch raz,
   `src/utils/bookSearch.ts`: fold diakrytyków per-znak — 1:1 na długość → highlight; `matchBooks`
@@ -1375,7 +1395,7 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
 
 ## Otwarte pozycje
 
-- **Skryptorium: skaner kodów kreskowych (mobile) — feature ZREALIZOWANY (A+B), 3 PR-y.** Cel: LOOKUP
+- **Katalog: skaner kodów kreskowych (mobile) — feature ZREALIZOWANY (A+B), 3 PR-y.** Cel: LOOKUP
   („czy ta fizyczna książka to jedna z moich śledzonych nagrodowych?"), NIE dodawanie do bazy. Decyzje
   użytkownika: A+B, zgoda na Google Books (external), sprzęt=Android → natywny `BarcodeDetector` (bez nowej
   zależności skanera). Rdzeń problemu: baza Notion NIE trzyma ISBN → kod nie dopasuje wiersza wprost.
@@ -1523,7 +1543,7 @@ Wersja ze źródła prawdy `metadata.json` (mirror w `package.json`). Najnowsze 
   rezydencjalne dla ominięcia 403.
 - **Cykle: struktura + sąsiednie tomy + dostępność Vinted — ZREALIZOWANE jako REALNE WIERSZE bazy.**
   Bloby (`CycleData`/`CycleCache`) i „widma" PORZUCONE — wybrano wariant „realne wiersze" (dawny wariant B).
-  Aktualny model: podgląd on-demand `GET /api/cycle` (Skryptorium + kafelki Vinted); tomy cykli materializowane
+  Aktualny model: podgląd on-demand `GET /api/cycle` (Katalog + kafelki Vinted); tomy cykli materializowane
   Rytuałem Żniw jako wiersze `Kategoria="Tom cyklu"` (+ `Cykl`/`CyklNr`); karta „Archiwum Cykli" agreguje je
   (`aggregateCycleRows`). **UC1 (dostępność brakujących tomów na Vinted) tym samym ZREALIZOWANE za darmo**:
   skoro tomy to wiersze z pustym `Źródło`, normalny skaner Vinted zbiera ich oferty, a karta pokazuje

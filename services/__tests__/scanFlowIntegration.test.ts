@@ -53,7 +53,7 @@ describe("scan flow integration (mapper → search index → match)", () => {
     // Default (Regał) — award-only → dropped.
     expect(toSearchIndex([book])).toHaveLength(0);
     expect(matchIsbnInIndex("9788375900019", toSearchIndex([book]))).toBeNull();
-    // Full (scan / Skryptorium) — included and scannable.
+    // Full (scan / Katalog) — included and scannable.
     const full = toSearchIndex([book], false);
     expect(full).toHaveLength(1);
     expect(matchIsbnInIndex("9788375900019", full)?.plTitle).toBe("Miecz dla Króla");
