@@ -17,12 +17,12 @@ function buildIsbnSearch(isbns?: string[]): string | undefined {
 /**
  * Pure projection of full Notion records → a slimmed-down search index.
  * Cuts heavy fields (`vintedData` blob, `*RichText`), keeps only what
- * „Skryptorium" filters/renders on. Keeps a record having ANY
+ * „Katalog" filters/renders on. Keeps a record having ANY
  * title — Polish OR original; untranslated books (original title only)
  * should be searchable too. Only a record with no title at all is dropped (a skeleton).
  *
  * `awardOnly` (default true): the Regał shelf stays award-only (side cycle volumes have
- * their own „Archiwum Cykli" view). Pass `false` for the barcode scan / full Skryptorium
+ * their own „Archiwum Cykli" view). Pass `false` for the barcode scan / full Katalog
  * search, so a scan can find a tracked cycle volume too.
  */
 export function toSearchIndex(books: NotionBook[], awardOnly = true): BookIndexEntry[] {

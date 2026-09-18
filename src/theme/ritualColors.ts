@@ -3,7 +3,7 @@
  *
  * Every ritual (sync) carries its color in `SyncState.color`; progress bars,
  * summary cards and step dots inherit it to reinforce the ritual's identity
- * (see COGITATOR_GUIDELINES §2 "Dynamic UI"). Previously these same Tailwind
+ * (see LIBREM_GUIDELINES §2 "Dynamic UI"). Previously these same Tailwind
  * class maps were duplicated across several components — here they live in one place.
  *
  * NOTE: classes must be full literals (`text-cyan-400`, not `text-${c}-400`),

@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Cogitator Omnissiah — a full-stack app that syncs sci-fi book awards (Hugo, Nebula, Locus) from the "Archiwum Encyklopedii Fantastyki" (MediaWiki API) into a personal Notion database. Hybrid Vite + Express setup: React 19 SPA frontend, Express backend with long-running sync tasks streamed over SSE.
+Librem — a full-stack app that syncs sci-fi book awards (Hugo, Nebula, Locus) from the "Archiwum Encyklopedii Fantastyki" (MediaWiki API) into a personal Notion database. Hybrid Vite + Express setup: React 19 SPA frontend, Express backend with long-running sync tasks streamed over SSE.
 
 ## Commands
 
@@ -16,7 +16,7 @@ Environment variables (see `.env.example`): `NOTION_API_KEY`, `NOTION_DATABASE_I
 
 ## Required reading
 
-- **`COGITATOR_GUIDELINES.md`** — the authoritative architectural guidelines (backend patterns, frontend rules, data-integrity logic, test architecture, design system). Follow it for every change.
+- **`LIBREM_GUIDELINES.md`** — the authoritative architectural guidelines (backend patterns, frontend rules, data-integrity logic, test architecture, design system). Follow it for every change.
 - **`/docs/*.md`** — detailed per-feature algorithm documentation (book sync, duplicate detection, purification, schema validation, stats, Vinted scanner, etc.). Read the relevant doc before touching a service.
 
 ## Architecture map
@@ -39,7 +39,8 @@ Vitest, organized into `__tests__/` subdirectories: `/__tests__/` (adapters, ser
 
 - Tailwind CSS only; glassmorphism theme (`slate-950` background, `cyan-400`/`purple-500` accents); `motion/react` for animations; `lucide-react` icons.
 - **Branding: "Librem"** — warm, literary "your book collection" voice (Kolekcja, Regał, Katalog, Synchronizacja, Rynek, Ustawienia). The old Warhammer 40k "Adeptus Mechanicus" flavor (rituals, Machine Spirit, sanctity) has been retired from user-facing copy (v1.61.0) — do NOT reintroduce it. Domain/data identifiers stay untouched (Notion column names like `AppConfig`, `Kategoria="Tom cyklu"`, TASK_REGISTRY keys, backend service copy). The dark theme keeps the 40k glassmorphism *visual* look, but its *copy* is Librem like everything else.
-- After major architectural changes, update `COGITATOR_GUIDELINES.md` and `README.md` to match the implementation (see guidelines §8).
+- **40k code identifiers are a deliberate keepsake — do NOT rename them.** `LiturgySection.tsx`, `SanctityDebugger.tsx`, `RitualButton.tsx`, `ritualColors.ts`, the `RitualColor` type, the `rituals` array and the „Wielki Rytuał" comments are kept on purpose (owner's decision, 2026-09-18). They are not leftover debt, so do not clean them up in passing. `OMNISSIAH_VAULT.md` records the old names and decodes them for reading old commits and issues.
+- After major architectural changes, update `LIBREM_GUIDELINES.md` and `README.md` to match the implementation (see guidelines §8).
 
 ## Workflow rules
 

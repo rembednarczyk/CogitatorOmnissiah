@@ -1,6 +1,6 @@
 # Dokumentacja algorytmów
 
-Szczegółowe opisy działania poszczególnych rytuałów (jeden dokument na koncern synchronizacji). Przed zmianą danego serwisu przeczytaj odpowiadający mu dokument; po zmianie logiki — zaktualizuj go (zob. `COGITATOR_GUIDELINES.md` §8).
+Szczegółowe opisy działania poszczególnych rytuałów (jeden dokument na koncern synchronizacji). Przed zmianą danego serwisu przeczytaj odpowiadający mu dokument; po zmianie logiki — zaktualizuj go (zob. `LIBREM_GUIDELINES.md` §8).
 
 | Dokument | Zakres |
 | --- | --- |
@@ -17,7 +17,7 @@ Szczegółowe opisy działania poszczególnych rytuałów (jeden dokument na kon
 | [stats-service.md](./stats-service.md) | Agregacja statystyk do dashboardu. |
 | [library-check.md](./library-check.md) | Skan dostępności w OPAC MBP Lublin (scraping HTML). |
 | [vinted-scanner.md](./vinted-scanner.md) | Skan ofert na vinted.pl (scraping HTML — bez AI). |
-| [skryptorium-search.md](./skryptorium-search.md) | Wyszukiwarka rekordów archiwum (client-side, fold diakrytyków, highlight). |
+| [catalog-search.md](./catalog-search.md) | Wyszukiwarka rekordów archiwum (client-side, fold diakrytyków, highlight). |
 | [bookshelf.md](./bookshelf.md) | Regał: wizualizacja księgozbioru (grzbiety + okładki) z drag&drop przeczytanych. |
 
 Obserwowalność, diagnostyka (`/api/diagnostics`), wdrożenie i rozwiązywanie problemów opisane są w [README](../README.md).

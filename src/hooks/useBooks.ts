@@ -4,7 +4,7 @@ import { fetchWithTimeout } from "../utils/http";
 
 /**
  * Fetches the slimmed-down book index from `GET /api/books` ONCE and holds it in state.
- * The whole „Skryptorium" search filters this index in memory (client-side),
+ * The whole „Katalog" search filters this index in memory (client-side),
  * so no keystroke in the search field hits the network or Notion.
  */
 export function useBooks(all = false) {
@@ -18,7 +18,7 @@ export function useBooks(all = false) {
     setLoading(true);
     setError(null);
     try {
-      // `all=1` (Skryptorium/scan) includes cycle volumes; without it (Regał) award-only.
+      // `all=1` (Katalog/scan) includes cycle volumes; without it (Regał) award-only.
       const res = await fetch(`/api/books?${all ? "all=1&" : ""}t=${Date.now()}`);
       if (!res.ok) throw new Error("Błąd podczas pobierania książek");
       const data = await res.json();

@@ -1,16 +1,16 @@
-# Cogitator Omnissiah
+# Librem
 
-**Cogitator Omnissiah** synchronizuje nagrody literackie science‑fiction — **Hugo**, **Nebula** i **Locus** — z *Archiwum Encyklopedii Fantastyki* (MediaWiki) do osobistej bazy **Notion**. Zbiera zwycięzców i nominowanych, wzbogaca ich o wydawcę, serię i przynależność do cyklu, pilnuje integralności danych i pomaga śledzić postępy czytelnicze oraz szukać fizycznych egzemplarzy w bibliotece i na Vinted.
+**Librem** — Twoja kolekcja nagradzanej fantastyki. Synchronizuje nagrody literackie science‑fiction — **Hugo**, **Nebula** i **Locus** — z *Archiwum Encyklopedii Fantastyki* (MediaWiki) do osobistej bazy **Notion**. Zbiera zwycięzców i nominowanych, wzbogaca ich o wydawcę, serię i przynależność do cyklu, pilnuje integralności danych i pomaga śledzić postępy czytelnicze oraz szukać fizycznych egzemplarzy w bibliotece i na Vinted.
 
-Interfejs i nazewnictwo utrzymane są w klimacie Warhammer 40k / Adeptus Mechanicus („rytuały synchronizacji", „Duch Maszyny", „sanctity") — to świadoma konwencja, którą należy zachować przy zmianach.
+Nazewnictwo i teksty interfejsu są ciepłe i literackie (Kolekcja, Regał, Katalog, Synchronizacja, Rynek, Ustawienia). Wcześniejsza konwencja Warhammer 40k / Adeptus Mechanicus została wycofana z tekstów widocznych dla użytkownika (v1.61.0) — **nie przywracamy jej**. Motyw ciemny zachowuje 40‑kowy *wygląd* (glassmorphism, cyan/purple), ale jego *copy* jest takie samo jak w jasnym. Identyfikatory domenowe (nazwy kolumn Notion, klucze `TASK_REGISTRY`, teksty serwisów backendu) pozostają nietknięte.
 
-> **Uwaga o naturze projektu.** To osobiste narzędzie jednego użytkownika, nie usługa wieloosobowa. Endpointy nie są uwierzytelniane — uruchamiaj je za prywatnym hostingiem/siecią, nie wystawiaj publicznie bez własnej warstwy autoryzacji.
+> **Uwaga o naturze projektu.** To osobiste narzędzie jednego użytkownika, nie usługa wieloosobowa. Od v1.77.0 API jest chronione Basic Auth i działa **fail‑closed**: w `NODE_ENV=production` bez `BASIC_AUTH_USER`/`BASIC_AUTH_PASSWORD` serwis odpowiada 503 na wszystko poza `/api/health` (świadome otwarcie wymaga `ALLOW_PUBLIC_ACCESS=true`). Mimo to trzymaj instancję za prywatnym hostingiem — to narzędzie osobiste, nie usługa publiczna.
 
 ---
 
 ## Spis treści
 
-- [Funkcje (rytuały)](#funkcje-rytuały)
+- [Funkcje (zadania synchronizacji)](#funkcje-zadania-synchronizacji)
 - [Architektura](#architektura)
 - [Struktura projektu](#struktura-projektu)
 - [Wymagania wstępne](#wymagania-wstępne)
@@ -28,30 +28,31 @@ Interfejs i nazewnictwo utrzymane są w klimacie Warhammer 40k / Adeptus Mechani
 
 ---
 
-## Funkcje (rytuały)
+## Funkcje (zadania synchronizacji)
 
 Każda operacja to osobne, anulowalne zadanie strumieniowane do UI przez SSE.
 
-| Rytuał | Endpoint | Co robi |
+| Zadanie | Endpoint | Co robi |
 | --- | --- | --- |
 | **Synchronizacja Nagród** (book sync) | `POST /api/sync` | Pobiera stronę nagrody z encyklopedii, parsuje zwycięzców i nominowanych, scala duplikaty (jedna książka = wiele nagród) i zapisuje/aktualizuje rekordy w Notion. |
-| **Inicjacja Schematu** | `POST /api/sync-schema` | Zakłada/naprawia wymagane kolumny bazy Notion (typy, nazwa kolumny głównej). |
-| **Puryfikacja** | `POST /api/sync-purify` | Czyści tytuły z pozostałości składni wiki i natywnego formatowania Notion. |
+| **Inicjacja schematu** | `POST /api/sync-schema` | Zakłada/naprawia wymagane kolumny bazy Notion (typy, nazwa kolumny głównej). |
+| **Porządkowanie tytułów** | `POST /api/sync-purify` | Czyści tytuły z pozostałości składni wiki i natywnego formatowania Notion. |
 | **Wydawcy / Serie** | `POST /api/sync-publisher`, `POST /api/sync-series` | Dociąga wydawcę i serię ze strony każdej książki (z weryfikacją autora). |
-| **Cykle** | `POST /api/sync-cycles` | Zaznacza „Część cyklu" na podstawie danych ze strony wiki. |
-| **Żniwa Cykli** | `POST /api/sync-cycles-harvest` | Materializuje poboczne tomy cykli jako REALNE wiersze (`Kategoria=Tom cyklu`, `Cykl`/`CyklNr`) — oznaczalne i skanowane na Vinted. Idempotentny. |
-| **Rekonstrukcja Liczb (Lp)** | `POST /api/sync-lp` | Przenumerowuje kolumnę „Lp" wg roku i tytułu (tylko pozycje nagrodowe — tomy cykli pomijane). |
-| **Duplikaty** | `POST /api/sync-duplicates` | Wykrywa potencjalne duplikaty (tytuł + podobieństwo autora). |
-| **Sanctity (Integralność)** | `POST /api/sync-integrity` | Porównuje bazę Notion z wiki: liczby per rok/nagroda, unikalność Lp/tytułów. |
+| **Oznaczanie cykli** | `POST /api/sync-cycles` | Zaznacza „Część cyklu" na podstawie danych ze strony wiki. |
+| **Zbieranie tomów cykli** | `POST /api/sync-cycles-harvest` | Materializuje poboczne tomy cykli jako REALNE wiersze (`Kategoria=Tom cyklu`, `Cykl`/`CyklNr`) — oznaczalne i skanowane na Vinted. Idempotentny. |
+| **Rekonstrukcja numeracji** | `POST /api/sync-lp` | Przenumerowuje kolumnę „Lp" wg roku i tytułu (tylko pozycje nagrodowe — tomy cykli pomijane). |
+| **Nadawanie ISBN** | `POST /api/sync-isbn-enrich`, `GET /api/isbn/:code` | Dociąga ISBN-y wydań z Google Books do kolumny `ISBN` (wszystkie edycje, polskie priorytetowo, cap 40) — to one pozwalają zeskanować kod kreskowy w Katalogu. |
+| **Wykrywanie duplikatów** | `POST /api/sync-duplicates` | Wykrywa potencjalne duplikaty (tytuł + podobieństwo autora). |
+| **Kontrola spójności** | `POST /api/sync-integrity` | Porównuje bazę Notion z wiki: liczby per rok/nagroda, unikalność Lp/tytułów. |
 | **Statystyki** | `GET /api/stats` | Agregaty do dashboardu (postęp autorów, roczników, pokrycie nagród, biblioteki). |
-| **Skryptorium** (wyszukiwarka) | `GET /api/books`, `GET /api/cycle` | Odchudzony indeks rekordów; front filtruje client-side po tytule (PL+oryg) i autorze, diakrytyki-agnostycznie, na żywo. Badge „cykl" otwiera podgląd tomów cyklu (`/api/cycle`, na żądanie, bez zapisu). |
+| **Katalog** (wyszukiwarka) | `GET /api/books`, `GET /api/cycle` | Odchudzony indeks rekordów; front filtruje client-side po tytule (PL+oryg) i autorze, diakrytyki-agnostycznie, na żywo. Badge „cykl" otwiera podgląd tomów cyklu (`/api/cycle`, na żądanie, bez zapisu). |
 | **Archiwum Cykli** | `GET /api/cycles-harvest` | Zbiorczy widok zebranych cykli (z wierszy `Cykl`): tomy + status, koszt kompletacji z Vinted, oznaczanie przeczytane/posiadane w miejscu. |
-| **Konfiguracja** (Sanktuarium Kalibracji) | `GET/PUT /api/app-config` | Knoby aplikacji (diff od defaultów w opisie kolumny `AppConfig`). Otwiera klik w logo. |
+| **Ustawienia** | `GET/PUT /api/app-config` | Knoby aplikacji (diff od defaultów w opisie kolumny `AppConfig`). Otwiera klik w logo. |
 | **Regał** (wizualizacja) | `POST /api/mark-as-read`, `POST /api/unmark-as-read`, `POST /api/shelf-order` | Księgozbiór jako fizyczne półki (grzbiety + okładki „Wyróżnione"); dwa regały „Do przeczytania"/„Przeczytane" z drag&drop (zapis/usuwa tag „Przeczytane" w „Źródło"); precyzyjne wstawianie w obrębie dekady zapisuje `ShelfOrder`. Skórki `Holo`/`Noospheric`. |
 | **Skan Biblioteki** | `POST /api/library-check` | Sprawdza dostępność w OPAC MBP Lublin (scraping HTML). |
 | **Skan Vinted** | `POST /api/vinted-check` | Szuka fizycznych egzemplarzy na vinted.pl (scraping HTML). |
 
-**Rytuał Pełnej Synchronizacji** uruchamia sekwencję 1–7 (Schemat → Puryfikacja → Nagrody → Cykle → Wydawcy → Serie → Lp); przerwanie któregokolwiek kroku zatrzymuje całą sekwencję.
+**Pełna synchronizacja** uruchamia sekwencję 1–7 (Inicjacja schematu → Porządkowanie tytułów → Nagrody → Oznaczanie cykli → Wydawcy → Serie → Rekonstrukcja numeracji); przerwanie któregokolwiek kroku zatrzymuje całą sekwencję.
 
 ---
 
@@ -62,8 +63,8 @@ Hybryda **Vite + Express** serwowana z jednego procesu Node. Kod jest ułożony 
 ```mermaid
 flowchart TB
     subgraph FE["Frontend — React 19 SPA (src/)"]
-        App["App.tsx — 5 zakładek<br/>(Statystyki · Regał · Skryptorium · Liturgie · Vinted)"]
-        USM["hooks/useSyncManager<br/>(orkiestracja rytuałów)"]
+        App["App.tsx — 5 zakładek<br/>(Kolekcja · Regał · Katalog · Synchronizacja · Rynek)"]
+        USM["hooks/useSyncManager<br/>(orkiestracja zadań)"]
         Hooks["useSyncManager · useSync · useVintedCheck · useLibraryCheck<br/>useStats · useAppConfig · useBooks · useMarkRead/useMarkAsRead<br/>useCycle · useCyclesHarvest · useShelfOrder"]
         Stream["hooks/useSSEStream<br/>(wspólny transport: fetch + watchdog + SSE)"]
         SSEc["utils/ consumeSSE · stallWatchdog"]
@@ -87,7 +88,7 @@ flowchart TB
         SM["syncManager.ts — SyncManager<br/>blokada 1 zadania · TASK_REGISTRY · run()"]
     end
 
-    subgraph SVC["Serwisy (services/) — jeden na rytuał"]
+    subgraph SVC["Serwisy (services/) — jeden na zadanie"]
         Book["bookSyncService (orkiestrator)"]
         Integ["integrityService"]
         WField["wikiFieldSyncService<br/>(publisher/series)"]
@@ -134,13 +135,13 @@ flowchart TB
 
 - **Entrypoint** — `server.ts` (start serwera, middleware Vite/statyka, handlery procesu) montuje **`app.ts`** (samo wiring Express: `basicAuth` → `json` → trasy `/api`). Rozdzielenie kasuje cykl `server ↔ controller`.
 - **Warstwa HTTP** — `routes/` mapuje endpointy na `controllers/syncController.ts` (parsowanie żądań, walidacja); transport długich zadań SSE żyje osobno w `controllers/sseStream.ts` (nagłówki, hardening pod proxy, keepalive, anulowanie przy rozłączeniu klienta).
-- **Composition root domeny** — `syncManager.ts`: `SyncManager` buduje adaptery i serwisy oraz orkiestruje rytuały — jedno aktywne zadanie z własnym tokenem anulowania, rejestr `TASK_REGISTRY` (nazwa → serwis) i jedno generyczne `run(taskName, sendEvent, params?)`. Współbieżność wewnątrz zadań przez `p-limit`.
+- **Composition root domeny** — `syncManager.ts`: `SyncManager` buduje adaptery i serwisy oraz orkiestruje zadania — jedno aktywne zadanie z własnym tokenem anulowania, rejestr `TASK_REGISTRY` (nazwa → serwis) i jedno generyczne `run(taskName, sendEvent, params?)`. Współbieżność wewnątrz zadań przez `p-limit`.
 - **Serwisy** (`/services/`) — po jednym na koncern; orkiestratory (np. `bookSyncService`, `integrityService`) delegują logikę do czystych helperów.
 - **Czyste helpery** — `wiki.parser` (`parseAwardTable`), `bookDiff` (`buildBookUpdates`/`buildAuthorTags`/`buildNewBookProperties`), `vintedParser`, `vintedStore` (merge/diff/`computeChangedAt`), `vintedScanPlanner` (`selectAndOrderCandidates`), `vintedHttp` (nagłówki/throttle/klasyfikacja błędu), `bookSearchIndex`, `dataNormalizer`, `diffEngine`: bez I/O, w pełni testowalne.
 - **Adaptery** — `NotionAdapter`, `WikiAdapter`: czyste wrappery API bez logiki biznesowej. Mapowanie strona Notion → domena wyniesione do `notionMapper`; skanery HTML (biblioteka/Vinted) dzielą `scrapingClient` (rotacja User-Agent + keep-alive). Adaptery rozróżniają „brak danych" od „awarii infrastruktury" (patrz [Obserwowalność](#obserwowalność-i-diagnostyka)).
-- **Frontend** — React 19 SPA (Tailwind CSS, `motion/react`, `lucide-react`), 5 zakładek: Statystyki, **Regał** (wizualizacja półek + drag&drop), **Skryptorium** (wyszukiwarka), Liturgie (rytuały), Vinted. Cała orkiestracja rytuałów w `useSyncManager`. Transport SSE (fetch → `res.ok` → `consumeSSE` + stall watchdog + komunikat błędu) żyje raz w **`useSSEStream`**; hooki strumieniowe (`useSync`, `useVintedCheck`, `useLibraryCheck`) budują na nim i różnią się tylko routingiem zdarzeń. Duży komponent skanera Vinted rozbity na `components/stats/vinted/*`. W dev serwowany przez Vite (middleware), w produkcji jako statyczny build z `dist/public/` (bundle backendu leży obok, w `dist/`, i **nie** jest serwowany).
+- **Frontend** — React 19 SPA (Tailwind CSS, `motion/react`, `lucide-react`), 5 zakładek: **Kolekcja** (statystyki), **Regał** (wizualizacja półek + drag&drop), **Katalog** (wyszukiwarka), **Synchronizacja**, **Rynek** (Vinted). Cała orkiestracja zadań w `useSyncManager`. Transport SSE (fetch → `res.ok` → `consumeSSE` + stall watchdog + komunikat błędu) żyje raz w **`useSSEStream`**; hooki strumieniowe (`useSync`, `useVintedCheck`, `useLibraryCheck`) budują na nim i różnią się tylko routingiem zdarzeń. Duży komponent skanera Vinted rozbity na `components/stats/vinted/*`. W dev serwowany przez Vite (middleware), w produkcji jako statyczny build z `dist/public/` (bundle backendu leży obok, w `dist/`, i **nie** jest serwowany).
 
-Szczegóły zasad architektonicznych: **[`COGITATOR_GUIDELINES.md`](./COGITATOR_GUIDELINES.md)**.
+Szczegóły zasad architektonicznych: **[`LIBREM_GUIDELINES.md`](./LIBREM_GUIDELINES.md)**.
 
 ### Stack
 
@@ -157,7 +158,7 @@ Szczegóły zasad architektonicznych: **[`COGITATOR_GUIDELINES.md`](./COGITATOR_
 .
 ├── server.ts                # entrypoint: startServer, Vite/statyka, handlery procesu
 ├── app.ts                   # wiring Express (basicAuth → json → trasy /api)
-├── syncManager.ts           # composition root domeny: SyncManager, rejestr rytuałów, run()
+├── syncManager.ts           # composition root domeny: SyncManager, rejestr zadań, run()
 ├── notion.adapter.ts        # wrapper Notion SDK (zapytania, zapis, schemat, dual-mode)
 ├── notionMapper.ts          # czyste mapowanie strona Notion → NotionBook
 ├── wiki.adapter.ts          # klient MediaWiki (fetch treści, kategorie, wyszukiwanie)
@@ -170,7 +171,7 @@ Szczegóły zasad architektonicznych: **[`COGITATOR_GUIDELINES.md`](./COGITATOR_
 │   ├── syncController.ts    # parsowanie żądań + walidacja (delegacja do serwisów)
 │   └── sseStream.ts         # transport SSE (headers, keepalive, anulowanie)
 ├── routes/                  # definicje endpointów
-├── services/                # logika biznesowa (jeden serwis = jeden rytuał) + czyste helpery
+├── services/                # logika biznesowa (jeden serwis = jedno zadanie) + czyste helpery
 │   ├── bookSyncService.ts   bookDiff.ts          dataNormalizer.ts   diffEngine.ts
 │   ├── duplicateSyncService.ts   wikiFieldSyncService.ts  publisherSyncService.ts  seriesSyncService.ts
 │   ├── cyclesSyncService.ts      lpSyncService.ts          statsService.ts       bookSearchIndex.ts
@@ -179,13 +180,13 @@ Szczegóły zasad architektonicznych: **[`COGITATOR_GUIDELINES.md`](./COGITATOR_
 │   ├── vintedStore.ts            vintedScanPlanner.ts       vintedHttp.ts
 ├── src/                     # frontend React
 │   ├── App.tsx  types.ts  constants.ts
-│   ├── components/          # + stats/vinted/ (skaner), search/ (Skryptorium), shelf/ (Regał)
+│   ├── components/          # + stats/vinted/ (skaner), search/ (Katalog), shelf/ (Regał)
 │   ├── hooks/               # useSyncManager, useSSEStream (transport), useSync, useVintedCheck,
 │   │                        #   useLibraryCheck, useStats, useAppConfig, useBooks, useCycle,
 │   │                        #   useCyclesHarvest, useShelfOrder, useMarkRead/useMarkAsRead, …
 │   ├── utils/               # sse (consumeSSE), stallWatchdog, time, bookSearch, bookshelf,
 │   │                        #   vintedOffers, vintedSellers, vintedFormat
-│   └── theme/               # ritualColors (motyw kolorów rytuałów)
+│   └── theme/               # ritualColors (centralny motyw kolorów zadań)
 ├── docs/                    # szczegółowa dokumentacja algorytmów (per serwis)
 ├── render.yaml              # blueprint wdrożenia na Render
 └── .claude/                 # hook SessionStart (npm install) dla Claude Code on the web
@@ -206,7 +207,7 @@ Szczegóły zasad architektonicznych: **[`COGITATOR_GUIDELINES.md`](./COGITATOR_
 1. Utwórz **integrację** w [notion.so/my-integrations](https://www.notion.so/my-integrations) i skopiuj *Internal Integration Token* → to `NOTION_API_KEY`.
 2. Utwórz (lub wskaż) bazę danych i **udostępnij ją integracji** (menu `•••` → *Connections* → wybierz integrację). Bez tego kroku Notion zwróci `object_not_found`.
 3. Skopiuj **ID bazy** z URL (32‑znakowy ciąg) → to `NOTION_DATABASE_ID`.
-4. Kolumny nie muszą istnieć wcześniej — uruchom rytuał **Inicjacja Schematu** (`/api/sync-schema`), który założy brakujące:
+4. Kolumny nie muszą istnieć wcześniej — uruchom zadanie **Inicjacja schematu** (`/api/sync-schema`), który założy brakujące:
 
    | Kolumna | Typ |
    | --- | --- |
@@ -263,15 +264,29 @@ Port pochodzi ze zmiennej `PORT` (domyślnie `3000`).
 
 ## Wdrożenie (Render)
 
-Repozytorium zawiera blueprint **[`render.yaml`](./render.yaml)**:
+Produkcja: **https://librem.onrender.com**. Serwis jest utworzony **ręcznie** jako *Web Service* —
+**`render.yaml` NIE jest podpięty jako Blueprint**, więc Render tego pliku nie czyta; trzymamy go jako
+dokumentację konfiguracji. Ustawienia serwisu (Settings):
 
-- **Runtime:** Node
-- **Build:** `npm ci --include=dev && npm run build`
-- **Start:** `npm start`
-- **Health check:** `/api/health`
-- **Zmienne:** ustaw `NOTION_API_KEY`, `NOTION_DATABASE_ID` (oraz opcjonalnie `BASIC_AUTH_USER`/`BASIC_AUTH_PASSWORD`) jako sekrety; `NODE_ENV=production`.
+| Ustawienie | Wartość | Dlaczego |
+| --- | --- | --- |
+| Repository | `rembednarczyk/librem` | |
+| Branch | `main` | deploy leci z `main`, nie z brancha roboczego |
+| Auto-Deploy | `On Commit` | domyślnie włączone — każdy push/merge na `main` przebudowuje serwis |
+| Build Command | `npm ci --include=dev && npm run build` | **krytyczne**: `vite`, `esbuild` i `typescript` są w `devDependencies`, a przy `NODE_ENV=production` samo `npm ci` je pomija i build się wywala |
+| Start Command | `npm start` | (`node dist/server.cjs`) |
+| Health Check Path | `/api/health` | endpoint jest celowo trywialny i otwarty (nie dotyka Notion), więc odpowiada nawet bez sekretów |
 
-Możesz wdrożyć jako *Blueprint* (Render odczyta `render.yaml`) albo ręcznie jako *Web Service* z powyższymi ustawieniami. Na darmowym planie instancja usypia po ~15 min bezczynności (pierwsze wejście po przerwie trwa ~30–60 s).
+**Zmienne środowiskowe:** `NOTION_API_KEY`, `NOTION_DATABASE_ID`, `BASIC_AUTH_USER`, `BASIC_AUTH_PASSWORD`
+oraz `NODE_ENV=production`. Bez obu zmiennych `BASIC_AUTH_*` produkcja odpowiada **503** na wszystko poza
+`/api/health` (fail-closed — patrz [Bezpieczeństwo](#bezpieczeństwo)).
+
+**Wersja Node:** przypięta w [`.node-version`](./.node-version) do `20`. Render wybiera wersję wg priorytetu
+`NODE_VERSION` → `.node-version` → `.nvmrc` → `engines`, a jego **domyślna** wersja dla nowo tworzonych
+serwisów idzie w górę z czasem (dziś Node 24) i złamałaby `engines` (`>=18 <21`). Pin usuwa tę zależność
+od daty utworzenia serwisu.
+
+Na darmowym planie instancja usypia po ~15 min bezczynności (pierwsze wejście po przerwie trwa ~30–60 s).
 
 SSE za proxy Rendera jest zahartowane po stronie serwera (padding wymuszający flush, `X-Accel-Buffering: no`, częsty keepalive) — patrz [Rozwiązywanie problemów](#rozwiązywanie-problemów).
 
@@ -294,7 +309,7 @@ Wszystkie endpointy synchronizacji zwracają strumień **SSE** (`text/event-stre
 | GET | `/api/config` | Obecność kluczy (booleany, bez sekretów). |
 | GET | `/api/diagnostics` | **Diagnostyka end‑to‑end** (Notion + pobranie i parsowanie stron nagród) z podsumowaniem po polsku. |
 | GET | `/api/stats` | Agregaty do dashboardu. |
-| GET | `/api/books` | Odchudzony indeks Skryptorium (wyszukiwarka client-side). |
+| GET | `/api/books` | Odchudzony indeks Katalogu (wyszukiwarka client-side). |
 | GET | `/api/cycle` | Podgląd tomów cyklu dla książki (`?title&author`, na żądanie, bez zapisu; 404 gdy poza cyklem). |
 | GET | `/api/cycles-harvest` | Zbiorczy widok zebranych cykli (z wierszy) do Archiwum. |
 | GET / PUT | `/api/app-config` | Odczyt / zapis knobów aplikacji (diff od defaultów w opisie kolumny `AppConfig`). |
@@ -302,11 +317,11 @@ Wszystkie endpointy synchronizacji zwracają strumień **SSE** (`text/event-stre
 | PATCH | `/api/notion/schema` | Modyfikacja opcji właściwości. |
 | GET | `/api/wiki/last-update` | Data ostatniej edycji strony wiki. |
 | POST | `/api/sync` | Synchronizacja nagród (`{ awardName, pageTitle, syncAll }`). |
-| POST | `/api/sync-schema`, `/api/sync-purify`, `/api/sync-publisher`, `/api/sync-series`, `/api/sync-cycles`, `/api/sync-cycles-harvest`, `/api/sync-lp`, `/api/sync-duplicates`, `/api/sync-integrity` | Pozostałe rytuały. |
+| POST | `/api/sync-schema`, `/api/sync-purify`, `/api/sync-publisher`, `/api/sync-series`, `/api/sync-cycles`, `/api/sync-cycles-harvest`, `/api/sync-lp`, `/api/sync-duplicates`, `/api/sync-integrity` | Pozostałe zadania synchronizacji. |
 | POST | `/api/library-check`, `/api/vinted-check` | Skany dostępności. |
 | POST | `/api/mark-as-read`, `/api/unmark-as-read` | Dopisanie / usunięcie znacznika `Źródło` (`Przeczytane`/`Posiadam`/`Biblioteka…`). |
 | POST | `/api/shelf-order` | Zapis ręcznego porządku regału (precyzyjny drag&drop). |
-| POST | `/api/*/stop` | Zatrzymanie danego rytuału. |
+| POST | `/api/*/stop` | Zatrzymanie danego zadania. |
 | POST | `/api/sync/reset` | Awaryjny reset stanu synchronizacji. |
 
 ---
@@ -330,7 +345,7 @@ Szczegóły algorytmów: **[`docs/`](./docs)** (patrz [indeks](./docs/README.md)
 - **Weryfikacja autora** przy synchronizacji wydawców/serii/cykli — strona o tym samym tytule dotycząca innego dzieła nie nadpisze danych.
 - **Rozróżnienie awarii od braku danych** — pełna awaria pobierania nie raportuje się jako „udany, pusty" sync (patrz niżej).
 
-Decyzje projektowe (np. kategorie Locus, priorytet wydania) są udokumentowane w `docs/` i `COGITATOR_GUIDELINES.md` z adnotacją „nie naprawiać wstecz".
+Decyzje projektowe (np. kategorie Locus, priorytet wydania) są udokumentowane w `docs/` i `LIBREM_GUIDELINES.md` z adnotacją „nie naprawiać wstecz".
 
 ---
 
@@ -376,12 +391,13 @@ npm run lint    # type-check w trybie strict
 
 ## Dokumentacja i konwencje
 
-- **[`COGITATOR_GUIDELINES.md`](./COGITATOR_GUIDELINES.md)** — autorytatywne zasady architektoniczne (backend, frontend, integralność danych, testy, design system). Obowiązują przy każdej zmianie.
+- **[`LIBREM_GUIDELINES.md`](./LIBREM_GUIDELINES.md)** — autorytatywne zasady architektoniczne (backend, frontend, integralność danych, testy, design system). Obowiązują przy każdej zmianie.
 - **[`docs/`](./docs)** — szczegółowa dokumentacja algorytmów per serwis ([indeks](./docs/README.md)).
 - **[`CLAUDE.md`](./CLAUDE.md)** — zwięzła mapa projektu dla asystenta Claude Code.
+- **[`OMNISSIAH_VAULT.md`](./OMNISSIAH_VAULT.md)** — sejf pamiątek po dawnej nazwie (*Cogitator Omnissiah*) i słownik dekodujący nazewnictwo Warhammer 40k, którym projekt mówił do v1.61.0. Przydatny przy czytaniu starych commitów i issues.
 
-Konwencje: Tailwind CSS (motyw glassmorphism, `slate-950` + akcenty `cyan-400`/`purple-500`), `motion/react` do animacji, `lucide-react` do ikon; nazewnictwo i teksty UI w klimacie Adeptus Mechanicus. Po większych zmianach architektonicznych aktualizuj `COGITATOR_GUIDELINES.md` i ten plik (zob. wytyczne §8).
+Konwencje: Tailwind CSS (motyw glassmorphism, `slate-950` + akcenty `cyan-400`/`purple-500`), `motion/react` do animacji, `lucide-react` do ikon; nazewnictwo i teksty UI w ciepłym, literackim tonie „Librem". Po większych zmianach architektonicznych aktualizuj `LIBREM_GUIDELINES.md` i ten plik (zob. wytyczne §8).
 
 ---
 
-*Ku chwale Omnissiaha — w służbie zachowania literackich artefaktów w epoce cyfrowej.*
+*Librem — w służbie zachowania literackich artefaktów w epoce cyfrowej.*

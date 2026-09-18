@@ -1,7 +1,7 @@
 {
-  "name": "react-example",
+  "name": "librem",
   "private": true,
-  "version": "1.80.0",
+  "version": "1.82.1",
   "type": "module",
   "engines": {
     "node": ">=18 <21"

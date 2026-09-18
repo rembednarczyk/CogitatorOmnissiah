@@ -8,7 +8,7 @@ import { createLogger } from "../logger";
  * Resolves an ISBN to a book (title + author) via the Google Books API. This is the
  * engine of the barcode "variant A": the scanned code has no direct row in the base
  * (we don't store ISBNs by default), so we resolve it to a title and hand that to the
- * existing Skryptorium fuzzy search. Backend-side to dodge CORS and cache repeats.
+ * existing Katalog fuzzy search. Backend-side to dodge CORS and cache repeats.
  */
 
 const log = createLogger("IsbnLookup");

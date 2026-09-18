@@ -22,7 +22,7 @@ describe("toSearchIndex — wyklucza tomy cykli", () => {
     id, plTitle: `Tytuł ${id}`, origTitle: "", awards: [], kategoria,
   } as NotionBook);
 
-  it("indeks (Regał/Skryptorium) pomija Kategoria=Tom cyklu", () => {
+  it("indeks (Regał/Katalog) pomija Kategoria=Tom cyklu", () => {
     const idx = toSearchIndex([mk("a"), mk("b", CYCLE_VOLUME_CATEGORY), mk("c", "Nagroda")]);
     expect(idx.map((e) => e.id)).toEqual(["a", "c"]);
   });

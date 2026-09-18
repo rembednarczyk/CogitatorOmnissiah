@@ -1,7 +1,7 @@
 import { BookIndexEntry } from "../types";
 
 /**
- * Client-side barcode helpers for the Skryptorium scan flow. A physical book's
+ * Client-side barcode helpers for the Katalog scan flow. A physical book's
  * barcode is an EAN-13, which equals its ISBN-13. Two match paths:
  *   B (direct) — compare the scanned code to a row's stored `isbn` (enrichment ritual);
  *   A (resolve) — no stored match → resolve the ISBN to a title server-side and

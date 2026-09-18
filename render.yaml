@@ -1,6 +1,12 @@
+# UWAGA: ten plik NIE jest obecnie podpięty jako Blueprint w Renderze — serwis
+# powstał ręcznie z dashboardu, więc Render tego pliku NIE czyta. Trzymamy go
+# jako dokumentację konfiguracji (i punkt wyjścia, gdyby serwis trzeba było
+# kiedyś odtworzyć). Gdybyś podpinał go jako Blueprint: Render dopasowuje
+# serwisy WYŁĄCZNIE po polu `name`, więc musi ono wtedy dokładnie odpowiadać
+# nazwie istniejącego serwisu, inaczej powstanie drugi, równoległy serwis.
 services:
   - type: web
-    name: cogitator-omnissiah
+    name: librem
     runtime: node
     plan: free
     # --include=dev: build tools live in devDependencies; ensure they install

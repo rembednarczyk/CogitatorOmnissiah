@@ -19,7 +19,7 @@ interface Props {
 /**
  * Interactive cycle tile: click → `CyclePanel` with the volume list (reading order +
  * status in the DB), anchored at the click point. Reuses the existing cycle preview
- * (`useCycle` + `GET /api/cycle`) from Skryptorium — the only required input is (title,
+ * (`useCycle` + `GET /api/cycle`) from Katalog — the only required input is (title,
  * author). Renders only for `partOfCycle`. Label: „Cykl · N" when the volume number
  * was determined by harvest; otherwise just „cykl". The full cycle name lives in the tooltip (hover).
  */

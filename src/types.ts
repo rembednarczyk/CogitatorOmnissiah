@@ -69,7 +69,7 @@ export interface NotionBook {
 }
 
 /**
- * Slimmed-down book record for the „Skryptorium" search (`GET /api/books`).
+ * Slimmed-down book record for the „Katalog" search (`GET /api/books`).
  * Deliberately WITHOUT heavy fields (`vintedData` blob, `*RichText`) — this is an
  * index for client-side filtering, not the full model. Shared by server and front.
  */

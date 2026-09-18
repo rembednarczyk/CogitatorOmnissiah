@@ -1,4 +1,4 @@
-# COGITATOR OMNISSIAH: ARCHITECTURAL GUIDELINES (v1.6)
+# LIBREM: ARCHITECTURAL GUIDELINES (v1.7)
 
 ## 1. CORE ARCHITECTURE (BACKEND)
 - **Pattern**: Service-Adapter-Manager.
@@ -23,7 +23,7 @@
   - `useSyncManager`: Owns every ritual's `useSync` instance plus cross-ritual orchestration (mutual reset, the sequential "Wielki Rytuał" full sync, the aggregate result). `App` consumes it and stays presentational.
   - `useStats`: Global dashboard data. `useLibraryCheck`: Isolated library scanning. `useWikiUpdates`: encyclopedia recent-changes.
   - `useAppConfig` (`useEffectiveConfig` for consumers = module-cached read; panel draft + `save`; `persistStatsOrder` for the stats-card order): app config knobs. `useConfig`: Notion schema + connection status (distinct from `useAppConfig`).
-  - `useCycle`: on-demand cycle preview (Skryptorium). `useCyclesHarvest`: cycle-rows archive (read + per-volume mark read/owned via `toggleSource`). `useShelfOrder`: precise shelf drag&drop persistence. `useMarkRead` (shelf) / `useMarkAsRead` (stats/library) mark `Źródło` tags — separate because their contexts and side effects differ.
+  - `useCycle`: on-demand cycle preview (Katalog). `useCyclesHarvest`: cycle-rows archive (read + per-volume mark read/owned via `toggleSource`). `useShelfOrder`: precise shelf drag&drop persistence. `useMarkRead` (shelf) / `useMarkAsRead` (stats/library) mark `Źródło` tags — separate because their contexts and side effects differ.
 - **Styling**: Tailwind CSS only. Theme: Glassmorphism, `slate-950` background, `cyan-400` / `purple-500` accents.
 - **Animations**: `motion/react` (Framer Motion). Use for entry/exit and progress bars.
 - **Dynamic UI**: Progress bars and summary cards SHOULD inherit the color of the active ritual (passed via `SyncState.color`) to provide visual feedback and reinforce ritual identity.
@@ -34,7 +34,7 @@
 - **Wiki Parser Priority**: When extracting from `{{tabela wydania}}`, always pick the highest indexed `informacjaN` that is NOT empty, and take both `wydawca` and `seria` from that single (latest) edition — never backfill an empty field from an older edition (the latest edition is authoritative so the data mirrors current reality). Fallback to `{{Książka}}` only if no valid `infowydanie` is found.
 - **Locus Categories**: Exclude only the YA category ("Powieść dla młodzieży"). All other Locus categories (incl. Horror/Dark Fantasy and Pierwsza powieść) are intentionally synced as "Nagroda Locus".
 - **Idempotency (multi_select)**: Compare multi_select values (authors, publisher, series, awards) CASE-INSENSITIVELY, and normalize BOTH the wiki and the existing-Notion side before comparing. Notion matches option names case-insensitively and keeps its own casing, so comparing a normalized new value against a raw Notion value re-updates the field on every sync forever. Authors are MERGED (union), never replaced — manual Notion authors must survive.
-- **Row categories (award vs cycle)**: Non-award cycle sibling volumes are REAL rows tagged `Kategoria = "Tom cyklu"` (award rows have `Kategoria` empty/`Nagroda`). Every award-only consumer (stats, integrity, shelf+Skryptorium search index, Lp numbering, duplicate detection, book-sync promotion) filters via `isAwardBook`/`isCycleVolume` (`services/bookCategory.ts`); the Vinted scanner intentionally does NOT filter (it scans cycle volumes too). The `CycleHarvestService` upsert is idempotent (index rows and cross-ref the base with the SAME `normTitle` normalizer the lookup uses, or a duplicate slips through; reserve the index slot synchronously before `addRow` to close the parallel race). Cycle rows carry `Cykl`/`CyklNr` (grouping + reading order) and their title column `Lp` holds a stable "Cykl (nr)" label, not the global ordinal.
+- **Row categories (award vs cycle)**: Non-award cycle sibling volumes are REAL rows tagged `Kategoria = "Tom cyklu"` (award rows have `Kategoria` empty/`Nagroda`). Every award-only consumer (stats, integrity, shelf+Katalog search index, Lp numbering, duplicate detection, book-sync promotion) filters via `isAwardBook`/`isCycleVolume` (`services/bookCategory.ts`); the Vinted scanner intentionally does NOT filter (it scans cycle volumes too). The `CycleHarvestService` upsert is idempotent (index rows and cross-ref the base with the SAME `normTitle` normalizer the lookup uses, or a duplicate slips through; reserve the index slot synchronously before `addRow` to close the parallel race). Cycle rows carry `Cykl`/`CyklNr` (grouping + reading order) and their title column `Lp` holds a stable "Cykl (nr)" label, not the global ordinal.
 - **Config store**: App knobs live as a diff-from-defaults JSON blob in the **description** of the `AppConfig` column (NOT a sentinel row — row-iterating rituals would touch it). Schema, defaults, clamps and diff/merge are in the shared `src/configSchema.ts`; `ConfigService` reads/caches; `notion.adapter` only reads/writes the raw string (`getAppConfigRaw`/`saveAppConfigRaw`).
 - **Notion Schema**: Always check for column existence before writing. `SchemaValidationService` provisions the full model (award columns + `Kategoria`/`Cykl`/`CyklNr`/`Źródło`/`VintedData`/`ShelfOrder`); feature columns are also lazy-created on demand (`createColumnIfNeeded`). `AppConfig` is managed by the config store (column description), not the schema ritual.
 - **Library Scan**: 30000ms timeout, 500ms delay, 4 retries. Fail-fast on network error. Uses `withRetry`.
@@ -81,10 +81,10 @@
   - `docs/config-store.md`: App config knobs (diff-in-column-description) + the calibration panel.
   - `docs/vinted-scanner.md`: Vinted Market Search (direct HTML scraper — NOT AI).
   - `docs/bookshelf.md`: Bookshelf (Regał) — skins, precise drag&drop, shelf order.
-  - `docs/skryptorium-search.md`: Skryptorium client-side search index.
+  - `docs/catalog-search.md`: Katalog client-side search index.
 
 ## 8. DOCUMENTATION & MAINTENANCE
-- **Self-Correction**: After every major architectural change or logic fix (e.g., new service, parser update), the AI Agent MUST review and update `COGITATOR_GUIDELINES.md` and `README.md`.
+- **Self-Correction**: After every major architectural change or logic fix (e.g., new service, parser update), the AI Agent MUST review and update `LIBREM_GUIDELINES.md` and `README.md`.
 - **App Versioning (every change)**: `metadata.json` `version` is the single source of truth for the app version — `vite.config.ts` reads it into `__APP_VERSION__` (the UI badge). Bump it on every functional change using semver (patch/minor/major) and mirror the value into `package.json` **and** `package-lock.json` (run `npm version <same> --no-git-tag-version` after editing `metadata.json`, so the lockfile version doesn't drift). Increment this guidelines header version only for significant architectural changes.
 - **Persistent Memory**: `backlog.md` (repo root) is the durable findings/state log, kept so the AI's context window can be `/clear`-ed without losing knowledge. Read it at session start; update it (finding/decision + Changelog entry) before clearing. It reflects HEAD, not chat history.
 - **Consistency**: Ensure that `README.md` descriptions match the actual implementation in `services/`.

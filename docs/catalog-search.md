@@ -1,7 +1,7 @@
-# Skryptorium — Archive Search
+# Katalog — Archive Search
 
 ## 1. Overview
-A live, client-side search over the book records ("Skryptorium" tab). Typing filters the
+A live, client-side search over the book records ("Katalog" tab). Typing filters the
 archive as you go — `per` shows several titles, `pere` narrows to just *Perelandra*. Matching
 is diacritics-insensitive and spans the Polish title, original title, and author. **No AI/LLM.**
 

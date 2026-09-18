@@ -19,7 +19,7 @@ Parametry aplikacji (dawniej hardcode) są konfigurowalne i składowane w Notion
   - `useEffectiveConfig()` — dla KONSUMENTÓW (regał, skanery, nagrody): jedno pobranie na sesję (cache modułowy), `DEFAULT_CONFIG` do czasu odpowiedzi, brak stanów błędu.
   - `useAppConfig()` — dla PANELU: świeże pobranie + draft + `save` (po zapisie unieważnia cache konsumentów).
   - `persistStatsOrder(order)` — utrwala `ui.statsOrder` bez otwierania panelu; NIE zapisuje, gdy wczytanie configu padło (guard `!cachedConfig`), by nie nadpisać knobów defaultami.
-- **`ConfigSection.tsx`** — zakładka „Sanktuarium Kalibracji" (otwiera klik w logo): edytory knobów (Vinted, pula User-Agent, filie biblioteczne, nagrody, zaawansowane). Uwaga: polskie cudzysłowy w atrybutach JSX psują parser — używać `{'...'}`.
+- **`ConfigSection.tsx`** — zakładka „Ustawienia" (otwiera klik w logo): edytory knobów (Vinted, pula User-Agent, filie biblioteczne, nagrody, zaawansowane). Uwaga: polskie cudzysłowy w atrybutach JSX psują parser — używać `{'...'}`.
 
 ## Konsumenci knobów
 
